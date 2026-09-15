@@ -1,0 +1,4 @@
+# Dépendances des points d'entrée de api/ et de serve.py.
+requests
+pycryptodome
+tzdata

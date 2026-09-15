@@ -1,0 +1,6 @@
+# Fichiers utilitaires : ne pas déployer sur Vercel
+serve.py
+README.md
+__pycache__/
+*.pyc
+.DS_Store

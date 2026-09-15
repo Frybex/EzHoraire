@@ -1,0 +1,6 @@
+{
+  "functions": {
+    "api/horaires.py": { "maxDuration": 90 },
+    "api/pdf.py": { "maxDuration": 60 }
+  }
+}

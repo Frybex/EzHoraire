@@ -1,0 +1,3615 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#f4f5f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#101216" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="EzHoraire">
+<title>EzHoraire</title>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --ink: #17191d;
+    --muted: #6d7482;
+    --line: #e4e7ec;
+    --accent: #2456e0;
+    --accent-soft: rgba(36, 86, 224, .09);
+    --wash: rgba(36, 86, 224, 0);
+    --free: #18794e;
+    --seg-track: #e8eaef;
+    --shadow: 0 16px 40px -24px rgba(23, 32, 68, .28);
+    --radius: 14px;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #101216;
+      --surface: #171a20;
+      --ink: #f0f3f7;
+      --muted: #98a1b1;
+      --line: #262b34;
+      --accent: #8ba6ff;
+      --accent-soft: rgba(139, 166, 255, .13);
+      --wash: rgba(139, 166, 255, 0);
+      --free: #5fce96;
+      --seg-track: #20252e;
+      --shadow: 0 18px 44px -20px rgba(0, 0, 0, .75);
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { touch-action: manipulation; }
+  button, a { touch-action: manipulation; }
+  body {
+    margin: 0; color: var(--ink);
+    background-color: var(--bg);
+    background-image: radial-gradient(110% 34% at 50% -6%, var(--wash), transparent 70%);
+    background-repeat: no-repeat;
+    font-family: var(--font); font-size: 17px; line-height: 1.45;
+  }
+  .wrap { max-width: 620px; margin: 0 auto; padding: 20px 16px 48px; }
+
+  [hidden] { display: none !important; }
+
+  /* Barre du haut : retour à gauche, titre au centre, profil à droite */
+  .topbar {
+    position: relative; display: flex; align-items: center; justify-content: center;
+    min-height: 44px; margin: 2px 0 14px;
+  }
+  .title {
+    font-size: 1.05rem; font-weight: 700; letter-spacing: -.01em;
+    text-align: center; margin: 0; user-select: none;
+  }
+  .title span { color: var(--accent); }
+  .topbar .gauche, .topbar .droite {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    border: none; background: none; font: inherit; cursor: pointer;
+    min-height: 44px; padding: 0 6px;
+  }
+  .topbar .gauche { left: 0; color: var(--accent); font-size: .98rem; font-weight: 600; }
+  .topbar .droite {
+    right: 0; width: 40px; height: 40px; min-height: 0; padding: 0; border-radius: 50%;
+    display: grid; place-items: center;
+    background: var(--accent-soft); color: var(--accent); font-weight: 700; font-size: .95rem;
+  }
+
+  /* Choix de l'école, de la formation et des groupes */
+  .q { font-size: 1.6rem; letter-spacing: -.025em; line-height: 1.15; margin: 18px 0 6px; }
+  .aide { color: var(--muted); margin: 0 0 18px; font-size: .98rem; }
+  .recherche {
+    width: 100%; font: inherit; font-size: 1rem; color: var(--ink);
+    padding: 13px 16px; margin: 0 0 12px; border-radius: 14px;
+    border: 1px solid var(--line); background: var(--surface);
+    -webkit-appearance: none; appearance: none;
+  }
+  .recherche:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .liste { list-style: none; margin: 0; padding: 0; }
+  .liste li + li { border-top: 1px solid var(--line); }
+  .liste button {
+    width: 100%; border: none; background: none; font: inherit; color: inherit;
+    display: flex; align-items: center; gap: 12px; text-align: left;
+    padding: 15px 4px; min-height: 56px; cursor: pointer;
+  }
+  .liste button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .liste button:active { background: var(--accent-soft); }
+  .liste .nom { flex: 1; font-weight: 500; }
+  .liste .nom small { display: block; color: var(--muted); font-weight: 400; font-size: .85rem; }
+  .liste .chev { transform: rotate(-45deg); }
+  .liste mark { background: none; color: var(--accent); font-weight: 700; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 22px; }
+  .chip {
+    border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+    font: inherit; font-size: .95rem; font-weight: 500;
+    padding: 10px 14px; border-radius: 999px; cursor: pointer; min-height: 44px;
+    transition: background .15s, border-color .15s, color .15s;
+  }
+  .chip[aria-pressed="true"] {
+    background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600;
+  }
+  .primaire {
+    position: sticky; bottom: calc(14px + env(safe-area-inset-bottom));
+    display: block; width: 100%; padding: 15px; border: none; border-radius: 16px;
+    background: var(--accent); color: #fff; box-shadow: var(--shadow);
+    font: inherit; font-size: 1.02rem; font-weight: 700; cursor: pointer;
+  }
+  .primaire:active { transform: scale(.99); }
+
+  /* Horaire : rappel du profil sous le titre */
+  .profil-ligne {
+    text-align: center; color: var(--muted); font-size: .9rem; margin: -8px 0 10px;
+  }
+
+  /* Couleur par horaire (3 couleurs autorisées : Bleu / Vert / Rose).
+     Le fond et la piste du sélecteur sont teintés : on sait d'un
+     coup d'œil sur quel cours on est. */
+  body[data-theme="0"],
+  body[data-theme="2"] {
+    --accent: #1d4fd7;
+    --accent-soft: rgba(29, 79, 215, .09);
+    --wash: rgba(29, 79, 215, .09);
+    --bg: #eaf0fa;
+    --seg-track: #dbe4f5;
+  }
+  body[data-theme="1"] {
+    --accent: #0e8655;
+    --accent-soft: rgba(14, 134, 85, .10);
+    --wash: rgba(14, 134, 85, .10);
+    --bg: #ebf2ec;
+    --seg-track: #dce8de;
+  }
+  body[data-theme="3"] {
+    --accent: #d14d8a;
+    --accent-soft: rgba(209, 77, 138, .12);
+    --wash: rgba(209, 77, 138, .13);
+    --bg: #fdf1f6;
+    --seg-track: #f9e0ec;
+  }
+  @media (prefers-color-scheme: dark) {
+    body[data-theme="0"],
+    body[data-theme="2"] {
+      --accent: #8ba6ff;
+      --accent-soft: rgba(139, 166, 255, .14);
+      --wash: rgba(139, 166, 255, .10);
+      --bg: #0d1322;
+      --seg-track: #1c2436;
+    }
+    body[data-theme="1"] {
+      --accent: #4cc38a;
+      --accent-soft: rgba(76, 195, 138, .14);
+      --wash: rgba(76, 195, 138, .10);
+      --bg: #0c1411;
+      --seg-track: #1a231e;
+    }
+    body[data-theme="3"] {
+      --accent: #ffa8d0;
+      --accent-soft: rgba(255, 168, 208, .16);
+      --wash: rgba(255, 168, 208, .14);
+      --bg: #24141d;
+      --seg-track: #3a2330;
+    }
+  }
+
+  /* Barre de sélection des horaires (reprend Horairelm : Maxence /
+     Lilian / Anthony). N surnoms dynamiques : la pastille glisse
+     sur l'onglet actif. Au-delà de 4, défilement horizontal. */
+  .seg {
+    --n: 1; --idx: 0;
+    position: relative; display: grid;
+    grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+    background: var(--seg-track);
+    border-radius: 999px; padding: 3px; margin: 0 0 14px;
+    max-width: 100%; overflow-x: auto; scrollbar-width: none;
+  }
+  .seg::-webkit-scrollbar { display: none; }
+  .seg .pill {
+    position: absolute; top: 3px; bottom: 3px; left: 3px;
+    width: calc((100% - 6px) / var(--n));
+    background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
+    box-shadow: 0 2px 10px rgba(15, 25, 45, .16);
+    transform: translateX(calc(var(--idx) * 100%));
+    transition: transform .28s cubic-bezier(.16,1,.3,1);
+    pointer-events: none;
+  }
+  .seg.defile { display: flex; }
+  .seg.defile .pill { display: none; }
+  .seg button {
+    position: relative; z-index: 1; border: none; background: none;
+    font: inherit; font-size: 1.02rem; font-weight: 500; color: var(--muted);
+    padding: 11px 8px; border-radius: 999px; cursor: pointer; min-height: 48px;
+    min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .seg.defile button { flex: 1 0 auto; padding-left: 18px; padding-right: 18px; }
+  .seg button[aria-selected="true"] { color: var(--ink); font-weight: 700; }
+  .seg.defile button[aria-selected="true"] { background: var(--surface); box-shadow: 0 2px 10px rgba(15,25,45,.16); }
+  .seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* Surnom demandé à l'étape 3 (un mot affiché dans la barre du haut). */
+  #bloc-surnom { margin: 0 0 18px; }
+  #bloc-surnom label { display: block; font-weight: 600; margin: 0 0 8px; }
+  #surnom {
+    width: 100%; font: inherit; font-size: 1rem; color: var(--ink);
+    padding: 13px 16px; border-radius: 14px;
+    border: 1px solid var(--line); background: var(--surface);
+  }
+  #surnom:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .surnom-aide { color: var(--muted); font-size: .88rem; margin: 8px 0 0; }
+
+  /* Choix du thème (Bleu / Vert / Rose) */
+  .theme-select-bloc { margin: 16px 0 20px; }
+  #bloc-theme { margin: 0 0 20px; }
+  .theme-select-titre, #bloc-theme label {
+    display: block; font-size: .88rem; font-weight: 600; color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .choix-themes {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .theme-opt {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 11px 6px; border-radius: 12px;
+    border: 1.5px solid var(--line); background: var(--surface); color: var(--ink);
+    font: inherit; font-size: .92rem; font-weight: 600; cursor: pointer;
+    transition: border-color .15s, background .15s, transform .1s;
+  }
+  .theme-opt:active { transform: scale(.97); }
+  .theme-opt .theme-pastille {
+    width: 13px; height: 13px; border-radius: 50%; flex-shrink: 0;
+  }
+  .theme-opt[aria-checked="true"] {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  /* Feuille : cartes d'horaires + compte, menus en popup depuis les ⋮. */
+  #liste-profils { display: flex; flex-direction: column; gap: 8px; margin: 10px 0 4px; }
+  .pcard {
+    position: relative;
+    border-radius: 12px; border: 1px solid transparent;
+    background: #2a303b; color: #eef1f6;
+  }
+  .pcard.actif { border-color: var(--accent); }
+  .pcard.menu-ouvert { z-index: 20; }
+  .pcard-ligne { display: flex; align-items: center; gap: 4px; padding: 6px 6px 6px 14px; }
+  .pcard-main {
+    flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; text-align: left;
+    border: none; background: none; color: inherit;
+    font: inherit; font-size: .93rem; padding: 8px 0; cursor: pointer;
+  }
+  .pt-point { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .pt-textes { min-width: 0; flex: 1; }
+  .pt-nom { display: block; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pt-detail { display: block; color: #b9c1cf; font-size: .82rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dots {
+    flex: none; width: 44px; height: 44px; border: none; border-radius: 12px;
+    background: none; color: inherit; font-size: 1.25rem; font-weight: 700;
+    cursor: pointer; opacity: .7; line-height: 1;
+  }
+  .dots:active, .dots[aria-expanded="true"] { opacity: 1; background: rgba(128, 128, 128, .2); }
+  /* Popup : flotte au-dessus, naît des ⋮ (origine en haut à droite). */
+  .ppop {
+    position: absolute; top: calc(100% - 4px); right: 8px;
+    width: 240px; max-width: calc(100% - 16px); z-index: 30;
+    border-radius: 14px; padding: 6px;
+    background: #1c2027; color: #eef1f6;
+    box-shadow: 0 0 0 1px var(--line), 0 24px 50px -12px rgba(0, 0, 0, .55);
+    transform-origin: top right;
+  }
+  .ppop:not([hidden]) { animation: pop-apparait .22s cubic-bezier(.16,1,.3,1); }
+  @keyframes pop-apparait {
+    from { opacity: 0; transform: scale(.8) translateY(-6px); }
+    to { opacity: 1; transform: none; }
+  }
+  /* Pas la place en dessous (carte en bas de feuille) : s'ouvre vers le haut. */
+  .ppop.haut { top: auto; bottom: calc(100% - 4px); transform-origin: bottom right; }
+  .ppop.haut:not([hidden]) { animation-name: pop-apparait-haut; }
+  @keyframes pop-apparait-haut {
+    from { opacity: 0; transform: scale(.8) translateY(6px); }
+    to { opacity: 1; transform: none; }
+  }
+  .ppop .pop-act {
+    display: block; width: 100%; border: none; background: none; color: inherit;
+    font: inherit; font-size: .93rem; font-weight: 600; text-align: left;
+    padding: 12px; border-radius: 9px; cursor: pointer;
+  }
+  .ppop .pop-act:active { background: rgba(128, 128, 128, .2); }
+  .ppop .danger-txt { color: #ff9aae; }
+  .ppop .pedit { display: flex; flex-direction: column; gap: 8px; padding: 4px 2px; }
+  .ppop .pedit input {
+    width: 100%; font: inherit; font-size: 15px; color: #fff;
+    background: #2a303b; border: 1px solid rgba(255, 255, 255, .15); border-radius: 10px; padding: 9px 11px;
+  }
+  .ppop .pedit input:focus { border-color: var(--accent); outline: none; }
+  .ppop .pedit-themes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+  .ppop .pedit-theme-btn {
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+    padding: 7px 4px; border-radius: 8px;
+    border: 1.5px solid transparent;
+    background: #2a303b; color: #eef1f6;
+    font: inherit; font-size: .8rem; font-weight: 600; cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+  .ppop .pedit-theme-btn .pedit-pastille {
+    width: 9px; height: 9px; border-radius: 50%; flex: none;
+  }
+  .ppop .pedit-theme-btn[aria-checked="true"] {
+    border-color: #fff; background: rgba(255, 255, 255, .18);
+  }
+  .ppop .pedit-valider {
+    width: 100%; border: none; border-radius: 10px; padding: 9px;
+    background: var(--accent); color: #fff; font: inherit; font-size: .92rem; font-weight: 700; cursor: pointer;
+  }
+  .ppop .pedit-valider:active { transform: scale(.98); }
+  .ppop .pdetails { padding: 8px 10px 10px; font-size: .85rem; color: #b9c1cf; }
+  .ppop .pdetails div { padding: 1px 0; }
+  .ppop .pdetails .k { opacity: .7; }
+  @media (min-width: 1024px) {
+    .pcard { background: var(--seg-track); color: var(--ink); }
+    .pt-detail { color: var(--muted); }
+    .ppop { background: var(--surface); color: var(--ink); }
+    .ppop .pedit input { background: var(--seg-track); color: var(--ink); border-color: var(--line); }
+    .ppop .pedit .pedit-theme-btn {
+      background: var(--seg-track); color: var(--ink); border-color: var(--line);
+    }
+    .ppop .pedit .pedit-theme-btn[aria-checked="true"] {
+      border-color: var(--accent); background: var(--accent-soft); color: var(--accent);
+    }
+    .ppop .pdetails { color: var(--muted); }
+    .ppop .danger-txt { color: #c2274f; }
+  }
+  /* Popup du compte, ancré sous ses ⋮. */
+  #reg-compte { position: relative; }
+  #menu-compte { top: calc(100% + 4px); right: 0; }
+  /* Édition nom/prénom dans le popup du compte. */
+  #reg-edit { display: flex; flex-direction: column; gap: 6px; padding: 2px; }
+  #reg-edit input {
+    width: 100%; font: inherit; font-size: 16px; color: #fff;
+    background: #2a303b; border: 1px solid var(--accent); border-radius: 10px; padding: 10px 12px;
+  }
+  #reg-edit button {
+    width: 100%; border: none; border-radius: 10px; padding: 10px;
+    background: var(--accent); color: #fff; font-size: 1.05rem; font-weight: 700; cursor: pointer;
+  }
+  @media (min-width: 1024px) {
+    #reg-edit input { background: var(--seg-track); color: var(--ink); }
+  }
+  .reg-compte .dots { margin-left: auto; }
+  .reg-qui { flex: 1; }
+  #feuille .danger { background: #4a2430 !important; color: #ffd9e2 !important; }
+  @media (min-width: 1024px) {
+    #feuille .danger { background: #fbe4ea !important; color: #a11e44 !important; }
+  }
+
+  /* Connexion (écran d'entrée). Téléphone : titre, aperçu d'une semaine
+     (qui s'efface vers le bas), puis Google / GitHub côte à côte et
+     l'email. Ordinateur : formulaire à gauche, aperçu en grand à droite.
+     L'aperçu reprend la grille de l'horaire : on voit tout de suite ce
+     qu'on va obtenir. */
+  #v-compte { --sur-accent: #fff; display: flex; flex-direction: column; padding-top: 6px; }
+  @media (prefers-color-scheme: dark) { #v-compte { --sur-accent: #0b1020; } }
+  .entree { display: contents; }
+  .entree-titre {
+    order: 0; margin: 4px 0 20px;
+    font-size: clamp(2.1rem, 9.4vw, 2.6rem); font-weight: 750; line-height: 1.02; letter-spacing: -.045em;
+    text-wrap: balance;
+  }
+  .entree > :not(.entree-titre) { order: 2; }
+  .fournisseurs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .fournisseurs button {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    height: 52px; border: none; border-radius: 14px;
+    background: var(--surface); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line);
+    font: inherit; font-size: 1rem; font-weight: 600; cursor: pointer;
+    transition: box-shadow .15s, transform .12s;
+  }
+  .fournisseurs button svg { flex: none; }
+  .fournisseurs button:active, .btn-entree:active { transform: scale(.98); }
+  .email-sep { display: flex; align-items: center; gap: 14px; color: var(--muted); font-size: .85rem; margin: 18px 0; }
+  .email-sep::before, .email-sep::after { content: ""; height: 1px; background: var(--line); flex: 1; }
+  .champs { display: flex; flex-direction: column; gap: 8px; }
+  .champ {
+    width: 100%; height: 52px; padding: 0 16px; border: none; border-radius: 14px;
+    background: var(--surface); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line);
+    font: inherit; font-size: 16px; -webkit-appearance: none; appearance: none;
+    transition: box-shadow .15s;
+  }
+  .champ::placeholder { color: var(--muted); opacity: .8; }
+  .champ:focus { outline: none; box-shadow: inset 0 0 0 1.5px var(--accent), 0 0 0 4px var(--accent-soft); }
+  .champ-mdp { position: relative; }
+  .champ-mdp .champ { padding-right: 52px; }
+  #voir-mdp {
+    position: absolute; top: 4px; right: 4px; width: 44px; height: 44px;
+    display: grid; place-items: center; border: none; border-radius: 11px;
+    background: none; color: var(--muted); cursor: pointer;
+  }
+  #voir-mdp:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  #voir-mdp[aria-pressed="true"] .barre-oeil { display: none; }
+  .btn-entree {
+    width: 100%; height: 52px; margin-top: 10px; border: none; border-radius: 14px;
+    background: var(--accent); color: var(--sur-accent);
+    font: inherit; font-size: 1rem; font-weight: 700; cursor: pointer;
+    transition: opacity .15s, transform .12s;
+  }
+  #auth-status { margin-top: 4px; padding: 12px 6px 0; font-size: .9rem; }
+  #v-compte .surnom-aide { text-align: center; }
+  #v-identite .recherche { margin-bottom: 10px; }
+
+  /* Aperçu : même anatomie que .cal / .ev (couleurs par teinte), en
+     miniature. Téléphone : 3 jours, coupé vers 13 h par un fondu. */
+  .apercu {
+    order: 1; position: relative; margin: 0 0 22px; height: clamp(160px, 28vh, 250px); overflow: hidden;
+    padding: 12px 12px 0; border-radius: 20px;
+    background: var(--surface); box-shadow: inset 0 0 0 1px var(--line);
+    -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent);
+    mask-image: linear-gradient(to bottom, #000 55%, transparent);
+    user-select: none; -webkit-user-select: none; pointer-events: none;
+  }
+  .ap-tete, .ap-corps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 6px; }
+  .ap-jour:nth-child(n+4), .ap-col:nth-child(n+4) { display: none; }
+  .ap-tete { padding: 0 0 10px; }
+  .ap-jour { display: flex; align-items: center; gap: 6px; padding: 0 4px; }
+  .ap-jour span { color: var(--muted); font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+  .ap-jour strong {
+    display: grid; place-items: center; min-width: 26px; height: 26px; border-radius: 999px;
+    font-size: 1rem; font-weight: 600; letter-spacing: -.03em; font-variant-numeric: tabular-nums;
+  }
+  .ap-jour.today span { color: var(--accent); }
+  .ap-jour.today strong { background: var(--accent); color: var(--sur-accent); }
+  .ap-corps { height: 330px; }
+  .ap-col {
+    --h: 10; position: relative; border-radius: 10px;
+    background-image: linear-gradient(to bottom, var(--line) 1px, transparent 1px);
+    background-size: 100% calc(100% / var(--h));
+  }
+  .ap-col.today { background-color: color-mix(in srgb, var(--accent) 6%, transparent); }
+  .ap-ev {
+    position: absolute; left: 1px; right: 2px; overflow: hidden;
+    top: calc(var(--t) * 1% + 1px); height: calc(var(--d) * 1% - 3px);
+    display: flex; flex-direction: column; gap: 1px; padding: 6px 8px; border-radius: 9px;
+    background: hsl(var(--hue) 92% 95%); color: hsl(var(--hue) 55% 25%);
+    animation: ap-pose .6s cubic-bezier(.16,1,.3,1) both;
+    animation-delay: calc(120ms + var(--i, 0) * 45ms);
+  }
+  .ap-ev b, .ap-ev i, .ap-ev em { display: block; font-style: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ap-ev b { font-size: .74rem; font-weight: 650; letter-spacing: -.005em; }
+  .ap-ev i { font-size: .68rem; font-weight: 600; opacity: .9; }
+  .ap-ev em { font-size: .66rem; opacity: .6; font-variant-numeric: tabular-nums; }
+  .ap-libre {
+    position: absolute; left: 0; right: 0; top: 64%; text-align: center;
+    color: var(--muted); font-size: .8rem; font-weight: 500;
+  }
+  .ap-now {
+    position: absolute; left: -4px; right: 0; height: 2px; z-index: 2;
+    background: #e5484d; border-radius: 2px;
+  }
+  .ap-now::before {
+    content: ""; position: absolute; left: 0; top: -3px;
+    width: 8px; height: 8px; border-radius: 50%; background: #e5484d;
+  }
+  @keyframes ap-pose {
+    from { opacity: 0; transform: translateY(8px) scale(.97); }
+    to { opacity: 1; transform: none; }
+  }
+  @media (prefers-color-scheme: dark) {
+    .ap-ev { background: hsl(var(--hue) 32% 21%); color: #fff; }
+    .ap-ev i, .ap-ev em { opacity: .85; }
+  }
+  /* Petit écran (iPhone SE…) : le formulaire passe avant l'aperçu. */
+  @media (max-width: 1023px) and (max-height: 640px) { .apercu { display: none; } }
+
+  /* Réglages : qui je suis + mes horaires, rien d'autre. */
+  .reg-compte { display: flex; align-items: center; gap: 12px; margin: 10px 0 2px; }
+  .reg-compte .avatar.grand {
+    width: 52px; height: 52px; flex: none; border-radius: 50%;
+    display: grid; place-items: center;
+    background: var(--accent-soft); color: var(--accent);
+    font-weight: 700; font-size: 1.05rem;
+  }
+  #feuille .reg-compte .avatar.grand { background: #2a303b; color: #fff; }
+  @media (min-width: 1024px) {
+    #feuille .reg-compte .avatar.grand { background: var(--accent-soft); color: var(--accent); }
+  }
+  .reg-qui { min-width: 0; }
+  .reg-qui strong { display: block; font-size: 1rem; }
+  .reg-qui span { color: #b9c1cf; font-size: .85rem; }
+  @media (min-width: 1024px) {
+    .reg-qui span { color: var(--muted); }
+  }
+  .reg-section { margin-top: 20px !important; }
+  #avatar-init { font-weight: 700; font-size: .95rem; }
+  .avis {
+    background: var(--accent-soft); border-radius: 14px; padding: 12px 14px;
+    margin: 0 0 14px; font-size: .92rem;
+  }
+  .avis button {
+    border: none; background: none; color: var(--accent); font: inherit;
+    font-weight: 700; padding: 0; cursor: pointer;
+  }
+
+  /* Semaine */
+  .week {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 4px 2px 12px;
+  }
+  .week button.nav {
+    border: none; background: none; color: var(--muted);
+    width: 48px; height: 48px; border-radius: 50%; font-size: 1.5rem;
+    cursor: pointer; flex: none; line-height: 1;
+  }
+  .week button.nav:disabled { opacity: .25; cursor: default; }
+  .week button.nav:not(:disabled):active { transform: scale(.96); }
+  .week .cur { text-align: center; }
+  .week .cur strong { display: block; font-size: 1.02rem; letter-spacing: -.01em; }
+  .week .cur span { font-size: .88rem; color: var(--muted); }
+  .thisweek {
+    display: block; margin: 0 auto 4px; border: none; background: none;
+    color: var(--accent); font: inherit; font-size: .92rem; font-weight: 600;
+    cursor: pointer; padding: 8px 12px;
+  }
+
+  /* Liste des jours : simples lignes */
+  .days { list-style: none; margin: 6px 0 0; padding: 0; }
+  .day { border-top: 1px solid var(--line); }
+  .day:last-child { border-bottom: 1px solid var(--line); }
+  .day > button {
+    width: 100%; border: none; background: none; font: inherit; color: inherit;
+    display: flex; align-items: center; gap: 12px; text-align: left;
+    padding: 16px 4px; cursor: pointer; min-height: 66px; border-radius: 12px;
+  }
+  .day > button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .dot {
+    width: 7px; height: 7px; border-radius: 50%; background: transparent; flex: none;
+  }
+  .day.today .dot { background: var(--accent); }
+  .dname { flex: none; min-width: 118px; }
+  .dname strong { display: block; font-size: 1.02rem; font-weight: 600; letter-spacing: -.01em; }
+  .dname span { font-size: .85rem; color: var(--muted); }
+  .dsum {
+    margin-left: auto; font-size: .98rem; color: var(--muted);
+    font-variant-numeric: tabular-nums; white-space: nowrap; letter-spacing: -.01em;
+  }
+  .dsum.busy { color: var(--ink); font-weight: 600; }
+  .dsum.free { color: var(--free); font-weight: 500; }
+  .chev {
+    flex: none; width: 10px; height: 10px; margin: 0 8px 0 4px;
+    border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted);
+    transform: rotate(45deg); transition: transform .25s cubic-bezier(.16,1,.3,1), border-color .25s;
+  }
+  .day.open .chev { transform: rotate(225deg); border-color: var(--accent); }
+  .day.today .dname strong { font-weight: 700; }
+
+  /* Détail repliable : conteneur en relief, bien démarqué de la ligne du jour */
+  .detail {
+    display: grid; grid-template-rows: 0fr; opacity: 0;
+    transition: grid-template-rows .32s cubic-bezier(.16,1,.3,1), opacity .25s;
+  }
+  .day.open .detail { grid-template-rows: 1fr; opacity: 1; }
+  .detail > div { overflow: hidden; }
+  .detail .box {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    margin: 2px 0 16px;
+    padding: 4px 18px 8px;
+    box-shadow: var(--shadow);
+  }
+  .detail ol { list-style: none; margin: 0; padding: 0; }
+  .detail li.c { padding: 0; }
+  .detail li.c + li.c { border-top: 1px solid var(--line); }
+  .cbtn {
+    width: 100%; border: none; background: none; font: inherit; color: inherit;
+    display: flex; gap: 12px; align-items: baseline; text-align: left;
+    padding: 11px 0; cursor: pointer;
+  }
+  .cbtn .h {
+    flex: none; min-width: 132px;
+    font-variant-numeric: tabular-nums; color: var(--muted); font-size: .93rem;
+    padding-top: 1px;
+  }
+  .cbtn .m { font-weight: 500; flex: 1; }
+  .minichev {
+    flex: none; width: 7px; height: 7px; align-self: center;
+    border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted);
+    transform: rotate(45deg); transition: transform .25s cubic-bezier(.16,1,.3,1), border-color .25s;
+  }
+  li.c.open .minichev { transform: rotate(225deg); border-color: var(--accent); }
+  /* Sous-détail du cours : prof + salle */
+  .csub {
+    display: grid; grid-template-rows: 0fr; opacity: 0;
+    transition: grid-template-rows .28s cubic-bezier(.16,1,.3,1), opacity .22s;
+  }
+  li.c.open .csub { grid-template-rows: 1fr; opacity: 1; }
+  .csub > div { overflow: hidden; }
+  .csub-in { padding: 0 0 12px 144px; font-size: .88rem; }
+  .csub-in div { padding: 1px 0; }
+  .csub-in .k { color: var(--muted); }
+  .csub-in .nc { color: var(--muted); font-style: italic; }
+  /* Pause : pastille symétrique, sans filets parasites */
+  .detail li.p {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 0; color: var(--muted);
+    font-size: .8rem; font-weight: 600; letter-spacing: .03em;
+    white-space: nowrap;
+  }
+  .detail li.p::before, .detail li.p::after {
+    content: ""; height: 1px; background: var(--line); flex: 1;
+  }
+
+  .empty {
+    text-align: center; color: var(--muted); padding: 34px 10px; font-size: 1rem;
+  }
+
+  /* Lien PDF officiel de la semaine */
+  .official {
+    display: flex; align-items: center; justify-content: center;
+    margin: 22px 0 0; padding: 14px; width: 100%;
+    border: 1px solid var(--line); border-radius: 16px;
+    background: var(--surface); color: var(--ink);
+    font: inherit; font-size: .98rem; font-weight: 600; cursor: pointer;
+    text-decoration: none;
+  }
+  .official:active { transform: scale(.99); }
+  .official:disabled { opacity: .6; cursor: wait; }
+
+  /* Visionneuse PDF intégrée, juste sous le bouton, à la largeur de l'écran.
+     Le PDF se zoome sur place, isolé du reste du site. */
+  #pdf-zone { margin: 12px -16px 0; }
+  #pdf-zone[hidden] { display: none; }
+  /* Texte d'attente : un reflet balaie les lettres de gauche à droite,
+     en boucle jusqu'à l'arrivée du PDF, puis le texte disparaît.
+     Fluide même pendant le téléchargement : uniquement des transform,
+     animés par la carte graphique (aucun repeint image par image).
+     Une copie claire du texte est vue à travers une fenêtre adoucie qui
+     glisse ; la copie glisse en sens inverse et reste donc immobile.
+     La fenêtre a la largeur exacte du texte et va à vitesse constante :
+     la lumière entre sur la première lettre dès qu'elle quitte la
+     dernière, sans aucun temps mort entre deux passages. */
+  .pdf-status {
+    overflow: hidden;
+    margin: 0; padding: 18px 10px; text-align: center;
+    font-size: .95rem; font-weight: 600; color: var(--muted);
+  }
+  .pdf-status.erreur { color: var(--ink); }
+  .pdf-texte { position: relative; display: inline-block; }
+  .pdf-reflet, .pdf-reflet > span {
+    position: absolute; inset: 0;
+    will-change: transform;
+    animation: pdf-reflet 1.3s linear infinite;
+  }
+  .pdf-reflet {
+    overflow: hidden; pointer-events: none;
+    -webkit-mask-image: linear-gradient(90deg, transparent 36%, #000 50%, transparent 64%);
+    mask-image: linear-gradient(90deg, transparent 36%, #000 50%, transparent 64%);
+  }
+  .pdf-reflet > span { color: var(--ink); animation-name: pdf-reflet-inverse; }
+  /* ±64 % : la bande (36–64 % de la fenêtre) est tout juste hors du
+     texte aux deux extrémités, donc le saut de boucle est invisible. */
+  @keyframes pdf-reflet {
+    from { transform: translateX(-64%); }
+    to { transform: translateX(64%); }
+  }
+  @keyframes pdf-reflet-inverse {
+    from { transform: translateX(64%); }
+    to { transform: translateX(-64%); }
+  }
+  .pdf-frame {
+    display: block; width: 100%; height: 72vh; min-height: 420px;
+    border: none; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+    background: var(--surface); box-shadow: var(--shadow);
+  }
+  /* Le zoom agrandit réellement le PDF (largeur ET hauteur) : la hauteur
+     suit le zoom, la page défile verticalement comme d'habitude et seul
+     le débord horizontal défile dans le cadre. Le pincement est capturé :
+     seul le PDF zoome, jamais le site. */
+  .pdf-apercu { position: relative; overflow-anchor: none; }
+  .pdf-pince {
+    overflow-x: auto; overflow-y: hidden;
+    touch-action: pan-x pan-y; overscroll-behavior-x: contain;
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+    scrollbar-width: none;
+  }
+  .pdf-pince::-webkit-scrollbar { display: none; }
+  /* Pages rendues en images : 100 % de largeur au repos, entièrement
+     visibles, rien n'est coupé. Le zoom élargit ce bloc (200 %, 300 %…). */
+  .pdf-pages { width: 100%; margin: 0 auto; }
+  .pdf-pages canvas { display: block; width: 100%; height: auto; background: #fff; }
+  .pdf-pages canvas + canvas { border-top: 1px solid var(--line); }
+  /* Bouton flottant pour revenir à la taille normale : collé en bas de
+     l'écran tant que le PDF zoomé est visible, masqué au repos. */
+  .pdf-dezoom {
+    position: sticky; bottom: calc(16px + env(safe-area-inset-bottom));
+    display: block; width: fit-content; margin: -58px auto 16px; padding: 11px 18px;
+    border: none; border-radius: 999px;
+    background: rgba(23, 25, 29, .84); color: #fff;
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    box-shadow: 0 8px 24px -8px rgba(0, 0, 0, .45);
+    font: inherit; font-size: .9rem; font-weight: 600; cursor: pointer;
+    opacity: 0; transform: translateY(8px) scale(.96); pointer-events: none;
+    transition: opacity .2s ease, transform .2s ease;
+  }
+  .pdf-dezoom.visible { opacity: 1; transform: none; pointer-events: auto; }
+  .pdf-astuce {
+    margin: 0; padding: 10px 16px 0; text-align: center;
+    font-size: .85rem; color: var(--muted);
+  }
+  footer { text-align: center; color: var(--muted); font-size: .8rem; margin-top: 18px; }
+
+  /* Feuille « Mon horaire », se ferme en glissant vers le bas
+     (attrapable de n'importe où, le fond ne défile pas pendant le geste) */
+  #feuille {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+    background: #1c2027; color: #eef1f6;
+    border-radius: 18px 18px 0 0; padding: 6px 18px calc(20px + env(safe-area-inset-bottom));
+    font-size: .92rem;
+    transform: translateY(105%); visibility: hidden;
+    transition: transform .32s cubic-bezier(.16,1,.3,1), visibility 0s linear .32s;
+    touch-action: none;
+    overscroll-behavior: contain;
+    user-select: none; -webkit-user-select: none;
+  }
+  #feuille button { user-select: none; -webkit-user-select: none; }
+  body.sheet-ouverte { overflow: hidden; }
+  #feuille.visible {
+    transform: translateY(0); visibility: visible;
+    transition: transform .32s cubic-bezier(.16,1,.3,1);
+  }
+  #feuille.dragging { transition: none; }
+  .grabber-zone { padding: 10px 0 8px; touch-action: none; cursor: grab; }
+  .grabber {
+    display: block; width: 42px; height: 5px; border-radius: 999px;
+    background: #3a4150; margin: 0 auto;
+  }
+  #feuille h2 { margin: 2px 0 8px; font-size: 1rem; }
+  #feuille p { margin: 6px 0; color: #b9c1cf; }
+  #feuille .row { display: flex; gap: 8px; margin-top: 12px; }
+  #feuille button {
+    padding: 12px; border-radius: 12px; border: none;
+    font-size: .95rem; font-weight: 700; cursor: pointer;
+  }
+  #feuille .row button { flex: 1; background: #2a303b; color: #eef1f6; }
+
+  /* Demande de confirmation custom (remplace window.confirm) :
+     voile flouté + carte centrée, même langage que le reste de l'app. */
+  #voile-confirm {
+    position: fixed; inset: 0; z-index: 100;
+    display: grid; place-items: center; padding: 20px;
+    background: rgba(10, 12, 16, .5);
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    overscroll-behavior: contain;
+  }
+  #voile-confirm:not([hidden]) { animation: voile-apparait .2s ease-out; }
+  @keyframes voile-apparait { from { opacity: 0; } to { opacity: 1; } }
+  body.confirm-ouverte { overflow: hidden; }
+  #boite-confirm {
+    width: min(400px, 100%);
+    background: var(--surface); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 24px;
+    box-shadow: 0 32px 80px -24px rgba(0, 0, 0, .5), var(--shadow);
+    padding: 26px 22px 18px; text-align: center;
+    transform-origin: center;
+  }
+  #voile-confirm:not([hidden]) #boite-confirm {
+    animation: confirm-apparait .3s cubic-bezier(.16,1,.3,1);
+  }
+  @keyframes confirm-apparait {
+    from { opacity: 0; transform: translateY(12px) scale(.94); }
+    to { opacity: 1; transform: none; }
+  }
+  #confirm-icone {
+    width: 54px; height: 54px; margin: 0 auto 14px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: rgba(229, 72, 77, .12); color: #e5484d;
+  }
+  #boite-confirm.info #confirm-icone {
+    background: var(--accent-soft); color: var(--accent);
+  }
+  #confirm-titre {
+    margin: 0 0 8px; font-size: 1.15rem; font-weight: 750; letter-spacing: -.02em;
+  }
+  #confirm-msg {
+    margin: 0 0 20px; color: var(--muted); font-size: .95rem; line-height: 1.5;
+  }
+  #confirm-msg strong { color: var(--ink); font-weight: 700; }
+  #confirm-actions { display: flex; gap: 10px; }
+  #confirm-actions button {
+    flex: 1; padding: 13px 10px; border: none; border-radius: 14px;
+    font: inherit; font-size: .98rem; font-weight: 700; cursor: pointer;
+    transition: transform .12s, opacity .12s, background .15s;
+  }
+  #confirm-actions button:active { transform: scale(.98); }
+  #confirm-non { background: var(--seg-track); color: var(--ink); }
+  #confirm-non:hover { opacity: .85; }
+  #confirm-oui { background: #e5484d; color: #fff; }
+  #confirm-oui:hover { opacity: .9; }
+  #boite-confirm.info #confirm-oui { background: var(--accent); }
+  @media (min-width: 1024px) {
+    #boite-confirm { padding: 28px 26px 20px; }
+    #confirm-actions button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    #confirm-oui:focus-visible { outline-color: #e5484d; }
+  }
+
+  /* Rechargement visible (< 1 s) : barre fine + contenu qui s'efface,
+     puis les jours réapparaissent en cascade sur la nouvelle page */
+  #barre-recharge {
+    position: fixed; top: env(safe-area-inset-top, 0); left: 0; right: 0;
+    height: 3px; z-index: 60; pointer-events: none;
+    background: var(--accent); border-radius: 0 3px 3px 0;
+    transform-origin: left; transform: scaleX(0); opacity: 0;
+  }
+  body.depart #barre-recharge {
+    opacity: 1; transform: scaleX(.85);
+    transition: transform .26s cubic-bezier(.3,.7,.4,1);
+  }
+  body.arrivee #barre-recharge { animation: barre-fin .4s ease-out; }
+  @keyframes barre-fin {
+    0% { opacity: 1; transform: scaleX(.85); }
+    55% { opacity: 1; transform: scaleX(1); }
+    100% { opacity: 0; transform: scaleX(1); }
+  }
+  .week, .thisweek, .days { transition: opacity .22s ease, transform .22s ease; }
+  body.depart .week, body.depart .thisweek, body.depart .days {
+    opacity: .3; transform: translateY(-4px);
+  }
+  body.arrivee .week, body.arrivee .days > li {
+    animation: apparait .32s cubic-bezier(.16,1,.3,1) both;
+  }
+  body.arrivee .days > li:nth-child(2) { animation-delay: .03s; }
+  body.arrivee .days > li:nth-child(3) { animation-delay: .06s; }
+  body.arrivee .days > li:nth-child(4) { animation-delay: .09s; }
+  body.arrivee .days > li:nth-child(5) { animation-delay: .12s; }
+  body.arrivee .days > li:nth-child(6) { animation-delay: .15s; }
+  body.arrivee .days > li:nth-child(n+7) { animation-delay: .18s; }
+  @keyframes apparait {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  /* Éléments propres à l'ordinateur : absents sur téléphone. */
+  .cal, .pdf-tete, .moi-txt, .etape-n, #pop, .official svg { display: none; }
+  .thisweek.cache { display: none; }
+  .avatar { display: grid; place-items: center; }
+
+  /* ================= Ordinateur =================
+     Une vraie app de bureau : barre fixe en haut, semaine en grille
+     horaire qui tient dans l'écran, PDF dans un panneau latéral avec ses
+     propres outils de zoom. Le téléphone garde sa vue en liste. */
+  @media (min-width: 1024px) {
+    body { font-size: 15px; }
+    .wrap { max-width: 1560px; padding: 0 32px 24px; }
+    button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    /* Barre du haut : invisible, le dégradé du fond part du tout haut
+       du site comme s'il n'y avait pas de header (aucun fond, aucun flou). */
+    .topbar {
+      position: sticky; top: 0; z-index: 30;
+      justify-content: flex-start; gap: 14px;
+      min-height: 72px; margin: 0 -32px; padding: 0 32px;
+      background: transparent;
+      -webkit-backdrop-filter: none; backdrop-filter: none;
+      -webkit-mask-image: none;
+      mask-image: none;
+    }
+    .title { font-size: 1.12rem; letter-spacing: -.02em; }
+    .topbar .gauche, .topbar .droite { position: static; transform: none; }
+    .topbar .gauche {
+      order: 1; min-height: 34px; padding: 0 14px; border-radius: 999px;
+      background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--line);
+      font-size: .88rem; font-weight: 600; transition: background .15s;
+    }
+    .topbar .gauche:hover { background: var(--accent-soft); color: var(--accent); }
+    .topbar .droite {
+      order: 2; margin-left: auto; width: 40px; height: 40px; padding: 0;
+      display: grid; place-items: center; border-radius: 50%;
+      background: var(--accent-soft); color: var(--accent); border: none; box-shadow: none;
+      font-size: .95rem; font-weight: 700; transition: opacity .15s, transform .15s;
+    }
+    .topbar .droite:hover { opacity: .85; transform: scale(1.04); }
+    .topbar .droite:active { transform: scale(.96); }
+    .moi-txt { display: none; }
+    .topbar .droite .avatar svg { width: 18px; height: 18px; }
+
+    /* Choix de l'école, de la formation et des groupes */
+    #v-compte, #v-identite, #v-ecole, #v-formation, #v-groupes { max-width: 880px; margin: 0 auto; padding: 64px 0 40px; }
+
+    /* Connexion : formulaire à gauche, semaine type à droite, le tout
+       centré dans la hauteur de la fenêtre. */
+    #v-compte {
+      display: grid; align-items: center; column-gap: clamp(48px, 6vw, 96px);
+      grid-template-columns: minmax(340px, 400px) minmax(0, 1fr);
+      max-width: 1200px; padding: 24px 0 48px;
+      min-height: calc(100vh - 96px); min-height: calc(100dvh - 96px);
+    }
+    .entree { display: block; }
+    .entree-titre { margin: 0 0 36px; font-size: 3.6rem; }
+    .fournisseurs button:hover { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--muted) 55%, transparent); }
+    .btn-entree:hover { opacity: .9; }
+    .apercu {
+      margin: 0; height: min(560px, calc(100dvh - 180px)); padding: 18px 18px 0;
+      border-radius: 28px; box-shadow: inset 0 0 0 1px var(--line), var(--shadow);
+      -webkit-mask-image: linear-gradient(to bottom, #000 72%, transparent);
+      mask-image: linear-gradient(to bottom, #000 72%, transparent);
+    }
+    .ap-tete, .ap-corps { grid-template-columns: repeat(5, minmax(0, 1fr)); column-gap: 8px; }
+    .ap-jour:nth-child(n+4), .ap-col:nth-child(n+4) { display: flex; }
+    .ap-col:nth-child(n+4) { display: block; }
+    .ap-tete { padding-bottom: 14px; }
+    .ap-jour { gap: 8px; padding: 0 8px; }
+    .ap-jour strong { min-width: 32px; height: 32px; font-size: 1.2rem; }
+    .ap-corps { height: 600px; }
+    .ap-ev { gap: 2px; padding: 8px 10px; border-radius: 10px; }
+    .ap-ev b { font-size: .82rem; }
+    .ap-ev i { font-size: .76rem; }
+    .ap-ev em { font-size: .72rem; }
+    .etape-n {
+      display: block; margin: 0 0 14px; color: var(--accent);
+      font-size: .78rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+    }
+    .q { font-size: 3rem; font-weight: 700; letter-spacing: -.045em; line-height: 1.02; margin: 0 0 12px; }
+    .aide { font-size: 1.08rem; margin: 0 0 32px; max-width: 60ch; }
+    .recherche {
+      padding: 17px 22px; margin: 0 0 20px; border: none; border-radius: 18px; font-size: 1.05rem;
+      box-shadow: 0 0 0 1px var(--line), var(--shadow);
+    }
+    .recherche:focus { outline: none; box-shadow: 0 0 0 2px var(--accent), var(--shadow); }
+    .liste { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    #liste-ecoles { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+    .liste li + li { border-top: none; }
+    .liste li.empty { grid-column: 1 / -1; }
+    .liste button {
+      height: 100%; padding: 16px 18px; min-height: 62px; border-radius: 16px;
+      background: var(--surface); box-shadow: 0 0 0 1px var(--line);
+      transition: box-shadow .18s, transform .18s;
+    }
+    #liste-ecoles button { padding: 22px 22px; }
+    #liste-ecoles .nom { font-size: 1.15rem; font-weight: 700; }
+    .liste button:hover { box-shadow: 0 0 0 1.5px var(--accent), var(--shadow); transform: translateY(-1px); }
+    .liste button:active { background: var(--surface); transform: none; }
+    .liste .chev { opacity: 0; transition: opacity .18s; border-color: var(--accent); }
+    .liste button:hover .chev { opacity: 1; }
+    .chips { gap: 10px; margin-bottom: 32px; }
+    .chip { padding: 10px 18px; transition: background .15s, border-color .15s, color .15s, transform .15s; }
+    .chip:hover { border-color: var(--accent); }
+    .primaire {
+      width: fit-content; margin-left: auto; padding: 15px 32px; border-radius: 999px;
+      bottom: 24px; transition: transform .15s, box-shadow .15s;
+    }
+    .primaire:hover { transform: translateY(-1px); }
+
+    /* Horaire : barre d'outils, grille de la semaine, panneau PDF */
+    .profil-ligne { display: none; }
+    #seg { max-width: 560px; margin-bottom: 16px; }
+    #v-horaire .seg { max-width: 560px; }
+    #horaire-contenu {
+      display: grid; column-gap: 10px; row-gap: 18px;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      grid-template-areas: "week auj pdfbtn" "cal cal cal" "foot foot foot";
+      /* 170px = barre du haut (72) + sélecteur d'horaire (~54 + 16 de marge)
+         + marge basse de page (~24) : sans ça le bas de la grille dépasse
+         de la fenêtre et le pied de page (« Mis à jour… ») est coupé. */
+      height: calc(100vh - 170px);
+      height: calc(100dvh - 170px);
+      min-height: 480px; padding-top: 8px;
+    }
+    #horaire-contenu.pdf-ouvert {
+      grid-template-columns: minmax(0, 1fr) auto auto minmax(400px, 46%);
+      grid-template-areas: "week auj pdfbtn pdf" "cal cal cal pdf" "foot foot foot pdf";
+    }
+    .pdf-ouvert .cal-jour small { display: none; }
+    .pdf-ouvert .week .cur span { display: none; }
+    #horaire-contenu.pdf-ouvert #pdf-zone { margin-left: 14px; }
+    .week { grid-area: week; justify-content: flex-start; gap: 6px; padding: 0; }
+    .week .cur {
+      order: -1; margin-right: auto; text-align: left;
+      display: flex; align-items: baseline; gap: 14px; min-width: 0;
+    }
+    .week .cur strong { display: inline; font-size: 2.1rem; font-weight: 700; letter-spacing: -.045em; }
+    .week .cur span { font-size: 1rem; white-space: nowrap; }
+    .week button.nav, .thisweek, .official {
+      height: 40px; border-radius: 999px; border: none;
+      background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--line);
+      transition: background .15s, color .15s, box-shadow .15s, opacity .15s;
+    }
+    .week button.nav { width: 40px; font-size: 1.3rem; }
+    .week button.nav:not(:disabled):hover, .thisweek:hover { background: var(--accent-soft); color: var(--accent); }
+    .thisweek {
+      grid-area: auj; align-self: center; margin: 0; padding: 0 18px;
+      color: var(--ink); font-size: .9rem;
+    }
+    .thisweek.cache { display: block; opacity: .4; pointer-events: none; }
+    .official {
+      grid-area: pdfbtn; align-self: center; width: auto; margin: 0; padding: 0 18px 0 15px;
+      display: flex; gap: 8px; font-size: .9rem;
+      background: var(--ink); color: var(--bg); box-shadow: none;
+    }
+    .official svg { display: block; }
+    .official .sm { display: none; }
+    .official:hover { opacity: .88; }
+    .official[aria-expanded="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--line); }
+    footer { grid-area: foot; margin: 0; text-align: left; }
+    footer p { margin: 0; }
+
+    /* Grille de la semaine */
+    .days { display: none; }
+    .cal {
+      grid-area: cal; display: flex; flex-direction: column; min-height: 0;
+      padding: 16px 18px 18px 0; border-radius: 24px;
+      background: var(--surface); box-shadow: 0 0 0 1px var(--line), var(--shadow);
+    }
+    .cal-tete, .cal-corps {
+      display: grid; column-gap: 8px;
+      grid-template-columns: 58px repeat(var(--n), minmax(0, 1fr));
+    }
+    .cal-tete { padding-bottom: 14px; }
+    .cal-jour { display: flex; align-items: center; gap: 8px; padding: 0 8px; min-width: 0; }
+    .cal-jour span {
+      color: var(--muted); font-size: .74rem; font-weight: 700;
+      letter-spacing: .08em; text-transform: uppercase;
+    }
+    .cal-jour strong {
+      display: grid; place-items: center; min-width: 34px; height: 34px; border-radius: 999px;
+      font-size: 1.3rem; font-weight: 600; letter-spacing: -.03em; font-variant-numeric: tabular-nums;
+    }
+    .cal-jour.today span { color: var(--accent); }
+    .cal-jour.today strong { background: var(--accent); color: #fff; }
+    .cal-jour small {
+      margin-left: auto; color: var(--muted); font-size: .76rem;
+      font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .cal-jour small.libre { color: var(--free); }
+    .cal-corps { flex: 1; min-height: 0; }
+    .cal-heures { position: relative; }
+    .cal-heures span {
+      position: absolute; right: 12px; transform: translateY(-50%);
+      color: var(--muted); font-size: .72rem; font-variant-numeric: tabular-nums;
+    }
+    .cal-col {
+      position: relative; border-radius: 12px;
+      background-image: linear-gradient(to bottom, var(--line) 1px, transparent 1px);
+      background-size: 100% calc(100% / var(--h));
+    }
+    .cal-col.today { background-color: color-mix(in srgb, var(--accent) 5%, transparent); }
+    .cal-libre {
+      position: absolute; inset: 0; display: grid; place-items: center;
+      color: var(--muted); font-size: .88rem; font-weight: 500;
+    }
+    .ev {
+      position: absolute; overflow: hidden;
+      top: calc(var(--t) * 1% + 1px); height: calc(var(--d) * 1% - 3px);
+      left: calc(var(--l) * 100% + 1px); width: calc(var(--w) * 100% - 3px);
+      display: flex; flex-direction: column; gap: 2px;
+      padding: 7px 10px; border: none; border-radius: 10px; text-align: left; cursor: pointer;
+      font: inherit; background: hsl(var(--hue) 92% 95%); color: hsl(var(--hue) 55% 25%);
+      transition: transform .16s cubic-bezier(.16,1,.3,1), box-shadow .16s;
+      isolation: isolate; /* le fond reste un calque derrière, jamais devant le texte */
+    }
+    /* Le texte peint toujours au-dessus du bloc coloré. */
+    .ev > span { position: relative; z-index: 1; }
+    .ev:hover, .ev.actif {
+      z-index: 2; transform: translateY(-1px);
+      box-shadow: 0 10px 24px -12px hsl(var(--hue) 60% 30% / .5);
+    }
+    .ev.actif { box-shadow: 0 0 0 2px hsl(var(--hue) 70% 55%), 0 10px 24px -12px hsl(var(--hue) 60% 30% / .5); }
+    .ev .et {
+      font-size: .82rem; font-weight: 650; line-height: 1.25; letter-spacing: -.005em;
+      display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden;
+    }
+    /* Hiérarchie de lecture : titre > salle > prof > horaires.
+       Les formats s'identifient seuls (code de salle, nom, heures en « h ») :
+       pas de libellés répétés sur chaque case, seule la typo distingue
+       les niveaux. L'ordre du HTML donne aussi l'ordre de rognage :
+       quand une petite case déborde, les horaires sautent en premier. */
+    .ev .eh, .ev .ep, .ev .es { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ev .es { font-size: .78rem; font-weight: 600; opacity: .92; }
+    .ev .ep { font-size: .74rem; opacity: .72; }
+    .ev .eh { font-size: .72rem; font-weight: 500; opacity: .58; font-variant-numeric: tabular-nums; }
+    .ev.court { flex-direction: row; align-items: baseline; gap: 8px; padding-top: 4px; }
+    .ev.court .et { -webkit-line-clamp: 1; flex: 1; min-width: 0; }
+    .ev.court .es { flex: none; max-width: 36%; min-width: 0; font-size: .74rem; }
+    .ev.court .ep { flex: none; max-width: 32%; min-width: 0; }
+    /* En ligne courte, les horaires sautent en premier (la position dans
+       la grille + la bulle les donnent) ; sans salle ni prof, on garde
+       les horaires plutôt qu'un titre seul. */
+    .ev.court .eh { display: none; }
+    .ev.court:not(:has(.es)):not(:has(.ep)) .eh { display: block; flex: none; }
+    .cal-now {
+      position: absolute; left: -5px; right: 0; height: 2px; z-index: 3; pointer-events: none;
+      background: #e5484d; border-radius: 2px;
+    }
+    .cal-now::before {
+      content: ""; position: absolute; left: 0; top: -4px;
+      width: 10px; height: 10px; border-radius: 50%; background: #e5484d;
+    }
+
+    /* Détail d'un cours, en bulle flottante */
+    #pop {
+      display: block; position: fixed; z-index: 40; width: 320px;
+      padding: 20px 22px; border-radius: 20px;
+      background: var(--surface); color: var(--ink);
+      box-shadow: 0 0 0 1px var(--line), 0 28px 60px -24px rgba(15, 20, 40, .4);
+      opacity: 0; visibility: hidden; transform: translateY(4px) scale(.98);
+      transition: opacity .16s, transform .2s cubic-bezier(.16,1,.3,1), visibility 0s linear .2s;
+    }
+    #pop.visible { opacity: 1; visibility: visible; transform: none; transition: opacity .16s, transform .2s cubic-bezier(.16,1,.3,1); }
+    #pop .pt { display: flex; gap: 10px; align-items: baseline; margin: 0 0 4px; font-size: 1.08rem; font-weight: 700; letter-spacing: -.015em; line-height: 1.3; }
+    #pop .pt::before {
+      content: ""; flex: none; width: 10px; height: 10px; border-radius: 3px;
+      background: hsl(var(--hue) 70% 55%); transform: translateY(-1px);
+    }
+    #pop .ph { margin: 0 0 0 20px; color: var(--muted); font-size: .9rem; font-variant-numeric: tabular-nums; }
+    #pop dl { display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; margin: 16px 0 0 20px; font-size: .88rem; }
+    #pop dt { color: var(--muted); }
+    #pop dd { margin: 0; }
+    #pop .nc { color: var(--muted); font-style: italic; }
+
+    /* Panneau PDF */
+    #pdf-zone {
+      grid-area: pdf; margin: 0; min-height: 0; overflow: hidden;
+      display: flex; flex-direction: column;
+      border-radius: 24px; background: var(--surface); box-shadow: 0 0 0 1px var(--line), var(--shadow);
+    }
+    .pdf-tete { display: flex; align-items: center; gap: 12px; padding: 12px 12px 12px 20px; }
+    .pdf-titre { flex: 1; min-width: 0; line-height: 1.25; }
+    .pdf-titre strong { display: block; font-size: .95rem; letter-spacing: -.01em; }
+    .pdf-titre span { color: var(--muted); font-size: .8rem; }
+    .pdf-outils { display: flex; align-items: center; gap: 2px; padding: 3px; border-radius: 999px; background: var(--seg-track); }
+    .pdf-outil {
+      display: grid; place-items: center; min-width: 32px; height: 32px; padding: 0 8px;
+      border: none; border-radius: 999px; background: none; color: var(--ink);
+      font: inherit; font-size: .82rem; font-weight: 600; cursor: pointer; text-decoration: none;
+      font-variant-numeric: tabular-nums; transition: background .15s;
+    }
+    .pdf-outil:hover:not(:disabled) { background: var(--surface); }
+    .pdf-outil:disabled { opacity: .35; cursor: default; }
+    #pdf-niveau { min-width: 58px; }
+    .pdf-fermer { background: var(--seg-track); width: 38px; height: 38px; }
+    #pdf-zone .pdf-status { margin: auto 0; }
+    .pdf-apercu { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+    .pdf-pince {
+      flex: 1; min-height: 0; overflow: auto;
+      background: var(--seg-track); scrollbar-width: thin;
+      -webkit-user-select: auto; user-select: auto;
+    }
+    .pdf-pince::-webkit-scrollbar { display: block; width: 10px; height: 10px; }
+    .pdf-pince::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--muted) 45%, transparent); border-radius: 10px; border: 2px solid transparent; background-clip: padding-box; }
+    .pdf-pages { padding: 18px; }
+    .pdf-pages canvas { border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,.08), 0 8px 24px -12px rgba(0,0,0,.25); }
+    .pdf-pages canvas + canvas { border-top: none; margin-top: 14px; }
+    .pdf-pages:has(.pdf-frame) { height: 100%; padding: 0; }
+    .pdf-frame { height: 100%; min-height: 0; border: none; box-shadow: none; }
+    .pdf-dezoom { display: none; }
+    .pdf-astuce { padding: 10px 16px 12px; font-size: .78rem; }
+
+    /* « Mon horaire » : menu déroulant sous le profil */
+    #feuille {
+      left: auto; right: 32px; top: 76px; bottom: auto; width: 380px;
+      padding: 20px 20px 16px; border-radius: 22px;
+      background: var(--surface); color: var(--ink);
+      box-shadow: 0 0 0 1px var(--line), 0 28px 60px -24px rgba(15, 20, 40, .4);
+      transform: translateY(-6px) scale(.98); transform-origin: top right; opacity: 0;
+      transition: transform .2s cubic-bezier(.16,1,.3,1), opacity .16s, visibility 0s linear .2s;
+      touch-action: auto; user-select: auto; -webkit-user-select: auto;
+    }
+    #feuille.visible { transform: none; opacity: 1; transition: transform .2s cubic-bezier(.16,1,.3,1), opacity .16s; }
+    .grabber-zone { display: none; }
+    body.sheet-ouverte { overflow: auto; }
+    #feuille h2 { margin: 0 0 6px; font-size: 1.05rem; letter-spacing: -.01em; }
+    #feuille p { color: var(--muted); }
+    #feuille .row button { background: var(--seg-track); color: var(--ink); transition: background .15s; }
+    #feuille .row button:hover { background: var(--accent-soft); color: var(--accent); }
+  }
+  @media (min-width: 1024px) and (prefers-color-scheme: dark) {
+    .ev { background: hsl(var(--hue) 32% 21%); color: #fff; }
+    .ev:hover, .ev.actif { box-shadow: 0 10px 24px -12px rgba(0, 0, 0, .7); }
+    .ev.actif { box-shadow: 0 0 0 2px hsl(var(--hue) 70% 65%), 0 10px 24px -12px rgba(0, 0, 0, .7); }
+    .ev .es, .ev .ep, .ev .eh { opacity: 1; color: #fff; }
+    .pdf-pages canvas { box-shadow: 0 8px 24px -12px rgba(0,0,0,.8); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ev, #pop, .liste button { transition: none; }
+    .chev, .minichev, .detail, .csub,
+    .week, .thisweek, .days, #feuille { transition: none; }
+    .ppop:not([hidden]) { animation: none; }
+    #voile-confirm:not([hidden]), #voile-confirm:not([hidden]) #boite-confirm { animation: none; }
+    body.arrivee .week, body.arrivee .days > li, body.arrivee #barre-recharge { animation: none; }
+    .pdf-reflet { display: none; }
+    .pdf-dezoom { transition: none; }
+    .ap-ev { animation: none; }
+  }
+</style>
+</head>
+<body>
+<div id="barre-recharge" aria-hidden="true"></div>
+<div class="wrap">
+  <div class="topbar">
+    <button class="gauche" id="btn-retour" type="button" hidden>‹ Retour</button>
+    <h1 class="title">Ez<span>Horaire</span></h1>
+    <button class="droite" id="btn-moi" type="button" aria-label="Réglages" hidden>
+      <span class="moi-txt" id="moi-txt"></span>
+      <span class="avatar" id="avatar"><span id="avatar-init" hidden></span><svg id="avatar-icone" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></span>
+    </button>
+  </div>
+
+  <!-- 0. Connexion (écran d'entrée : on se connecte avant tout) -->
+  <section id="v-compte" hidden>
+    <div class="entree">
+      <h2 class="entree-titre">Des horaires pratiques et lisibles.</h2>
+      <div class="fournisseurs">
+        <button type="button" data-auth="google" aria-label="Continuer avec Google">
+          <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+            <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/>
+            <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/>
+            <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/>
+            <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/>
+          </svg>
+          <span>Google</span>
+        </button>
+        <button type="button" data-auth="github" aria-label="Continuer avec GitHub">
+          <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+          </svg>
+          <span>GitHub</span>
+        </button>
+      </div>
+      <p class="email-sep" aria-hidden="true"><span>ou</span></p>
+      <div class="champs">
+        <input class="champ" id="email" type="email" maxlength="120" placeholder="Adresse email"
+               aria-label="Adresse email" autocomplete="email" autocorrect="off" autocapitalize="off" spellcheck="false">
+        <div class="champ-mdp">
+          <input class="champ" id="mdp" type="password" maxlength="120" placeholder="Mot de passe"
+                 aria-label="Mot de passe (6 caractères minimum)" autocomplete="current-password">
+          <button type="button" id="voir-mdp" aria-label="Afficher le mot de passe" aria-pressed="false">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>
+              <path class="barre-oeil" d="M4 4l16 16"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <button type="button" class="btn-entree" id="btn-email">Continuer</button>
+      <p class="pdf-status" id="auth-status" role="status" hidden></p>
+      <p class="surnom-aide" id="auth-note" hidden></p>
+    </div>
+
+    <!-- Aperçu décoratif : une semaine type, dans le style de la grille de l'app. -->
+    <div class="apercu" aria-hidden="true">
+      <div class="ap-tete">
+        <div class="ap-jour"><span>Lun</span><strong></strong></div>
+        <div class="ap-jour"><span>Mar</span><strong></strong></div>
+        <div class="ap-jour"><span>Mer</span><strong></strong></div>
+        <div class="ap-jour"><span>Jeu</span><strong></strong></div>
+        <div class="ap-jour"><span>Ven</span><strong></strong></div>
+      </div>
+      <div class="ap-corps">
+        <div class="ap-col">
+          <div class="ap-ev" style="--hue:221;--t:5;--d:20"><b>Algorithmique</b><i>A.204</i><em>8h30 – 10h30</em></div>
+          <div class="ap-ev" style="--hue:18;--t:27.5;--d:20"><b>Mathématiques</b><i>B.112</i><em>10h45 – 12h45</em></div>
+          <div class="ap-ev" style="--hue:152;--t:57.5;--d:30"><b>Labo web</b><i>L3.07</i><em>13h45 – 16h45</em></div>
+        </div>
+        <div class="ap-col">
+          <div class="ap-ev" style="--hue:262;--t:5;--d:30"><b>Réseaux</b><i>A.018</i><em>8h30 – 11h30</em></div>
+          <div class="ap-ev" style="--hue:332;--t:57.5;--d:15"><b>Anglais</b><i>C.301</i><em>13h45 – 15h15</em></div>
+        </div>
+        <div class="ap-col">
+          <div class="ap-ev" style="--hue:190;--t:10;--d:30"><b>Bases de données</b><i>L2.11</i><em>9h00 – 12h00</em></div>
+          <div class="ap-libre">Libre</div>
+        </div>
+        <div class="ap-col">
+          <div class="ap-ev" style="--hue:40;--t:5;--d:20"><b>Systèmes</b><i>A.204</i><em>8h30 – 10h30</em></div>
+          <div class="ap-ev" style="--hue:221;--t:27.5;--d:20"><b>Algorithmique</b><i>A.204</i><em>10h45 – 12h45</em></div>
+          <div class="ap-ev" style="--hue:292;--t:60;--d:30"><b>Projet</b><i>L1.02</i><em>14h00 – 17h00</em></div>
+        </div>
+        <div class="ap-col">
+          <div class="ap-ev" style="--hue:18;--t:5;--d:15"><b>Mathématiques</b><i>B.112</i><em>8h30 – 10h00</em></div>
+          <div class="ap-ev" style="--hue:262;--t:22.5;--d:20"><b>Réseaux</b><i>A.018</i><em>10h15 – 12h15</em></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 0b. Identité (demandée une fois, après la connexion) -->
+  <section id="v-identite" hidden>
+    <h2 class="q">C'est qui ?</h2>
+    <p class="aide">Ton nom et ton prénom s'affichent dans les réglages.</p>
+    <input class="recherche" id="prenom" type="text" maxlength="30" placeholder="Prénom"
+           autocomplete="given-name" autocorrect="off" spellcheck="false">
+    <input class="recherche" id="nom" type="text" maxlength="30" placeholder="Nom"
+           autocomplete="family-name" autocorrect="off" spellcheck="false">
+    <div class="theme-select-bloc">
+      <label class="theme-select-titre">Thème de l'application</label>
+      <div class="choix-themes" id="identite-themes" role="radiogroup" aria-label="Thème de l'application">
+        <button type="button" class="theme-opt" data-theme-opt="2" role="radio" aria-checked="true">
+          <span class="theme-pastille" style="background:#1d4fd7"></span>
+          <span>Bleu</span>
+        </button>
+        <button type="button" class="theme-opt" data-theme-opt="1" role="radio" aria-checked="false">
+          <span class="theme-pastille" style="background:#0e8655"></span>
+          <span>Vert</span>
+        </button>
+        <button type="button" class="theme-opt" data-theme-opt="3" role="radio" aria-checked="false">
+          <span class="theme-pastille" style="background:#d14d8a"></span>
+          <span>Rose</span>
+        </button>
+      </div>
+    </div>
+    <button class="primaire" id="btn-identite" type="button">Continuer</button>
+  </section>
+
+  <!-- 1. École -->
+  <section id="v-ecole" hidden>
+    <p class="etape-n">Étape 1 sur 3</p>
+    <h2 class="q">Ton école</h2>
+    <p class="aide">Choisis-la une seule fois : ensuite, l'app s'ouvre directement sur ton horaire.</p>
+    <ul class="liste" id="liste-ecoles"></ul>
+  </section>
+
+  <!-- 2. Formation -->
+  <section id="v-formation" hidden>
+    <p class="etape-n">Étape 2 sur 3</p>
+    <h2 class="q">Ta formation</h2>
+    <p class="aide" id="formation-aide"></p>
+    <input class="recherche" id="recherche" type="search" placeholder="Rechercher, ex. BA2 Informatique"
+           autocomplete="off" autocorrect="off" spellcheck="false">
+    <p class="pdf-status" id="formations-status" role="status"></p>
+    <ul class="liste" id="liste-formations"></ul>
+  </section>
+
+  <!-- 3. Groupe(s) -->
+  <section id="v-groupes" hidden>
+    <p class="etape-n">Étape 3 sur 3</p>
+    <h2 class="q">Ton groupe</h2>
+    <p class="aide" id="groupes-aide"></p>
+    <p class="pdf-status" id="groupes-status" role="status"></p>
+    <div class="chips" id="chips"></div>
+    <div id="bloc-surnom">
+      <label for="surnom">Surnom pour cet horaire</label>
+      <input id="surnom" type="text" maxlength="24" autocomplete="off" spellcheck="false"
+             placeholder="ex. Info, Droit, Cours du soir">
+      <p class="surnom-aide">Affiché dans la barre du haut pour passer d'un cours à l'autre.</p>
+    </div>
+    <div id="bloc-theme">
+      <label class="theme-select-titre">Couleur de cet horaire</label>
+      <div class="choix-themes" id="groupes-themes" role="radiogroup" aria-label="Couleur de cet horaire">
+        <button type="button" class="theme-opt" data-theme-opt="2" role="radio" aria-checked="true">
+          <span class="theme-pastille" style="background:#1d4fd7"></span>
+          <span>Bleu</span>
+        </button>
+        <button type="button" class="theme-opt" data-theme-opt="1" role="radio" aria-checked="false">
+          <span class="theme-pastille" style="background:#0e8655"></span>
+          <span>Vert</span>
+        </button>
+        <button type="button" class="theme-opt" data-theme-opt="3" role="radio" aria-checked="false">
+          <span class="theme-pastille" style="background:#d14d8a"></span>
+          <span>Rose</span>
+        </button>
+      </div>
+    </div>
+    <button class="primaire" id="btn-valider" type="button" hidden></button>
+  </section>
+
+  <!-- 4. Horaire -->
+  <section id="v-horaire" hidden>
+    <p class="profil-ligne" id="profil-ligne"></p>
+    <div class="seg" id="seg" role="tablist" aria-label="Choisir l'horaire" hidden>
+      <span class="pill" aria-hidden="true"></span>
+    </div>
+    <div class="avis" id="avis" hidden></div>
+    <p class="pdf-status" id="horaire-status" role="status" hidden></p>
+    <div id="horaire-contenu">
+      <div class="week">
+        <button class="nav" id="sem-prec" aria-label="Semaine précédente" title="Semaine précédente (←)">‹</button>
+        <div class="cur"><strong id="sem-titre">Semaine 1</strong><span id="sem-dates"></span></div>
+        <button class="nav" id="sem-suiv" aria-label="Semaine suivante" title="Semaine suivante (→)">›</button>
+      </div>
+      <button class="thisweek" id="btn-auj">Cette semaine</button>
+
+      <ul class="days" id="jours"></ul>
+      <div class="cal" id="cal"></div>
+
+      <button class="official" id="btn-pdf" type="button" aria-expanded="false">
+        PDF officiel de la semaine 1
+      </button>
+      <div id="pdf-zone" hidden>
+        <div class="pdf-tete">
+          <div class="pdf-titre"><strong>PDF officiel</strong><span id="pdf-sem"></span></div>
+          <div class="pdf-outils">
+            <button class="pdf-outil" id="pdf-moins" type="button" aria-label="Dézoomer" title="Dézoomer (−)">−</button>
+            <button class="pdf-outil" id="pdf-niveau" type="button" title="Ajuster à la largeur">100 %</button>
+            <button class="pdf-outil" id="pdf-plus" type="button" aria-label="Zoomer" title="Zoomer (+)">+</button>
+            <a class="pdf-outil" id="pdf-onglet" target="_blank" rel="noopener" title="Ouvrir dans un nouvel onglet" aria-label="Ouvrir dans un nouvel onglet" hidden>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>
+            </a>
+          </div>
+          <button class="pdf-outil pdf-fermer" id="pdf-fermer" type="button" aria-label="Fermer le PDF" title="Fermer">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          </button>
+        </div>
+        <p class="pdf-status" id="pdf-status" role="status"></p>
+      </div>
+
+      <footer><p id="maj"></p></footer>
+    </div>
+  </section>
+</div>
+
+<div id="pop" role="dialog" aria-label="Détail du cours"></div>
+
+<div id="feuille" role="dialog" aria-label="Mon compte et mes horaires">
+  <div class="grabber-zone" aria-hidden="true"><span class="grabber"></span></div>
+  <div class="reg-compte" id="reg-compte">
+    <span class="avatar grand" id="reg-avatar">?</span>
+    <div class="reg-qui"><strong id="reg-nom"></strong><span id="reg-fournisseur"></span></div>
+    <button class="dots" id="btn-compte-menu" type="button" aria-label="Options du compte" aria-expanded="false">⋮</button>
+    <div class="ppop" id="menu-compte" hidden>
+      <div id="menu-compte-choix">
+        <button class="pop-act" id="btn-modifier-identite" type="button">Modifier</button>
+        <button class="pop-act danger-txt" id="btn-logout" type="button">Se déconnecter</button>
+      </div>
+      <div id="reg-edit" hidden>
+        <input id="edit-prenom" type="text" maxlength="30" placeholder="Prénom" autocomplete="off" autocorrect="off" spellcheck="false">
+        <input id="edit-nom" type="text" maxlength="30" placeholder="Nom" autocomplete="off" autocorrect="off" spellcheck="false">
+        <button id="btn-valider-identite" type="button">✓ Valider</button>
+      </div>
+    </div>
+  </div>
+  <h2 class="reg-section">Mes horaires</h2>
+  <div id="liste-profils"></div>
+  <div class="row">
+    <button id="btn-ajouter" type="button">+ Ajouter un horaire</button>
+  </div>
+</div>
+
+<div id="voile-confirm" hidden>
+  <div id="boite-confirm" role="alertdialog" aria-modal="true" aria-labelledby="confirm-titre" aria-describedby="confirm-msg">
+    <div id="confirm-icone" aria-hidden="true"></div>
+    <h3 id="confirm-titre"></h3>
+    <p id="confirm-msg"></p>
+    <div id="confirm-actions">
+      <button type="button" id="confirm-non">Annuler</button>
+      <button type="button" id="confirm-oui">Confirmer</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function () {
+  "use strict";
+  var JOURS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+  var MOIS = ["janv.", "févr.", "mars", "avr.", "mai", "juin",
+              "juil.", "août", "sept.", "oct.", "nov.", "déc."];
+
+  /* Écoles prises en charge (même identifiant que ECOLES dans api/_ecoles.py). */
+  var ECOLES = [
+    { id: "heh", nom: "HEH", detail: "Haute École en Hainaut · Mons, Tournai" }
+  ];
+  function ecoleDe(id) {
+    for (var i = 0; i < ECOLES.length; i++) if (ECOLES[i].id === id) return ECOLES[i];
+    return null;
+  }
+
+  /* Mémoire de l'appareil (local, sans compte pour l'instant) :
+     - ezh_profils : [{id, surnom, ecole, formation, groupes: [...], theme: 0..5}]
+     - ezh_courant : id du profil affiché à l'ouverture (connecté par défaut)
+     - ezh_horaire:<école>:<formation> : dernière réponse de l'école (hors ligne)
+     Étape suivante (comptes) : ces mêmes objets seront lus/écrits dans
+     Supabase/Firebase (table profils, user_id = compte Google/Apple/GitHub).
+     Voir AUTH plus bas : brancher login() puis syncProfils() vers le cloud. */
+  var CLE_PROFILS = "ezh_profils";
+  var CLE_COURANT = "ezh_courant";
+  var CLE_PROFIL_LEGACY = "ezh_profil";
+  var THEMES = [
+    { id: 2, nom: "Bleu", couleur: "#1d4fd7" },
+    { id: 1, nom: "Vert", couleur: "#0e8655" },
+    { id: 3, nom: "Rose", couleur: "#d14d8a" }
+  ];
+  function normaliserTheme(t) {
+    if (t === 1) return 1; // Vert
+    if (t === 3) return 3; // Rose
+    return 2;              // Bleu (2, 0 ou autre)
+  }
+  function couleurTheme(t) {
+    var id = normaliserTheme(t);
+    if (id === 1) return "#0e8655";
+    if (id === 3) return "#d14d8a";
+    return "#1d4fd7";
+  }
+  function suggereThemeSuivant() {
+    var dispo = [2, 1, 3];
+    var comptes = { 2: 0, 1: 0, 3: 0 };
+    (profils || []).forEach(function (p) {
+      var t = normaliserTheme(p.theme);
+      comptes[t] = (comptes[t] || 0) + 1;
+    });
+    var min = Infinity, choisi = 2;
+    dispo.forEach(function (id) {
+      if (comptes[id] < min) { min = comptes[id]; choisi = id; }
+    });
+    return choisi;
+  }
+  function majThemeSelection(conteneurId, idTheme) {
+    var cont = document.getElementById(conteneurId);
+    if (!cont) return;
+    var norm = normaliserTheme(idTheme);
+    var btns = cont.querySelectorAll("[data-theme-opt]");
+    Array.prototype.forEach.call(btns, function (b) {
+      b.setAttribute("aria-checked", +b.getAttribute("data-theme-opt") === norm ? "true" : "false");
+    });
+  }
+  var themeChoisiIdentite = 2;
+  var editionTheme = null;
+  function lire(cle) {
+    try { return JSON.parse(localStorage.getItem(cle) || "null"); } catch (e) { return null; }
+  }
+  function ecrire(cle, valeur) {
+    try { localStorage.setItem(cle, JSON.stringify(valeur)); } catch (e) { /* plein / privé */ }
+  }
+  function cleHoraire(ecole, formation) { return "ezh_horaire:" + ecole + ":" + formation; }
+  function valide(d) {
+    return !!(d && d.meta && d.meta.periode && d.meta.premier_lundi && d.cours && d.groupes);
+  }
+  function profilValide(p) {
+    return !!(p && p.id && ecoleDe(p.ecole) && p.formation && Array.isArray(p.groupes));
+  }
+  function nouveauId() {
+    return "p" + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36);
+  }
+  /* Nom par défaut d'un horaire : le nom complet de l'option, tel quel. */
+  function surnomDefaut(formation) {
+    var f = String(formation || "").replace(/\s+/g, " ").trim();
+    return (f || "Mon horaire").slice(0, 24);
+  }
+  /* Ancienne version raccourcie (« BA1P Infographie » -> « P Infographie ») :
+     sert une fois à repérer et réparer les noms auto-générés moches. */
+  function ancienSurnomAuto(formation, groupes) {
+    var f = String(formation || "").trim();
+    var court = f.replace(/^(BA|MA)\d*\s*/i, "").trim() || f;
+    if (court.length > 18) court = court.slice(0, 18).trim();
+    if (groupes && groupes.length === 1) {
+      var g = propre(groupes[0]);
+      if (g && g.length <= 18) return g;
+    }
+    return court || "Mon horaire";
+  }
+
+  /* Migration : ancien profil unique -> liste à 1 élément. */
+  var profils = lire(CLE_PROFILS);
+  var profilsSales = false; // vrais noms à réparer -> à réécrire
+  if (!Array.isArray(profils)) profils = null;
+  if (profils) {
+    profils = profils.filter(profilValide);
+    profils.forEach(function (p, i) {
+      p.theme = normaliserTheme(p.theme);
+      if (!p.surnom) p.surnom = surnomDefaut(p.formation);
+      // Répare les noms auto-générés par l'ancienne version raccourcie.
+      else if (p.surnom !== p.formation && p.surnom === ancienSurnomAuto(p.formation, p.groupes)) {
+        p.surnom = surnomDefaut(p.formation);
+        profilsSales = true;
+      }
+    });
+    if (!profils.length) profils = null;
+  }
+  if (!profils) {
+    var legacy = lire(CLE_PROFIL_LEGACY);
+    if (legacy && ecoleDe(legacy.ecole) && legacy.formation && Array.isArray(legacy.groupes)) {
+      profils = [{
+        id: nouveauId(), surnom: surnomDefaut(legacy.formation, legacy.groupes),
+        ecole: legacy.ecole, formation: legacy.formation,
+        groupes: legacy.groupes.slice(), theme: 2
+      }];
+      ecrire(CLE_PROFILS, profils);
+      ecrire(CLE_COURANT, profils[0].id);
+      try { localStorage.removeItem(CLE_PROFIL_LEGACY); } catch (e) { /* jetable */ }
+    } else {
+      profils = [];
+    }
+  }
+  var courantId = lire(CLE_COURANT);
+  var profil = null;
+  if (courantId) {
+    for (var _pi = 0; _pi < profils.length; _pi++) {
+      if (profils[_pi].id === courantId) { profil = profils[_pi]; break; }
+    }
+  }
+  if (!profil && profils.length) profil = profils[0];
+  if (profilsSales) ecrire(CLE_PROFILS, profils);
+  var _sauveHorodatage = 0;
+  function sauverProfils() {
+    _sauveHorodatage = Date.now();
+    for (var _si = 0; _si < profils.length; _si++) {
+      if (!profils[_si].maj) profils[_si].maj = _sauveHorodatage;
+    }
+    ecrire(CLE_PROFILS, profils);
+    ecrire(CLE_COURANT, profil ? profil.id : null);
+    planifierPush(); // cloud (Supabase) si connecté, sinon rien
+  }
+
+  /* ---------- Compte : connexion AVANT tout ----------
+     Écran d'entrée = 2 boutons OAuth (Google / GitHub) + email
+     (mot de passe), puis nom+prénom demandés une fois et
+     affichés dans les Réglages. Session persistante : par défaut, on
+     rouvre directement sur son horaire.
+     Cloud : Supabase Auth. L'app lit l'URL + la clé publique anon via
+     GET /api/config (env Vercel SUPABASE_URL / SUPABASE_ANON_KEY). Sans
+     clés (ou hors ligne), les boutons OAuth retombent en mode local, comme
+     avant : rien ne casse.
+     Les horaires sont synchronisés dans la table `profils`
+     (voir supabase/schema.sql) : fusion par id, le dernier écrit gagne.
+     Côté consoles, reste à activer les fournisseurs (guide dans README,
+     section Comptes) : Google (Client ID OAuth), GitHub (OAuth App),
+     Email (natif). */
+  var CLE_COMPTE = "ezh_compte";
+  var SUPABASE_CONFIG = { URL: "", CLE_ANON: "" }; // rempli par /api/config au démarrage
+  var sb = null;               // client Supabase (null = mode local)
+  var SUPABASE_OK = false;     // vrai quand le cloud est branché
+  var sessionSupabase = null;
+  var pousseeMinutee = 0;
+  var demarrageFini = false;   // vrai une fois le routeur de démarrage passé
+  var compte = lire(CLE_COMPTE);
+  if (!compte || !compte.fournisseur) compte = null;
+  var fournisseurChoisi = compte ? compte.fournisseur : null;
+  function sauverCompte() { ecrire(CLE_COMPTE, compte); }
+  function connecte() { return !!(compte && compte.nom && compte.prenom); }
+
+  /* Petits messages sous les boutons de connexion. */
+  function statutAuthChargement(msg) {
+    var el = document.getElementById("auth-status");
+    if (el) attente(el, msg);
+  }
+  function statutAuthErreur(msg) {
+    var el = document.getElementById("auth-status");
+    if (el) erreur(el, msg);
+  }
+  function statutAuthInfo(msg) {
+    var el = document.getElementById("auth-status");
+    if (!el) return;
+    el.hidden = false;
+    el.classList.remove("erreur");
+    el.style.display = "";
+    el.textContent = msg;
+  }
+  function statutAuthEffacer() {
+    var el = document.getElementById("auth-status");
+    if (el) { el.hidden = true; effacer(el); }
+  }
+
+  /* Config publique depuis le serveur (/api/config lit l'env Vercel).
+     Sans clés : mode local, comme avant. */
+  function chargerConfigSupabase() {
+    if (window.__SUPABASE__ && window.__SUPABASE__.URL) {
+      SUPABASE_CONFIG = { URL: window.__SUPABASE__.URL, CLE_ANON: window.__SUPABASE__.CLE_ANON || "" };
+      return Promise.resolve(!!(SUPABASE_CONFIG.URL && SUPABASE_CONFIG.CLE_ANON));
+    }
+    return fetchDelai("api/config", 8000).then(function (r) { return r.json(); }).then(function (rep) {
+      var s = (rep && rep.supabase) || {};
+      SUPABASE_CONFIG = { URL: s.url || "", CLE_ANON: s.anonKey || "" };
+      return !!(SUPABASE_CONFIG.URL && SUPABASE_CONFIG.CLE_ANON);
+    }, function () { return false; });
+  }
+
+  /* Branche le client Supabase, restaure la session (retour OAuth :
+     supabase-js échange seul le ?code= de l'URL). */
+  function initSupabase() {
+    if (!(SUPABASE_CONFIG.URL && SUPABASE_CONFIG.CLE_ANON)) return Promise.resolve(false);
+    if (!window.supabase || !window.supabase.createClient) return Promise.resolve(false);
+    try {
+      sb = window.supabase.createClient(SUPABASE_CONFIG.URL, SUPABASE_CONFIG.CLE_ANON);
+    } catch (e) { sb = null; return Promise.resolve(false); }
+    SUPABASE_OK = true;
+    sb.auth.onAuthStateChange(function (evt, session) {
+      sessionSupabase = session || null;
+      if (session && session.user) AUTH.user = session.user;
+      if (evt === "SIGNED_IN" && session && session.user) retourOAuth(session.user);
+      else if (evt === "SIGNED_OUT") { sessionSupabase = null; if (AUTH) AUTH.user = null; }
+    });
+    return sb.auth.getSession().then(function (res) {
+      var session = res && res.data && res.data.session;
+      sessionSupabase = session || null;
+      try {
+        if (/[?&](code|access_token)=/.test(location.search + " " + location.hash)) {
+          history.replaceState(null, "", location.pathname);
+        }
+      } catch (e) { /* jetable */ }
+      if (session && session.user) { AUTH.user = session.user; retourOAuth(session.user); }
+      return true;
+    }, function () { return true; });
+  }
+
+  function fournisseurDe(user) {
+    var f = (user.app_metadata && user.app_metadata.provider) || "";
+    if (!f && user.identities && user.identities.length) f = user.identities[0].provider || "";
+    f = String(f).toLowerCase();
+    if (f === "github") return "github";
+    if (f === "apple") return "apple";
+    if (f === "google") return "google";
+    return "email";
+  }
+  /* Prénom/nom devinés depuis le fournisseur (modifiable juste après). */
+  function identiteDepuisUser(user) {
+    var meta = user.user_metadata || {};
+    var prenom = "", nom = "";
+    if (meta.prenom || meta.nom) { prenom = meta.prenom || ""; nom = meta.nom || ""; }
+    else if (meta.full_name || meta.name) {
+      var parts = String(meta.full_name || meta.name).replace(/\s+/g, " ").trim().split(" ");
+      prenom = parts.shift() || ""; nom = parts.join(" ");
+    } else if (meta.given_name || meta.family_name) { prenom = meta.given_name || ""; nom = meta.family_name || ""; }
+    if ((!prenom || !nom) && user.email) {
+      var base = String(user.email).split("@")[0].replace(/[._-]+/g, " ").trim();
+      if (!prenom && base) prenom = base.charAt(0).toUpperCase() + base.slice(1);
+    }
+    return { prenom: String(prenom).slice(0, 30), nom: String(nom).slice(0, 30) };
+  }
+  /* Mémorise le prénom/nom côté compte cloud (retrouvés sur un autre appareil). */
+  function pousserIdentite() {
+    if (!SUPABASE_OK || !sb || !sessionSupabase || !compte) return;
+    sb.auth.updateUser({ data: { prenom: compte.prenom || "", nom: compte.nom || "" } })
+      .then(function () { /* jetable */ }, function () { /* jetable */ });
+  }
+
+  /* Arrivée d'une session (retour OAuth ou mot de passe) :
+     on prépare le compte + on tire le cloud. La navigation n'a lieu que si
+     le démarrage est fini (sinon c'est le routeur qui décidera). */
+  function retourOAuth(user) {
+    var precId = (compte && compte.supabase_id) || null;
+    var idn = identiteDepuisUser(user);
+    fournisseurChoisi = fournisseurDe(user);
+    if (precId && precId !== user.id) {
+      // Changement de compte : on repart du cloud, pas du cache de l'autre.
+      profils = [];
+      profil = null;
+      ecrire(CLE_PROFILS, profils);
+      ecrire(CLE_COURANT, null);
+    }
+    var ancien = compte && (!compte.supabase_id || compte.supabase_id === user.id) ? compte : null;
+    compte = { fournisseur: fournisseurChoisi,
+               nom: (ancien && ancien.nom) || idn.nom,
+               prenom: (ancien && ancien.prenom) || idn.prenom,
+               email: user.email || "", supabase_id: user.id };
+    sauverCompte();
+    rendreAvatar();
+    statutAuthEffacer();
+    var p = pullProfils().then(function () { return null; }, function () { return null; });
+    if (!demarrageFini) return p;
+    return p.then(function () {
+      pile = [];
+      if (compte.nom && compte.prenom) {
+        if (profil) demarrerHoraire();
+        else ouvrirEcoles();
+      } else {
+        ouvrirIdentite();
+      }
+    });
+  }
+
+  /* ---------- Synchro des horaires (local <-> table `profils`) ----------
+     Fusion par id, le dernier écrit gagne (horodatage maj / updated_at).
+     Hors ligne ou sans cloud : le localStorage seul fait foi. */
+  function pullProfils() {
+    if (!SUPABASE_OK || !sb || !sessionSupabase) return Promise.resolve(false);
+    return sb.from("profils").select("id,surnom,ecole,formation,groupes,theme,updated_at").then(function (res) {
+      if (res.error) throw res.error;
+      var parId = {};
+      profils.forEach(function (p) { parId[p.id] = p; });
+      (res.data || []).forEach(function (l, i) {
+        if (!l || !l.id) return;
+        var distant = { id: l.id, surnom: String(l.surnom || "Mon horaire").slice(0, 24),
+                        ecole: ecoleDe(l.ecole) ? l.ecole : "heh",
+                        formation: String(l.formation || ""),
+                        groupes: Array.isArray(l.groupes) ? l.groupes : [],
+                        theme: normaliserTheme(l.theme),
+                        maj: Date.parse(l.updated_at) || 0 };
+        var local = parId[l.id];
+        if (!local || (distant.maj && distant.maj > (local.maj || 0))) parId[l.id] = distant;
+      });
+      profils = Object.keys(parId).map(function (k) { return parId[k]; }).filter(profilValide);
+      if (profil) {
+        var t = null;
+        for (var i = 0; i < profils.length; i++) if (profils[i].id === profil.id) t = profils[i];
+        profil = t || profils[0] || null;
+      } else if (profils.length) {
+        profil = profils[0];
+      }
+      ecrire(CLE_PROFILS, profils);
+      ecrire(CLE_COURANT, profil ? profil.id : null);
+      return true;
+    });
+  }
+  function pushProfils() {
+    if (!SUPABASE_OK || !sb || !sessionSupabase || !sessionSupabase.user) return Promise.resolve(false);
+    var uid = sessionSupabase.user.id;
+    var lignes = profils.filter(profilValide).map(function (p) {
+      return { user_id: uid, id: p.id, surnom: p.surnom, ecole: p.ecole,
+               formation: p.formation, groupes: p.groupes, theme: normaliserTheme(p.theme) };
+    });
+    if (!lignes.length) return Promise.resolve(true);
+    return sb.from("profils").upsert(lignes, { onConflict: "user_id,id" }).then(function (res) {
+      if (res.error) throw res.error;
+      return true;
+    });
+  }
+  /* Poussée différée après chaque changement local (renommage, ajout…). */
+  function planifierPush() {
+    if (!SUPABASE_OK || !sb || !sessionSupabase) return;
+    clearTimeout(pousseeMinutee);
+    pousseeMinutee = setTimeout(function () {
+      pushProfils().then(function () { /* jetable */ }, function () { /* réessaiera au prochain changement */ });
+    }, 800);
+  }
+  function supprimerProfilDistant(id) {
+    if (!SUPABASE_OK || !sb || !sessionSupabase) return;
+    sb.from("profils").delete().eq("id", id).then(function () { /* jetable */ }, function () { /* jetable */ });
+  }
+
+  var AUTH = {
+    user: null,
+    // OAuth (Google / GitHub) via Supabase ; sans cloud : stub local.
+    login: function (fournisseur) {
+      fournisseurChoisi = fournisseur;
+      if (!SUPABASE_OK || !sb) {
+        compte = { fournisseur: fournisseur, nom: "", prenom: "" };
+        sauverCompte();
+        aller("identite");
+        return Promise.resolve(false);
+      }
+      statutAuthChargement("Redirection vers " + fournisseur + "…");
+      return sb.auth.signInWithOAuth({
+        provider: fournisseur,
+        options: { redirectTo: location.origin + location.pathname }
+      }).then(function (res) {
+        if (res.error) statutAuthErreur("Échec : " + res.error.message);
+        return true;
+      });
+    },
+    // Email + mot de passe : crée le compte s'il n'existe pas, sinon connecte.
+    loginEmail: function (email, mdp) {
+      if (!SUPABASE_OK || !sb) { statutAuthErreur("Connexion email indisponible pour l'instant."); return Promise.resolve(false); }
+      email = String(email || "").trim();
+      statutAuthChargement("Connexion en cours…");
+      var self = this;
+      return sb.auth.signUp({ email: email, password: mdp }).then(function (ins) {
+        if (ins.error) return sb.auth.signInWithPassword({ email: email, password: mdp });
+        if (ins.data && ins.data.session && ins.data.session.user) return ins;
+        if (ins.data && ins.data.user && !ins.data.session) {
+          statutAuthInfo("Compte créé : vérifie ta boîte mail pour le valider, puis reviens te connecter.");
+          return ins;
+        }
+        return sb.auth.signInWithPassword({ email: email, password: mdp });
+      }).then(function (res) {
+        if (!res) return false;
+        if (res.error) { statutAuthErreur("Échec : " + res.error.message); return false; }
+        if (res.data && res.data.session && res.data.session.user) {
+          self.user = res.data.session.user;
+          sessionSupabase = res.data.session;
+          statutAuthEffacer();
+          return retourOAuth(res.data.session.user);
+        }
+        return true;
+      });
+    },
+    logout: function () {
+      this.user = null;
+      var fini = function () {
+        compte = null;
+        try { localStorage.removeItem(CLE_COMPTE); } catch (e) { /* jetable */ }
+      };
+      if (SUPABASE_OK && sb) return sb.auth.signOut().then(fini, fini);
+      fini();
+      return Promise.resolve(true);
+    }
+  };
+  function initiales() {
+    var p = ((compte && compte.prenom) || "").replace(/\s+/g, " ").trim().charAt(0);
+    var n = ((compte && compte.nom) || "").replace(/\s+/g, " ").trim().charAt(0);
+    return (p + n).toUpperCase();
+  }
+  function rendreAvatar() {
+    var ini = initiales();
+    var t = document.getElementById("avatar-init"), ic = document.getElementById("avatar-icone");
+    if (t && ic) {
+      // Note : `hidden = true` ne cache PAS un SVG (pas de reflet vers
+      // l'attribut hors HTML) : on passe par style.display pour l'icône.
+      // Mais `t` est un <span> : son attribut `hidden` le masque via la
+      // règle `[hidden] { display: none !important }`, que style.display
+      // seul ne peut pas surcharger. Il faut donc basculer `hidden` aussi,
+      // sinon les initiales restent invisibles et le rond paraît vide.
+      if (ini) { t.textContent = ini; t.hidden = false; t.style.display = ""; ic.style.display = "none"; }
+      else { t.textContent = ""; t.hidden = true; t.style.display = "none"; ic.style.display = ""; }
+    }
+    var ra = document.getElementById("reg-avatar");
+    if (ra) ra.textContent = ini || "?";
+  }
+
+  var DATA = null;       // horaire complet de la formation affichée
+  var COURS = [];        // ses cours, filtrés selon les groupes de l'étudiant
+  var LUNDI0 = null, SEMAINES = [];
+  var sem = 1;
+
+  function parseDate(iso) {
+    var p = iso.split("-");
+    return new Date(+p[0], +p[1] - 1, +p[2]);
+  }
+  function dateSemJour(s, jour) {
+    var d = new Date(LUNDI0.getTime());
+    d.setDate(d.getDate() + (s - 1) * 7 + jour);
+    return d;
+  }
+  function fmtDate(d) { return d.getDate() + " " + MOIS[d.getMonth()]; }
+  function fmtH(h) { return String(h).replace(/^0/, ""); } // "08h15" -> "8h15"
+  function memeJour(a, b) {
+    return a.getFullYear() === b.getFullYear() &&
+           a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  }
+  function parseEns(txt) {
+    var out = [];
+    String(txt).replace(/[\[\]]/g, "").split(",").forEach(function (part) {
+      part = part.trim();
+      if (!part) return;
+      if (part.indexOf("..") >= 0) {
+        var b = part.split("..");
+        for (var i = +b[0]; i <= +b[1]; i++) out.push(i);
+      } else out.push(+part);
+    });
+    return out;
+  }
+  function semaineCourante() {
+    if (!SEMAINES.length) return 1;
+    var auj = new Date(); auj.setHours(0, 0, 0, 0);
+    var diff = Math.floor((auj - LUNDI0) / 86400000);
+    var s = Math.floor(diff / 7) + 1;
+    if (s < SEMAINES[0]) return SEMAINES[0];
+    if (s > SEMAINES[SEMAINES.length - 1]) return SEMAINES[SEMAINES.length - 1];
+    return s;
+  }
+  // L'école double parfois les espaces dans les noms de groupes.
+  function propre(s) { return String(s).replace(/\s+/g, " ").trim(); }
+  function txt(s) {
+    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+  }
+
+  /* Demande de confirmation custom (remplace window.confirm partout).
+     Usage : demanderConfirmation({ titre, message, confirmer, annuler, danger })
+     -> Promise<boolean>. Voile flouté, Échap / clic dehors = non,
+     focus piégé dans la carte, fond bloqué pendant la demande. */
+  var ICONE_POUBELLE = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+    'stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 4h4M7 7l1 13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-13"/>' +
+    '<path d="M10 11v6M14 11v6"/></svg>';
+  var ICONE_POINT_INTERRO = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" ' +
+    'stroke-linecap="round"><path d="M9 9a3 3 0 1 1 4.5 2.6c-1 .6-1.5 1.2-1.5 2.4"/><circle cx="12" cy="17.5" r=".5" fill="currentColor"/></svg>';
+  var confirmerResolve = null, confirmerDernierFocus = null;
+  function demanderConfirmation(opts) {
+    opts = opts || {};
+    var voile = document.getElementById("voile-confirm");
+    var boite = document.getElementById("boite-confirm");
+    var icone = document.getElementById("confirm-icone");
+    var titre = document.getElementById("confirm-titre");
+    var msg = document.getElementById("confirm-msg");
+    var btnNon = document.getElementById("confirm-non");
+    var btnOui = document.getElementById("confirm-oui");
+    // Une seule demande à la fois : la précédente répond non.
+    if (confirmerResolve) { var prev = confirmerResolve; confirmerResolve = null; prev(false); }
+    var danger = opts.danger !== false;
+    titre.textContent = opts.titre || "Confirmer ?";
+    msg.innerHTML = opts.message || "";
+    btnNon.textContent = opts.annuler || "Annuler";
+    btnOui.textContent = opts.confirmer || "Confirmer";
+    boite.classList.toggle("info", !danger);
+    icone.innerHTML = danger ? ICONE_POUBELLE : ICONE_POINT_INTERRO;
+    confirmerDernierFocus = document.activeElement;
+    voile.hidden = false;
+    document.body.classList.add("confirm-ouverte");
+    // Rejoue l'animation à chaque ouverture.
+    try { void boite.offsetWidth; } catch (e) { /* jetable */ }
+    setTimeout(function () { try { btnNon.focus(); } catch (e) { /* jetable */ } }, 30);
+    return new Promise(function (resolve) { confirmerResolve = resolve; });
+  }
+  function repondreConfirmation(ok) {
+    if (!confirmerResolve) return;
+    var resolve = confirmerResolve;
+    confirmerResolve = null;
+    document.getElementById("voile-confirm").hidden = true;
+    document.body.classList.remove("confirm-ouverte");
+    if (confirmerDernierFocus && confirmerDernierFocus.focus) {
+      try { confirmerDernierFocus.focus(); } catch (e) { /* jetable */ }
+    }
+    resolve(!!ok);
+  }
+  document.getElementById("confirm-non").addEventListener("click", function () { repondreConfirmation(false); });
+  document.getElementById("confirm-oui").addEventListener("click", function () { repondreConfirmation(true); });
+  document.getElementById("voile-confirm").addEventListener("click", function (e) {
+    if (e.target === this) repondreConfirmation(false);
+  });
+  // Échap = non, Tab reste dans la carte (tant qu'une demande est ouverte,
+  // les autres raccourcis Échap de l'app sont ignorés — voir plus bas).
+  document.addEventListener("keydown", function (e) {
+    if (!confirmerResolve || document.getElementById("voile-confirm").hidden) return;
+    if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); repondreConfirmation(false); }
+    else if (e.key === "Tab") {
+      var btns = [document.getElementById("confirm-non"), document.getElementById("confirm-oui")];
+      var i = btns.indexOf(document.activeElement);
+      e.preventDefault();
+      if (e.shiftKey) btns[(i <= 0 ? btns.length : i) - 1].focus();
+      else btns[(i + 1) % btns.length].focus();
+    }
+  }, true);
+  function confirmationOuverte() {
+    return !!confirmerResolve && !document.getElementById("voile-confirm").hidden;
+  }
+  var sansAnim = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var MQ_BUREAU = window.matchMedia("(min-width: 1024px)");
+  function bureau() { return MQ_BUREAU.matches; }
+
+  var joursOuverts = {}; // jours dépliés {index: true}, interrupteurs indépendants
+  var coursOuverts = {}; // cours dépliés {"jour:index": true}, interrupteurs indépendants
+  function resetDepliage() { joursOuverts = {}; coursOuverts = {}; }
+
+  /* Visionneuse PDF intégrée : le PDF s'affiche sous le bouton, sans
+     nouvel onglet. Pendant le téléchargement, un reflet balaie le texte
+     d'attente en boucle ; il disparaît dès que le PDF est là. */
+  var pdfURL = null, pdfCharge = false, pdfOuvert = false, pdfDemande = 0, pdfDoc = null;
+  var PDFJS_CDN = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
+  var ICONE_PDF = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/>' +
+    '<path d="M14 3v5h5M9 13h6M9 17h4"/></svg>';
+  function majBoutonPdf() {
+    var btn = document.getElementById("btn-pdf");
+    var ouvert = pdfOuvert || pdfCharge;
+    // Sur ordinateur, seul le début du texte s'affiche (la semaine est déjà en titre).
+    btn.innerHTML = ICONE_PDF + "<span>" + (ouvert ? "Masquer le PDF" : "PDF officiel") +
+      '<span class="sm"> de la semaine ' + sem + "</span></span>";
+    btn.setAttribute("aria-expanded", ouvert ? "true" : "false");
+    document.getElementById("horaire-contenu").classList.toggle("pdf-ouvert", ouvert);
+    document.getElementById("pdf-sem").textContent = "Semaine " + sem;
+    majOutilsPdf();
+  }
+  function majOutilsPdf() {
+    document.getElementById("pdf-niveau").textContent = Math.round(pdfEchelle * 100) + " %";
+    document.getElementById("pdf-moins").disabled = !pdfZoomable || pdfEchelle <= 1.001;
+    document.getElementById("pdf-plus").disabled = !pdfZoomable || pdfEchelle >= PDF_ZOOM_MAX - 0.001;
+    document.getElementById("pdf-niveau").disabled = !pdfZoomable;
+    var onglet = document.getElementById("pdf-onglet");
+    onglet.hidden = !pdfURL || pdfCharge;
+    if (pdfURL) onglet.href = pdfURL; else onglet.removeAttribute("href");
+  }
+  /* Rend les pages du PDF en images à la définition de l'écran, pour la
+     largeur affichée (donc zoom compris) : net à tout niveau de zoom.
+     Une page déjà assez nette est gardée ; sinon elle est redessinée à
+     côté puis échangée, sans clignotement. Un nouveau rendu annule le
+     précédent (jeton). */
+  var pdfJetonRendu = 0, pdfTacheRendu = null, pdfMinuteurNettete = null;
+  function annulerRenduPdf() {
+    pdfJetonRendu++;
+    clearTimeout(pdfMinuteurNettete);
+    if (pdfTacheRendu) { try { pdfTacheRendu.cancel(); } catch (e) { /* jetable */ } pdfTacheRendu = null; }
+  }
+  function rendrePagesPdf(conteneur) {
+    annulerRenduPdf();
+    var jeton = pdfJetonRendu, page = 1;
+    var dpr = Math.min(window.devicePixelRatio || 1, 3);
+    var largeurPx = conteneur.getBoundingClientRect().width * dpr;
+    // Plafond par image : la mémoire des canvas est limitée sur iPhone.
+    var maxPx = pdfDoc ? Math.max(2.5e6, Math.min(1e7, 3e7 / pdfDoc.numPages)) : 1e7;
+    (function suivante() {
+      if (jeton !== pdfJetonRendu || !pdfDoc || !conteneur.isConnected) return;
+      if (page > pdfDoc.numPages) return;
+      pdfDoc.getPage(page).then(function (pg) {
+        if (jeton !== pdfJetonRendu) return;
+        var base = pg.getViewport({ scale: 1 });
+        var echelle = largeurPx / base.width;
+        if (base.width * base.height * echelle * echelle > maxPx) {
+          echelle = Math.sqrt(maxPx / (base.width * base.height));
+        }
+        var ancien = conteneur.children[page - 1];
+        if (ancien && ancien.width >= Math.floor(base.width * echelle) * 0.9) { page++; suivante(); return; }
+        var vp = pg.getViewport({ scale: echelle });
+        var cv = document.createElement("canvas");
+        cv.width = Math.floor(vp.width); cv.height = Math.floor(vp.height);
+        pdfTacheRendu = pg.render({ canvasContext: cv.getContext("2d"), viewport: vp });
+        pdfTacheRendu.promise.then(function () {
+          pdfTacheRendu = null;
+          if (jeton !== pdfJetonRendu) return;
+          if (ancien) { conteneur.replaceChild(cv, ancien); ancien.width = ancien.height = 0; }
+          else conteneur.appendChild(cv);
+          page++; suivante();
+        }, function () {
+          pdfTacheRendu = null;
+          cv.width = cv.height = 0;
+          if (jeton === pdfJetonRendu) { page++; suivante(); }
+        });
+      }, function () { page++; suivante(); });
+    })();
+  }
+  // Après un zoom, redessine en haute définition une fois le geste posé.
+  function planifierNettetePdf() {
+    clearTimeout(pdfMinuteurNettete);
+    pdfMinuteurNettete = setTimeout(function () {
+      if (pdfPagesEl && pdfDoc && !pdfGeste) rendrePagesPdf(pdfPagesEl);
+    }, 220);
+  }
+  function oublierPdfDoc() {
+    annulerRenduPdf();
+    if (pdfDoc) { try { pdfDoc.destroy(); } catch (e) { /* jetable */ } pdfDoc = null; }
+  }
+  // Texte d'attente + sa copie claire pour le reflet (ignorée à l'oral).
+  function statutPdfAttente(status) {
+    var texte = "Le PDF est en cours de téléchargement…";
+    status.classList.remove("erreur");
+    status.style.display = "";
+    status.textContent = "";
+    var bloc = document.createElement("span"); // largeur exacte du texte
+    bloc.className = "pdf-texte";
+    bloc.textContent = texte;
+    var reflet = document.createElement("span");
+    reflet.className = "pdf-reflet";
+    reflet.setAttribute("aria-hidden", "true");
+    var copie = document.createElement("span");
+    copie.textContent = texte;
+    reflet.appendChild(copie);
+    bloc.appendChild(reflet);
+    status.appendChild(bloc);
+  }
+  function fermerPdf() {
+    pdfDemande++; // invalide un téléchargement en cours
+    pdfCharge = false; pdfOuvert = false;
+    oublierPdfDoc();
+    arreterAnimZoomPdf();
+    pdfPagesEl = null; pdfPinceEl = null; pdfDezoomEl = null; pdfEchelle = 1; pdfZoomable = false;
+    if (pdfURL) { try { URL.revokeObjectURL(pdfURL); } catch (e) { /* jetable */ } pdfURL = null; }
+    var zone = document.getElementById("pdf-zone");
+    var status = document.getElementById("pdf-status");
+    zone.hidden = true;
+    statutPdfAttente(status);
+    Array.prototype.forEach.call(zone.querySelectorAll(".pdf-apercu, .pdf-astuce"), function (n) {
+      n.remove();
+    });
+    var btn = document.getElementById("btn-pdf");
+    btn.disabled = false;
+    majBoutonPdf();
+  }
+  /* Zoom du PDF : pincement, double-toucher, Ctrl+molette (pavé tactile).
+     Le zoom élargit vraiment les pages : la hauteur grandit avec, la page
+     défile verticalement normalement et le cadre défile horizontalement.
+     Le point sous les doigts reste sous les doigts, et déplacer les deux
+     doigts fait glisser le PDF avec eux (comme dans Photos). Au-delà des
+     limites, le zoom résiste puis revient en douceur. */
+  var pdfEchelle = 1, pdfPagesEl = null, pdfPinceEl = null, pdfDezoomEl = null;
+  var pdfZoomable = false, pdfGeste = false, pdfAnimZoom = 0;
+  var PDF_ZOOM_MAX = 5;
+  function zoomPdfAppliquer() {
+    if (!pdfPagesEl) return;
+    pdfPagesEl.style.width = pdfEchelle === 1 ? "" : (pdfEchelle * 100) + "%";
+    if (pdfDezoomEl) pdfDezoomEl.classList.toggle("visible", pdfEchelle > 1.02);
+    majOutilsPdf();
+  }
+  // Sur ordinateur, le panneau PDF défile lui-même ; sur téléphone, c'est la page.
+  function pdfDefileSeul() {
+    return !!pdfPinceEl && getComputedStyle(pdfPinceEl).overflowY === "auto";
+  }
+  /* Passe à l'échelle voulue : le point du PDF qui était sous (cx, cy)
+     se retrouve sous (cx + dx, cy + dy). Horizontal : défilement du cadre ;
+     vertical : défilement de la page. */
+  function zoomPdfVers(echelle, cx, cy, dx, dy) {
+    if (!pdfPinceEl || !pdfPagesEl) return;
+    var r0 = pdfPagesEl.getBoundingClientRect();
+    var k = echelle / pdfEchelle;
+    var gaucheVoulue = cx + (dx || 0) - (cx - r0.left) * k;
+    var hautVoulu = cy + (dy || 0) - (cy - r0.top) * k;
+    pdfEchelle = echelle;
+    zoomPdfAppliquer();
+    var r1 = pdfPagesEl.getBoundingClientRect();
+    pdfPinceEl.scrollLeft += r1.left - gaucheVoulue;
+    if (pdfDefileSeul()) pdfPinceEl.scrollTop += r1.top - hautVoulu;
+    else window.scrollBy(0, r1.top - hautVoulu);
+  }
+  function arreterAnimZoomPdf() {
+    if (pdfAnimZoom) { cancelAnimationFrame(pdfAnimZoom); pdfAnimZoom = 0; }
+  }
+  // Transition douce vers une échelle, ancrée sur (cx, cy).
+  function animerZoomPdf(cible, cx, cy) {
+    arreterAnimZoomPdf();
+    var depart = pdfEchelle, t0 = 0, duree = sansAnim ? 0 : 280;
+    if (Math.abs(cible - depart) < 0.001) { planifierNettetePdf(); return; }
+    function pas(t) {
+      if (!t0) t0 = t;
+      var p = duree ? Math.min(1, (t - t0) / duree) : 1;
+      var e = 1 - Math.pow(1 - p, 3); // décélération
+      zoomPdfVers(depart + (cible - depart) * e, cx, cy);
+      if (p < 1) pdfAnimZoom = requestAnimationFrame(pas);
+      else { pdfAnimZoom = 0; planifierNettetePdf(); }
+    }
+    pdfAnimZoom = requestAnimationFrame(pas);
+  }
+  // Point d'ancrage par défaut : le centre de la partie visible du PDF.
+  function centreVisiblePdf() {
+    var r = pdfPinceEl.getBoundingClientRect();
+    var haut = Math.max(r.top, 0), bas = Math.min(r.bottom, window.innerHeight);
+    return { x: r.left + r.width / 2, y: bas > haut ? (haut + bas) / 2 : r.top };
+  }
+  function dezoomerPdf() {
+    if (!pdfPinceEl) return;
+    var c = centreVisiblePdf();
+    animerZoomPdf(1, c.x, c.y);
+  }
+  // Boutons − / + du panneau PDF (ordinateur), par paliers de 25 %.
+  function zoomPasPdf(sens) {
+    if (!pdfZoomable || !pdfPinceEl) return;
+    var c = centreVisiblePdf();
+    var cible = sens > 0 ? pdfEchelle * 1.25 : pdfEchelle / 1.25;
+    if (Math.abs(cible - 1) < 0.08) cible = 1;
+    animerZoomPdf(Math.min(PDF_ZOOM_MAX, Math.max(1, cible)), c.x, c.y);
+  }
+  document.getElementById("pdf-plus").addEventListener("click", function () { zoomPasPdf(1); });
+  document.getElementById("pdf-moins").addEventListener("click", function () { zoomPasPdf(-1); });
+  document.getElementById("pdf-niveau").addEventListener("click", dezoomerPdf);
+  document.getElementById("pdf-fermer").addEventListener("click", function () { fermerPdf(); });
+  // Résistance au-delà des limites (×1 et ×5), comme un élastique.
+  function elastiquePdf(s) {
+    if (s < 1) return 1 - (1 - s) * 0.35;
+    if (s > PDF_ZOOM_MAX) return Math.min(PDF_ZOOM_MAX * 1.25, PDF_ZOOM_MAX + (s - PDF_ZOOM_MAX) * 0.35);
+    return s;
+  }
+  function surveillerPincePdf(pince) {
+    var pince0 = null; // { dist, echelle } au début du pincement
+    var milieu = null; // dernier point milieu des deux doigts
+    var tape = null, dernierTape = null; // détection du double-toucher
+    var derniereTouche = 0; // un double-toucher ne doit pas rejouer dblclick
+    function distance(a, b) { return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY); }
+    function debutPince(e) {
+      var a = e.touches[0], b = e.touches[1];
+      pince0 = { dist: distance(a, b) || 1, echelle: pdfEchelle };
+      milieu = { x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 };
+    }
+    pince.addEventListener("touchstart", function (e) {
+      if (!pdfZoomable) return;
+      derniereTouche = Date.now();
+      arreterAnimZoomPdf();
+      annulerRenduPdf(); // le rendu HD attendra la fin du geste
+      pdfGeste = true;
+      if (e.touches.length >= 2) {
+        e.preventDefault(); // pas de défilement natif pendant le pincement
+        tape = dernierTape = null;
+        debutPince(e);
+      } else if (e.touches.length === 1) {
+        var t = e.touches[0];
+        tape = { x: t.clientX, y: t.clientY, quand: Date.now() };
+      }
+    }, { passive: false });
+    pince.addEventListener("touchmove", function (e) {
+      if (!pdfZoomable) return;
+      if (tape && e.touches.length === 1) {
+        var t = e.touches[0];
+        if (Math.hypot(t.clientX - tape.x, t.clientY - tape.y) > 10) tape = dernierTape = null;
+      }
+      if (!pince0) return; // un seul doigt : défilement natif
+      e.preventDefault(); // seul le PDF zoome, jamais le site
+      if (e.touches.length < 2) return; // un doigt levé : on attend la fin
+      var a = e.touches[0], b = e.touches[1];
+      var m = { x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 };
+      var s = elastiquePdf(pince0.echelle * distance(a, b) / pince0.dist);
+      zoomPdfVers(s, milieu.x, milieu.y, m.x - milieu.x, m.y - milieu.y);
+      milieu = m;
+    }, { passive: false });
+    function finToucher(e) {
+      if (!pdfZoomable) return;
+      if (pince0 && e.touches.length === 2) { debutPince(e); return; } // 3e doigt levé
+      if (e.touches.length > 0) return;
+      pdfGeste = false;
+      if (pince0) {
+        pince0 = null;
+        // Retour élastique dans les limites, ancré au dernier point milieu.
+        var cible = Math.min(PDF_ZOOM_MAX, Math.max(1, pdfEchelle));
+        animerZoomPdf(cible, milieu.x, milieu.y);
+        return;
+      }
+      if (!tape || e.type !== "touchend" || Date.now() - tape.quand > 300) {
+        tape = dernierTape = null; planifierNettetePdf(); return;
+      }
+      if (dernierTape && tape.quand - dernierTape.quand < 320 &&
+          Math.hypot(tape.x - dernierTape.x, tape.y - dernierTape.y) < 40) {
+        // Double-toucher : zoome ×2,5 à cet endroit, ou revient à ×1.
+        e.preventDefault();
+        animerZoomPdf(pdfEchelle > 1.1 ? 1 : 2.5, tape.x, tape.y);
+        dernierTape = null;
+      } else {
+        dernierTape = tape;
+        planifierNettetePdf();
+      }
+      tape = null;
+    }
+    pince.addEventListener("touchend", finToucher, { passive: false });
+    pince.addEventListener("touchcancel", finToucher);
+    pince.addEventListener("wheel", function (e) { // pavés tactiles / souris
+      if (!pdfZoomable || !e.ctrlKey) return;
+      e.preventDefault();
+      arreterAnimZoomPdf();
+      var s = Math.min(PDF_ZOOM_MAX, Math.max(1, pdfEchelle * Math.exp(-e.deltaY * 0.01)));
+      zoomPdfVers(s, e.clientX, e.clientY);
+      planifierNettetePdf();
+    }, { passive: false });
+    pince.addEventListener("dblclick", function (e) { // souris uniquement
+      if (!pdfZoomable || e.sourceCapabilities && e.sourceCapabilities.firesTouchEvents) return;
+      if (Date.now() - derniereTouche < 1000) return;
+      animerZoomPdf(pdfEchelle > 1.1 ? 1 : 2.5, e.clientX, e.clientY);
+    });
+  }
+  window.addEventListener("resize", function () { if (pdfZoomable) planifierNettetePdf(); });
+
+  /* Texte d'attente avec reflet (même effet que pour le PDF). */
+  function attente(el, texte) {
+    el.hidden = false;
+    el.classList.remove("erreur");
+    el.style.display = "";
+    el.textContent = "";
+    var bloc = document.createElement("span");
+    bloc.className = "pdf-texte";
+    bloc.textContent = texte;
+    var reflet = document.createElement("span");
+    reflet.className = "pdf-reflet";
+    reflet.setAttribute("aria-hidden", "true");
+    var copie = document.createElement("span");
+    copie.textContent = texte;
+    reflet.appendChild(copie);
+    bloc.appendChild(reflet);
+    el.appendChild(bloc);
+  }
+  function erreur(el, texte) {
+    el.hidden = false;
+    el.style.display = "";
+    el.classList.add("erreur");
+    el.textContent = texte;
+  }
+  function effacer(el) { el.textContent = ""; el.style.display = "none"; }
+
+  /* Requêtes vers l'API, avec délai maximum et message lisible. */
+  function fetchDelai(url, ms) {
+    var ctrl = new AbortController();
+    var timer = setTimeout(function () { ctrl.abort(); }, ms);
+    return fetch(url, { cache: "no-store", signal: ctrl.signal })
+      .then(function (r) { clearTimeout(timer); return r; }, function (e) {
+        clearTimeout(timer);
+        throw new Error(e && e.name === "AbortError"
+          ? "l'école met trop de temps à répondre."
+          : "pas de connexion à internet ?");
+      });
+  }
+  function api(url, ms) {
+    return fetchDelai(url, ms).then(function (r) {
+      return r.json().catch(function () {
+        throw new Error("réponse illisible du serveur (" + r.status + ").");
+      });
+    }).then(function (rep) {
+      if (!rep.ok) throw new Error(rep.erreur || "réponse incomplète.");
+      return rep;
+    });
+  }
+  function chargerHoraire(ecole, formation, frais) {
+    return api("api/horaires?ecole=" + encodeURIComponent(ecole) +
+               "&formation=" + encodeURIComponent(formation) +
+               (frais ? "&frais=" + Date.now() : ""), 95000)
+      .then(function (rep) {
+        if (!valide(rep.data)) throw new Error("réponse incomplète.");
+        ecrire(cleHoraire(ecole, formation), rep.data);
+        return rep.data;
+      });
+  }
+
+  /* ---------- Navigation entre les écrans ---------- */
+  var VUES = ["compte", "identite", "ecole", "formation", "groupes", "horaire"];
+  var vue = null, pile = []; // pile : écrans précédents (bouton Retour)
+  function montrer(v) {
+    vue = v;
+    VUES.forEach(function (n) { document.getElementById("v-" + n).hidden = n !== v; });
+    document.getElementById("btn-retour").hidden = !pile.length;
+    var moi = document.getElementById("btn-moi");
+    moi.hidden = v !== "horaire" || !profil;
+    window.scrollTo(0, 0);
+  }
+  function aller(v) {
+    if (vue && vue !== v) pile.push(vue);
+    ouvrir[v]();
+  }
+  document.getElementById("btn-retour").addEventListener("click", function () {
+    var prec = pile.pop();
+    if (prec) ouvrir[prec]();
+  });
+  var ouvrir = {
+    compte: ouvrirCompte,
+    identite: ouvrirIdentite,
+    ecole: ouvrirEcoles,
+    formation: ouvrirFormations,
+    groupes: function () { ouvrirGroupes(choix.groupes); },
+    horaire: afficherHoraire
+  };
+
+  /* ---------- 0. Connexion + identité (avant tout) ---------- */
+  function ouvrirCompte() {
+    pile = [];
+    document.body.removeAttribute("data-theme");
+    montrer("compte");
+    preparerApercu();
+    // Rien à dire quand tout va bien ; on prévient seulement en mode local.
+    var note = document.getElementById("auth-note");
+    if (note) {
+      note.hidden = SUPABASE_OK;
+      note.textContent = "Mode local : tes horaires restent sur cet appareil.";
+    }
+  }
+  /* Aperçu de l'écran de connexion : dates de la semaine en cours, jour
+     actuel en couleur et trait rouge à l'heure qu'il est (8 h – 18 h). */
+  function preparerApercu() {
+    var ap = document.querySelector("#v-compte .apercu");
+    if (!ap) return;
+    var auj = new Date();
+    var lundi = new Date(auj);
+    lundi.setDate(auj.getDate() - ((auj.getDay() + 6) % 7));
+    var jours = ap.querySelectorAll(".ap-jour"), cols = ap.querySelectorAll(".ap-col");
+    var ancien = ap.querySelector(".ap-now");
+    if (ancien) ancien.parentNode.removeChild(ancien);
+    Array.prototype.forEach.call(jours, function (j, i) {
+      var d = new Date(lundi);
+      d.setDate(lundi.getDate() + i);
+      var estAuj = d.toDateString() === auj.toDateString();
+      j.querySelector("strong").textContent = d.getDate();
+      j.classList.toggle("today", estAuj);
+      cols[i].classList.toggle("today", estAuj);
+      var h = auj.getHours() + auj.getMinutes() / 60;
+      if (estAuj && h >= 8 && h <= 18) {
+        var trait = document.createElement("div");
+        trait.className = "ap-now";
+        trait.style.top = ((h - 8) * 10) + "%";
+        cols[i].appendChild(trait);
+      }
+    });
+    // Les cours se posent en cascade, colonne par colonne.
+    Array.prototype.forEach.call(ap.querySelectorAll(".ap-ev"), function (ev, i) {
+      ev.style.setProperty("--i", i);
+    });
+  }
+  document.getElementById("voir-mdp").addEventListener("click", function () {
+    var champ = document.getElementById("mdp");
+    var voir = champ.type === "password";
+    champ.type = voir ? "text" : "password";
+    this.setAttribute("aria-pressed", voir ? "true" : "false");
+    this.setAttribute("aria-label", voir ? "Masquer le mot de passe" : "Afficher le mot de passe");
+  });
+  function ouvrirIdentite() {
+    montrer("identite");
+    if (compte) {
+      if (!document.getElementById("prenom").value) document.getElementById("prenom").value = compte.prenom || "";
+      if (!document.getElementById("nom").value) document.getElementById("nom").value = compte.nom || "";
+    }
+    themeChoisiIdentite = normaliserTheme(themeChoisiIdentite);
+    majThemeSelection("identite-themes", themeChoisiIdentite);
+    document.body.setAttribute("data-theme", String(themeChoisiIdentite));
+  }
+  var elIdThemes = document.getElementById("identite-themes");
+  if (elIdThemes) {
+    elIdThemes.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-theme-opt]");
+      if (!b) return;
+      var t = +b.getAttribute("data-theme-opt");
+      themeChoisiIdentite = t;
+      choix.theme = t;
+      majThemeSelection("identite-themes", t);
+      document.body.setAttribute("data-theme", String(t));
+    });
+  }
+  Array.prototype.forEach.call(document.querySelectorAll("#v-compte [data-auth]"), function (b) {
+    b.addEventListener("click", function () { AUTH.login(b.getAttribute("data-auth")); });
+  });
+  /* Connexion classique par email (mot de passe). */
+  function emailValide(v) { return /.+@.+\..+/.test(String(v || "").trim()); }
+  document.getElementById("btn-email").addEventListener("click", function () {
+    var em = document.getElementById("email").value;
+    var mp = document.getElementById("mdp").value;
+    if (!emailValide(em)) {
+      try { document.getElementById("email").focus(); } catch (e) { /* jetable */ }
+      statutAuthErreur("Indique une adresse email valide.");
+      return;
+    }
+    if (String(mp).length < 6) {
+      try { document.getElementById("mdp").focus(); } catch (e) { /* jetable */ }
+      statutAuthErreur("Mot de passe : 6 caractères minimum.");
+      return;
+    }
+    AUTH.loginEmail(em, mp);
+  });
+  Array.prototype.forEach.call([document.getElementById("email"), document.getElementById("mdp")], function (inp) {
+    if (inp) inp.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") { e.preventDefault(); document.getElementById("btn-email").click(); }
+    });
+  });
+  document.getElementById("btn-identite").addEventListener("click", function () {
+    var p = document.getElementById("prenom").value.replace(/\s+/g, " ").trim().slice(0, 30);
+    var n = document.getElementById("nom").value.replace(/\s+/g, " ").trim().slice(0, 30);
+    if (!p || !n) {
+      try { (!p ? document.getElementById("prenom") : document.getElementById("nom")).focus(); } catch (e) { /* jetable */ }
+      return;
+    }
+    if (!compte) compte = { fournisseur: fournisseurChoisi || "local", nom: "", prenom: "" };
+    compte.prenom = p; compte.nom = n;
+    sauverCompte();
+    pousserIdentite();
+    rendreAvatar();
+    choix.theme = themeChoisiIdentite;
+    document.body.setAttribute("data-theme", String(themeChoisiIdentite));
+    pile = [];
+    if (profil) {
+      afficherHoraire();
+      actualiser(false).catch(function () { /* hors ligne */ });
+    } else {
+      ouvrirEcoles();
+    }
+  });
+
+  /* ---------- 1. École ---------- */
+  // choix.editionId : null = nouvel horaire ; sinon id du profil modifié.
+  var choix = { ecole: null, formation: null, data: null, groupes: [], editionId: null, theme: null };
+  function demarrerAjout() {
+    choix = { ecole: profil ? profil.ecole : "heh", formation: null, data: null, groupes: [], editionId: null, theme: suggereThemeSuivant() };
+    document.getElementById("surnom").value = "";
+    pile = ["horaire"];
+    ouvrirEcoles();
+  }
+  function ouvrirEcoles() {
+    montrer("ecole");
+    document.getElementById("liste-ecoles").innerHTML = ECOLES.map(function (e) {
+      return '<li><button type="button" data-ecole="' + txt(e.id) + '"><span class="nom">' + txt(e.nom) +
+             "<small>" + txt(e.detail) + '</small></span><span class="chev" aria-hidden="true"></span></button></li>';
+    }).join("");
+  }
+  document.getElementById("liste-ecoles").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-ecole]");
+    if (!b) return;
+    var keepEdition = choix.editionId;
+    var keepTheme = choix.theme;
+    choix = { ecole: b.getAttribute("data-ecole"), formation: null, data: null, groupes: [], editionId: keepEdition, theme: keepTheme };
+    aller("formation");
+  });
+
+  /* ---------- 2. Formation ---------- */
+  var formations = { ecole: null, liste: null };
+  function sansAccents(s) {
+    return String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  }
+  function ouvrirFormations() {
+    montrer("formation");
+    var ec = ecoleDe(choix.ecole);
+    document.getElementById("formation-aide").textContent = ec.nom + " · " + ec.detail;
+    var status = document.getElementById("formations-status");
+    var champ = document.getElementById("recherche");
+    if (formations.ecole === choix.ecole && formations.liste) {
+      effacer(status); listerFormations(); return;
+    }
+    document.getElementById("liste-formations").innerHTML = "";
+    attente(status, "Chargement des formations…");
+    var demande = choix.ecole;
+    api("api/formations?ecole=" + encodeURIComponent(demande), 30000).then(function (rep) {
+      formations = { ecole: demande, liste: rep.formations };
+      if (vue !== "formation" || choix.ecole !== demande) return;
+      effacer(status); listerFormations();
+      if (window.matchMedia("(hover: hover)").matches) champ.focus();
+    }, function (e) {
+      if (vue === "formation") erreur(status, "Échec : " + e.message + " Reviens en arrière pour réessayer.");
+    });
+  }
+  function listerFormations() {
+    var mots = sansAccents(document.getElementById("recherche").value).split(/\s+/).filter(Boolean);
+    var trouvees = formations.liste.filter(function (f) {
+      var n = sansAccents(f);
+      return mots.every(function (m) { return n.indexOf(m) >= 0; });
+    });
+    document.getElementById("liste-formations").innerHTML = trouvees.length
+      ? trouvees.map(function (f) {
+          return '<li><button type="button" data-formation="' + txt(f) + '"><span class="nom">' + txt(f) +
+                 '</span><span class="chev" aria-hidden="true"></span></button></li>';
+        }).join("")
+      : '<li class="empty">Aucune formation ne correspond.</li>';
+  }
+  document.getElementById("recherche").addEventListener("input", function () {
+    if (formations.liste) listerFormations();
+  });
+  document.getElementById("liste-formations").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-formation]");
+    if (!b) return;
+    var memeFormation = choix.formation === b.getAttribute("data-formation");
+    choix.formation = b.getAttribute("data-formation");
+    if (!memeFormation) { choix.data = null; choix.groupes = []; }
+    document.getElementById("recherche").blur();
+    aller("groupes");
+  });
+
+  /* ---------- 3. Groupe(s) (+ surnom seulement s'il y a déjà un horaire) ----------
+     Selon la formation, l'école a un groupe par classe (on en choisit un),
+     un groupe par cours (on choisit tous les siens) ou aucun groupe.
+     Choisir plusieurs groupes est donc toujours permis.
+     Le surnom (ex. Info, Droit) nomme l'onglet du haut : il n'est demandé
+     qu'à partir du 2e horaire. Un seul horaire = affichage classique,
+     sans nom ni sélecteur. */
+  function ouvrirGroupes(preselection) {
+    montrer("groupes");
+    choix.groupes = (preselection || []).slice();
+    var status = document.getElementById("groupes-status");
+    var aide = document.getElementById("groupes-aide");
+    var chips = document.getElementById("chips");
+    var btn = document.getElementById("btn-valider");
+    var champSurnom = document.getElementById("surnom");
+    aide.textContent = choix.formation;
+    chips.innerHTML = ""; btn.hidden = true;
+    var edite = null;
+    if (choix.editionId) {
+      for (var k = 0; k < profils.length; k++) if (profils[k].id === choix.editionId) edite = profils[k];
+    }
+    if (edite && edite.formation === choix.formation) champSurnom.value = edite.surnom;
+    else champSurnom.value = surnomDefaut(choix.formation, choix.groupes);
+    // Premier horaire : pas de nom, pas de choix, juste l'horaire.
+    document.getElementById("bloc-surnom").style.display =
+      (!edite && profils.length === 0) ? "none" : "";
+    if (choix.theme == null) {
+      choix.theme = edite
+        ? normaliserTheme(edite.theme)
+        : (profils.length === 0 ? themeChoisiIdentite : suggereThemeSuivant());
+    }
+    choix.theme = normaliserTheme(choix.theme);
+    majThemeSelection("groupes-themes", choix.theme);
+    document.body.setAttribute("data-theme", String(choix.theme));
+    if (choix.data) { effacer(status); listerGroupes(); return; }
+    attente(status, "Recherche des groupes de " + choix.formation + "…");
+    var demande = choix.formation;
+    chargerHoraire(choix.ecole, demande, false).then(function (data) {
+      if (choix.formation !== demande) return;
+      choix.data = data;
+      if (vue !== "groupes") return;
+      effacer(status); listerGroupes();
+    }, function (e) {
+      if (vue === "groupes" && choix.formation === demande) {
+        erreur(status, "Échec : " + e.message + " Reviens en arrière pour réessayer.");
+      }
+    });
+  }
+  function listerGroupes() {
+    var groupes = choix.data.groupes;
+    var aide = document.getElementById("groupes-aide");
+    var btn = document.getElementById("btn-valider");
+    if (!groupes.length) {
+      aide.textContent = choix.formation + " n'a pas de groupes : tout le monde a le même horaire.";
+      document.getElementById("chips").innerHTML = "";
+      btn.hidden = false; btn.textContent = "Voir mon horaire";
+      return;
+    }
+    aide.textContent = groupes.length > 8
+      ? "Ta formation a des groupes par cours : sélectionne tous les tiens."
+      : "Sélectionne ton groupe (plusieurs si besoin).";
+    // Groupes disparus de l'horaire : oubliés.
+    choix.groupes = choix.groupes.filter(function (g) { return groupes.indexOf(g) >= 0; });
+    document.getElementById("chips").innerHTML = groupes.map(function (g) {
+      return '<button type="button" class="chip" data-groupe="' + txt(g) + '" aria-pressed="' +
+             (choix.groupes.indexOf(g) >= 0) + '">' + txt(propre(g)) + "</button>";
+    }).join("");
+    majValider();
+  }
+  function majValider() {
+    var btn = document.getElementById("btn-valider");
+    btn.hidden = false;
+    btn.textContent = choix.groupes.length ? "Voir mon horaire" : "Tout afficher, sans filtre";
+  }
+  document.getElementById("chips").addEventListener("click", function (e) {
+    var b = e.target.closest(".chip");
+    if (!b) return;
+    var g = b.getAttribute("data-groupe"), i = choix.groupes.indexOf(g);
+    if (i >= 0) choix.groupes.splice(i, 1); else choix.groupes.push(g);
+    b.setAttribute("aria-pressed", i < 0 ? "true" : "false");
+    majValider();
+  });
+  var elGrThemes = document.getElementById("groupes-themes");
+  if (elGrThemes) {
+    elGrThemes.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-theme-opt]");
+      if (!b) return;
+      var t = +b.getAttribute("data-theme-opt");
+      choix.theme = t;
+      majThemeSelection("groupes-themes", t);
+      document.body.setAttribute("data-theme", String(t));
+    });
+  }
+  document.getElementById("btn-valider").addEventListener("click", function () {
+    var groupes = choix.data.groupes;
+    var sel = groupes.filter(function (g) { return choix.groupes.indexOf(g) >= 0; }); // ordre de l'école
+    var surnom = document.getElementById("surnom").value.replace(/\s+/g, " ").trim() ||
+                 surnomDefaut(choix.formation, sel);
+    surnom = surnom.slice(0, 24);
+    if (choix.editionId) {
+      for (var i = 0; i < profils.length; i++) {
+        if (profils[i].id === choix.editionId) {
+          profils[i].ecole = choix.ecole;
+          profils[i].formation = choix.formation;
+          profils[i].groupes = sel;
+          profils[i].surnom = surnom;
+          if (choix.theme != null) profils[i].theme = normaliserTheme(choix.theme);
+          profil = profils[i];
+          break;
+        }
+      }
+    } else {
+      var theme = choix.theme != null ? normaliserTheme(choix.theme) : (profils.length === 0 ? themeChoisiIdentite : suggereThemeSuivant());
+      profil = {
+        id: nouveauId(), surnom: surnom,
+        ecole: choix.ecole, formation: choix.formation,
+        groupes: sel, theme: theme
+      };
+      profils.push(profil);
+    }
+    sauverProfils();
+    document.getElementById("surnom").value = "";
+    choix.editionId = null;
+    choix.theme = null;
+    pile = [];
+    fermerPdf();
+    installer(choix.data);
+    sem = semaineCourante();
+    resetDepliage(); deplierAujourdhui();
+    afficherHoraire();
+    actualiser(false).catch(function () { /* garde le cache local */ });
+  });
+
+  /* ---------- 4. Horaire (multi-profils) ---------- */
+  function appliquerTheme() {
+    var t = profil && typeof profil.theme === "number" ? normaliserTheme(profil.theme) : 2;
+    document.body.setAttribute("data-theme", String(t));
+  }
+  function choisirProfil(id) {
+    var trouve = null;
+    for (var i = 0; i < profils.length; i++) if (profils[i].id === id) trouve = profils[i];
+    if (!trouve || (profil && trouve.id === profil.id)) return;
+    profil = trouve;
+    sauverProfils();
+    fermerPdf();
+    DATA = null;
+    var memo = lire(cleHoraire(profil.ecole, profil.formation));
+    if (valide(memo)) installer(memo);
+    sem = semaineCourante();
+    resetDepliage(); deplierAujourdhui();
+    afficherHoraire();
+    actualiser(false).catch(function () { /* hors ligne : garde le cache */ });
+  }
+  function rendreSeg() {
+    var seg = document.getElementById("seg");
+    // Un seul horaire : pas de nom, pas de choix, rien — juste l'horaire classique.
+    // L'ajout d'un horaire se fait uniquement depuis le menu du compte
+    // (bouton « + Ajouter un horaire » dans la feuille) : jamais ici.
+    if (!profil || profils.length < 2) { seg.hidden = true; seg.innerHTML = '<span class="pill" aria-hidden="true"></span>'; return; }
+    seg.hidden = false;
+    var idx = 0;
+    for (var i = 0; i < profils.length; i++) if (profils[i].id === profil.id) idx = i;
+    seg.style.setProperty("--n", Math.max(1, profils.length));
+    seg.style.setProperty("--idx", idx);
+    seg.classList.toggle("defile", profils.length >= 4);
+    var html = '<span class="pill" aria-hidden="true"></span>';
+    profils.forEach(function (p) {
+      html += '<button type="button" role="tab" data-profil="' + txt(p.id) + '" aria-selected="' +
+              (p.id === profil.id) + '" title="' + txt(p.formation) + '">' + txt(p.surnom) + "</button>";
+    });
+    seg.innerHTML = html;
+  }
+  document.getElementById("seg").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-profil]");
+    if (b) choisirProfil(b.getAttribute("data-profil"));
+  });
+  function installer(data) {
+    DATA = data;
+    LUNDI0 = parseDate(DATA.meta.premier_lundi);
+    SEMAINES = parseEns(DATA.meta.periode).sort(function (a, b) { return a - b; });
+    var sel = profil.groupes;
+    COURS = DATA.cours.filter(function (c) {
+      if (!sel.length || !c.groupes.length) return true; // séance de toute la formation
+      return c.groupes.some(function (g) { return sel.indexOf(g) >= 0; });
+    });
+    if (SEMAINES.indexOf(sem) < 0) sem = semaineCourante();
+  }
+  function groupePdf() {
+    // PDF du groupe s'il n'y en a qu'un ; sinon celui de toute la formation.
+    return profil.groupes.length === 1 ? profil.groupes[0] : "";
+  }
+  function afficherHoraire() {
+    montrer("horaire");
+    if (!profil) { aller("ecole"); return; }
+    appliquerTheme();
+    rendreSeg();
+    rendreAvatar();
+    var multi = profils.length > 1;
+    var ligne = (multi ? profil.surnom + " · " : "") + profil.formation + (profil.groupes.length
+      ? " · " + (profil.groupes.length === 1 ? propre(profil.groupes[0]) : profil.groupes.length + " groupes")
+      : "");
+    var pl = document.getElementById("profil-ligne");
+    pl.hidden = multi; // plusieurs : la barre du haut dit déjà où on est
+    pl.textContent = ligne;
+    // En haut à droite : toujours juste la bulle avec les initiales,
+    // jamais le nom du cours. Le menu se déroule au clic comme avant.
+    document.getElementById("moi-txt").textContent = "";
+    document.getElementById("btn-moi").setAttribute("aria-label", "Réglages");
+    var status = document.getElementById("horaire-status");
+    var contenu = document.getElementById("horaire-contenu");
+    if (!DATA) {
+      contenu.hidden = true;
+      attente(status, multi ? "Chargement de l'horaire « " + profil.surnom + " »…" : "Chargement de ton horaire…");
+      return;
+    }
+    status.hidden = true;
+    contenu.hidden = false;
+    rendre();
+  }
+
+  function coursDe(s, jour) {
+    return COURS
+      .filter(function (c) { return c.jour === jour && c.semaines.indexOf(s) >= 0; })
+      .sort(function (a, b) { return a.debut < b.debut ? -1 : a.debut > b.debut ? 1 : 0; });
+  }
+  function mins(h) { return (+h.slice(0, 2)) * 60 + (+h.slice(3, 5)); }
+
+  function pauseEntre(finPrec, debutSuiv) {
+    if (mins(debutSuiv) <= mins(finPrec)) return null;
+    if (mins(finPrec) <= mins("12h30") && mins(debutSuiv) >= mins("13h30"))
+      return "Pause midi · 12h30 – 13h30";
+    if (finPrec === "10h15" && debutSuiv === "10h30")
+      return "Pause · 10h15 – 10h30";
+    return "Pause · " + fmtH(finPrec) + " – " + fmtH(debutSuiv);
+  }
+
+  function detailJour(cours, jour) {
+    var html = '<div><div class="box"><ol>';
+    for (var i = 0; i < cours.length; i++) {
+      var c = cours[i];
+      var cle = jour + ":" + i;
+      var estOuvert = !!coursOuverts[cle];
+      html += '<li class="c' + (estOuvert ? " open" : "") + '">';
+      html += '<button class="cbtn" data-cle="' + cle + '" aria-expanded="' + estOuvert + '">' +
+              '<span class="h">' + txt(fmtH(c.debut)) + " – " + txt(fmtH(c.fin)) + "</span>" +
+              '<span class="m">' + txt(c.matiere || "Cours") + "</span>" +
+              '<span class="minichev" aria-hidden="true"></span></button>';
+      var sub = "";
+      if (c.profs) sub += '<div><span class="k">Prof : </span>' + txt(c.profs) + "</div>";
+      sub += '<div><span class="k">Salle : </span>' +
+             (c.salles ? txt(c.salles.replace(/, ([^,]*)$/, " et $1")) : '<span class="nc">non communiquée</span>') + "</div>";
+      if (c.groupes.length && profil.groupes.length !== 1) {
+        sub += '<div><span class="k">Groupe : </span>' + txt(c.groupes.map(propre).join(", ")) + "</div>";
+      }
+      html += '<div class="csub"><div><div class="csub-in">' + sub + "</div></div></div>";
+      html += "</li>";
+      if (i < cours.length - 1) {
+        var p = pauseEntre(c.fin, cours[i + 1].debut);
+        if (p) html += '<li class="p">' + p + "</li>";
+      }
+    }
+    return html + "</ol></div></div>";
+  }
+
+  function rendre() {
+    if (!SEMAINES.length) {
+      document.getElementById("horaire-contenu").hidden = true;
+      erreur(document.getElementById("horaire-status"), "L'école n'a encore publié aucune semaine pour cette formation.");
+      rendreInfos();
+      return;
+    }
+    // Groupes choisis qui n'existent plus chez l'école : on prévient.
+    var perdus = profil.groupes.filter(function (g) { return DATA.groupes.indexOf(g) < 0; });
+    var avis = document.getElementById("avis");
+    avis.hidden = !perdus.length;
+    if (perdus.length) {
+      avis.innerHTML = (perdus.length === profil.groupes.length
+        ? "Tes groupes n'apparaissent plus dans l'horaire de l'école."
+        : "Certains de tes groupes n'apparaissent plus dans l'horaire de l'école (" +
+          txt(perdus.map(propre).join(", ")) + ").") +
+        ' <button type="button" id="btn-avis">Rechoisir</button>';
+      document.getElementById("btn-avis").addEventListener("click", changerGroupe);
+    }
+
+    var i = SEMAINES.indexOf(sem);
+    document.getElementById("sem-titre").textContent = "Semaine " + sem;
+    var lun = dateSemJour(sem, 0), ven = dateSemJour(sem, 4);
+    document.getElementById("sem-dates").textContent =
+      (lun.getMonth() === ven.getMonth()
+        ? lun.getDate() + " – " + fmtDate(ven)
+        : fmtDate(lun) + " – " + fmtDate(ven)) + " " + ven.getFullYear();
+    // La visionneuse PDF sous le bouton est conservée telle quelle
+    // (un dépliage de jour ne doit pas la refermer).
+    majBoutonPdf();
+    document.getElementById("sem-prec").disabled = i <= 0;
+    document.getElementById("sem-suiv").disabled = i >= SEMAINES.length - 1;
+    document.getElementById("btn-auj").classList.toggle("cache", sem === semaineCourante());
+
+    var auj = new Date();
+    var html = "", vide = true;
+    for (var j = 0; j < 6; j++) {
+      var liste = coursDe(sem, j);
+      if (liste.length) vide = false;
+      if (j === 5 && !liste.length) continue;
+      var date = dateSemJour(sem, j);
+      var estAuj = memeJour(date, auj);
+      var resume = liste.length
+        ? '<span class="dsum busy">' + fmtH(liste[0].debut) + " → " +
+          fmtH(liste.reduce(function (m, c) { return c.fin > m ? c.fin : m; }, liste[0].fin)) + "</span>"
+        : '<span class="dsum free">Libre</span>';
+      html += '<li class="day' + (estAuj ? " today" : "") + (joursOuverts[j] ? " open" : "") + '">' +
+        '<button data-jour="' + j + '" aria-expanded="' + (!!joursOuverts[j]) + '">' +
+        '<span class="dot" aria-hidden="true"></span>' +
+        '<span class="dname"><strong>' + JOURS[j] + "</strong>" +
+        "<span>" + fmtDate(date) + "</span></span>" +
+        resume + '<span class="chev" aria-hidden="true"></span></button>' +
+        '<div class="detail">' +
+        (liste.length ? detailJour(liste, j) : "<div></div>") +
+        "</div></li>";
+    }
+    document.getElementById("jours").innerHTML = vide
+      ? '<div class="empty">Aucun cours cette semaine.</div>'
+      : html;
+    rendreCal();
+    rendreInfos();
+  }
+
+  /* ---------- Grille de la semaine (ordinateur) ----------
+     Chaque cours est placé selon ses heures ; la journée tient dans la
+     hauteur de l'écran. Couleur stable par matière. Les cours qui se
+     chevauchent (plusieurs groupes) se partagent la largeur. */
+  var TEINTES = [221, 262, 332, 18, 152, 190, 40, 292, 204, 350];
+  function teinte(nom) {
+    var h = 0;
+    nom = String(nom || "");
+    for (var i = 0; i < nom.length; i++) h = (h * 31 + nom.charCodeAt(i)) >>> 0;
+    return TEINTES[h % TEINTES.length];
+  }
+  function couloirs(liste) {
+    var res = [], bloc = [], finBloc = -1, fins = [];
+    function clore() { bloc.forEach(function (x) { x.n = fins.length; }); bloc = []; fins = []; finBloc = -1; }
+    liste.forEach(function (c) {
+      var a = mins(c.debut), b = mins(c.fin);
+      if (bloc.length && a >= finBloc) clore();
+      var k = 0;
+      while (k < fins.length && fins[k] > a) k++;
+      fins[k] = b;
+      var x = { c: c, k: k };
+      bloc.push(x); res.push(x);
+      finBloc = Math.max(finBloc, b);
+    });
+    clore();
+    return res;
+  }
+  var evCal = [];
+  function rendreCal() {
+    fermerPop();
+    var jours = [], debut = 8 * 60, fin = 18 * 60;
+    for (var j = 0; j < 6; j++) {
+      var l = coursDe(sem, j);
+      if (j === 5 && !l.length) continue;
+      jours.push({ j: j, cours: l });
+      l.forEach(function (c) { debut = Math.min(debut, mins(c.debut)); fin = Math.max(fin, mins(c.fin)); });
+    }
+    debut = Math.floor(debut / 60) * 60;
+    fin = Math.ceil(fin / 60) * 60;
+    var duree = fin - debut;
+    function pc(m) { return (m - debut) / duree * 100; }
+    var auj = new Date(), maintenant = auj.getHours() * 60 + auj.getMinutes();
+    evCal = [];
+    var tete = "<div></div>", corps = '<div class="cal-heures" aria-hidden="true">';
+    for (var h = debut / 60; h <= fin / 60; h++) corps += '<span style="top:' + pc(h * 60) + '%">' + h + "h</span>";
+    corps += "</div>";
+    jours.forEach(function (d) {
+      var date = dateSemJour(sem, d.j), estAuj = memeJour(date, auj);
+      var resume = d.cours.length
+        ? "<small>" + fmtH(d.cours[0].debut) + " – " +
+          fmtH(d.cours.reduce(function (m, c) { return c.fin > m ? c.fin : m; }, d.cours[0].fin)) + "</small>"
+        : '<small class="libre">Libre</small>';
+      tete += '<div class="cal-jour' + (estAuj ? " today" : "") + '" title="' + JOURS[d.j] + " " + fmtDate(date) + '">' +
+              "<span>" + JOURS[d.j].slice(0, 3) + "</span><strong>" + date.getDate() + "</strong>" + resume + "</div>";
+      corps += '<div class="cal-col' + (estAuj ? " today" : "") + '">';
+      if (!d.cours.length) corps += '<div class="cal-libre">Pas de cours</div>';
+      couloirs(d.cours).forEach(function (x) {
+        var c = x.c, a = mins(c.debut), b = mins(c.fin);
+        var i = evCal.push(c) - 1;
+        corps += '<button type="button" class="ev' + (b - a < 75 ? " court" : "") + '" data-ev="' + i + '"' +
+          ' style="--hue:' + teinte(c.matiere) + ";--t:" + pc(a) + ";--d:" + (pc(b) - pc(a)) +
+          ";--l:" + (x.k / x.n) + ";--w:" + (1 / x.n) + '">' +
+          '<span class="et">' + txt(c.matiere || "Cours") + "</span>" +
+          (c.salles ? '<span class="es">' + txt(c.salles) + "</span>" : "") +
+          (c.profs ? '<span class="ep">' + txt(c.profs) + "</span>" : "") +
+          '<span class="eh">' + fmtH(c.debut) + " – " + fmtH(c.fin) + "</span>" + "</button>";
+      });
+      if (estAuj && maintenant > debut && maintenant < fin) {
+        corps += '<div class="cal-now" style="top:' + pc(maintenant) + '%" aria-hidden="true"></div>';
+      }
+      corps += "</div>";
+    });
+    var cal = document.getElementById("cal");
+    cal.style.setProperty("--n", jours.length);
+    cal.style.setProperty("--h", duree / 60);
+    cal.innerHTML = '<div class="cal-tete">' + tete + '</div><div class="cal-corps">' + corps + "</div>";
+  }
+  // Le trait « maintenant » avance tout seul.
+  setInterval(function () {
+    if (vue === "horaire" && DATA && SEMAINES.length && bureau() && !popSource) rendreCal();
+  }, 60000);
+
+  /* Bulle de détail d'un cours : à côté du bloc cliqué. */
+  var pop = document.getElementById("pop"), popSource = null;
+  function fermerPop() {
+    if (popSource) popSource.classList.remove("actif");
+    popSource = null;
+    pop.classList.remove("visible");
+  }
+  function ouvrirPop(btn) {
+    var c = evCal[+btn.getAttribute("data-ev")];
+    if (!c) return;
+    fermerPop();
+    var d = "";
+    d += "<dt>Salle</dt><dd>" + (c.salles ? txt(c.salles.replace(/, ([^,]*)$/, " et $1")) : '<span class="nc">non communiquée</span>') + "</dd>";
+    if (c.profs) d += "<dt>Prof</dt><dd>" + txt(c.profs) + "</dd>";
+    if (c.groupes.length && profil.groupes.length !== 1) d += "<dt>Groupe</dt><dd>" + txt(c.groupes.map(propre).join(", ")) + "</dd>";
+    var date = dateSemJour(sem, c.jour);
+    pop.style.setProperty("--hue", teinte(c.matiere));
+    pop.innerHTML = '<p class="pt">' + txt(c.matiere || "Cours") + "</p>" +
+      '<p class="ph">' + JOURS[c.jour] + " " + fmtDate(date) + " · " + fmtH(c.debut) + " – " + fmtH(c.fin) + "</p>" +
+      "<dl>" + d + "</dl>";
+    var r = btn.getBoundingClientRect(), w = pop.offsetWidth, hp = pop.offsetHeight;
+    var x = r.right + 12;
+    if (x + w > window.innerWidth - 16) x = r.left - w - 12;
+    if (x < 16) x = Math.max(16, Math.min(window.innerWidth - w - 16, r.left));
+    var y = Math.max(88, Math.min(window.innerHeight - hp - 16, r.top));
+    pop.style.left = x + "px";
+    pop.style.top = y + "px";
+    popSource = btn;
+    btn.classList.add("actif");
+    pop.classList.add("visible");
+  }
+  document.getElementById("cal").addEventListener("click", function (e) {
+    var b = e.target.closest(".ev");
+    if (!b) return;
+    if (popSource === b) fermerPop(); else ouvrirPop(b);
+  });
+  document.addEventListener("click", function (e) {
+    if (confirmationOuverte()) return;
+    if (popSource && !pop.contains(e.target) && !e.target.closest(".ev")) fermerPop();
+    if (feuille.classList.contains("visible") && !feuille.contains(e.target) && !e.target.closest("#btn-moi")) fermerFeuille();
+  });
+  window.addEventListener("resize", fermerPop);
+  /* Raccourcis clavier (ordinateur) : ← → semaines, + − zoom du PDF. */
+  document.addEventListener("keydown", function (e) {
+    if (confirmationOuverte()) return;
+    if (vue !== "horaire" || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.target.closest && e.target.closest("input, textarea, select")) return;
+    if (feuille.classList.contains("visible")) return;
+    if (e.key === "ArrowLeft") document.getElementById("sem-prec").click();
+    else if (e.key === "ArrowRight") document.getElementById("sem-suiv").click();
+    else if ((e.key === "+" || e.key === "=") && pdfZoomable) zoomPasPdf(1);
+    else if ((e.key === "-" || e.key === "_") && pdfZoomable) zoomPasPdf(-1);
+    else return;
+    e.preventDefault();
+  });
+  function rendreInfos() {
+    if (!DATA || !profil) return;
+    document.getElementById("maj").textContent = "Mis à jour le " + DATA.meta.fetched_at + ".";
+    rendreListeProfils();
+  }
+  var COULEURS_POINTS = ["#1d4fd7", "#0e8655", "#1d4fd7", "#d14d8a"];
+  /* Renommé = le nom affiché diffère du nom officiel de la formation.
+     Les Détails (nom officiel + groupe) n'existent que dans ce cas :
+     sinon la ligne affiche déjà le nom officiel.
+     On compare au nom par défaut (espaces nettoyés, 24 car. max) :
+     sinon un nom officiel long (> 24 car.) passerait pour « renommé »
+     alors qu'on n'a encore rien personnalisé. */
+  function estRenomme(p) {
+    if (!p) return false;
+    return propre(p.surnom || "").slice(0, 24) !== surnomDefaut(p.formation);
+  }
+  function texteGroupe(p) {
+    if (!p.groupes.length) return "Tous les cours";
+    if (p.groupes.length === 1) return propre(p.groupes[0]);
+    return p.groupes.length + " groupes";
+  }
+  var carteOuverte = null, renommeEnCours = null, detailsOuverts = null;
+  function rendreListeProfils() {
+    var zone = document.getElementById("liste-profils");
+    if (!zone) return;
+    zone.innerHTML = profils.map(function (p) {
+      var nom = estRenomme(p) ? p.surnom : p.formation;
+      var grp = texteGroupe(p);
+      if (grp === nom) grp = ecoleDe(p.ecole).nom; // jamais deux fois la même ligne
+      var coul = couleurTheme(p.theme);
+      var html = '<div class="pcard' + (profil && p.id === profil.id ? " actif" : "") +
+        (carteOuverte === p.id ? " menu-ouvert" : "") + '">' +
+        '<div class="pcard-ligne">' +
+        '<button type="button" class="pcard-main" data-liste="' + txt(p.id) + '">' +
+        '<span class="pt-point" style="background:' + coul + '"></span>' +
+        '<span class="pt-textes"><span class="pt-nom">' + txt(nom) + "</span>" +
+        '<span class="pt-detail">' + txt(grp) + "</span></span></button>" +
+        '<button type="button" class="dots" data-dots="' + txt(p.id) + '" aria-label="Options de ' + txt(nom) +
+        '" aria-expanded="' + (carteOuverte === p.id) + '">⋮</button></div>';
+      if (carteOuverte === p.id) {
+        html += '<div class="ppop" role="menu">';
+        if (renommeEnCours === p.id) {
+          var tActuel = editionTheme != null ? editionTheme : normaliserTheme(p.theme);
+          html += '<div class="pedit">' +
+                  '<input data-edit="' + txt(p.id) + '" type="text" maxlength="24" value="' +
+                  txt(p.surnom) + '" aria-label="Nom de cet horaire" placeholder="Nom de cet horaire">' +
+                  '<div class="pedit-themes" role="radiogroup" aria-label="Couleur de cet horaire">' +
+                  '<button type="button" class="pedit-theme-btn" data-pedit-theme="2" role="radio" aria-checked="' + (tActuel === 2) + '" aria-label="Bleu">' +
+                  '<span class="pedit-pastille" style="background:#1d4fd7"></span> Bleu</button>' +
+                  '<button type="button" class="pedit-theme-btn" data-pedit-theme="1" role="radio" aria-checked="' + (tActuel === 1) + '" aria-label="Vert">' +
+                  '<span class="pedit-pastille" style="background:#0e8655"></span> Vert</button>' +
+                  '<button type="button" class="pedit-theme-btn" data-pedit-theme="3" role="radio" aria-checked="' + (tActuel === 3) + '" aria-label="Rose">' +
+                  '<span class="pedit-pastille" style="background:#d14d8a"></span> Rose</button>' +
+                  '</div>' +
+                  '<button type="button" class="pedit-valider" data-valider="' + txt(p.id) + '" aria-label="Valider les modifications">✓ Enregistrer</button></div>';
+        } else {
+          html += '<button type="button" class="pop-act" data-act="modifier" data-id="' + txt(p.id) + '">Modifier</button>' +
+            (estRenomme(p) ? '<button type="button" class="pop-act" data-act="details" data-id="' + txt(p.id) + '">Détails</button>' : "") +
+            '<button type="button" class="pop-act danger-txt" data-act="supprimer" data-id="' + txt(p.id) + '">Supprimer</button>';
+        }
+        if (detailsOuverts === p.id) {
+          html += '<div class="pdetails"><div><span class="k">Option : </span>' + txt(p.formation) + "</div>" +
+                  "<div><span class=\"k\">Groupe : </span>" + txt(texteGroupe(p)) +
+                  (p.groupes.length > 1 ? " (" + txt(p.groupes.map(propre).join(", ")) + ")" : "") +
+                  "</div><div><span class=\"k\">École : </span>" + txt(ecoleDe(p.ecole).nom) + "</div></div>";
+        }
+        html += "</div>";
+      }
+      return html + "</div>";
+    }).join("");
+  }
+  function profilParId(id) {
+    for (var i = 0; i < profils.length; i++) if (profils[i].id === id) return profils[i];
+    return null;
+  }
+  function focusEdition(id) {
+    var inp = document.querySelector('input[data-edit="' + id + '"]');
+    if (inp) { try { inp.focus(); inp.select(); } catch (e) { /* jetable */ } }
+  }
+  /* Oriente le popup vers le bas, sauf s'il dépasserait de l'écran
+     (carte en bas de feuille) : il s'ouvre alors vers le haut. */
+  function orienterPopup(id) {
+    var btn = document.querySelector('[data-dots="' + id + '"]');
+    var card = btn && btn.closest ? btn.closest(".pcard") : null;
+    var pop = card ? card.querySelector(".ppop") : null;
+    if (!pop) return;
+    pop.classList.remove("haut");
+    var r = pop.getBoundingClientRect();
+    if (r.bottom > window.innerHeight - 8) pop.classList.add("haut");
+  }
+  function validerRenommage(id) {
+    var inp = document.querySelector('input[data-edit="' + id + '"]');
+    var nv = inp ? inp.value.replace(/\s+/g, " ").trim().slice(0, 24) : "";
+    var p = profilParId(id);
+    if (p) {
+      if (nv) p.surnom = nv;
+      if (editionTheme != null) p.theme = normaliserTheme(editionTheme);
+    }
+    sauverProfils();
+    renommeEnCours = null; carteOuverte = null; editionTheme = null;
+    if (profil) {
+      appliquerTheme();
+      afficherHoraire();
+    }
+    rendreListeProfils();
+  }
+  function supprimerProfil(id) {
+    var p = profilParId(id);
+    if (!p) return;
+    var nom = estRenomme(p) ? p.surnom : p.formation;
+    demanderConfirmation({
+      titre: "Supprimer cet horaire ?",
+      message: "Supprimer l'horaire <strong>« " + txt(nom) + " »</strong> de cet appareil" +
+               (sessionSupabase ? " et de ton compte" : "") + " ?<br>Cette action est définitive.",
+      confirmer: "Supprimer",
+      annuler: "Annuler",
+      danger: true
+    }).then(function (ok) {
+      if (!ok) return;
+      var idx = profils.indexOf(p);
+      if (idx >= 0) profils.splice(idx, 1);
+      supprimerProfilDistant(id); // efface aussi la ligne cloud, si connecté
+      if (profil && profil.id === id) profil = profils[Math.min(idx, profils.length - 1)] || null;
+      carteOuverte = null; renommeEnCours = null; detailsOuverts = null; editionTheme = null; editionTheme = null;
+      sauverProfils();
+      fermerFeuille();
+      fermerPdf();
+      DATA = null;
+      if (profil) {
+        var memo = lire(cleHoraire(profil.ecole, profil.formation));
+        if (valide(memo)) installer(memo);
+        sem = semaineCourante();
+        resetDepliage(); deplierAujourdhui();
+        afficherHoraire();
+        actualiser(false).catch(function () { /* hors ligne */ });
+      } else {
+        pile = [];
+        ouvrirEcoles();
+      }
+    });
+  }
+  document.getElementById("liste-profils").addEventListener("click", function (e) {
+    // Stoppe ici : chaque tap re-rend la liste (la cible est détachée),
+    // et le détecteur de clic-extérieur fermerait la feuille par erreur.
+    e.stopPropagation();
+    var pt = e.target.closest("[data-pedit-theme]");
+    if (pt) {
+      editionTheme = +pt.getAttribute("data-pedit-theme");
+      var btns = pt.parentElement.querySelectorAll("[data-pedit-theme]");
+      Array.prototype.forEach.call(btns, function (b) {
+        b.setAttribute("aria-checked", b === pt ? "true" : "false");
+      });
+      return;
+    }
+    var v = e.target.closest("[data-valider]");
+    if (v) { validerRenommage(v.getAttribute("data-valider")); return; }
+    var a = e.target.closest("[data-act]");
+    if (a) {
+      var id = a.getAttribute("data-id"), act = a.getAttribute("data-act");
+      if (act === "renommer" || act === "modifier") {
+        renommeEnCours = id;
+        var pCur = profilParId(id);
+        editionTheme = pCur ? normaliserTheme(pCur.theme) : 2;
+        detailsOuverts = null;
+        rendreListeProfils(); orienterPopup(id); focusEdition(id);
+      } else if (act === "details") {
+        detailsOuverts = detailsOuverts === id ? null : id;
+        rendreListeProfils(); orienterPopup(id);
+      } else if (act === "supprimer") {
+        supprimerProfil(id);
+      }
+      return;
+    }
+    var d = e.target.closest("[data-dots]");
+    if (d) {
+      var did = d.getAttribute("data-dots");
+      var ouvre = carteOuverte !== did;
+      carteOuverte = ouvre ? did : null;
+      if (!ouvre) { renommeEnCours = null; detailsOuverts = null; editionTheme = null; }
+      rendreListeProfils();
+      if (ouvre) orienterPopup(did);
+      return;
+    }
+    var b = e.target.closest("button[data-liste]");
+    if (!b) return;
+    fermerFeuille();
+    choisirProfil(b.getAttribute("data-liste"));
+  });
+  // Entrée = valider le nouveau nom, Échap = annuler (sans fermer la feuille).
+  document.getElementById("liste-profils").addEventListener("keydown", function (e) {
+    var inp = e.target.closest ? e.target.closest("[data-edit]") : null;
+    if (!inp) return;
+    if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); validerRenommage(inp.getAttribute("data-edit")); }
+    else if (e.key === "Escape") { e.stopPropagation(); renommeEnCours = null; editionTheme = null; rendreListeProfils(); }
+  });
+  // Dépliages : un seul écouteur, qui survit aux nouveaux rendus.
+  document.getElementById("jours").addEventListener("click", function (e) {
+    var c = e.target.closest(".cbtn");
+    if (c) {
+      var cle = c.getAttribute("data-cle");
+      if (coursOuverts[cle]) { delete coursOuverts[cle]; } else { coursOuverts[cle] = true; }
+      rendre(); return;
+    }
+    var b = e.target.closest(".day > button");
+    if (!b) return;
+    var j = +b.getAttribute("data-jour");
+    if (joursOuverts[j]) { delete joursOuverts[j]; } else { joursOuverts[j] = true; }
+    rendre();
+  });
+
+  document.getElementById("sem-prec").addEventListener("click", function () {
+    var i = SEMAINES.indexOf(sem);
+    if (i > 0) { sem = SEMAINES[i - 1]; resetDepliage(); fermerPdf(); rendre(); }
+  });
+  document.getElementById("sem-suiv").addEventListener("click", function () {
+    var i = SEMAINES.indexOf(sem);
+    if (i < SEMAINES.length - 1) { sem = SEMAINES[i + 1]; resetDepliage(); fermerPdf(); rendre(); }
+  });
+  document.getElementById("btn-auj").addEventListener("click", function () {
+    sem = semaineCourante(); resetDepliage(); fermerPdf(); rendre();
+  });
+  // Auto-déplier aujourd'hui s'il est affiché et qu'il y a cours.
+  function deplierAujourdhui() {
+    var auj = new Date();
+    for (var j = 0; j < 6; j++) {
+      if (memeJour(dateSemJour(sem, j), auj) && coursDe(sem, j).length) { joursOuverts[j] = true; break; }
+    }
+  }
+
+  /* Clic sur le bouton PDF : ouvre la visionneuse sous le bouton, à la
+     largeur de l'écran. Pendant le téléchargement, le texte d'attente
+     balaie un reflet en boucle ; il disparaît dès que le PDF s'affiche.
+     Un clic sur le PDF n'ouvre rien : le pincement zoome uniquement le
+     PDF, jamais le reste du site. Un second clic sur le bouton masque. */
+  /* Clic sur le bouton PDF : ouvre la visionneuse sous le bouton, à la
+     largeur de l'écran. Pendant le téléchargement, le texte d'attente
+     balaie un reflet en boucle ; il disparaît dès que le PDF s'affiche.
+     Un clic sur le PDF n'ouvre rien : le pincement zoome uniquement le
+     PDF, jamais le reste du site. Un second clic sur le bouton masque. */
+  document.getElementById("btn-pdf").addEventListener("click", function () {
+    var btn = document.getElementById("btn-pdf");
+    var zone = document.getElementById("pdf-zone");
+    var status = document.getElementById("pdf-status");
+    if (pdfCharge) return; // téléchargement en cours : on attend la boucle
+    if (pdfOuvert) { fermerPdf(); return; }
+    var maDemande = ++pdfDemande;
+    pdfCharge = true; pdfOuvert = true;
+    btn.disabled = true;
+    majBoutonPdf();
+    zone.hidden = false;
+    statutPdfAttente(status);
+    fetch("api/pdf?ecole=" + encodeURIComponent(profil.ecole) +
+          "&formation=" + encodeURIComponent(profil.formation) +
+          "&groupe=" + encodeURIComponent(groupePdf()) +
+          "&semaine=" + encodeURIComponent(sem), { cache: "no-store" })
+      .then(function (r) {
+        if (!r.ok) {
+          return r.text().then(function (msg) {
+            throw new Error((msg || ("erreur " + r.status)) + ".");
+          }, function () {
+            throw new Error("erreur " + r.status + ".");
+          });
+        }
+        return r.blob();
+      })
+      .then(function (blob) {
+        if (maDemande !== pdfDemande) return; // semaine changée entre-temps
+        if (!blob || (blob.size === 0)) throw new Error("PDF vide.");
+        if (pdfURL) { try { URL.revokeObjectURL(pdfURL); } catch (e) { /* jetable */ } }
+        pdfURL = URL.createObjectURL(blob);
+        status.style.display = "none"; // le texte disparaît, le PDF est là
+        var apercu = document.createElement("div");
+        apercu.className = "pdf-apercu";
+        var pince = document.createElement("div");
+        pince.className = "pdf-pince";
+        var pages = document.createElement("div");
+        pages.className = "pdf-pages";
+        pince.appendChild(pages);
+        apercu.appendChild(pince);
+        var dezoom = document.createElement("button");
+        dezoom.type = "button";
+        dezoom.className = "pdf-dezoom";
+        dezoom.textContent = "Taille normale";
+        dezoom.addEventListener("click", dezoomerPdf);
+        apercu.appendChild(dezoom);
+        pdfPagesEl = pages; pdfPinceEl = pince; pdfDezoomEl = dezoom; pdfEchelle = 1;
+        pdfZoomable = true;
+        surveillerPincePdf(pince);
+        zone.appendChild(apercu);
+        var astuce = document.createElement("p");
+        astuce.className = "pdf-astuce";
+        astuce.textContent = bureau()
+          ? "Ctrl + molette ou double-clic pour zoomer à un endroit."
+          : "Pincez ou touchez deux fois pour zoomer à un endroit.";
+        zone.appendChild(astuce);
+        pdfCharge = false;
+        btn.disabled = false;
+        majBoutonPdf();
+        // Rendu en images : si indisponible, repli sur le visualiseur natif.
+        function repliIframe() {
+          if (maDemande !== pdfDemande || !pages.isConnected) return;
+          pdfZoomable = false; // le visualiseur natif gère son propre zoom
+          pdfEchelle = 1; zoomPdfAppliquer();
+          pages.innerHTML = "";
+          var frame = document.createElement("iframe");
+          frame.className = "pdf-frame";
+          frame.title = "PDF officiel de la semaine " + sem;
+          frame.src = pdfURL;
+          pages.appendChild(frame);
+        }
+        if (typeof pdfjsLib === "undefined") { repliIframe(); return; }
+        try {
+          pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_CDN + "pdf.worker.min.js";
+        } catch (e) { /* ouvrier déjà réglé */ }
+        blob.arrayBuffer().then(function (buf) {
+          if (maDemande !== pdfDemande) return;
+          pdfjsLib.getDocument({ data: buf }).promise.then(function (doc) {
+            if (maDemande !== pdfDemande) { try { doc.destroy(); } catch (e) { /* jetable */ } return; }
+            oublierPdfDoc();
+            pdfDoc = doc;
+            rendrePagesPdf(pages);
+          }, repliIframe);
+        }, repliIframe);
+      }, function (e) {
+        if (maDemande !== pdfDemande) return;
+        pdfCharge = false; pdfOuvert = true; // zone reste ouverte sur l'erreur
+        status.classList.add("erreur");
+        status.style.display = "";
+        status.textContent = "Échec : " + (e && e.message || "erreur inconnue.") + " Touchez le bouton pour réessayer.";
+        btn.disabled = false;
+        majBoutonPdf();
+      });
+  });
+
+  /* ---------- Feuille : avatar + nom/prénom, puis mes horaires ---------- */
+  var feuille = document.getElementById("feuille");
+  var NOMS_FOURNISSEURS = { google: "Compte Google", apple: "Compte Apple", github: "Compte GitHub", email: "Compte email", local: "Compte local" };
+  function ouvrirFeuille() {
+    rendreAvatar();
+    if (compte) {
+      document.getElementById("reg-nom").textContent =
+        ((compte.prenom || "") + " " + (compte.nom || "")).replace(/\s+/g, " ").trim() || "Mon compte";
+      document.getElementById("reg-fournisseur").textContent =
+        NOMS_FOURNISSEURS[compte.fournisseur] || "Compte";
+    }
+    carteOuverte = null; renommeEnCours = null; detailsOuverts = null;
+    document.getElementById("menu-compte").hidden = true;
+    document.getElementById("menu-compte-choix").hidden = false;
+    document.getElementById("btn-compte-menu").setAttribute("aria-expanded", "false");
+    document.getElementById("reg-edit").hidden = true;
+    rendreListeProfils();
+    feuille.style.transform = "";
+    feuille.classList.add("visible");
+    document.body.classList.add("sheet-ouverte");
+  }
+  function fermerFeuille() {
+    feuille.classList.remove("dragging");
+    feuille.style.transform = "";
+    feuille.classList.remove("visible");
+    document.body.classList.remove("sheet-ouverte");
+  }
+  document.getElementById("btn-moi").addEventListener("click", function () {
+    if (feuille.classList.contains("visible")) fermerFeuille(); else ouvrirFeuille();
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") { if (confirmationOuverte()) return; fermerFeuille(); fermerPop(); }
+  });
+  /* Glissé vers le bas : suit le doigt, puis ferme ou revient en place.
+     Ne démarre pas sur les boutons pour ne pas bloquer le clic. */
+  (function () {
+    var debutY = 0, dy = 0, enCours = false, debutT = 0;
+    feuille.addEventListener("pointerdown", function (e) {
+      if (!feuille.classList.contains("visible") || bureau()) return; // menu fixe sur ordinateur
+      if (e.target.closest("button")) return;
+      enCours = true; debutY = e.clientY; dy = 0; debutT = Date.now();
+      feuille.classList.add("dragging");
+      try { feuille.setPointerCapture(e.pointerId); } catch (err) { /* Safari */ }
+    });
+    feuille.addEventListener("pointermove", function (e) {
+      if (!enCours) return;
+      dy = e.clientY - debutY;
+      if (dy < 0) dy = 0;
+      if (dy > 0) feuille.style.transform = "translateY(" + dy + "px)";
+    });
+    function fin() {
+      if (!enCours) return;
+      enCours = false;
+      feuille.classList.remove("dragging");
+      var duree = Math.max(1, Date.now() - debutT);
+      var vitesse = dy / duree; // px/ms
+      if (dy > 90 || (dy > 30 && vitesse > 0.5)) fermerFeuille();
+      else feuille.style.transform = "";
+    }
+    feuille.addEventListener("pointerup", fin);
+    feuille.addEventListener("pointercancel", fin);
+  })();
+  /* Rechoix des groupes quand ceux de l'école ont changé (bouton de l'avis).
+     Les boutons « Changer » ont été retirés de la feuille : on ne passe
+     plus par ici que dans ce cas. */
+  function changerGroupe() {
+    if (!profil) return;
+    fermerFeuille();
+    document.getElementById("surnom").value = profil.surnom;
+    choix = { ecole: profil.ecole, formation: profil.formation, data: DATA, groupes: profil.groupes, editionId: profil.id, theme: normaliserTheme(profil.theme) };
+    aller("groupes");
+  }
+  document.getElementById("btn-ajouter").addEventListener("click", function () {
+    fermerFeuille();
+    demarrerAjout();
+  });
+  /* ⋮ du compte : popup Modifier (nom/prénom en édition + ✓) / Se déconnecter. */
+  document.getElementById("btn-compte-menu").addEventListener("click", function () {
+    var m = document.getElementById("menu-compte");
+    var ouvre = m.hidden;
+    carteOuverte = null; renommeEnCours = null; detailsOuverts = null;
+    rendreListeProfils();
+    document.getElementById("menu-compte-choix").hidden = false;
+    document.getElementById("reg-edit").hidden = true;
+    m.hidden = !ouvre;
+    document.getElementById("btn-compte-menu").setAttribute("aria-expanded", ouvre ? "true" : "false");
+  });
+  document.getElementById("btn-modifier-identite").addEventListener("click", function () {
+    document.getElementById("menu-compte-choix").hidden = true;
+    document.getElementById("edit-prenom").value = (compte && compte.prenom) || "";
+    document.getElementById("edit-nom").value = (compte && compte.nom) || "";
+    document.getElementById("reg-edit").hidden = false;
+    try { document.getElementById("edit-prenom").focus(); } catch (e) { /* jetable */ }
+  });
+  document.getElementById("btn-valider-identite").addEventListener("click", function () {
+    var p = document.getElementById("edit-prenom").value.replace(/\s+/g, " ").trim().slice(0, 30);
+    var n = document.getElementById("edit-nom").value.replace(/\s+/g, " ").trim().slice(0, 30);
+    if (!p || !n) return;
+    if (!compte) compte = { fournisseur: "local", nom: "", prenom: "" };
+    compte.prenom = p; compte.nom = n;
+    sauverCompte();
+    pousserIdentite();
+    rendreAvatar();
+    document.getElementById("reg-nom").textContent = p + " " + n;
+    document.getElementById("reg-edit").hidden = true;
+    document.getElementById("menu-compte-choix").hidden = false;
+    document.getElementById("menu-compte").hidden = true;
+    document.getElementById("btn-compte-menu").setAttribute("aria-expanded", "false");
+  });
+  Array.prototype.forEach.call(document.querySelectorAll("#reg-edit input"), function (inp) {
+    inp.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") { e.preventDefault(); document.getElementById("btn-valider-identite").click(); }
+    });
+  });
+  document.getElementById("btn-logout").addEventListener("click", function () {
+    demanderConfirmation({
+      titre: "Se déconnecter ?",
+      message: "Tes horaires restent enregistrés sur ton compte.<br>Tu pourras les retrouver en te reconnectant.",
+      confirmer: "Se déconnecter",
+      annuler: "Rester connecté",
+      danger: false
+    }).then(function (ok) {
+      if (!ok) return;
+      fermerFeuille();
+      fermerPdf();
+      AUTH.logout();
+      DATA = null;
+      pile = [];
+      ouvrirCompte();
+    });
+  });
+  /* Mise à jour depuis l'école : automatique à l'ouverture et au retour
+     sur l'app après 10 min (recharger la page suffit toujours).
+     Une réponse plus ancienne que ce qui est affiché est ignorée : deux
+     requêtes qui se croisent ne peuvent pas faire revenir en arrière. */
+  function empreinte(d) {
+    return JSON.stringify([d.cours, d.groupes, d.meta.periode, d.meta.premier_lundi]);
+  }
+  var derniereMaj = 0;
+  function actualiser(frais) {
+    if (!profil) return Promise.resolve(false);
+    derniereMaj = Date.now();
+    var p = profil;
+    return chargerHoraire(p.ecole, p.formation, frais).then(function (data) {
+      if (profil !== p) return false; // profil changé entre-temps
+      if (DATA && DATA.formation === data.formation && data.meta.ts < DATA.meta.ts) return false;
+      var premier = !DATA;
+      var change = premier || empreinte(data) !== empreinte(DATA);
+      if (!change) { DATA = data; rendreInfos(); return false; }
+      if (!premier) { coursOuverts = {}; fermerPdf(); } // le PDF affiché serait périmé
+      installer(data);
+      if (premier) { sem = semaineCourante(); deplierAujourdhui(); }
+      if (vue === "horaire") afficherHoraire();
+      return true;
+    });
+  }
+  document.addEventListener("visibilitychange", function () {
+    if (profil && document.visibilityState === "visible" && Date.now() - derniereMaj > 600000) {
+      actualiser(false).catch(function () { /* on garde ce qui est affiché */ });
+    }
+  });
+
+  /* ---------- Démarrage ----------
+     Ouvre le dernier horaire revu (connecté par défaut) : le cache local
+     s'affiche tout de suite, puis actualiser() va chercher l'école. */
+  function demarrerHoraire() {
+    var memo = lire(cleHoraire(profil.ecole, profil.formation));
+    if (valide(memo)) {
+      installer(memo);
+      sem = semaineCourante();
+      deplierAujourdhui();
+    }
+    afficherHoraire();
+    actualiser(false).catch(function (e) {
+      if (!DATA && vue === "horaire") {
+        erreur(document.getElementById("horaire-status"),
+               "Impossible de charger ton horaire : " + e.message + " Recharge la page pour réessayer.");
+      }
+    });
+  }
+  /* ---------- Démarrage ----------
+     D'abord le cloud (/api/config puis session Supabase : un retour OAuth
+     arrive avec sa session), on tire les horaires du
+     compte, puis on route : pas de compte -> connexion, compte sans nom ->
+     identité, sinon dernier horaire revu (connecté par défaut). */
+  chargerConfigSupabase().then(function () { return initSupabase(); }).then(function () {
+    if (sessionSupabase && sessionSupabase.user) {
+      return pullProfils().then(function () { return null; }, function () { return null; });
+    }
+    return null;
+  }).then(function () {
+    demarrageFini = true;
+    if (!connecte()) {
+      if (compte) ouvrirIdentite();
+      else ouvrirCompte();
+    } else if (profil) {
+      demarrerHoraire();
+    } else {
+      ouvrirEcoles();
+    }
+    // Un autre appareil a peut-être tout : on pousse le local en douceur.
+    if (sessionSupabase) pushProfils().then(function () { /* jetable */ }, function () { /* jetable */ });
+  });
+})();
+</script>
+</body>
+</html>
