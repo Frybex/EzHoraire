@@ -18,12 +18,14 @@ import formations  # noqa: E402
 import horaires  # noqa: E402
 import pdf  # noqa: E402
 import config  # noqa: E402
+import stats  # noqa: E402
 
 PORT = 8902
 ROUTES = {"/api/formations": formations.handler,
           "/api/horaires": horaires.handler,
           "/api/pdf": pdf.handler,
-          "/api/config": config.handler}
+          "/api/config": config.handler,
+          "/api/stats": stats.handler}
 
 
 class Serveur(ThreadingHTTPServer):

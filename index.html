@@ -1589,6 +1589,10 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg>
         Modifier mon nom
       </button>
+      <button class="pop-act" id="btn-admin" type="button" role="menuitem" hidden>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+        Tableau admin
+      </button>
       <button class="pop-act danger-txt" id="btn-logout" type="button" role="menuitem">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 16l-4-4 4-4M6 12h10"/></svg>
         Se déconnecter
@@ -1940,6 +1944,8 @@
       profil = null;
       ecrire(CLE_PROFILS, profils);
       ecrire(CLE_COURANT, null);
+      // Nouveau compte : le statut admin sera revérifié à la prochaine ouverture.
+      try { adminVerifie = false; var _ba = document.getElementById("btn-admin"); if (_ba) _ba.hidden = true; } catch (e2) { /* jetable */ }
     }
     var ancien = compte && (!compte.supabase_id || compte.supabase_id === user.id) ? compte : null;
     compte = { fournisseur: fournisseurChoisi,
@@ -2020,6 +2026,43 @@
     if (!SUPABASE_OK || !sb || !sessionSupabase) return;
     sb.from("profils").delete().eq("id", id).then(function () { /* jetable */ }, function () { /* jetable */ });
   }
+  /* ---------- Suivi d'usage (dashboard admin) ----------
+     Une consultation = ouverture de l'app sur un horaire, ou changement
+     d'horaire. Fire-and-forget : jamais bloquant, jamais d'erreur visible.
+     Table `visites` (voir supabase/schema.sql), RLS insert-only. */
+  function tracerVisite() {
+    try {
+      if (!SUPABASE_OK || !sb || !sessionSupabase || !sessionSupabase.user || !profil) return;
+      sb.from("visites").insert({
+        user_id: sessionSupabase.user.id,
+        profil_id: profil.id,
+        ecole: profil.ecole,
+        formation: profil.formation
+      }).then(function () { /* jetable */ }, function () { /* jetable */ });
+    } catch (e) { /* jetable */ }
+  }
+  /* ---------- Bouton « Tableau admin » (menu ⋮ du compte) ----------
+     Visible uniquement si /api/stats confirme que ce compte est admin
+     (liste ADMIN_EMAILS côté serveur). Vérifié une fois par session,
+     en arrière-plan à l'ouverture des réglages. */
+  var adminVerifie = false;
+  function montrerBoutonAdmin() {
+    var b = document.getElementById("btn-admin");
+    if (b) b.hidden = false;
+  }
+  function verifierAdmin() {
+    if (adminVerifie) return;
+    try {
+      if (!SUPABASE_OK || !sb || !sessionSupabase || !sessionSupabase.access_token) return;
+      fetch("api/stats?check=1", {
+        headers: { "Authorization": "Bearer " + sessionSupabase.access_token },
+        cache: "no-store"
+      }).then(function (r) { return r.json(); }).then(function (rep) {
+        if (rep && rep.ok) { adminVerifie = true; montrerBoutonAdmin(); }
+        // 403 = pas admin : le bouton reste caché, rien à signaler.
+      }, function () { /* hors ligne : on réessaiera à la prochaine ouverture */ });
+    } catch (e) { /* jetable */ }
+  }
 
   var AUTH = {
     user: null,
@@ -2089,6 +2132,7 @@
       var fini = function () {
         compte = null;
         try { localStorage.removeItem(CLE_COMPTE); } catch (e) { /* jetable */ }
+        try { adminVerifie = false; var _ba = document.getElementById("btn-admin"); if (_ba) _ba.hidden = true; } catch (e2) { /* jetable */ }
       };
       if (SUPABASE_OK && sb) return sb.auth.signOut().then(fini, fini);
       fini();
@@ -3011,6 +3055,7 @@
     resetDepliage(); deplierAujourdhui();
     afficherHoraire();
     actualiser(false).catch(function () { /* hors ligne : garde le cache */ });
+    tracerVisite();
   }
   function rendreSeg() {
     var seg = document.getElementById("seg");
@@ -3779,6 +3824,7 @@
     feuille.style.transform = "";
     feuille.classList.add("visible");
     document.body.classList.add("sheet-ouverte");
+    verifierAdmin(); // révèle « Tableau admin » si le compte est admin
   }
   function fermerFeuille() {
     feuille.classList.remove("dragging");
@@ -3847,6 +3893,11 @@
     this.setAttribute("aria-expanded", ouvre ? "true" : "false");
   });
   document.getElementById("btn-modifier-identite").addEventListener("click", modifierIdentite);
+  document.getElementById("btn-admin").addEventListener("click", function () {
+    fermerMenus();
+    fermerFeuille();
+    location.href = "dashboard.html";
+  });
   feuille.addEventListener("click", function (e) {
     if (!e.target.closest(".ppop, .dots")) fermerMenus();
   });
@@ -3940,6 +3991,7 @@
                "Impossible de charger ton horaire : " + e.message + " Recharge la page pour réessayer.");
       }
     });
+    tracerVisite();
   }
   /* ---------- Démarrage ----------
      D'abord le cloud (/api/config puis session Supabase : un retour OAuth

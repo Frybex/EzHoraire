@@ -54,3 +54,33 @@ create policy "profils_update_propres" on public.profils
 drop policy if exists "profils_delete_propres" on public.profils;
 create policy "profils_delete_propres" on public.profils
   for delete using (auth.uid() = user_id);
+
+-- ---------------------------------------------------------------
+-- EzHoraire — suivi d'usage pour le dashboard admin.
+-- Une ligne = une consultation d'horaire (ouverture de l'app ou
+-- changement d'horaire). L'app l'insère seule, en arrière-plan.
+-- Lecture interdite côté app : seul le dashboard (via /api/stats,
+-- clé service_role côté serveur) peut les agréger.
+-- À coller dans SQL Editor avec le reste du fichier (rejouable).
+-- ---------------------------------------------------------------
+create table if not exists public.visites (
+  id         bigint      generated always as identity primary key,
+  user_id    uuid        not null references auth.users (id) on delete cascade,
+  profil_id  text,
+  ecole      text        not null default '',
+  formation  text        not null default '',
+  created_at timestamptz not null default now()
+);
+
+alter table public.visites enable row level security;
+
+drop policy if exists "visites_insert_propres" on public.visites;
+create policy "visites_insert_propres" on public.visites
+  for insert with check (auth.uid() = user_id);
+
+-- Pas de politique SELECT : personne ne lit ses visites depuis l'app.
+-- (Le service_role du backend contourne la RLS pour le dashboard.)
+
+create index if not exists idx_visites_user_date on public.visites (user_id, created_at desc);
+create index if not exists idx_visites_date on public.visites (created_at desc);
+create index if not exists idx_visites_formation on public.visites (ecole, formation);

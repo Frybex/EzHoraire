@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>EzHoraire — Dashboard</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<style>
+  :root {
+    --bg: #f4f5f7; --surface: #fff; --ink: #17191d; --muted: #6d7482;
+    --line: #e4e7ec; --accent: #2456e0; --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #101216; --surface: #171a20; --ink: #f0f3f7; --muted: #98a1b1; --line: #262b34; --accent: #8ba6ff; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 15px; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 24px 16px 64px; }
+  header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+  header h1 { font-size: 1.4rem; margin: 0; letter-spacing: -.02em; }
+  header h1 span { color: var(--accent); }
+  header .sp { flex: 1; }
+  a.retour { color: var(--muted); text-decoration: none; font-weight: 600; }
+  .periode { display: flex; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 4px; }
+  .periode button { border: none; background: none; color: var(--muted); font: inherit; font-weight: 650; padding: 8px 14px; border-radius: 999px; cursor: pointer; }
+  .periode button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 0 0 18px; }
+  .kpi { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; }
+  .kpi b { display: block; font-size: 1.7rem; letter-spacing: -.03em; }
+  .kpi span { color: var(--muted); font-size: .85rem; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px; margin: 0 0 14px; }
+  .card h2 { margin: 0 0 12px; font-size: 1rem; }
+  canvas { width: 100%; height: 180px; display: block; }
+  table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+  th, td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .mut { color: var(--muted); }
+  #recherche { width: 100%; max-width: 340px; margin: 0 0 12px; padding: 11px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font: inherit; font-size: 15px; }
+  #etat { padding: 40px 10px; text-align: center; color: var(--muted); }
+  #etat.erreur { color: var(--ink); }
+  .btn { display: inline-block; padding: 12px 20px; border-radius: 12px; background: var(--ink); color: var(--bg); text-decoration: none; font-weight: 650; }
+  .scroll { overflow-x: auto; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="retour" href="/">← App</a>
+    <h1>Dashboard <span>EzHoraire</span></h1>
+    <div class="sp"></div>
+    <div class="periode" role="group" aria-label="Période">
+      <button data-j="7" aria-pressed="false">7 j</button>
+      <button data-j="14" aria-pressed="false">14 j</button>
+      <button data-j="30" aria-pressed="true">30 j</button>
+    </div>
+  </header>
+  <div id="etat">Chargement…</div>
+  <div id="contenu" hidden>
+    <div class="kpis" id="kpis"></div>
+    <div class="card"><h2>Consultations par jour</h2><canvas id="courbe" width="900" height="180"></canvas></div>
+    <div class="card"><h2>Cours suivis</h2><div class="scroll"><table id="t-formations">
+      <thead><tr><th>Formation</th><th class="num">Inscrits</th><th class="num">Consultations</th><th class="num">Visiteurs</th></tr></thead>
+      <tbody></tbody></table></div></div>
+    <div class="card"><h2>Comptes → cours → consultations</h2>
+      <input id="recherche" type="search" placeholder="Rechercher (email, nom, formation)…" aria-label="Rechercher">
+      <div class="scroll"><table id="t-users">
+      <thead><tr><th>Compte</th><th>Cours suivi(s)</th><th class="num">7 j</th><th class="num">Période</th><th>Dernière visite</th></tr></thead>
+      <tbody></tbody></table></div></div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function () {
+  "use strict";
+  var jours = 30, donnees = null;
+  function txt(s) {
+    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+  function fmtDate(iso) {
+    if (!iso) return "—";
+    var d = new Date(iso);
+    if (isNaN(d)) return "—";
+    return d.toLocaleDateString("fr-BE", { day: "numeric", month: "short" }) +
+      " " + d.toLocaleTimeString("fr-BE", { hour: "2-digit", minute: "2-digit" });
+  }
+  function etat(msg, erreur) {
+    var el = document.getElementById("etat");
+    el.hidden = !msg; el.className = erreur ? "erreur" : "";
+    el.innerHTML = msg || "";
+    document.getElementById("contenu").hidden = !!msg;
+  }
+  function courbe(serie) {
+    var cv = document.getElementById("courbe"), ctx = cv.getContext("2d");
+    var W = cv.width, H = cv.height;
+    ctx.clearRect(0, 0, W, H);
+    var max = Math.max.apply(null, serie.map(function (p) { return p.visites; }).concat([1]));
+    var n = serie.length, step = W / Math.max(1, n);
+    var dark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    ctx.strokeStyle = dark ? "#8ba6ff" : "#2456e0"; ctx.lineWidth = 2.5;
+    ctx.lineJoin = "round"; ctx.beginPath();
+    serie.forEach(function (p, i) {
+      var x = step * (i + .5), y = H - 12 - (p.visites / max) * (H - 30);
+      if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y);
+    });
+    ctx.stroke();
+    ctx.fillStyle = dark ? "#98a1b1" : "#6d7482"; ctx.font = "11px system-ui";
+    serie.forEach(function (p, i) {
+      if (n > 16 && i % Math.ceil(n / 8)) return;
+      ctx.fillText(p.jour.slice(8) + "/" + p.jour.slice(5, 7), step * i + 2, H - 1);
+    });
+  }
+  function rendre() {
+    var d = donnees, t = d.totaux;
+    document.getElementById("kpis").innerHTML =
+      kpi(t.comptes, "comptes créés") + kpi(t.horaires_suivis, "horaires suivis") +
+      kpi(t.consultations, "consultations (" + t.jours + " j)") +
+      kpi(t.visiteurs_uniques, "visiteurs (" + t.jours + " j)") +
+      kpi(t.aujourdhui, "dont aujourd'hui");
+    function kpi(v, l) { return '<div class="kpi"><b>' + v + "</b><span>" + l + "</span></div>"; }
+    courbe(d.par_jour);
+    document.querySelector("#t-formations tbody").innerHTML = d.par_formation.map(function (f) {
+      return "<tr><td><b>" + txt(f.formation || "—") + '</b> <span class="mut">' + txt(f.ecole) + "</span></td>" +
+        '<td class="num">' + f.inscrits + '</td><td class="num">' + f.visites + '</td><td class="num">' + f.visiteurs + "</td></tr>";
+    }).join("") || '<tr><td colspan="4" class="mut">Aucune donnée.</td></tr>';
+    filtrerUsers("");
+  }
+  function filtrerUsers(q) {
+    q = (q || "").toLowerCase();
+    var lignes = donnees.utilisateurs.filter(function (u) {
+      if (!q) return true;
+      var h = (u.email + " " + u.prenom + " " + u.nom + " " +
+        u.profils.map(function (p) { return p.formation + " " + p.surnom; }).join(" ")).toLowerCase();
+      return h.indexOf(q) >= 0;
+    }).slice(0, 300);
+    document.querySelector("#t-users tbody").innerHTML = lignes.map(function (u) {
+      var qui = "<b>" + txt(u.email || "—") + "</b>";
+      var nom = (u.prenom + " " + u.nom).trim();
+      if (nom) qui += '<br><span class="mut">' + txt(nom) + "</span>";
+      qui += '<br><span class="mut">créé le ' + txt((u.compte_cree || "").slice(0, 10)) + "</span>";
+      var cours = u.profils.map(function (p) {
+        var g = (p.groupes || []).join(", ");
+        return txt(p.formation || p.surnom || "—") + (g ? ' <span class="mut">· ' + txt(g) + "</span>" : "");
+      }).join("<br>") || '<span class="mut">aucun horaire</span>';
+      return "<tr><td>" + qui + "</td><td>" + cours + '</td><td class="num">' + u.visites_7j +
+        '</td><td class="num">' + u.visites_periode + "</td><td>" + txt(fmtDate(u.derniere_visite)) + "</td></tr>";
+    }).join("") || '<tr><td colspan="5" class="mut">Aucun compte.</td></tr>';
+  }
+  function charger() {
+    etat("Chargement…");
+    return sb.auth.getSession().then(function (res) {
+      var session = res && res.data && res.data.session;
+      if (!session) {
+        etat('Connecte-toi d\'abord sur <a href="/">l\'app</a>, puis reviens ici avec le même navigateur.', true);
+        return null;
+      }
+      return fetch("api/stats?jours=" + jours, {
+        headers: { "Authorization": "Bearer " + session.access_token }, cache: "no-store"
+      }).then(function (r) { return r.json(); }).then(function (rep) {
+        if (!rep.ok) throw new Error(rep.erreur || "Erreur.");
+        donnees = rep.data;
+        etat("");
+        rendre();
+      });
+    }).catch(function (e) {
+      var msg = (e && e.message) || "Erreur.";
+      if (/réservé|403/.test(msg)) msg = "Accès réservé : ce compte n'est pas admin.";
+      etat(txt(msg) + '<br><br><a class="btn" href="/">Retour à l\'app</a>', true);
+    });
+  }
+  var sb = null;
+  fetch("api/config", { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (rep) {
+    var s = (rep && rep.supabase) || {};
+    if (!s.url || !s.anonKey || !window.supabase) throw new Error("Supabase non configuré.");
+    sb = window.supabase.createClient(s.url, s.anonKey);
+    document.querySelectorAll(".periode button").forEach(function (b) {
+      b.addEventListener("click", function () {
+        jours = +b.getAttribute("data-j");
+        document.querySelectorAll(".periode button").forEach(function (x) {
+          x.setAttribute("aria-pressed", x === b ? "true" : "false");
+        });
+        charger();
+      });
+    });
+    document.getElementById("recherche").addEventListener("input", function (e) { filtrerUsers(e.target.value); });
+    return charger();
+  }).catch(function (e) {
+    etat(txt(e.message || "Erreur."), true);
+  });
+})();
+</script>
+</body>
+</html>

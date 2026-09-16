@@ -73,6 +73,35 @@ et par Vercel), `serve.py` le charge au démarrage. Sans ce fichier, l'app
 tourne en connexion factice (uniquement sur localhost ; en ligne, la
 connexion est refusée avec un message si le cloud est injoignable).
 
+## Dashboard admin (comptes → cours → consultations)
+
+`/dashboard.html` : comptes créés, cours suivis (`profils`), consultations
+par jour (`visites`, 1 ligne = 1 ouverture d'horaire). Réservé aux emails
+de `ADMIN_EMAILS`, via `GET /api/stats` (clé service_role côté serveur
+uniquement, jamais dans le navigateur).
+
+Mise en route (une fois) :
+
+1. Supabase → SQL Editor : recoller `supabase/schema.sql` (ajoute la table
+   `visites`, rejouable sans rien casser).
+2. Supabase → Project Settings → API : copier la clé `service_role`.
+3. Vercel → Settings → Environment Variables (Production + Preview) :
+   `SUPABASE_SERVICE_ROLE_KEY` = la clé service_role,
+   `ADMIN_EMAILS` = `toi@exemple.be` (plusieurs = séparés par des virgules),
+   puis redéployer. En local : mêmes clés dans `.env.local`.
+4. Ouvrir `https://www.ezhoraire.be/dashboard.html` avec ton compte admin
+   (connecté au préalable sur `/`). Les autres comptes voient « réservé ».
+
+Requêtes utiles (SQL Editor) sans le dashboard :
+
+```sql
+-- inscrits par formation
+select formation, count(distinct user_id) from profils group by formation;
+-- consultations par jour (7 derniers jours)
+select date_trunc('day', created_at)::date as jour, count(*)
+from visites where created_at > now() - interval '7 days' group by 1 order by 1;
+```
+
 Il n'y a volontairement aucun bouton de connexion ni d'actualisation dans
 les Réglages : on se connecte avant d'entrer, et tout se met à jour
 à l'ouverture.
