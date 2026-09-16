@@ -2585,10 +2585,14 @@
       return rep;
     });
   }
+  /* « Actualiser » : on envoie un numéro de seau de 60 s, pas l'heure exacte.
+     Deux étudiants qui actualisent dans la même minute demandent la même
+     adresse, donc le cache partagé ne fait travailler l'école qu'une fois. */
+  var SEAU_FRAIS = 60000;
   function chargerHoraire(ecole, formation, frais) {
     return api("api/horaires?ecole=" + encodeURIComponent(ecole) +
                "&formation=" + encodeURIComponent(formation) +
-               (frais ? "&frais=" + Date.now() : ""), 95000)
+               (frais ? "&frais=" + Math.floor(Date.now() / SEAU_FRAIS) : ""), 95000)
       .then(function (rep) {
         if (!valide(rep.data)) throw new Error("réponse incomplète.");
         ecrire(cleHoraire(ecole, formation), rep.data);

@@ -51,6 +51,7 @@ class HP:
 
     def __init__(self, timeout):
         self.timeout = timeout
+        self.appels = 1  # le GET ci-dessous ; chaque call() ajoute le sien
         self.s = requests.Session()
         self.s.headers.update({"User-Agent": UA, "Content-Type": "application/json",
                                "Referer": BASE + "/invite?fd=1", "Origin": BASE})
@@ -80,6 +81,7 @@ class HP:
         no = self.enc(self.ordre if ordre is None else ordre, raw_iv)
         url = f"{BASE}/appelfonction/{self.genre}/{self.sess}/{no}"
         body = {"session": self.sess, "no": no, "id": fid, "dataSec": datasec}
+        self.appels += 1
         r = self.s.post(url, json=body, timeout=self.timeout)
         r.raise_for_status()
         try:
@@ -189,6 +191,7 @@ class HP:
         r = self.call("GenerationPDF", {"Signature": {"Onglet": ONGLET, "listeRecherche": [ress]},
                                         "data": data})
         url = r["dataSec"]["data"]["url"]["V"]  # "UrlUnique/Emploi du temps ... .pdf?S=..&ID=.."
+        self.appels += 1
         f = self.s.get(f"{BASE}/{url}", timeout=self.timeout)
         f.raise_for_status()
         if not f.content.startswith(b"%PDF"):
@@ -207,9 +210,14 @@ class Ecole:
         self.fin = fin
         self.hp = None
         self.reconnexions = 0
+        self.appels = 0  # requêtes des sessions déjà abandonnées
 
     def reste(self):
         return self.fin - time.monotonic()
+
+    def total_appels(self):
+        """Requêtes envoyées à l'école depuis le début (pour le journal)."""
+        return self.appels + (self.hp.appels if self.hp else 0)
 
     def faire(self, action):
         while True:
@@ -220,6 +228,8 @@ class Ecole:
             except ValueError:
                 raise  # formation / groupe introuvable : réessayer n'y changera rien
             except Exception as e:  # noqa: BLE001 - réseau, réponse vide, session perdue
+                if self.hp is not None:
+                    self.appels += self.hp.appels
                 self.hp = None
                 self.reconnexions += 1
                 attente = min(2 * self.reconnexions, 6)
@@ -304,6 +314,20 @@ def tri_naturel(texte):
     return [int(t) if t.isdigit() else t.lower() for t in re.split(r"(\d+)", texte)]
 
 
+def journal(quoi, ec, debut, **details):
+    """Une ligne par récupération réelle chez l'école (visible chez l'hébergeur).
+
+    Ne se déclenche que sur un vrai passage à l'école : ni les réponses
+    servies par le cache partagé, ni celles servies par _memo n'apparaissent.
+    Chercher « ezh » dans les journaux donne donc directement le nombre de
+    requêtes envoyées à l'école, et par quelle formation.
+    """
+    champs = " ".join(f"{k}={v}" for k, v in details.items())
+    print(f'ezh {quoi} {champs} appels={ec.total_appels()} '
+          f'reconnexions={ec.reconnexions} duree={time.monotonic() - debut:.1f}s',
+          flush=True)  # sans flush, l'hébergeur peut perdre la ligne
+
+
 _MEMO = {}
 
 
@@ -333,7 +357,15 @@ def horaire(formation, budget=75, frais=False):
     liste de ses semaines. `groupes` vide = séance de toute la formation.
     """
     def calcul():
+        debut = time.monotonic()
         ecole = Ecole(time.monotonic() + budget)
+        try:
+            return _recuperer(ecole, formation)
+        finally:
+            journal("horaire", ecole, debut,
+                    formation=f'"{formation}"', frais=int(frais))
+
+    def _recuperer(ecole, formation):
         info = ecole.faire(lambda hp: hp.formation(formation))
         heures = ecole.faire(lambda hp: hp.heures())
         regroupes, tous = {}, set()
@@ -372,9 +404,12 @@ def horaire(formation, budget=75, frais=False):
 def pdf_semaine(formation, groupe, semaine, budget=40):
     """PDF officiel d'une semaine, pour un groupe ou (groupe vide) toute la formation.
 
-    Généré à la demande et renvoyé tel quel : rien n'est stocké, donc
-    toujours à jour.
+    Généré à la demande et renvoyé tel quel : rien n'est stocké ici. Le cache
+    partagé, lui, le garde une demi-heure (voir api/pdf.py) — c'est l'appel le
+    plus coûteux pour l'école, et le document est identique pour tous les
+    étudiants d'un même groupe.
     """
+    debut = time.monotonic()
     ecole = Ecole(time.monotonic() + budget)
 
     def action(hp):
@@ -383,7 +418,11 @@ def pdf_semaine(formation, groupe, semaine, budget=40):
             raise ValueError(f"semaine {semaine} non publiée par l'école")
         ress = hp.groupe(formation, groupe) if groupe else info["ressource"]
         return hp.pdf(ress, semaine, format_ensemble(info["semaines"]))
-    return ecole.faire(action)
+    try:
+        return ecole.faire(action)
+    finally:
+        journal("pdf", ecole, debut, formation=f'"{formation}"',
+                groupe=f'"{groupe}"', semaine=semaine)
 
 
 def maintenant():
