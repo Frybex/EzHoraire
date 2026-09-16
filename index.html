@@ -9,6 +9,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="EzHoraire">
 <title>EzHoraire</title>
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
   :root {
@@ -24,6 +28,7 @@
     --seg-track: #e8eaef;
     --shadow: 0 16px 40px -24px rgba(23, 32, 68, .28);
     --radius: 14px;
+    --danger: #d42a3c;
     --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   }
   @media (prefers-color-scheme: dark) {
@@ -39,17 +44,39 @@
       --free: #5fce96;
       --seg-track: #20252e;
       --shadow: 0 18px 44px -20px rgba(0, 0, 0, .75);
+      --danger: #ff6b7a;
     }
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { touch-action: manipulation; }
   button, a { touch-action: manipulation; }
   body {
+    /* Relief premium : dégradé vertical + reflet d'1 px en haut ; creux =
+       surfaces gravées (champs, pistes). Calculés depuis --bg pour suivre
+       la couleur de l'horaire en cours. */
+    --relief-haut: color-mix(in srgb, var(--bg), #fff 78%);
+    --relief-bas: color-mix(in srgb, var(--bg), #fff 44%);
+    --reflet: rgba(255, 255, 255, .9);
+    --ombre-btn: 0 1px 2px rgba(23, 32, 68, .06), 0 2px 8px -4px rgba(23, 32, 68, .08);
+    --creux: color-mix(in srgb, var(--bg), #fff 60%);
+    --creux-ombre: rgba(23, 32, 68, .07);
+    --feuille: color-mix(in srgb, var(--bg), #fff 66%);
     margin: 0; color: var(--ink);
     background-color: var(--bg);
     background-image: radial-gradient(110% 34% at 50% -6%, var(--wash), transparent 70%);
     background-repeat: no-repeat;
     font-family: var(--font); font-size: 17px; line-height: 1.45;
+  }
+  @media (prefers-color-scheme: dark) {
+    body {
+      --relief-haut: color-mix(in srgb, var(--bg), #fff 7%);
+      --relief-bas: color-mix(in srgb, var(--bg), #fff 2.5%);
+      --reflet: rgba(255, 255, 255, .06);
+      --ombre-btn: 0 1px 2px rgba(0, 0, 0, .4), 0 4px 12px -6px rgba(0, 0, 0, .6);
+      --creux: color-mix(in srgb, var(--bg), #000 26%);
+      --creux-ombre: rgba(0, 0, 0, .4);
+      --feuille: color-mix(in srgb, var(--bg), #fff 4%);
+    }
   }
   .wrap { max-width: 620px; margin: 0 auto; padding: 20px 16px 48px; }
 
@@ -70,53 +97,93 @@
     border: none; background: none; font: inherit; cursor: pointer;
     min-height: 44px; padding: 0 6px;
   }
-  .topbar .gauche { left: 0; color: var(--accent); font-size: .98rem; font-weight: 600; }
+  /* Retour : petite pastille en relief, comme les autres boutons. */
+  .topbar .gauche {
+    left: 0; min-height: 36px; padding: 0 14px 0 11px; border-radius: 999px;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas)); color: var(--ink);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    font-size: .9rem; font-weight: 600;
+  }
   .topbar .droite {
     right: 0; width: 40px; height: 40px; min-height: 0; padding: 0; border-radius: 50%;
-    display: grid; place-items: center;
-    background: var(--accent-soft); color: var(--accent); font-weight: 700; font-size: .95rem;
+    display: grid; place-items: center; color: var(--ink);
+    background: var(--creux);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre);
+    font-weight: 700; font-size: .95rem;
   }
 
   /* Choix de l'école, de la formation et des groupes */
-  .q { font-size: 1.6rem; letter-spacing: -.025em; line-height: 1.15; margin: 18px 0 6px; }
-  .aide { color: var(--muted); margin: 0 0 18px; font-size: .98rem; }
-  .recherche {
-    width: 100%; font: inherit; font-size: 1rem; color: var(--ink);
-    padding: 13px 16px; margin: 0 0 12px; border-radius: 14px;
-    border: 1px solid var(--line); background: var(--surface);
-    -webkit-appearance: none; appearance: none;
+  /* Écrans de choix (identité, école, formation, groupe) : même langage
+     que la connexion. Titre fort, cartes en relief, champs en creux. */
+  .q {
+    margin: 10px 0 22px; font-size: clamp(2rem, 8.6vw, 2.4rem); font-weight: 750;
+    line-height: 1.04; letter-spacing: -.045em; text-wrap: balance;
   }
-  .recherche:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
-  .liste { list-style: none; margin: 0; padding: 0; }
-  .liste li + li { border-top: 1px solid var(--line); }
+  .aide { color: var(--muted); margin: -10px 0 22px; font-size: .95rem; }
+  /* Progression : un trait par étape, remplis jusqu'à l'étape en cours. */
+  .etapes { display: flex; gap: 6px; margin: 8px 0 18px; }
+  .etapes span { width: 26px; height: 4px; border-radius: 999px; background: var(--line); }
+  .etapes span.on { background: var(--ink); }
+  .liste { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
   .liste button {
-    width: 100%; border: none; background: none; font: inherit; color: inherit;
-    display: flex; align-items: center; gap: 12px; text-align: left;
-    padding: 15px 4px; min-height: 56px; cursor: pointer;
+    overflow: hidden; width: 100%; min-height: 60px; padding: 14px 16px;
+    display: flex; align-items: center; gap: 14px; text-align: left;
+    border: none; border-radius: 16px; font: inherit; color: var(--ink); cursor: pointer;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    transition: transform .12s;
   }
-  .liste button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-  .liste button:active { background: var(--accent-soft); }
-  .liste .nom { flex: 1; font-weight: 500; }
-  .liste .nom small { display: block; color: var(--muted); font-weight: 400; font-size: .85rem; }
-  .liste .chev { transform: rotate(-45deg); }
+  .liste button:active { transform: scale(.985); }
+  .liste button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .liste .nom { flex: 1; min-width: 0; font-weight: 600; letter-spacing: -.01em; }
+  .liste .nom small { display: block; margin-top: 2px; color: var(--muted); font-weight: 400; font-size: .85rem; letter-spacing: 0; }
+  .liste .chev { transform: rotate(-45deg); margin: 0 4px 0 0; opacity: .55; }
   .liste mark { background: none; color: var(--accent); font-weight: 700; }
-  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 22px; }
+  .liste li.empty { padding: 28px 10px; }
+  /* Sigle de l'école, dans un carré en creux. */
+  .sigle {
+    flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px;
+    background: var(--creux); box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre);
+    font-size: .78rem; font-weight: 750; letter-spacing: .02em;
+  }
+  .recherche-bloc { margin: 0 0 14px; }
+  /* Groupes : pastilles en relief, une coche se remplit quand on choisit. */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 26px; }
   .chip {
-    border: 1px solid var(--line); background: var(--surface); color: var(--ink);
-    font: inherit; font-size: .95rem; font-weight: 500;
-    padding: 10px 14px; border-radius: 999px; cursor: pointer; min-height: 44px;
-    transition: background .15s, border-color .15s, color .15s;
+    display: inline-flex; align-items: center; gap: 9px;
+    min-height: 44px; padding: 0 16px 0 13px; border: none; border-radius: 999px;
+    font: inherit; font-size: .95rem; font-weight: 550; color: var(--muted); cursor: pointer;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    transition: color .2s, box-shadow .2s, transform .12s;
+  }
+  .chip .coche {
+    position: relative; flex: none; width: 17px; height: 17px; border-radius: 50%;
+    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--muted) 55%, transparent);
+    transition: background .2s, box-shadow .2s;
   }
   .chip[aria-pressed="true"] {
-    background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600;
+    color: var(--ink);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 42%, transparent), inset 0 1px 0 var(--reflet), var(--ombre-btn);
   }
+  .chip[aria-pressed="true"] .coche { background: var(--ink); box-shadow: none; }
+  .chip[aria-pressed="true"] .coche::after {
+    content: ""; position: absolute; left: 6px; top: 3.5px; width: 3.5px; height: 7px;
+    border: solid var(--bg); border-width: 0 1.8px 1.8px 0; transform: rotate(45deg);
+  }
+  .chip:active { transform: scale(.97); }
+  .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  /* Bouton d'action des étapes : relief, collé en bas tant qu'on défile. */
   .primaire {
-    position: sticky; bottom: calc(14px + env(safe-area-inset-bottom));
-    display: block; width: 100%; padding: 15px; border: none; border-radius: 16px;
-    background: var(--accent); color: #fff; box-shadow: var(--shadow);
-    font: inherit; font-size: 1.02rem; font-weight: 700; cursor: pointer;
+    position: sticky; bottom: calc(14px + env(safe-area-inset-bottom)); z-index: 5;
+    overflow: hidden; display: block; width: 100%; height: 54px; border: none; border-radius: 16px;
+    font: inherit; font-size: 1rem; font-weight: 650; letter-spacing: -.01em; color: var(--ink); cursor: pointer;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn),
+      0 14px 34px -14px rgba(0, 0, 0, .45);
+    transition: transform .12s;
   }
-  .primaire:active { transform: scale(.99); }
+  .primaire:active { transform: scale(.98); }
 
   /* Horaire : rappel du profil sous le titre */
   .profil-ligne {
@@ -176,196 +243,129 @@
   /* Barre de sélection des horaires (reprend Horairelm : Maxence /
      Lilian / Anthony). N surnoms dynamiques : la pastille glisse
      sur l'onglet actif. Au-delà de 4, défilement horizontal. */
+  /* Sélecteur d'horaires : piste en creux, pastille en relief. */
   .seg {
     --n: 1; --idx: 0;
     position: relative; display: grid;
     grid-template-columns: repeat(var(--n), minmax(0, 1fr));
-    background: var(--seg-track);
-    border-radius: 999px; padding: 3px; margin: 0 0 14px;
+    background: var(--creux);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre);
+    border-radius: 999px; padding: 4px; margin: 0 0 14px;
     max-width: 100%; overflow-x: auto; scrollbar-width: none;
   }
   .seg::-webkit-scrollbar { display: none; }
   .seg .pill {
-    position: absolute; top: 3px; bottom: 3px; left: 3px;
-    width: calc((100% - 6px) / var(--n));
-    background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
-    box-shadow: 0 2px 10px rgba(15, 25, 45, .16);
+    position: absolute; top: 4px; bottom: 4px; left: 4px;
+    width: calc((100% - 8px) / var(--n)); border-radius: 999px;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
     transform: translateX(calc(var(--idx) * 100%));
-    transition: transform .28s cubic-bezier(.16,1,.3,1);
+    transition: transform .3s cubic-bezier(.16,1,.3,1);
     pointer-events: none;
   }
   .seg.defile { display: flex; }
   .seg.defile .pill { display: none; }
   .seg button {
     position: relative; z-index: 1; border: none; background: none;
-    font: inherit; font-size: 1.02rem; font-weight: 500; color: var(--muted);
-    padding: 11px 8px; border-radius: 999px; cursor: pointer; min-height: 48px;
+    font: inherit; font-size: 1rem; font-weight: 550; color: var(--muted);
+    padding: 10px 8px; border-radius: 999px; cursor: pointer; min-height: 46px;
     min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    transition: color .2s;
   }
   .seg.defile button { flex: 1 0 auto; padding-left: 18px; padding-right: 18px; }
-  .seg button[aria-selected="true"] { color: var(--ink); font-weight: 700; }
-  .seg.defile button[aria-selected="true"] { background: var(--surface); box-shadow: 0 2px 10px rgba(15,25,45,.16); }
+  .seg button[aria-selected="true"] { color: var(--ink); font-weight: 650; }
+  .seg.defile button[aria-selected="true"] {
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
   .seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-
-  /* Surnom demandé à l'étape 3 (un mot affiché dans la barre du haut). */
-  #bloc-surnom { margin: 0 0 18px; }
-  #bloc-surnom label { display: block; font-weight: 600; margin: 0 0 8px; }
-  #surnom {
-    width: 100%; font: inherit; font-size: 1rem; color: var(--ink);
-    padding: 13px 16px; border-radius: 14px;
-    border: 1px solid var(--line); background: var(--surface);
+  /* Surnom + couleur (étape 3) et libellés de champs. */
+  #bloc-surnom { margin: 0 0 22px; }
+  .champ-titre, .theme-select-titre, #bloc-theme > label {
+    display: block; margin: 0 0 8px 2px; color: var(--muted); font-size: .85rem; font-weight: 600;
   }
-  #surnom:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
-  .surnom-aide { color: var(--muted); font-size: .88rem; margin: 8px 0 0; }
-
-  /* Choix du thème (Bleu / Vert / Rose) */
-  .theme-select-bloc { margin: 16px 0 20px; }
-  #bloc-theme { margin: 0 0 20px; }
-  .theme-select-titre, #bloc-theme label {
-    display: block; font-size: .88rem; font-weight: 600; color: var(--muted);
-    margin-bottom: 8px;
-  }
-  .choix-themes {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-  }
+  .surnom-aide { color: var(--muted); font-size: .85rem; margin: 8px 2px 0; }
+  .theme-select-bloc { margin: 22px 0 26px; }
+  #bloc-theme { margin: 0 0 26px; }
+  .choix-themes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
   .theme-opt {
-    display: flex; align-items: center; justify-content: center; gap: 8px;
-    padding: 11px 6px; border-radius: 12px;
-    border: 1.5px solid var(--line); background: var(--surface); color: var(--ink);
-    font: inherit; font-size: .92rem; font-weight: 600; cursor: pointer;
-    transition: border-color .15s, background .15s, transform .1s;
+    display: flex; align-items: center; justify-content: center; gap: 9px;
+    height: 46px; border: none; border-radius: 14px;
+    font: inherit; font-size: .92rem; font-weight: 600; color: var(--muted); cursor: pointer;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    transition: color .2s, box-shadow .2s, transform .12s;
   }
   .theme-opt:active { transform: scale(.97); }
-  .theme-opt .theme-pastille {
-    width: 13px; height: 13px; border-radius: 50%; flex-shrink: 0;
-  }
+  .theme-opt:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .theme-opt .theme-pastille { width: 12px; height: 12px; border-radius: 50%; flex: none; transition: box-shadow .2s; }
   .theme-opt[aria-checked="true"] {
-    border-color: var(--accent);
-    background: var(--accent-soft);
-    color: var(--accent);
-    font-weight: 700;
+    color: var(--ink);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 42%, transparent), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  .theme-opt[aria-checked="true"] .theme-pastille {
+    box-shadow: 0 0 0 2.5px var(--relief-haut), 0 0 0 4px color-mix(in srgb, var(--ink) 50%, transparent);
   }
 
-  /* Feuille : cartes d'horaires + compte, menus en popup depuis les ⋮. */
-  #liste-profils { display: flex; flex-direction: column; gap: 8px; margin: 10px 0 4px; }
+  /* Réglages : cartes d'horaires en relief, menus ⋮ en popover ancré. */
+  #liste-profils { display: flex; flex-direction: column; gap: 8px; margin: 10px 0; }
   .pcard {
-    position: relative;
-    border-radius: 12px; border: 1px solid transparent;
-    background: #2a303b; color: #eef1f6;
+    position: relative; border-radius: 16px;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
   }
-  .pcard.actif { border-color: var(--accent); }
+  .pcard.actif {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 40%, transparent), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
   .pcard.menu-ouvert { z-index: 20; }
-  .pcard-ligne { display: flex; align-items: center; gap: 4px; padding: 6px 6px 6px 14px; }
+  .pcard-ligne { display: flex; align-items: center; gap: 4px; padding: 4px 6px 4px 16px; }
   .pcard-main {
-    flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; text-align: left;
-    border: none; background: none; color: inherit;
-    font: inherit; font-size: .93rem; padding: 8px 0; cursor: pointer;
+    flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; text-align: left;
+    border: none; background: none; color: var(--ink); font: inherit; padding: 12px 0; cursor: pointer;
   }
   .pt-point { width: 10px; height: 10px; border-radius: 50%; flex: none; }
   .pt-textes { min-width: 0; flex: 1; }
-  .pt-nom { display: block; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .pt-detail { display: block; color: #b9c1cf; font-size: .82rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pt-nom { display: block; font-weight: 650; letter-spacing: -.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pt-detail { display: block; margin-top: 1px; color: var(--muted); font-size: .84rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .dots {
-    flex: none; width: 44px; height: 44px; border: none; border-radius: 12px;
-    background: none; color: inherit; font-size: 1.25rem; font-weight: 700;
-    cursor: pointer; opacity: .7; line-height: 1;
+    flex: none; display: grid; place-items: center; width: 40px; height: 40px;
+    border: none; border-radius: 12px; background: none; color: var(--muted); cursor: pointer;
+    transition: background .15s, color .15s;
   }
-  .dots:active, .dots[aria-expanded="true"] { opacity: 1; background: rgba(128, 128, 128, .2); }
-  /* Popup : flotte au-dessus, naît des ⋮ (origine en haut à droite). */
+  .dots:hover, .dots[aria-expanded="true"] { color: var(--ink); background: color-mix(in srgb, var(--ink) 8%, transparent); }
+  .dots:focus-visible { outline: 2px solid var(--accent); outline-offset: 0; }
+  /* Popover : naît du ⋮ (origine en haut à droite), vers le haut s'il
+     n'a pas la place en dessous. */
   .ppop {
-    position: absolute; top: calc(100% - 4px); right: 8px;
-    width: 240px; max-width: calc(100% - 16px); z-index: 30;
-    border-radius: 14px; padding: 6px;
-    background: #1c2027; color: #eef1f6;
-    box-shadow: 0 0 0 1px var(--line), 0 24px 50px -12px rgba(0, 0, 0, .55);
+    position: absolute; top: calc(100% + 6px); right: 6px; z-index: 30;
+    min-width: 214px; padding: 6px; border-radius: 16px;
+    background: var(--relief-haut); color: var(--ink);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet),
+      0 20px 44px -14px rgba(0, 0, 0, .5), 0 2px 6px rgba(0, 0, 0, .12);
     transform-origin: top right;
   }
-  .ppop:not([hidden]) { animation: pop-apparait .22s cubic-bezier(.16,1,.3,1); }
+  .ppop:not([hidden]) { animation: pop-apparait .2s cubic-bezier(.16,1,.3,1); }
   @keyframes pop-apparait {
-    from { opacity: 0; transform: scale(.8) translateY(-6px); }
+    from { opacity: 0; transform: scale(.92) translateY(-4px); }
     to { opacity: 1; transform: none; }
   }
-  /* Pas la place en dessous (carte en bas de feuille) : s'ouvre vers le haut. */
-  .ppop.haut { top: auto; bottom: calc(100% - 4px); transform-origin: bottom right; }
+  .ppop.haut { top: auto; bottom: calc(100% + 6px); transform-origin: bottom right; }
   .ppop.haut:not([hidden]) { animation-name: pop-apparait-haut; }
   @keyframes pop-apparait-haut {
-    from { opacity: 0; transform: scale(.8) translateY(6px); }
+    from { opacity: 0; transform: scale(.92) translateY(4px); }
     to { opacity: 1; transform: none; }
   }
-  .ppop .pop-act {
-    display: block; width: 100%; border: none; background: none; color: inherit;
-    font: inherit; font-size: .93rem; font-weight: 600; text-align: left;
-    padding: 12px; border-radius: 9px; cursor: pointer;
+  .pop-act {
+    display: flex; align-items: center; gap: 12px; width: 100%; padding: 11px 12px;
+    border: none; border-radius: 10px; background: none; color: inherit; text-align: left;
+    font: inherit; font-size: .93rem; font-weight: 550; cursor: pointer; transition: background .12s;
   }
-  .ppop .pop-act:active { background: rgba(128, 128, 128, .2); }
-  .ppop .danger-txt { color: #ff9aae; }
-  .ppop .pedit { display: flex; flex-direction: column; gap: 8px; padding: 4px 2px; }
-  .ppop .pedit input {
-    width: 100%; font: inherit; font-size: 15px; color: #fff;
-    background: #2a303b; border: 1px solid rgba(255, 255, 255, .15); border-radius: 10px; padding: 9px 11px;
-  }
-  .ppop .pedit input:focus { border-color: var(--accent); outline: none; }
-  .ppop .pedit-themes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
-  .ppop .pedit-theme-btn {
-    display: flex; align-items: center; justify-content: center; gap: 5px;
-    padding: 7px 4px; border-radius: 8px;
-    border: 1.5px solid transparent;
-    background: #2a303b; color: #eef1f6;
-    font: inherit; font-size: .8rem; font-weight: 600; cursor: pointer;
-    transition: border-color .15s, background .15s;
-  }
-  .ppop .pedit-theme-btn .pedit-pastille {
-    width: 9px; height: 9px; border-radius: 50%; flex: none;
-  }
-  .ppop .pedit-theme-btn[aria-checked="true"] {
-    border-color: #fff; background: rgba(255, 255, 255, .18);
-  }
-  .ppop .pedit-valider {
-    width: 100%; border: none; border-radius: 10px; padding: 9px;
-    background: var(--accent); color: #fff; font: inherit; font-size: .92rem; font-weight: 700; cursor: pointer;
-  }
-  .ppop .pedit-valider:active { transform: scale(.98); }
-  .ppop .pdetails { padding: 8px 10px 10px; font-size: .85rem; color: #b9c1cf; }
-  .ppop .pdetails div { padding: 1px 0; }
-  .ppop .pdetails .k { opacity: .7; }
-  @media (min-width: 1024px) {
-    .pcard { background: var(--seg-track); color: var(--ink); }
-    .pt-detail { color: var(--muted); }
-    .ppop { background: var(--surface); color: var(--ink); }
-    .ppop .pedit input { background: var(--seg-track); color: var(--ink); border-color: var(--line); }
-    .ppop .pedit .pedit-theme-btn {
-      background: var(--seg-track); color: var(--ink); border-color: var(--line);
-    }
-    .ppop .pedit .pedit-theme-btn[aria-checked="true"] {
-      border-color: var(--accent); background: var(--accent-soft); color: var(--accent);
-    }
-    .ppop .pdetails { color: var(--muted); }
-    .ppop .danger-txt { color: #c2274f; }
-  }
-  /* Popup du compte, ancré sous ses ⋮. */
+  .pop-act svg { flex: none; color: var(--muted); }
+  .pop-act:hover, .pop-act:focus-visible { background: color-mix(in srgb, var(--ink) 7%, transparent); outline: none; }
+  .pop-act.danger-txt, .pop-act.danger-txt svg { color: var(--danger); }
+  .pop-act.danger-txt:hover, .pop-act.danger-txt:focus-visible { background: color-mix(in srgb, var(--danger) 12%, transparent); }
   #reg-compte { position: relative; }
-  #menu-compte { top: calc(100% + 4px); right: 0; }
-  /* Édition nom/prénom dans le popup du compte. */
-  #reg-edit { display: flex; flex-direction: column; gap: 6px; padding: 2px; }
-  #reg-edit input {
-    width: 100%; font: inherit; font-size: 16px; color: #fff;
-    background: #2a303b; border: 1px solid var(--accent); border-radius: 10px; padding: 10px 12px;
-  }
-  #reg-edit button {
-    width: 100%; border: none; border-radius: 10px; padding: 10px;
-    background: var(--accent); color: #fff; font-size: 1.05rem; font-weight: 700; cursor: pointer;
-  }
-  @media (min-width: 1024px) {
-    #reg-edit input { background: var(--seg-track); color: var(--ink); }
-  }
-  .reg-compte .dots { margin-left: auto; }
-  .reg-qui { flex: 1; }
-  #feuille .danger { background: #4a2430 !important; color: #ffd9e2 !important; }
-  @media (min-width: 1024px) {
-    #feuille .danger { background: #fbe4ea !important; color: #a11e44 !important; }
-  }
+  #menu-compte { right: 0; }
 
   /* Connexion (écran d'entrée). Téléphone : titre, aperçu d'une semaine
      (qui s'efface vers le bas), puis Google / GitHub côte à côte et
@@ -381,41 +381,114 @@
     text-wrap: balance;
   }
   .entree > :not(.entree-titre) { order: 2; }
+  /* Même langage pour tout le formulaire : surfaces en léger relief
+     (tokens --relief-* définis dans :root) et halo qui suit le pointeur
+     (--mx / --my posés en JS sur chaque .halo). */
+  /* :where : ne prend pas le pas sur un position: sticky (.primaire). */
+  :where(.halo) { position: relative; }
+  .halo { isolation: isolate; }
+  .halo::before, .halo::after {
+    content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    opacity: 0; transition: opacity .25s;
+  }
+  .halo::before {
+    z-index: -1;
+    background: radial-gradient(180px circle at var(--mx, 50%) var(--my, 50%),
+      color-mix(in srgb, var(--ink) 7%, transparent), transparent 70%);
+  }
+  .halo::after {
+    z-index: 2; padding: 1px;
+    background: radial-gradient(110px circle at var(--mx, 50%) var(--my, 50%),
+      color-mix(in srgb, var(--ink) 50%, transparent), transparent 75%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .halo:hover::before, .halo:hover::after { opacity: 1; }
+  }
+
   .fournisseurs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .fournisseurs button {
+    overflow: hidden;
     display: flex; align-items: center; justify-content: center; gap: 10px;
     height: 52px; border: none; border-radius: 14px;
-    background: var(--surface); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line);
-    font: inherit; font-size: 1rem; font-weight: 600; cursor: pointer;
-    transition: box-shadow .15s, transform .12s;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas)); color: var(--ink);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    font: inherit; font-size: 1rem; font-weight: 600; letter-spacing: -.01em; cursor: pointer;
+    transition: transform .12s;
   }
   .fournisseurs button svg { flex: none; }
   .fournisseurs button:active, .btn-entree:active { transform: scale(.98); }
-  .email-sep { display: flex; align-items: center; gap: 14px; color: var(--muted); font-size: .85rem; margin: 18px 0; }
-  .email-sep::before, .email-sep::after { content: ""; height: 1px; background: var(--line); flex: 1; }
-  .champs { display: flex; flex-direction: column; gap: 8px; }
-  .champ {
-    width: 100%; height: 52px; padding: 0 16px; border: none; border-radius: 14px;
-    background: var(--surface); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line);
-    font: inherit; font-size: 16px; -webkit-appearance: none; appearance: none;
-    transition: box-shadow .15s;
+  .fournisseurs button.charge { pointer-events: none; }
+  .fournisseurs button.charge svg { display: none; }
+  .fournisseurs button.charge .tourne { display: block; }
+  /* Rond de chargement (boutons de connexion). */
+  .tourne {
+    display: none; flex: none; width: 18px; height: 18px; border-radius: 50%;
+    border: 2px solid color-mix(in srgb, currentColor 22%, transparent); border-top-color: currentColor;
+    animation: tourne .7s linear infinite;
   }
-  .champ::placeholder { color: var(--muted); opacity: .8; }
-  .champ:focus { outline: none; box-shadow: inset 0 0 0 1.5px var(--accent), 0 0 0 4px var(--accent-soft); }
-  .champ-mdp { position: relative; }
-  .champ-mdp .champ { padding-right: 52px; }
+  @keyframes tourne { to { transform: rotate(360deg); } }
+  .email-sep { text-align: center; color: var(--muted); font-size: .85rem; margin: 20px 0; }
+
+  /* Email + mot de passe dans un seul bloc gravé (légèrement en creux),
+     séparés par un filet. Le bloc s'éclaire quand on y écrit. */
+  .champs {
+    border-radius: 16px; background: var(--creux);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre), 0 1px 0 var(--reflet);
+    transition: box-shadow .25s;
+  }
+  .champs:focus-within {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 30%, transparent),
+      inset 0 1px 3px var(--creux-ombre), 0 0 0 4px color-mix(in srgb, var(--ink) 6%, transparent);
+  }
+  .champ-ligne { position: relative; display: flex; align-items: center; height: 54px; padding-left: 16px; }
+  .champ-ligne + .champ-ligne::before {
+    content: ""; position: absolute; top: 0; left: 16px; right: 16px; height: 1px; background: var(--line);
+  }
+  .champ-ico { flex: none; color: var(--muted); opacity: .75; transition: color .2s, opacity .2s; }
+  .champ-ligne:focus-within .champ-ico { color: var(--ink); opacity: 1; }
+  .champ {
+    flex: 1; min-width: 0; height: 100%; padding: 0 16px 0 0; border: none; border-radius: 0;
+    background: none; color: var(--ink); outline: none;
+    font: inherit; font-size: 16px; letter-spacing: -.005em; -webkit-appearance: none; appearance: none;
+  }
+  .champ-ico + .champ { padding-left: 12px; }
+  .champ::placeholder { color: var(--muted); opacity: .85; }
+  /* Chrome ne repeint pas le fond des champs pré-remplis. */
+  .champ:-webkit-autofill { -webkit-text-fill-color: var(--ink); transition: background-color 600000s 0s; }
+  #mdp { padding-right: 4px; }
   #voir-mdp {
-    position: absolute; top: 4px; right: 4px; width: 44px; height: 44px;
+    flex: none; width: 44px; height: 44px; margin-right: 5px;
     display: grid; place-items: center; border: none; border-radius: 11px;
-    background: none; color: var(--muted); cursor: pointer;
+    background: none; color: var(--muted); cursor: pointer; transition: color .15s;
   }
   #voir-mdp:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  #voir-mdp[aria-pressed="true"] { color: var(--ink); }
   #voir-mdp[aria-pressed="true"] .barre-oeil { display: none; }
+
+  /* Bouton Continuer : même relief que Google / GitHub, texte discret. */
   .btn-entree {
-    width: 100%; height: 52px; margin-top: 10px; border: none; border-radius: 14px;
-    background: var(--accent); color: var(--sur-accent);
-    font: inherit; font-size: 1rem; font-weight: 700; cursor: pointer;
-    transition: opacity .15s, transform .12s;
+    overflow: hidden;
+    display: grid; place-items: center;
+    width: 100%; height: 52px; margin-top: 12px; border: none; border-radius: 14px;
+    background-color: var(--relief-haut);
+    background-image: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    color: var(--muted);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    font: inherit; font-size: 1rem; font-weight: 600; letter-spacing: -.01em; cursor: pointer;
+    transition: color .2s, transform .12s;
+  }
+  .btn-entree > * { grid-area: 1 / 1; }
+  .btn-entree .tourne { position: static; }
+  .btn-entree.charge { pointer-events: none; }
+  .btn-entree.charge .be-lib { visibility: hidden; }
+  .btn-entree.charge .tourne { display: block; }
+  /* Seul le texte s'allume quand l'email et le mot de passe sont valables. */
+  .btn-entree.pret { color: var(--ink); }
+  @media (hover: hover) and (pointer: fine) {
+    .btn-entree:hover { color: var(--ink); }
   }
   #auth-status { margin-top: 4px; padding: 12px 6px 0; font-size: .9rem; }
   #v-compte .surnom-aide { text-align: center; }
@@ -452,8 +525,8 @@
   .ap-ev {
     position: absolute; left: 1px; right: 2px; overflow: hidden;
     top: calc(var(--t) * 1% + 1px); height: calc(var(--d) * 1% - 3px);
-    display: flex; flex-direction: column; gap: 1px; padding: 6px 8px; border-radius: 9px;
-    background: hsl(var(--hue) 92% 95%); color: hsl(var(--hue) 55% 25%);
+    display: flex; flex-direction: column; gap: 1px; padding: 6px 8px; border-radius: 10px;
+    background: hsl(var(--h) 46% 96%); color: hsl(var(--h) 26% 24%);
     animation: ap-pose .6s cubic-bezier(.16,1,.3,1) both;
     animation-delay: calc(120ms + var(--i, 0) * 45ms);
   }
@@ -478,94 +551,105 @@
     to { opacity: 1; transform: none; }
   }
   @media (prefers-color-scheme: dark) {
-    .ap-ev { background: hsl(var(--hue) 32% 21%); color: #fff; }
+    .ap-ev {
+      background: hsl(var(--h) 19% 17%); color: #eef2f8;
+    }
     .ap-ev i, .ap-ev em { opacity: .85; }
   }
   /* Petit écran (iPhone SE…) : le formulaire passe avant l'aperçu. */
   @media (max-width: 1023px) and (max-height: 640px) { .apercu { display: none; } }
 
-  /* Réglages : qui je suis + mes horaires, rien d'autre. */
-  .reg-compte { display: flex; align-items: center; gap: 12px; margin: 10px 0 2px; }
+  /* Réglages : qui je suis + mes horaires. */
+  .reg-compte { display: flex; align-items: center; gap: 14px; margin: 6px 0 4px; }
   .reg-compte .avatar.grand {
     width: 52px; height: 52px; flex: none; border-radius: 50%;
     display: grid; place-items: center;
-    background: var(--accent-soft); color: var(--accent);
-    font-weight: 700; font-size: 1.05rem;
+    background: var(--creux); color: var(--ink);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre);
+    font-weight: 700; font-size: 1.05rem; letter-spacing: -.01em;
   }
-  #feuille .reg-compte .avatar.grand { background: #2a303b; color: #fff; }
-  @media (min-width: 1024px) {
-    #feuille .reg-compte .avatar.grand { background: var(--accent-soft); color: var(--accent); }
+  .reg-qui { flex: 1; min-width: 0; }
+  .reg-qui strong {
+    display: block; font-size: 1.05rem; letter-spacing: -.015em;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  .reg-qui { min-width: 0; }
-  .reg-qui strong { display: block; font-size: 1rem; }
-  .reg-qui span { color: #b9c1cf; font-size: .85rem; }
-  @media (min-width: 1024px) {
-    .reg-qui span { color: var(--muted); }
-  }
-  .reg-section { margin-top: 20px !important; }
+  .reg-qui span { color: var(--muted); font-size: .85rem; }
+  .reg-section { margin-top: 22px !important; }
   #avatar-init { font-weight: 700; font-size: .95rem; }
   .avis {
-    background: var(--accent-soft); border-radius: 14px; padding: 12px 14px;
+    background: var(--creux); border-radius: 14px; padding: 12px 14px;
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre);
     margin: 0 0 14px; font-size: .92rem;
   }
   .avis button {
     border: none; background: none; color: var(--accent); font: inherit;
-    font-weight: 700; padding: 0; cursor: pointer;
+    font-weight: 650; padding: 0; cursor: pointer; text-decoration: underline;
+    text-underline-offset: 3px;
   }
 
-  /* Semaine */
-  .week {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 4px 2px 12px;
-  }
+  /* Semaine : flèches en relief, titre au centre. Le retour à la semaine
+     en cours garde sa place quand il est caché : rien ne se décale. */
+  .week { display: flex; align-items: center; gap: 10px; padding: 2px 0 6px; }
   .week button.nav {
-    border: none; background: none; color: var(--muted);
-    width: 48px; height: 48px; border-radius: 50%; font-size: 1.5rem;
-    cursor: pointer; flex: none; line-height: 1;
+    flex: none; display: grid; place-items: center; width: 42px; height: 42px;
+    border: none; border-radius: 999px; color: var(--ink);
+    font: inherit; font-size: 1.35rem; line-height: 1; cursor: pointer;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    transition: opacity .15s, transform .12s;
   }
-  .week button.nav:disabled { opacity: .25; cursor: default; }
-  .week button.nav:not(:disabled):active { transform: scale(.96); }
-  .week .cur { text-align: center; }
-  .week .cur strong { display: block; font-size: 1.02rem; letter-spacing: -.01em; }
-  .week .cur span { font-size: .88rem; color: var(--muted); }
+  .week button.nav:disabled { opacity: .3; cursor: default; box-shadow: inset 0 0 0 1px var(--line); }
+  .week button.nav:not(:disabled):active { transform: scale(.94); }
+  .week .cur { flex: 1; min-width: 0; text-align: center; }
+  .week .cur strong { display: block; font-size: 1.05rem; font-weight: 700; letter-spacing: -.02em; }
+  .week .cur span { font-size: .86rem; color: var(--muted); }
   .thisweek {
-    display: block; margin: 0 auto 4px; border: none; background: none;
-    color: var(--accent); font: inherit; font-size: .92rem; font-weight: 600;
-    cursor: pointer; padding: 8px 12px;
+    display: block; margin: 0 auto 10px; height: 36px; padding: 0 16px;
+    border: none; border-radius: 999px; color: var(--ink);
+    font: inherit; font-size: .88rem; font-weight: 600; cursor: pointer;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    transition: opacity .25s, transform .25s;
   }
+  .thisweek.cache { opacity: 0; transform: scale(.94); pointer-events: none; }
 
-  /* Liste des jours : simples lignes */
-  .days { list-style: none; margin: 6px 0 0; padding: 0; }
-  .day { border-top: 1px solid var(--line); }
-  .day:last-child { border-bottom: 1px solid var(--line); }
+  /* Liste des jours : une carte par jour, pas de filets. */
+  .days { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .day {
+    border-radius: 16px;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  .day.today {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 50%, transparent),
+      inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
   .day > button {
     width: 100%; border: none; background: none; font: inherit; color: inherit;
     display: flex; align-items: center; gap: 12px; text-align: left;
-    padding: 16px 4px; cursor: pointer; min-height: 66px; border-radius: 12px;
+    padding: 14px 14px; min-height: 62px; cursor: pointer; border-radius: 16px;
   }
   .day > button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-  .dot {
-    width: 7px; height: 7px; border-radius: 50%; background: transparent; flex: none;
-  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: transparent; flex: none; }
   .day.today .dot { background: var(--accent); }
-  .dname { flex: none; min-width: 118px; }
+  .dname { flex: none; min-width: 112px; }
   .dname strong { display: block; font-size: 1.02rem; font-weight: 600; letter-spacing: -.01em; }
   .dname span { font-size: .85rem; color: var(--muted); }
   .dsum {
-    margin-left: auto; font-size: .98rem; color: var(--muted);
+    margin-left: auto; font-size: .96rem; color: var(--muted);
     font-variant-numeric: tabular-nums; white-space: nowrap; letter-spacing: -.01em;
   }
   .dsum.busy { color: var(--ink); font-weight: 600; }
-  .dsum.free { color: var(--free); font-weight: 500; }
+  .dsum.free { color: var(--free); font-weight: 550; }
   .chev {
-    flex: none; width: 10px; height: 10px; margin: 0 8px 0 4px;
+    flex: none; width: 9px; height: 9px; margin: 0 4px 0 2px;
     border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted);
     transform: rotate(45deg); transition: transform .25s cubic-bezier(.16,1,.3,1), border-color .25s;
   }
-  .day.open .chev { transform: rotate(225deg); border-color: var(--accent); }
+  .day.open .chev { transform: rotate(225deg); border-color: var(--ink); }
   .day.today .dname strong { font-weight: 700; }
 
-  /* Détail repliable : conteneur en relief, bien démarqué de la ligne du jour */
+  /* Détail d'un jour : bloc gravé à l'intérieur de la carte. */
   .detail {
     display: grid; grid-template-rows: 0fr; opacity: 0;
     transition: grid-template-rows .32s cubic-bezier(.16,1,.3,1), opacity .25s;
@@ -573,33 +657,33 @@
   .day.open .detail { grid-template-rows: 1fr; opacity: 1; }
   .detail > div { overflow: hidden; }
   .detail .box {
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: 18px;
-    margin: 2px 0 16px;
-    padding: 4px 18px 8px;
-    box-shadow: var(--shadow);
+    margin: 0 10px 10px; padding: 2px 14px 6px; border: none; border-radius: 13px;
+    background: var(--creux);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre);
   }
   .detail ol { list-style: none; margin: 0; padding: 0; }
   .detail li.c { padding: 0; }
-  .detail li.c + li.c { border-top: 1px solid var(--line); }
   .cbtn {
     width: 100%; border: none; background: none; font: inherit; color: inherit;
-    display: flex; gap: 12px; align-items: baseline; text-align: left;
+    display: flex; gap: 10px; align-items: center; text-align: left;
     padding: 11px 0; cursor: pointer;
   }
-  .cbtn .h {
-    flex: none; min-width: 132px;
-    font-variant-numeric: tabular-nums; color: var(--muted); font-size: .93rem;
-    padding-top: 1px;
+  /* Pastille de couleur : même repère que sur la grille d'ordinateur. */
+  .cpoint {
+    flex: none; width: 8px; height: 8px; border-radius: 50%;
+    background: hsl(var(--h) calc(52% - var(--v) * 10%) calc(52% + var(--v) * 7%));
   }
-  .cbtn .m { font-weight: 500; flex: 1; }
+  .cbtn .h {
+    flex: none; min-width: 106px;
+    font-variant-numeric: tabular-nums; color: var(--muted); font-size: .88rem;
+  }
+  .cbtn .m { font-weight: 550; font-size: .96rem; flex: 1; min-width: 0; }
   .minichev {
     flex: none; width: 7px; height: 7px; align-self: center;
     border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted);
     transform: rotate(45deg); transition: transform .25s cubic-bezier(.16,1,.3,1), border-color .25s;
   }
-  li.c.open .minichev { transform: rotate(225deg); border-color: var(--accent); }
+  li.c.open .minichev { transform: rotate(225deg); border-color: var(--ink); }
   /* Sous-détail du cours : prof + salle */
   .csub {
     display: grid; grid-template-rows: 0fr; opacity: 0;
@@ -607,33 +691,33 @@
   }
   li.c.open .csub { grid-template-rows: 1fr; opacity: 1; }
   .csub > div { overflow: hidden; }
-  .csub-in { padding: 0 0 12px 144px; font-size: .88rem; }
+  .csub-in { padding: 0 0 12px 124px; font-size: .86rem; }
   .csub-in div { padding: 1px 0; }
   .csub-in .k { color: var(--muted); }
   .csub-in .nc { color: var(--muted); font-style: italic; }
-  /* Pause : pastille symétrique, sans filets parasites */
+  /* Pause : discrète, sans filets. */
   .detail li.p {
-    display: flex; align-items: center; gap: 10px;
-    padding: 9px 0; color: var(--muted);
-    font-size: .8rem; font-weight: 600; letter-spacing: .03em;
-    white-space: nowrap;
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 0 7px 18px; color: var(--muted);
+    font-size: .78rem; font-weight: 600; letter-spacing: .02em; white-space: nowrap;
   }
-  .detail li.p::before, .detail li.p::after {
-    content: ""; height: 1px; background: var(--line); flex: 1;
+  .detail li.p::before {
+    content: ""; flex: none; width: 4px; height: 4px; border-radius: 50%;
+    background: color-mix(in srgb, var(--muted) 60%, transparent);
   }
 
   .empty {
     text-align: center; color: var(--muted); padding: 34px 10px; font-size: 1rem;
   }
 
-  /* Lien PDF officiel de la semaine */
+  /* PDF officiel de la semaine */
   .official {
-    display: flex; align-items: center; justify-content: center;
-    margin: 22px 0 0; padding: 14px; width: 100%;
-    border: 1px solid var(--line); border-radius: 16px;
-    background: var(--surface); color: var(--ink);
-    font: inherit; font-size: .98rem; font-weight: 600; cursor: pointer;
-    text-decoration: none;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    margin: 18px 0 0; width: 100%; height: 52px; border: none; border-radius: 16px;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    color: var(--ink); font: inherit; font-size: .96rem; font-weight: 600;
+    cursor: pointer; text-decoration: none; transition: transform .12s;
   }
   .official:active { transform: scale(.99); }
   .official:disabled { opacity: .6; cursor: wait; }
@@ -681,8 +765,8 @@
   }
   .pdf-frame {
     display: block; width: 100%; height: 72vh; min-height: 420px;
-    border: none; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
-    background: var(--surface); box-shadow: var(--shadow);
+    border: none; background: var(--creux);
+    box-shadow: inset 0 1px 0 var(--line), inset 0 -1px 0 var(--line);
   }
   /* Le zoom agrandit réellement le PDF (largeur ET hauteur) : la hauteur
      suit le zoom, la page défile verticalement comme d'habitude et seul
@@ -698,18 +782,18 @@
   .pdf-pince::-webkit-scrollbar { display: none; }
   /* Pages rendues en images : 100 % de largeur au repos, entièrement
      visibles, rien n'est coupé. Le zoom élargit ce bloc (200 %, 300 %…). */
-  .pdf-pages { width: 100%; margin: 0 auto; }
+  .pdf-pages { width: 100%; margin: 0 auto; background: var(--creux); }
   .pdf-pages canvas { display: block; width: 100%; height: auto; background: #fff; }
-  .pdf-pages canvas + canvas { border-top: 1px solid var(--line); }
+  .pdf-pages canvas + canvas { margin-top: 10px; }
   /* Bouton flottant pour revenir à la taille normale : collé en bas de
      l'écran tant que le PDF zoomé est visible, masqué au repos. */
   .pdf-dezoom {
     position: sticky; bottom: calc(16px + env(safe-area-inset-bottom));
     display: block; width: fit-content; margin: -58px auto 16px; padding: 11px 18px;
     border: none; border-radius: 999px;
-    background: rgba(23, 25, 29, .84); color: #fff;
+    background: var(--relief-haut); color: var(--ink);
     -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
-    box-shadow: 0 8px 24px -8px rgba(0, 0, 0, .45);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), 0 10px 26px -10px rgba(0, 0, 0, .5);
     font: inherit; font-size: .9rem; font-weight: 600; cursor: pointer;
     opacity: 0; transform: translateY(8px) scale(.96); pointer-events: none;
     transition: opacity .2s ease, transform .2s ease;
@@ -721,99 +805,126 @@
   }
   footer { text-align: center; color: var(--muted); font-size: .8rem; margin-top: 18px; }
 
-  /* Feuille « Mon horaire », se ferme en glissant vers le bas
-     (attrapable de n'importe où, le fond ne défile pas pendant le geste) */
+  /* Réglages sur téléphone : feuille qui monte du bas, fond assombri,
+     se ferme en glissant vers le bas (attrapable de n'importe où, le fond
+     ne défile pas pendant le geste). */
   #feuille {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
-    background: #1c2027; color: #eef1f6;
-    border-radius: 18px 18px 0 0; padding: 6px 18px calc(20px + env(safe-area-inset-bottom));
-    font-size: .92rem;
+    background: var(--feuille); color: var(--ink);
+    border-radius: 26px 26px 0 0; padding: 4px 18px calc(18px + env(safe-area-inset-bottom));
+    box-shadow: inset 0 1px 0 var(--reflet), 0 0 0 1px var(--line), 0 -24px 60px -24px rgba(0, 0, 0, .5);
+    font-size: .95rem;
     transform: translateY(105%); visibility: hidden;
-    transition: transform .32s cubic-bezier(.16,1,.3,1), visibility 0s linear .32s;
+    transition: transform .38s cubic-bezier(.16,1,.3,1), visibility 0s linear .38s;
     touch-action: none;
     overscroll-behavior: contain;
     user-select: none; -webkit-user-select: none;
   }
   #feuille button { user-select: none; -webkit-user-select: none; }
   body.sheet-ouverte { overflow: hidden; }
+  body::after {
+    content: ""; position: fixed; inset: 0; z-index: 45; pointer-events: none;
+    background: rgba(6, 8, 12, .42); opacity: 0; transition: opacity .3s;
+  }
+  body.sheet-ouverte::after { opacity: 1; }
   #feuille.visible {
     transform: translateY(0); visibility: visible;
-    transition: transform .32s cubic-bezier(.16,1,.3,1);
+    transition: transform .38s cubic-bezier(.16,1,.3,1);
   }
   #feuille.dragging { transition: none; }
-  .grabber-zone { padding: 10px 0 8px; touch-action: none; cursor: grab; }
+  .grabber-zone { padding: 10px 0 10px; touch-action: none; cursor: grab; }
   .grabber {
-    display: block; width: 42px; height: 5px; border-radius: 999px;
-    background: #3a4150; margin: 0 auto;
+    display: block; width: 40px; height: 5px; border-radius: 999px;
+    background: color-mix(in srgb, var(--ink) 18%, transparent); margin: 0 auto;
   }
-  #feuille h2 { margin: 2px 0 8px; font-size: 1rem; }
-  #feuille p { margin: 6px 0; color: #b9c1cf; }
-  #feuille .row { display: flex; gap: 8px; margin-top: 12px; }
-  #feuille button {
-    padding: 12px; border-radius: 12px; border: none;
-    font-size: .95rem; font-weight: 700; cursor: pointer;
+  #feuille h2 { margin: 0 0 2px 2px; color: var(--muted); font-size: .85rem; font-weight: 600; }
+  #feuille p { margin: 6px 0; color: var(--muted); }
+  .btn-ajout {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; height: 52px; border: none; border-radius: 16px;
+    font: inherit; font-size: .95rem; font-weight: 600; color: var(--ink); cursor: pointer;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    transition: transform .12s;
   }
-  #feuille .row button { flex: 1; background: #2a303b; color: #eef1f6; }
+  .btn-ajout svg { color: var(--muted); }
+  .btn-ajout:active { transform: scale(.98); }
 
-  /* Demande de confirmation custom (remplace window.confirm) :
-     voile flouté + carte centrée, même langage que le reste de l'app. */
-  #voile-confirm {
+  /* Fenêtres (confirmation, modification) : voile flouté + carte en
+     relief, même langage que le reste. Elles apparaissent en montant
+     légèrement et repartent en fondu. */
+  .voile {
     position: fixed; inset: 0; z-index: 100;
     display: grid; place-items: center; padding: 20px;
-    background: rgba(10, 12, 16, .5);
-    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    background: rgba(6, 8, 12, .45);
+    -webkit-backdrop-filter: blur(12px) saturate(120%); backdrop-filter: blur(12px) saturate(120%);
     overscroll-behavior: contain;
   }
-  #voile-confirm:not([hidden]) { animation: voile-apparait .2s ease-out; }
+  .voile:not([hidden]) { animation: voile-apparait .22s ease-out; }
+  .voile.sortie { animation: voile-part .18s ease-in forwards; }
   @keyframes voile-apparait { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes voile-part { to { opacity: 0; } }
   body.confirm-ouverte { overflow: hidden; }
-  #boite-confirm {
-    width: min(400px, 100%);
-    background: var(--surface); color: var(--ink);
-    border: 1px solid var(--line); border-radius: 24px;
-    box-shadow: 0 32px 80px -24px rgba(0, 0, 0, .5), var(--shadow);
-    padding: 26px 22px 18px; text-align: center;
-    transform-origin: center;
+  .boite {
+    width: min(420px, 100%); margin: 0; padding: 24px 20px 18px;
+    background: var(--feuille); color: var(--ink); border-radius: 26px;
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), 0 40px 90px -30px rgba(0, 0, 0, .6);
   }
-  #voile-confirm:not([hidden]) #boite-confirm {
-    animation: confirm-apparait .3s cubic-bezier(.16,1,.3,1);
-  }
-  @keyframes confirm-apparait {
-    from { opacity: 0; transform: translateY(12px) scale(.94); }
+  .voile:not([hidden]) .boite { animation: boite-apparait .34s cubic-bezier(.16,1,.3,1); }
+  .voile.sortie .boite { animation: boite-part .18s ease-in forwards; }
+  @keyframes boite-apparait {
+    from { opacity: 0; transform: translateY(14px) scale(.96); }
     to { opacity: 1; transform: none; }
   }
+  @keyframes boite-part { to { opacity: 0; transform: translateY(8px) scale(.98); } }
+  .boite h3 { margin: 0 0 18px; font-size: 1.25rem; font-weight: 750; letter-spacing: -.025em; }
+  .boite-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 22px; }
+  .boite-actions button {
+    height: 50px; border: none; border-radius: 14px;
+    font: inherit; font-size: .98rem; font-weight: 650; cursor: pointer;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    transition: color .15s, transform .12s;
+  }
+  .boite-actions button:active { transform: scale(.98); }
+  .boite-actions button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .btn-sec { color: var(--muted); }
+  .btn-sec:hover { color: var(--ink); }
+  .btn-prim { color: var(--ink); }
+  /* Confirmation : centrée, icône + message ; l'action risquée en rouge. */
+  #boite-confirm { text-align: center; padding-top: 28px; }
   #confirm-icone {
-    width: 54px; height: 54px; margin: 0 auto 14px; border-radius: 50%;
+    width: 52px; height: 52px; margin: 0 auto 14px; border-radius: 50%;
     display: grid; place-items: center;
-    background: rgba(229, 72, 77, .12); color: #e5484d;
+    background: color-mix(in srgb, var(--danger) 13%, transparent); color: var(--danger);
   }
   #boite-confirm.info #confirm-icone {
-    background: var(--accent-soft); color: var(--accent);
+    background: var(--creux); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line);
   }
-  #confirm-titre {
-    margin: 0 0 8px; font-size: 1.15rem; font-weight: 750; letter-spacing: -.02em;
+  #boite-confirm h3 { margin-bottom: 8px; }
+  #confirm-msg { margin: 0; color: var(--muted); font-size: .95rem; line-height: 1.5; }
+  #confirm-msg strong { color: var(--ink); font-weight: 650; }
+  #confirm-oui {
+    color: var(--danger);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 38%, transparent), inset 0 1px 0 var(--reflet), var(--ombre-btn);
   }
-  #confirm-msg {
-    margin: 0 0 20px; color: var(--muted); font-size: .95rem; line-height: 1.5;
+  #boite-confirm.info #confirm-oui {
+    color: var(--ink);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
   }
-  #confirm-msg strong { color: var(--ink); font-weight: 700; }
-  #confirm-actions { display: flex; gap: 10px; }
-  #confirm-actions button {
-    flex: 1; padding: 13px 10px; border: none; border-radius: 14px;
-    font: inherit; font-size: .98rem; font-weight: 700; cursor: pointer;
-    transition: transform .12s, opacity .12s, background .15s;
+  /* Modification : en haut sur téléphone (le clavier occupe le bas). */
+  #voile-edition { place-items: start center; padding-top: max(20px, 9vh); }
+  @media (min-width: 1024px) { #voile-edition { place-items: center; padding-top: 20px; } }
+  .boite .champs + .champ-titre, .boite .champs + .choix-themes { margin-top: 18px; }
+  .boite .champ-titre + .choix-themes { margin-top: 0; }
+  .champs.erreur { box-shadow: inset 0 0 0 1px var(--danger), inset 0 1px 3px var(--creux-ombre), 0 0 0 4px color-mix(in srgb, var(--danger) 14%, transparent); }
+  .edition-details {
+    margin: 18px 0 0; padding: 6px 14px; border-radius: 14px;
+    background: var(--creux); box-shadow: inset 0 0 0 1px var(--line); font-size: .88rem;
   }
-  #confirm-actions button:active { transform: scale(.98); }
-  #confirm-non { background: var(--seg-track); color: var(--ink); }
-  #confirm-non:hover { opacity: .85; }
-  #confirm-oui { background: #e5484d; color: #fff; }
-  #confirm-oui:hover { opacity: .9; }
-  #boite-confirm.info #confirm-oui { background: var(--accent); }
-  @media (min-width: 1024px) {
-    #boite-confirm { padding: 28px 26px 20px; }
-    #confirm-actions button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-    #confirm-oui:focus-visible { outline-color: #e5484d; }
-  }
+  .edition-details div { display: flex; justify-content: space-between; gap: 16px; padding: 7px 0; }
+  .edition-details dt { color: var(--muted); flex: none; }
+  .edition-details dd { margin: 0; min-width: 0; text-align: right; font-weight: 550; overflow-wrap: anywhere; }
 
   /* Rechargement visible (< 1 s) : barre fine + contenu qui s'efface,
      puis les jours réapparaissent en cascade sur la nouvelle page */
@@ -852,8 +963,7 @@
   }
 
   /* Éléments propres à l'ordinateur : absents sur téléphone. */
-  .cal, .pdf-tete, .moi-txt, .etape-n, #pop, .official svg { display: none; }
-  .thisweek.cache { display: none; }
+  .cal, .pdf-tete, .moi-txt, #pop, .official svg { display: none; }
   .avatar { display: grid; place-items: center; }
 
   /* ================= Ordinateur =================
@@ -879,15 +989,12 @@
     .title { font-size: 1.12rem; letter-spacing: -.02em; }
     .topbar .gauche, .topbar .droite { position: static; transform: none; }
     .topbar .gauche {
-      order: 1; min-height: 34px; padding: 0 14px; border-radius: 999px;
-      background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--line);
-      font-size: .88rem; font-weight: 600; transition: background .15s;
+      order: 1; min-height: 34px; padding: 0 14px 0 11px;
+      font-size: .88rem;
     }
-    .topbar .gauche:hover { background: var(--accent-soft); color: var(--accent); }
     .topbar .droite {
       order: 2; margin-left: auto; width: 40px; height: 40px; padding: 0;
-      display: grid; place-items: center; border-radius: 50%;
-      background: var(--accent-soft); color: var(--accent); border: none; box-shadow: none;
+      display: grid; place-items: center; border-radius: 50%; border: none;
       font-size: .95rem; font-weight: 700; transition: opacity .15s, transform .15s;
     }
     .topbar .droite:hover { opacity: .85; transform: scale(1.04); }
@@ -902,14 +1009,12 @@
        centré dans la hauteur de la fenêtre. */
     #v-compte {
       display: grid; align-items: center; column-gap: clamp(48px, 6vw, 96px);
-      grid-template-columns: minmax(340px, 400px) minmax(0, 1fr);
+      grid-template-columns: minmax(360px, 420px) minmax(0, 1fr);
       max-width: 1200px; padding: 24px 0 48px;
       min-height: calc(100vh - 96px); min-height: calc(100dvh - 96px);
     }
     .entree { display: block; }
-    .entree-titre { margin: 0 0 36px; font-size: 3.6rem; }
-    .fournisseurs button:hover { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--muted) 55%, transparent); }
-    .btn-entree:hover { opacity: .9; }
+    .entree-titre { margin: 0 0 36px; font-size: 3.4rem; }
     .apercu {
       margin: 0; height: min(560px, calc(100dvh - 180px)); padding: 18px 18px 0;
       border-radius: 28px; box-shadow: inset 0 0 0 1px var(--line), var(--shadow);
@@ -927,41 +1032,21 @@
     .ap-ev b { font-size: .82rem; }
     .ap-ev i { font-size: .76rem; }
     .ap-ev em { font-size: .72rem; }
-    .etape-n {
-      display: block; margin: 0 0 14px; color: var(--accent);
-      font-size: .78rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
-    }
-    .q { font-size: 3rem; font-weight: 700; letter-spacing: -.045em; line-height: 1.02; margin: 0 0 12px; }
-    .aide { font-size: 1.08rem; margin: 0 0 32px; max-width: 60ch; }
-    .recherche {
-      padding: 17px 22px; margin: 0 0 20px; border: none; border-radius: 18px; font-size: 1.05rem;
-      box-shadow: 0 0 0 1px var(--line), var(--shadow);
-    }
-    .recherche:focus { outline: none; box-shadow: 0 0 0 2px var(--accent), var(--shadow); }
+    .etapes { margin: 0 0 22px; }
+    .q { font-size: 3.4rem; margin: 0 0 16px; }
+    .aide { font-size: 1.05rem; margin: -6px 0 32px; max-width: 60ch; }
     .liste { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-    #liste-ecoles { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
-    .liste li + li { border-top: none; }
+    #liste-ecoles { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
     .liste li.empty { grid-column: 1 / -1; }
-    .liste button {
-      height: 100%; padding: 16px 18px; min-height: 62px; border-radius: 16px;
-      background: var(--surface); box-shadow: 0 0 0 1px var(--line);
-      transition: box-shadow .18s, transform .18s;
-    }
-    #liste-ecoles button { padding: 22px 22px; }
-    #liste-ecoles .nom { font-size: 1.15rem; font-weight: 700; }
-    .liste button:hover { box-shadow: 0 0 0 1.5px var(--accent), var(--shadow); transform: translateY(-1px); }
-    .liste button:active { background: var(--surface); transform: none; }
-    .liste .chev { opacity: 0; transition: opacity .18s; border-color: var(--accent); }
-    .liste button:hover .chev { opacity: 1; }
-    .chips { gap: 10px; margin-bottom: 32px; }
-    .chip { padding: 10px 18px; transition: background .15s, border-color .15s, color .15s, transform .15s; }
-    .chip:hover { border-color: var(--accent); }
-    .primaire {
-      width: fit-content; margin-left: auto; padding: 15px 32px; border-radius: 999px;
-      bottom: 24px; transition: transform .15s, box-shadow .15s;
-    }
-    .primaire:hover { transform: translateY(-1px); }
-
+    .liste button { height: 100%; min-height: 64px; padding: 16px 18px; }
+    #liste-ecoles button { padding: 18px 20px; }
+    #liste-ecoles .nom { font-size: 1.08rem; }
+    .liste .chev { opacity: 0; transition: opacity .18s; }
+    .liste button:hover .chev { opacity: .9; }
+    .chips { gap: 10px; margin-bottom: 34px; }
+    .chip:hover, .theme-opt:hover { color: var(--ink); }
+    .primaire { width: fit-content; min-width: 240px; margin-left: auto; padding: 0 32px; bottom: 24px; }
+    #v-identite { max-width: 560px; }
     /* Horaire : barre d'outils, grille de la semaine, panneau PDF */
     .profil-ligne { display: none; }
     #seg { max-width: 560px; margin-bottom: 16px; }
@@ -993,26 +1078,28 @@
     .week .cur strong { display: inline; font-size: 2.1rem; font-weight: 700; letter-spacing: -.045em; }
     .week .cur span { font-size: 1rem; white-space: nowrap; }
     .week button.nav, .thisweek, .official {
-      height: 40px; border-radius: 999px; border: none;
-      background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--line);
-      transition: background .15s, color .15s, box-shadow .15s, opacity .15s;
+      height: 40px; border-radius: 999px; border: none; color: var(--ink);
+      background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+      box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+      transition: color .15s, opacity .15s, transform .12s;
     }
-    .week button.nav { width: 40px; font-size: 1.3rem; }
-    .week button.nav:not(:disabled):hover, .thisweek:hover { background: var(--accent-soft); color: var(--accent); }
+    .week button.nav { width: 40px; font-size: 1.25rem; }
+    .week button.nav:not(:disabled):hover, .thisweek:hover, .official:hover { color: var(--ink); transform: translateY(-1px); }
+    .week button.nav:disabled { opacity: .3; transform: none; }
     .thisweek {
-      grid-area: auj; align-self: center; margin: 0; padding: 0 18px;
-      color: var(--ink); font-size: .9rem;
+      grid-area: auj; align-self: center; margin: 0; padding: 0 18px; font-size: .9rem;
     }
-    .thisweek.cache { display: block; opacity: .4; pointer-events: none; }
+    .thisweek.cache { opacity: 0; transform: scale(.96); pointer-events: none; }
     .official {
       grid-area: pdfbtn; align-self: center; width: auto; margin: 0; padding: 0 18px 0 15px;
       display: flex; gap: 8px; font-size: .9rem;
-      background: var(--ink); color: var(--bg); box-shadow: none;
     }
-    .official svg { display: block; }
+    .official svg { display: block; color: var(--muted); }
     .official .sm { display: none; }
-    .official:hover { opacity: .88; }
-    .official[aria-expanded="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--line); }
+    .official[aria-expanded="true"] {
+      color: var(--ink);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 40%, transparent), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    }
     footer { grid-area: foot; margin: 0; text-align: left; }
     footer p { margin: 0; }
 
@@ -1021,7 +1108,8 @@
     .cal {
       grid-area: cal; display: flex; flex-direction: column; min-height: 0;
       padding: 16px 18px 18px 0; border-radius: 24px;
-      background: var(--surface); box-shadow: 0 0 0 1px var(--line), var(--shadow);
+      background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+      box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
     }
     .cal-tete, .cal-corps {
       display: grid; column-gap: 8px;
@@ -1030,15 +1118,14 @@
     .cal-tete { padding-bottom: 14px; }
     .cal-jour { display: flex; align-items: center; gap: 8px; padding: 0 8px; min-width: 0; }
     .cal-jour span {
-      color: var(--muted); font-size: .74rem; font-weight: 700;
-      letter-spacing: .08em; text-transform: uppercase;
+      color: var(--muted); font-size: .76rem; font-weight: 650; letter-spacing: .04em;
     }
     .cal-jour strong {
       display: grid; place-items: center; min-width: 34px; height: 34px; border-radius: 999px;
       font-size: 1.3rem; font-weight: 600; letter-spacing: -.03em; font-variant-numeric: tabular-nums;
     }
     .cal-jour.today span { color: var(--accent); }
-    .cal-jour.today strong { background: var(--accent); color: #fff; }
+    .cal-jour.today strong { background: var(--accent); color: var(--sur-accent); }
     .cal-jour small {
       margin-left: auto; color: var(--muted); font-size: .76rem;
       font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -1050,23 +1137,32 @@
       position: absolute; right: 12px; transform: translateY(-50%);
       color: var(--muted); font-size: .72rem; font-variant-numeric: tabular-nums;
     }
+    /* Colonne du jour : fond gravé, lignes d'heures discrètes. */
     .cal-col {
       position: relative; border-radius: 12px;
       background-image: linear-gradient(to bottom, var(--line) 1px, transparent 1px);
       background-size: 100% calc(100% / var(--h));
     }
-    .cal-col.today { background-color: color-mix(in srgb, var(--accent) 5%, transparent); }
+    /* Aujourd'hui : un simple trait sous la date, pas de pavé teinté. */
+    .cal-col.today::before {
+      content: ""; position: absolute; left: 0; right: 0; top: -7px; height: 2px;
+      border-radius: 2px; background: var(--accent);
+    }
     .cal-libre {
       position: absolute; inset: 0; display: grid; place-items: center;
       color: var(--muted); font-size: .88rem; font-weight: 500;
     }
+    /* Cours : fond mat teinté (une couleur par
+       intitulé, jamais deux intitulés avec la même — voir preparerCouleurs). */
     .ev {
       position: absolute; overflow: hidden;
       top: calc(var(--t) * 1% + 1px); height: calc(var(--d) * 1% - 3px);
       left: calc(var(--l) * 100% + 1px); width: calc(var(--w) * 100% - 3px);
       display: flex; flex-direction: column; gap: 2px;
-      padding: 7px 10px; border: none; border-radius: 10px; text-align: left; cursor: pointer;
-      font: inherit; background: hsl(var(--hue) 92% 95%); color: hsl(var(--hue) 55% 25%);
+      padding: 7px 10px; border: none; border-radius: 11px; text-align: left; cursor: pointer;
+      font: inherit;
+      background: hsl(var(--h) calc(58% - var(--v) * 15%) calc(95% - var(--v) * 2%));
+      color: hsl(var(--h) 28% 23%);
       transition: transform .16s cubic-bezier(.16,1,.3,1), box-shadow .16s;
       isolation: isolate; /* le fond reste un calque derrière, jamais devant le texte */
     }
@@ -1074,9 +1170,13 @@
     .ev > span { position: relative; z-index: 1; }
     .ev:hover, .ev.actif {
       z-index: 2; transform: translateY(-1px);
-      box-shadow: 0 10px 24px -12px hsl(var(--hue) 60% 30% / .5);
+      box-shadow: 0 12px 26px -14px rgba(15, 20, 40, .5);
     }
-    .ev.actif { box-shadow: 0 0 0 2px hsl(var(--hue) 70% 55%), 0 10px 24px -12px hsl(var(--hue) 60% 30% / .5); }
+    .ev.actif {
+      box-shadow:
+        0 0 0 1.5px hsl(var(--h) calc(45% - var(--v) * 10%) calc(52% + var(--v) * 6%)),
+        0 12px 26px -14px rgba(15, 20, 40, .5);
+    }
     .ev .et {
       font-size: .82rem; font-weight: 650; line-height: 1.25; letter-spacing: -.005em;
       display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden;
@@ -1087,9 +1187,9 @@
        les niveaux. L'ordre du HTML donne aussi l'ordre de rognage :
        quand une petite case déborde, les horaires sautent en premier. */
     .ev .eh, .ev .ep, .ev .es { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .ev .es { font-size: .78rem; font-weight: 600; opacity: .92; }
-    .ev .ep { font-size: .74rem; opacity: .72; }
-    .ev .eh { font-size: .72rem; font-weight: 500; opacity: .58; font-variant-numeric: tabular-nums; }
+    .ev .es { font-size: .78rem; font-weight: 600; opacity: .85; }
+    .ev .ep { font-size: .74rem; opacity: .68; }
+    .ev .eh { font-size: .72rem; font-weight: 500; opacity: .55; font-variant-numeric: tabular-nums; }
     .ev.court { flex-direction: row; align-items: baseline; gap: 8px; padding-top: 4px; }
     .ev.court .et { -webkit-line-clamp: 1; flex: 1; min-width: 0; }
     .ev.court .es { flex: none; max-width: 36%; min-width: 0; font-size: .74rem; }
@@ -1112,8 +1212,8 @@
     #pop {
       display: block; position: fixed; z-index: 40; width: 320px;
       padding: 20px 22px; border-radius: 20px;
-      background: var(--surface); color: var(--ink);
-      box-shadow: 0 0 0 1px var(--line), 0 28px 60px -24px rgba(15, 20, 40, .4);
+      background: var(--relief-haut); color: var(--ink);
+      box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), 0 28px 60px -24px rgba(0, 0, 0, .5);
       opacity: 0; visibility: hidden; transform: translateY(4px) scale(.98);
       transition: opacity .16s, transform .2s cubic-bezier(.16,1,.3,1), visibility 0s linear .2s;
     }
@@ -1121,7 +1221,7 @@
     #pop .pt { display: flex; gap: 10px; align-items: baseline; margin: 0 0 4px; font-size: 1.08rem; font-weight: 700; letter-spacing: -.015em; line-height: 1.3; }
     #pop .pt::before {
       content: ""; flex: none; width: 10px; height: 10px; border-radius: 3px;
-      background: hsl(var(--hue) 70% 55%); transform: translateY(-1px);
+      background: hsl(var(--h) calc(52% - var(--v) * 12%) calc(52% + var(--v) * 7%)); transform: translateY(-1px);
     }
     #pop .ph { margin: 0 0 0 20px; color: var(--muted); font-size: .9rem; font-variant-numeric: tabular-nums; }
     #pop dl { display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; margin: 16px 0 0 20px; font-size: .88rem; }
@@ -1133,28 +1233,41 @@
     #pdf-zone {
       grid-area: pdf; margin: 0; min-height: 0; overflow: hidden;
       display: flex; flex-direction: column;
-      border-radius: 24px; background: var(--surface); box-shadow: 0 0 0 1px var(--line), var(--shadow);
+      border-radius: 24px;
+      background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+      box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
     }
     .pdf-tete { display: flex; align-items: center; gap: 12px; padding: 12px 12px 12px 20px; }
     .pdf-titre { flex: 1; min-width: 0; line-height: 1.25; }
     .pdf-titre strong { display: block; font-size: .95rem; letter-spacing: -.01em; }
     .pdf-titre span { color: var(--muted); font-size: .8rem; }
-    .pdf-outils { display: flex; align-items: center; gap: 2px; padding: 3px; border-radius: 999px; background: var(--seg-track); }
+    .pdf-outils {
+      display: flex; align-items: center; gap: 2px; padding: 3px; border-radius: 999px;
+      background: var(--creux); box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre);
+    }
     .pdf-outil {
       display: grid; place-items: center; min-width: 32px; height: 32px; padding: 0 8px;
       border: none; border-radius: 999px; background: none; color: var(--ink);
       font: inherit; font-size: .82rem; font-weight: 600; cursor: pointer; text-decoration: none;
       font-variant-numeric: tabular-nums; transition: background .15s;
     }
-    .pdf-outil:hover:not(:disabled) { background: var(--surface); }
+    .pdf-outil:hover:not(:disabled) {
+      background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+      box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet);
+    }
     .pdf-outil:disabled { opacity: .35; cursor: default; }
     #pdf-niveau { min-width: 58px; }
-    .pdf-fermer { background: var(--seg-track); width: 38px; height: 38px; }
+    .pdf-fermer {
+      width: 38px; height: 38px; color: var(--muted);
+      background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+      box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    }
+    .pdf-fermer:hover { color: var(--ink); }
     #pdf-zone .pdf-status { margin: auto 0; }
     .pdf-apercu { flex: 1; min-height: 0; display: flex; flex-direction: column; }
     .pdf-pince {
       flex: 1; min-height: 0; overflow: auto;
-      background: var(--seg-track); scrollbar-width: thin;
+      background: var(--creux); box-shadow: inset 0 1px 3px var(--creux-ombre); scrollbar-width: thin;
       -webkit-user-select: auto; user-select: auto;
     }
     .pdf-pince::-webkit-scrollbar { display: block; width: 10px; height: 10px; }
@@ -1167,29 +1280,34 @@
     .pdf-dezoom { display: none; }
     .pdf-astuce { padding: 10px 16px 12px; font-size: .78rem; }
 
-    /* « Mon horaire » : menu déroulant sous le profil */
+    /* Réglages : menu déroulant sous le profil */
     #feuille {
       left: auto; right: 32px; top: 76px; bottom: auto; width: 380px;
-      padding: 20px 20px 16px; border-radius: 22px;
-      background: var(--surface); color: var(--ink);
-      box-shadow: 0 0 0 1px var(--line), 0 28px 60px -24px rgba(15, 20, 40, .4);
+      padding: 18px 18px 16px; border-radius: 24px;
+      box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), 0 30px 70px -24px rgba(0, 0, 0, .55);
       transform: translateY(-6px) scale(.98); transform-origin: top right; opacity: 0;
-      transition: transform .2s cubic-bezier(.16,1,.3,1), opacity .16s, visibility 0s linear .2s;
+      transition: transform .22s cubic-bezier(.16,1,.3,1), opacity .16s, visibility 0s linear .22s;
       touch-action: auto; user-select: auto; -webkit-user-select: auto;
     }
-    #feuille.visible { transform: none; opacity: 1; transition: transform .2s cubic-bezier(.16,1,.3,1), opacity .16s; }
+    #feuille.visible { transform: none; opacity: 1; transition: transform .22s cubic-bezier(.16,1,.3,1), opacity .16s; }
     .grabber-zone { display: none; }
     body.sheet-ouverte { overflow: auto; }
-    #feuille h2 { margin: 0 0 6px; font-size: 1.05rem; letter-spacing: -.01em; }
-    #feuille p { color: var(--muted); }
-    #feuille .row button { background: var(--seg-track); color: var(--ink); transition: background .15s; }
-    #feuille .row button:hover { background: var(--accent-soft); color: var(--accent); }
+    body::after { display: none; }
   }
   @media (min-width: 1024px) and (prefers-color-scheme: dark) {
-    .ev { background: hsl(var(--hue) 32% 21%); color: #fff; }
-    .ev:hover, .ev.actif { box-shadow: 0 10px 24px -12px rgba(0, 0, 0, .7); }
-    .ev.actif { box-shadow: 0 0 0 2px hsl(var(--hue) 70% 65%), 0 10px 24px -12px rgba(0, 0, 0, .7); }
-    .ev .es, .ev .ep, .ev .eh { opacity: 1; color: #fff; }
+    .ev {
+      background: hsl(var(--h) calc(19% + var(--v) * 7%) calc(17% + var(--v) * 2%));
+      color: #eef2f8;
+    }
+    .ev:hover, .ev.actif {
+      box-shadow: 0 12px 26px -14px rgba(0, 0, 0, .8);
+    }
+    .ev.actif {
+      box-shadow:
+        0 0 0 1.5px hsl(var(--h) calc(45% - var(--v) * 8%) calc(62% + var(--v) * 5%)),
+        0 12px 26px -14px rgba(0, 0, 0, .8);
+    }
+    .ev .es, .ev .ep, .ev .eh { color: #eef2f8; }
     .pdf-pages canvas { box-shadow: 0 8px 24px -12px rgba(0,0,0,.8); }
   }
 
@@ -1198,11 +1316,14 @@
     .chev, .minichev, .detail, .csub,
     .week, .thisweek, .days, #feuille { transition: none; }
     .ppop:not([hidden]) { animation: none; }
-    #voile-confirm:not([hidden]), #voile-confirm:not([hidden]) #boite-confirm { animation: none; }
+    .voile:not([hidden]), .voile:not([hidden]) .boite, .voile.sortie, .voile.sortie .boite { animation: none; }
+    .ppop:not([hidden]), .ppop.haut:not([hidden]) { animation: none; }
+    #feuille, #feuille.visible, body::after { transition: none; }
     body.arrivee .week, body.arrivee .days > li, body.arrivee #barre-recharge { animation: none; }
     .pdf-reflet { display: none; }
     .pdf-dezoom { transition: none; }
     .ap-ev { animation: none; }
+    .btn-entree, .champs, .halo::before, .halo::after { transition: none; }
   }
 </style>
 </head>
@@ -1222,29 +1343,41 @@
   <!-- 0. Connexion (écran d'entrée : on se connecte avant tout) -->
   <section id="v-compte" hidden>
     <div class="entree">
-      <h2 class="entree-titre">Des horaires pratiques et lisibles.</h2>
+      <h2 class="entree-titre">Enfin des horaires pratiques et lisibles.</h2>
       <div class="fournisseurs">
-        <button type="button" data-auth="google" aria-label="Continuer avec Google">
+        <button type="button" class="halo" data-auth="google" aria-label="Continuer avec Google">
           <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
             <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/>
             <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/>
             <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/>
             <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/>
           </svg>
+          <span class="tourne" aria-hidden="true"></span>
           <span>Google</span>
         </button>
-        <button type="button" data-auth="github" aria-label="Continuer avec GitHub">
+        <button type="button" class="halo" data-auth="github" aria-label="Continuer avec GitHub">
           <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
             <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
           </svg>
+          <span class="tourne" aria-hidden="true"></span>
           <span>GitHub</span>
         </button>
       </div>
       <p class="email-sep" aria-hidden="true"><span>ou</span></p>
-      <div class="champs">
-        <input class="champ" id="email" type="email" maxlength="120" placeholder="Adresse email"
-               aria-label="Adresse email" autocomplete="email" autocorrect="off" autocapitalize="off" spellcheck="false">
-        <div class="champ-mdp">
+      <div class="champs halo">
+        <div class="champ-ligne">
+          <svg class="champ-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="5" width="18" height="14" rx="3"/><path d="M4.5 7.5 12 13l7.5-5.5"/>
+          </svg>
+          <input class="champ" id="email" type="email" maxlength="120" placeholder="Adresse email"
+                 aria-label="Adresse email" autocomplete="email" autocorrect="off" autocapitalize="off" spellcheck="false">
+        </div>
+        <div class="champ-ligne">
+          <svg class="champ-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/>
+          </svg>
           <input class="champ" id="mdp" type="password" maxlength="120" placeholder="Mot de passe"
                  aria-label="Mot de passe (6 caractères minimum)" autocomplete="current-password">
           <button type="button" id="voir-mdp" aria-label="Afficher le mot de passe" aria-pressed="false">
@@ -1256,9 +1389,11 @@
           </button>
         </div>
       </div>
-      <button type="button" class="btn-entree" id="btn-email">Continuer</button>
+      <button type="button" class="btn-entree halo" id="btn-email">
+        <span class="be-lib">Continuer</span>
+        <span class="tourne" aria-hidden="true"></span>
+      </button>
       <p class="pdf-status" id="auth-status" role="status" hidden></p>
-      <p class="surnom-aide" id="auth-note" hidden></p>
     </div>
 
     <!-- Aperçu décoratif : une semaine type, dans le style de la grille de l'app. -->
@@ -1272,26 +1407,26 @@
       </div>
       <div class="ap-corps">
         <div class="ap-col">
-          <div class="ap-ev" style="--hue:221;--t:5;--d:20"><b>Algorithmique</b><i>A.204</i><em>8h30 – 10h30</em></div>
-          <div class="ap-ev" style="--hue:18;--t:27.5;--d:20"><b>Mathématiques</b><i>B.112</i><em>10h45 – 12h45</em></div>
-          <div class="ap-ev" style="--hue:152;--t:57.5;--d:30"><b>Labo web</b><i>L3.07</i><em>13h45 – 16h45</em></div>
+          <div class="ap-ev" style="--h:221;--v:0;--t:5;--d:20"><b>Algorithmique</b><i>A.204</i><em>8h30 – 10h30</em></div>
+          <div class="ap-ev" style="--h:18;--v:0;--t:27.5;--d:20"><b>Mathématiques</b><i>B.112</i><em>10h45 – 12h45</em></div>
+          <div class="ap-ev" style="--h:152;--v:0;--t:57.5;--d:30"><b>Labo web</b><i>L3.07</i><em>13h45 – 16h45</em></div>
         </div>
         <div class="ap-col">
-          <div class="ap-ev" style="--hue:262;--t:5;--d:30"><b>Réseaux</b><i>A.018</i><em>8h30 – 11h30</em></div>
-          <div class="ap-ev" style="--hue:332;--t:57.5;--d:15"><b>Anglais</b><i>C.301</i><em>13h45 – 15h15</em></div>
+          <div class="ap-ev" style="--h:262;--v:0;--t:5;--d:30"><b>Réseaux</b><i>A.018</i><em>8h30 – 11h30</em></div>
+          <div class="ap-ev" style="--h:332;--v:0;--t:57.5;--d:15"><b>Anglais</b><i>C.301</i><em>13h45 – 15h15</em></div>
         </div>
         <div class="ap-col">
-          <div class="ap-ev" style="--hue:190;--t:10;--d:30"><b>Bases de données</b><i>L2.11</i><em>9h00 – 12h00</em></div>
+          <div class="ap-ev" style="--h:190;--v:0;--t:10;--d:30"><b>Bases de données</b><i>L2.11</i><em>9h00 – 12h00</em></div>
           <div class="ap-libre">Libre</div>
         </div>
         <div class="ap-col">
-          <div class="ap-ev" style="--hue:40;--t:5;--d:20"><b>Systèmes</b><i>A.204</i><em>8h30 – 10h30</em></div>
-          <div class="ap-ev" style="--hue:221;--t:27.5;--d:20"><b>Algorithmique</b><i>A.204</i><em>10h45 – 12h45</em></div>
-          <div class="ap-ev" style="--hue:292;--t:60;--d:30"><b>Projet</b><i>L1.02</i><em>14h00 – 17h00</em></div>
+          <div class="ap-ev" style="--h:40;--v:0;--t:5;--d:20"><b>Systèmes</b><i>A.204</i><em>8h30 – 10h30</em></div>
+          <div class="ap-ev" style="--h:221;--v:0;--t:27.5;--d:20"><b>Algorithmique</b><i>A.204</i><em>10h45 – 12h45</em></div>
+          <div class="ap-ev" style="--h:292;--v:0;--t:60;--d:30"><b>Projet</b><i>L1.02</i><em>14h00 – 17h00</em></div>
         </div>
         <div class="ap-col">
-          <div class="ap-ev" style="--hue:18;--t:5;--d:15"><b>Mathématiques</b><i>B.112</i><em>8h30 – 10h00</em></div>
-          <div class="ap-ev" style="--hue:262;--t:22.5;--d:20"><b>Réseaux</b><i>A.018</i><em>10h15 – 12h15</em></div>
+          <div class="ap-ev" style="--h:18;--v:0;--t:5;--d:15"><b>Mathématiques</b><i>B.112</i><em>8h30 – 10h00</em></div>
+          <div class="ap-ev" style="--h:262;--v:0;--t:22.5;--d:20"><b>Réseaux</b><i>A.018</i><em>10h15 – 12h15</em></div>
         </div>
       </div>
     </div>
@@ -1300,13 +1435,18 @@
   <!-- 0b. Identité (demandée une fois, après la connexion) -->
   <section id="v-identite" hidden>
     <h2 class="q">C'est qui ?</h2>
-    <p class="aide">Ton nom et ton prénom s'affichent dans les réglages.</p>
-    <input class="recherche" id="prenom" type="text" maxlength="30" placeholder="Prénom"
-           autocomplete="given-name" autocorrect="off" spellcheck="false">
-    <input class="recherche" id="nom" type="text" maxlength="30" placeholder="Nom"
-           autocomplete="family-name" autocorrect="off" spellcheck="false">
+    <div class="champs halo">
+      <div class="champ-ligne">
+        <input class="champ" id="prenom" type="text" maxlength="30" placeholder="Prénom" aria-label="Prénom"
+               autocomplete="given-name" autocorrect="off" spellcheck="false">
+      </div>
+      <div class="champ-ligne">
+        <input class="champ" id="nom" type="text" maxlength="30" placeholder="Nom" aria-label="Nom"
+               autocomplete="family-name" autocorrect="off" spellcheck="false">
+      </div>
+    </div>
     <div class="theme-select-bloc">
-      <label class="theme-select-titre">Thème de l'application</label>
+      <p class="theme-select-titre">Couleur</p>
       <div class="choix-themes" id="identite-themes" role="radiogroup" aria-label="Thème de l'application">
         <button type="button" class="theme-opt" data-theme-opt="2" role="radio" aria-checked="true">
           <span class="theme-pastille" style="background:#1d4fd7"></span>
@@ -1322,43 +1462,51 @@
         </button>
       </div>
     </div>
-    <button class="primaire" id="btn-identite" type="button">Continuer</button>
+    <button class="primaire halo" id="btn-identite" type="button">Continuer</button>
   </section>
 
   <!-- 1. École -->
   <section id="v-ecole" hidden>
-    <p class="etape-n">Étape 1 sur 3</p>
+    <p class="etapes" role="img" aria-label="Étape 1 sur 3"><span class="on"></span><span></span><span></span></p>
     <h2 class="q">Ton école</h2>
-    <p class="aide">Choisis-la une seule fois : ensuite, l'app s'ouvre directement sur ton horaire.</p>
     <ul class="liste" id="liste-ecoles"></ul>
   </section>
 
   <!-- 2. Formation -->
   <section id="v-formation" hidden>
-    <p class="etape-n">Étape 2 sur 3</p>
+    <p class="etapes" role="img" aria-label="Étape 2 sur 3"><span class="on"></span><span class="on"></span><span></span></p>
     <h2 class="q">Ta formation</h2>
     <p class="aide" id="formation-aide"></p>
-    <input class="recherche" id="recherche" type="search" placeholder="Rechercher, ex. BA2 Informatique"
-           autocomplete="off" autocorrect="off" spellcheck="false">
+    <div class="champs recherche-bloc halo">
+      <div class="champ-ligne">
+        <svg class="champ-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg>
+        <input class="champ" id="recherche" type="search" placeholder="Rechercher, ex. BA2 Informatique"
+               aria-label="Rechercher une formation" autocomplete="off" autocorrect="off" spellcheck="false">
+      </div>
+    </div>
     <p class="pdf-status" id="formations-status" role="status"></p>
     <ul class="liste" id="liste-formations"></ul>
   </section>
 
   <!-- 3. Groupe(s) -->
   <section id="v-groupes" hidden>
-    <p class="etape-n">Étape 3 sur 3</p>
+    <p class="etapes" role="img" aria-label="Étape 3 sur 3"><span class="on"></span><span class="on"></span><span class="on"></span></p>
     <h2 class="q">Ton groupe</h2>
     <p class="aide" id="groupes-aide"></p>
     <p class="pdf-status" id="groupes-status" role="status"></p>
     <div class="chips" id="chips"></div>
     <div id="bloc-surnom">
-      <label for="surnom">Surnom pour cet horaire</label>
-      <input id="surnom" type="text" maxlength="24" autocomplete="off" spellcheck="false"
-             placeholder="ex. Info, Droit, Cours du soir">
+      <label class="champ-titre" for="surnom">Nom de cet horaire</label>
+      <div class="champs halo">
+        <div class="champ-ligne">
+          <input class="champ" id="surnom" type="text" maxlength="24" autocomplete="off" spellcheck="false"
+                 placeholder="ex. Info, Droit, Cours du soir">
+        </div>
+      </div>
       <p class="surnom-aide">Affiché dans la barre du haut pour passer d'un cours à l'autre.</p>
     </div>
     <div id="bloc-theme">
-      <label class="theme-select-titre">Couleur de cet horaire</label>
+      <p class="theme-select-titre">Couleur</p>
       <div class="choix-themes" id="groupes-themes" role="radiogroup" aria-label="Couleur de cet horaire">
         <button type="button" class="theme-opt" data-theme-opt="2" role="radio" aria-checked="true">
           <span class="theme-pastille" style="background:#1d4fd7"></span>
@@ -1374,7 +1522,7 @@
         </button>
       </div>
     </div>
-    <button class="primaire" id="btn-valider" type="button" hidden></button>
+    <button class="primaire halo" id="btn-valider" type="button" hidden></button>
   </section>
 
   <!-- 4. Horaire -->
@@ -1387,16 +1535,16 @@
     <p class="pdf-status" id="horaire-status" role="status" hidden></p>
     <div id="horaire-contenu">
       <div class="week">
-        <button class="nav" id="sem-prec" aria-label="Semaine précédente" title="Semaine précédente (←)">‹</button>
+        <button class="nav halo" id="sem-prec" aria-label="Semaine précédente" title="Semaine précédente (←)">‹</button>
         <div class="cur"><strong id="sem-titre">Semaine 1</strong><span id="sem-dates"></span></div>
-        <button class="nav" id="sem-suiv" aria-label="Semaine suivante" title="Semaine suivante (→)">›</button>
+        <button class="nav halo" id="sem-suiv" aria-label="Semaine suivante" title="Semaine suivante (→)">›</button>
       </div>
-      <button class="thisweek" id="btn-auj">Cette semaine</button>
+      <button class="thisweek halo" id="btn-auj">Cette semaine</button>
 
       <ul class="days" id="jours"></ul>
       <div class="cal" id="cal"></div>
 
-      <button class="official" id="btn-pdf" type="button" aria-expanded="false">
+      <button class="official halo" id="btn-pdf" type="button" aria-expanded="false">
         PDF officiel de la semaine 1
       </button>
       <div id="pdf-zone" hidden>
@@ -1429,36 +1577,49 @@
   <div class="reg-compte" id="reg-compte">
     <span class="avatar grand" id="reg-avatar">?</span>
     <div class="reg-qui"><strong id="reg-nom"></strong><span id="reg-fournisseur"></span></div>
-    <button class="dots" id="btn-compte-menu" type="button" aria-label="Options du compte" aria-expanded="false">⋮</button>
-    <div class="ppop" id="menu-compte" hidden>
-      <div id="menu-compte-choix">
-        <button class="pop-act" id="btn-modifier-identite" type="button">Modifier</button>
-        <button class="pop-act danger-txt" id="btn-logout" type="button">Se déconnecter</button>
-      </div>
-      <div id="reg-edit" hidden>
-        <input id="edit-prenom" type="text" maxlength="30" placeholder="Prénom" autocomplete="off" autocorrect="off" spellcheck="false">
-        <input id="edit-nom" type="text" maxlength="30" placeholder="Nom" autocomplete="off" autocorrect="off" spellcheck="false">
-        <button id="btn-valider-identite" type="button">✓ Valider</button>
-      </div>
+    <button class="dots" id="btn-compte-menu" type="button" aria-label="Options du compte" aria-haspopup="menu" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5.5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="18.5" r="1.7"/></svg></button>
+    <div class="ppop" id="menu-compte" role="menu" hidden>
+      <button class="pop-act" id="btn-modifier-identite" type="button" role="menuitem">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg>
+        Modifier mon nom
+      </button>
+      <button class="pop-act danger-txt" id="btn-logout" type="button" role="menuitem">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 16l-4-4 4-4M6 12h10"/></svg>
+        Se déconnecter
+      </button>
     </div>
   </div>
   <h2 class="reg-section">Mes horaires</h2>
   <div id="liste-profils"></div>
-  <div class="row">
-    <button id="btn-ajouter" type="button">+ Ajouter un horaire</button>
-  </div>
+  <button class="btn-ajout halo" id="btn-ajouter" type="button">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+    Ajouter un horaire
+  </button>
 </div>
 
-<div id="voile-confirm" hidden>
-  <div id="boite-confirm" role="alertdialog" aria-modal="true" aria-labelledby="confirm-titre" aria-describedby="confirm-msg">
+<div class="voile" id="voile-confirm" hidden>
+  <div class="boite" id="boite-confirm" role="alertdialog" aria-modal="true" aria-labelledby="confirm-titre" aria-describedby="confirm-msg">
     <div id="confirm-icone" aria-hidden="true"></div>
     <h3 id="confirm-titre"></h3>
     <p id="confirm-msg"></p>
-    <div id="confirm-actions">
-      <button type="button" id="confirm-non">Annuler</button>
-      <button type="button" id="confirm-oui">Confirmer</button>
+    <div class="boite-actions" id="confirm-actions">
+      <button type="button" class="btn-sec" id="confirm-non">Annuler</button>
+      <button type="button" class="halo" id="confirm-oui">Confirmer</button>
     </div>
   </div>
+</div>
+
+<!-- Modification (nom du compte, nom et couleur d'un horaire) : une vraie
+     fenêtre, pas un bout de menu. Entrée enregistre, Échap annule. -->
+<div class="voile" id="voile-edition" hidden>
+  <form class="boite" id="boite-edition" role="dialog" aria-modal="true" aria-labelledby="edition-titre" novalidate>
+    <h3 id="edition-titre"></h3>
+    <div id="edition-corps"></div>
+    <div class="boite-actions">
+      <button type="button" class="btn-sec" id="edition-annuler">Annuler</button>
+      <button type="submit" class="btn-prim halo" id="edition-ok">Enregistrer</button>
+    </div>
+  </form>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1527,7 +1688,6 @@
     });
   }
   var themeChoisiIdentite = 2;
-  var editionTheme = null;
   function lire(cle) {
     try { return JSON.parse(localStorage.getItem(cle) || "null"); } catch (e) { return null; }
   }
@@ -1661,6 +1821,31 @@
   function statutAuthEffacer() {
     var el = document.getElementById("auth-status");
     if (el) { el.hidden = true; effacer(el); }
+  }
+  var EN_LOCAL = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+  /* Erreurs Supabase Auth → phrase claire (le code est stable, le texte non). */
+  function codeAuth(err) {
+    if (!err) return "";
+    // Supabase en panne ou injoignable (réseau, 5xx) : rien à corriger côté utilisateur.
+    if (err.name === "AuthRetryableFetchError" || err.status === 0 || err.status >= 500) return "indisponible";
+    if (err.code) return err.code;
+    var m = String(err.message || "");
+    if (/invalid login credentials/i.test(m)) return "invalid_credentials";
+    if (/email not confirmed/i.test(m)) return "email_not_confirmed";
+    if (/rate limit/i.test(m)) return "over_email_send_rate_limit";
+    return "";
+  }
+  function messageAuth(err) {
+    switch (codeAuth(err)) {
+      case "invalid_credentials": return "Email ou mot de passe incorrect.";
+      case "email_not_confirmed": return "Adresse pas encore confirmée : clique sur le lien reçu par email.";
+      case "over_email_send_rate_limit":
+      case "over_request_rate_limit": return "Trop de tentatives : réessaie dans quelques minutes.";
+      case "weak_password": return "Mot de passe trop faible : choisis-en un plus long.";
+      case "indisponible": return "Service de connexion indisponible : réessaie dans quelques minutes.";
+      case "signup_disabled": return "Les inscriptions sont fermées pour le moment.";
+      default: return "Échec : " + ((err && err.message) || "erreur inconnue") + ".";
+    }
   }
 
   /* Config publique depuis le serveur (/api/config lit l'env Vercel).
@@ -1832,41 +2017,58 @@
 
   var AUTH = {
     user: null,
-    // OAuth (Google / GitHub) via Supabase ; sans cloud : stub local.
+    // OAuth (Google / GitHub) via Supabase. Sans cloud : faux compte local
+    // uniquement en développement (localhost) ; en ligne, on le dit
+    // clairement au lieu de faire semblant de connecter.
     login: function (fournisseur) {
       fournisseurChoisi = fournisseur;
       if (!SUPABASE_OK || !sb) {
+        if (!EN_LOCAL) {
+          statutAuthErreur("Service de connexion injoignable : réessaie dans quelques minutes.");
+          return Promise.resolve(false);
+        }
         compte = { fournisseur: fournisseur, nom: "", prenom: "" };
         sauverCompte();
         aller("identite");
         return Promise.resolve(false);
       }
-      statutAuthChargement("Redirection vers " + fournisseur + "…");
+      statutAuthChargement("Redirection vers " + (fournisseur === "github" ? "GitHub" : "Google") + "…");
       return sb.auth.signInWithOAuth({
         provider: fournisseur,
         options: { redirectTo: location.origin + location.pathname }
       }).then(function (res) {
         if (res.error) statutAuthErreur("Échec : " + res.error.message);
-        return true;
+        return !res.error; // vrai = redirection en cours
       });
     },
-    // Email + mot de passe : crée le compte s'il n'existe pas, sinon connecte.
+    // Email + mot de passe : connecte, et crée le compte si l'adresse est
+    // inconnue. Dans cet ordre-là : un signUp sur une adresse déjà inscrite
+    // renvoie un faux « compte créé » (sans session ni erreur, pour ne pas
+    // révéler qui est inscrit), l'ancien ordre bloquait donc les habitués.
     loginEmail: function (email, mdp) {
-      if (!SUPABASE_OK || !sb) { statutAuthErreur("Connexion email indisponible pour l'instant."); return Promise.resolve(false); }
+      if (!SUPABASE_OK || !sb) {
+        statutAuthErreur("Service de connexion injoignable : réessaie dans quelques minutes.");
+        return Promise.resolve(false);
+      }
       email = String(email || "").trim();
       statutAuthChargement("Connexion en cours…");
       var self = this;
-      return sb.auth.signUp({ email: email, password: mdp }).then(function (ins) {
-        if (ins.error) return sb.auth.signInWithPassword({ email: email, password: mdp });
-        if (ins.data && ins.data.session && ins.data.session.user) return ins;
-        if (ins.data && ins.data.user && !ins.data.session) {
-          statutAuthInfo("Compte créé : vérifie ta boîte mail pour le valider, puis reviens te connecter.");
-          return ins;
-        }
-        return sb.auth.signInWithPassword({ email: email, password: mdp });
+      return sb.auth.signInWithPassword({ email: email, password: mdp }).then(function (res) {
+        if (!res.error || codeAuth(res.error) !== "invalid_credentials") return res;
+        return sb.auth.signUp({
+          email: email, password: mdp,
+          options: { emailRedirectTo: location.origin + location.pathname }
+        }).then(function (ins) {
+          if (ins.error || (ins.data && ins.data.session)) return ins;
+          // Adresse déjà inscrite (aucune identité renvoyée) : mauvais mot de passe.
+          var u = ins.data && ins.data.user;
+          if (u && u.identities && u.identities.length === 0) return { error: { code: "invalid_credentials" } };
+          statutAuthInfo("Compte créé : clique sur le lien reçu par email pour l'activer, puis reviens ici.");
+          return null;
+        });
       }).then(function (res) {
         if (!res) return false;
-        if (res.error) { statutAuthErreur("Échec : " + res.error.message); return false; }
+        if (res.error) { statutAuthErreur(messageAuth(res.error)); return false; }
         if (res.data && res.data.session && res.data.session.user) {
           self.user = res.data.session.user;
           sessionSupabase = res.data.session;
@@ -2006,6 +2208,7 @@
   document.getElementById("confirm-non").addEventListener("click", function () { repondreConfirmation(false); });
   document.getElementById("confirm-oui").addEventListener("click", function () { repondreConfirmation(true); });
   document.getElementById("voile-confirm").addEventListener("click", function (e) {
+    e.stopPropagation(); // la réponse ne doit pas fermer les réglages derrière
     if (e.target === this) repondreConfirmation(false);
   });
   // Échap = non, Tab reste dans la carte (tant qu'une demande est ouverte,
@@ -2416,11 +2619,10 @@
     document.body.removeAttribute("data-theme");
     montrer("compte");
     preparerApercu();
-    // Rien à dire quand tout va bien ; on prévient seulement en mode local.
-    var note = document.getElementById("auth-note");
-    if (note) {
-      note.hidden = SUPABASE_OK;
-      note.textContent = "Mode local : tes horaires restent sur cet appareil.";
+    // Pour le développeur seulement : l'utilisateur n'a rien à en faire.
+    if (!SUPABASE_OK && window.console) {
+      console.warn("EzHoraire : Supabase non branché (clés absentes de /api/config ou SDK non chargé). " +
+        "Connexion factice en local, connexion refusée en ligne.");
     }
   }
   /* Aperçu de l'écran de connexion : dates de la semaine en cours, jour
@@ -2484,11 +2686,38 @@
     });
   }
   Array.prototype.forEach.call(document.querySelectorAll("#v-compte [data-auth]"), function (b) {
-    b.addEventListener("click", function () { AUTH.login(b.getAttribute("data-auth")); });
+    b.addEventListener("click", function () {
+      if (b.classList.contains("charge")) return;
+      b.classList.add("charge"); // le logo laisse place au rond jusqu'à la redirection
+      var fin = function (ok) { if (!ok) b.classList.remove("charge"); };
+      AUTH.login(b.getAttribute("data-auth")).then(fin, function () { fin(false); });
+    });
+  });
+  // Halo qui suit le pointeur (voir .halo::before/::after), partout dans
+  // l'app : un seul écouteur, valable aussi pour les listes rendues après.
+  document.addEventListener("pointermove", function (e) {
+    if (e.pointerType !== "mouse") return;
+    var el = e.target.closest ? e.target.closest(".halo") : null;
+    if (!el) return;
+    var r = el.getBoundingClientRect();
+    el.style.setProperty("--mx", (e.clientX - r.left) + "px");
+    el.style.setProperty("--my", (e.clientY - r.top) + "px");
+  }, { passive: true });
+  // Retour arrière depuis Google / GitHub (page restaurée du cache) : plus de rond.
+  window.addEventListener("pageshow", function () {
+    Array.prototype.forEach.call(document.querySelectorAll("#v-compte .charge"), function (b) {
+      b.classList.remove("charge");
+    });
   });
   /* Connexion classique par email (mot de passe). */
   function emailValide(v) { return /.+@.+\..+/.test(String(v || "").trim()); }
+  function majBoutonEmail() {
+    document.getElementById("btn-email").classList.toggle("pret",
+      emailValide(document.getElementById("email").value) && document.getElementById("mdp").value.length >= 6);
+  }
   document.getElementById("btn-email").addEventListener("click", function () {
+    var btn = this;
+    if (btn.classList.contains("charge")) return;
     var em = document.getElementById("email").value;
     var mp = document.getElementById("mdp").value;
     if (!emailValide(em)) {
@@ -2501,12 +2730,16 @@
       statutAuthErreur("Mot de passe : 6 caractères minimum.");
       return;
     }
-    AUTH.loginEmail(em, mp);
+    btn.classList.add("charge");
+    btn.setAttribute("aria-busy", "true");
+    var fin = function () { btn.classList.remove("charge"); btn.removeAttribute("aria-busy"); };
+    AUTH.loginEmail(em, mp).then(fin, fin);
   });
   Array.prototype.forEach.call([document.getElementById("email"), document.getElementById("mdp")], function (inp) {
     if (inp) inp.addEventListener("keydown", function (e) {
       if (e.key === "Enter") { e.preventDefault(); document.getElementById("btn-email").click(); }
     });
+    if (inp) inp.addEventListener("input", majBoutonEmail);
   });
   document.getElementById("btn-identite").addEventListener("click", function () {
     var p = document.getElementById("prenom").value.replace(/\s+/g, " ").trim().slice(0, 30);
@@ -2543,8 +2776,11 @@
   function ouvrirEcoles() {
     montrer("ecole");
     document.getElementById("liste-ecoles").innerHTML = ECOLES.map(function (e) {
-      return '<li><button type="button" data-ecole="' + txt(e.id) + '"><span class="nom">' + txt(e.nom) +
-             "<small>" + txt(e.detail) + '</small></span><span class="chev" aria-hidden="true"></span></button></li>';
+      // Le sigle est déjà dans le carré : le titre donne le nom complet.
+      var parts = String(e.detail).split(" · ");
+      return '<li><button type="button" class="halo" data-ecole="' + txt(e.id) + '">' +
+             '<span class="sigle" aria-hidden="true">' + txt(e.nom) + '</span><span class="nom">' + txt(parts[0]) +
+             "<small>" + txt(parts.slice(1).join(" · ")) + '</small></span><span class="chev" aria-hidden="true"></span></button></li>';
     }).join("");
   }
   document.getElementById("liste-ecoles").addEventListener("click", function (e) {
@@ -2590,7 +2826,7 @@
     });
     document.getElementById("liste-formations").innerHTML = trouvees.length
       ? trouvees.map(function (f) {
-          return '<li><button type="button" data-formation="' + txt(f) + '"><span class="nom">' + txt(f) +
+          return '<li><button type="button" class="halo" data-formation="' + txt(f) + '"><span class="nom">' + txt(f) +
                  '</span><span class="chev" aria-hidden="true"></span></button></li>';
         }).join("")
       : '<li class="empty">Aucune formation ne correspond.</li>';
@@ -2673,7 +2909,7 @@
     choix.groupes = choix.groupes.filter(function (g) { return groupes.indexOf(g) >= 0; });
     document.getElementById("chips").innerHTML = groupes.map(function (g) {
       return '<button type="button" class="chip" data-groupe="' + txt(g) + '" aria-pressed="' +
-             (choix.groupes.indexOf(g) >= 0) + '">' + txt(propre(g)) + "</button>";
+             (choix.groupes.indexOf(g) >= 0) + '"><span class="coche" aria-hidden="true"></span>' + txt(propre(g)) + "</button>";
     }).join("");
     majValider();
   }
@@ -2786,6 +3022,7 @@
   });
   function installer(data) {
     DATA = data;
+    preparerCouleurs(data && data.cours);
     LUNDI0 = parseDate(DATA.meta.premier_lundi);
     SEMAINES = parseEns(DATA.meta.periode).sort(function (a, b) { return a - b; });
     var sel = profil.groupes;
@@ -2853,6 +3090,7 @@
       html += '<li class="c' + (estOuvert ? " open" : "") + '">';
       html += '<button class="cbtn" data-cle="' + cle + '" aria-expanded="' + estOuvert + '">' +
               '<span class="h">' + txt(fmtH(c.debut)) + " – " + txt(fmtH(c.fin)) + "</span>" +
+              '<span class="cpoint" style="' + styleCours(c.matiere) + '" aria-hidden="true"></span>' +
               '<span class="m">' + txt(c.matiere || "Cours") + "</span>" +
               '<span class="minichev" aria-hidden="true"></span></button>';
       var sub = "";
@@ -2939,12 +3177,37 @@
      Chaque cours est placé selon ses heures ; la journée tient dans la
      hauteur de l'écran. Couleur stable par matière. Les cours qui se
      chevauchent (plusieurs groupes) se partagent la largeur. */
-  var TEINTES = [221, 262, 332, 18, 152, 190, 40, 292, 204, 350];
-  function teinte(nom) {
-    var h = 0;
-    nom = String(nom || "");
-    for (var i = 0; i < nom.length; i++) h = (h * 31 + nom.charCodeAt(i)) >>> 0;
-    return TEINTES[h % TEINTES.length];
+  /* Couleurs des cours : un intitulé = une couleur, et deux intitulés
+     différents n'ont jamais la même. Les matières de la formation sont
+     triées par ordre alphabétique (donc stable d'une semaine à l'autre)
+     puis réparties sur la palette ; au-delà de la palette, chaque teinte
+     se décline en variantes plus ou moins sourdes (--v), et enfin en
+     teintes légèrement décalées. Le rendu reste sobre : fond mat teinté,
+     texte neutre. */
+  var TEINTES = [221, 152, 332, 40, 262, 190, 18, 292, 204, 96, 350, 172];
+  var COULEURS = {};
+  function preparerCouleurs(cours) {
+    var noms = [], vu = {};
+    (cours || []).forEach(function (c) {
+      var n = String(c.matiere || "Cours");
+      if (!vu[n]) { vu[n] = true; noms.push(n); }
+    });
+    noms.sort(function (a, b) { return a.localeCompare(b, "fr"); });
+    COULEURS = {};
+    noms.forEach(function (n, i) {
+      var tour = Math.floor(i / TEINTES.length);
+      COULEURS[n] = {
+        h: (TEINTES[i % TEINTES.length] + Math.floor(tour / 3) * 7) % 360,
+        v: tour % 3
+      };
+    });
+  }
+  function couleurCours(nom) {
+    return COULEURS[String(nom || "Cours")] || { h: 221, v: 0 };
+  }
+  function styleCours(nom) {
+    var t = couleurCours(nom);
+    return "--h:" + t.h + ";--v:" + t.v;
   }
   function couloirs(liste) {
     var res = [], bloc = [], finBloc = -1, fins = [];
@@ -2995,7 +3258,7 @@
         var c = x.c, a = mins(c.debut), b = mins(c.fin);
         var i = evCal.push(c) - 1;
         corps += '<button type="button" class="ev' + (b - a < 75 ? " court" : "") + '" data-ev="' + i + '"' +
-          ' style="--hue:' + teinte(c.matiere) + ";--t:" + pc(a) + ";--d:" + (pc(b) - pc(a)) +
+          ' style="' + styleCours(c.matiere) + ";--t:" + pc(a) + ";--d:" + (pc(b) - pc(a)) +
           ";--l:" + (x.k / x.n) + ";--w:" + (1 / x.n) + '">' +
           '<span class="et">' + txt(c.matiere || "Cours") + "</span>" +
           (c.salles ? '<span class="es">' + txt(c.salles) + "</span>" : "") +
@@ -3033,7 +3296,9 @@
     if (c.profs) d += "<dt>Prof</dt><dd>" + txt(c.profs) + "</dd>";
     if (c.groupes.length && profil.groupes.length !== 1) d += "<dt>Groupe</dt><dd>" + txt(c.groupes.map(propre).join(", ")) + "</dd>";
     var date = dateSemJour(sem, c.jour);
-    pop.style.setProperty("--hue", teinte(c.matiere));
+    var tc = couleurCours(c.matiere);
+    pop.style.setProperty("--h", tc.h);
+    pop.style.setProperty("--v", tc.v);
     pop.innerHTML = '<p class="pt">' + txt(c.matiere || "Cours") + "</p>" +
       '<p class="ph">' + JOURS[c.jour] + " " + fmtDate(date) + " · " + fmtH(c.debut) + " – " + fmtH(c.fin) + "</p>" +
       "<dl>" + d + "</dl>";
@@ -3054,14 +3319,14 @@
     if (popSource === b) fermerPop(); else ouvrirPop(b);
   });
   document.addEventListener("click", function (e) {
-    if (confirmationOuverte()) return;
+    if (confirmationOuverte() || editionOuverte()) return;
     if (popSource && !pop.contains(e.target) && !e.target.closest(".ev")) fermerPop();
     if (feuille.classList.contains("visible") && !feuille.contains(e.target) && !e.target.closest("#btn-moi")) fermerFeuille();
   });
   window.addEventListener("resize", fermerPop);
   /* Raccourcis clavier (ordinateur) : ← → semaines, + − zoom du PDF. */
   document.addEventListener("keydown", function (e) {
-    if (confirmationOuverte()) return;
+    if (confirmationOuverte() || editionOuverte()) return;
     if (vue !== "horaire" || e.metaKey || e.ctrlKey || e.altKey) return;
     if (e.target.closest && e.target.closest("input, textarea, select")) return;
     if (feuille.classList.contains("visible")) return;
@@ -3093,7 +3358,15 @@
     if (p.groupes.length === 1) return propre(p.groupes[0]);
     return p.groupes.length + " groupes";
   }
-  var carteOuverte = null, renommeEnCours = null, detailsOuverts = null;
+  var carteOuverte = null; // id de l'horaire dont le menu ⋮ est ouvert
+  var ICONE_DOTS = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' +
+    '<circle cx="12" cy="5.5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="18.5" r="1.7"/></svg>';
+  var ICONE_CRAYON = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ' +
+    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg>';
+  var ICONE_CORBEILLE = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ' +
+    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 4h4M7 7l1 13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-13"/></svg>';
+  /* Cartes des horaires. Le ⋮ n'ouvre qu'un menu (Modifier / Supprimer) ;
+     la modification elle-même se fait dans une fenêtre (ouvrirEdition). */
   function rendreListeProfils() {
     var zone = document.getElementById("liste-profils");
     if (!zone) return;
@@ -3101,55 +3374,28 @@
       var nom = estRenomme(p) ? p.surnom : p.formation;
       var grp = texteGroupe(p);
       if (grp === nom) grp = ecoleDe(p.ecole).nom; // jamais deux fois la même ligne
-      var coul = couleurTheme(p.theme);
-      var html = '<div class="pcard' + (profil && p.id === profil.id ? " actif" : "") +
-        (carteOuverte === p.id ? " menu-ouvert" : "") + '">' +
+      var ouvert = carteOuverte === p.id;
+      return '<div class="pcard halo' + (profil && p.id === profil.id ? " actif" : "") + (ouvert ? " menu-ouvert" : "") + '">' +
         '<div class="pcard-ligne">' +
         '<button type="button" class="pcard-main" data-liste="' + txt(p.id) + '">' +
-        '<span class="pt-point" style="background:' + coul + '"></span>' +
+        '<span class="pt-point" style="background:' + couleurTheme(p.theme) + '"></span>' +
         '<span class="pt-textes"><span class="pt-nom">' + txt(nom) + "</span>" +
         '<span class="pt-detail">' + txt(grp) + "</span></span></button>" +
         '<button type="button" class="dots" data-dots="' + txt(p.id) + '" aria-label="Options de ' + txt(nom) +
-        '" aria-expanded="' + (carteOuverte === p.id) + '">⋮</button></div>';
-      if (carteOuverte === p.id) {
-        html += '<div class="ppop" role="menu">';
-        if (renommeEnCours === p.id) {
-          var tActuel = editionTheme != null ? editionTheme : normaliserTheme(p.theme);
-          html += '<div class="pedit">' +
-                  '<input data-edit="' + txt(p.id) + '" type="text" maxlength="24" value="' +
-                  txt(p.surnom) + '" aria-label="Nom de cet horaire" placeholder="Nom de cet horaire">' +
-                  '<div class="pedit-themes" role="radiogroup" aria-label="Couleur de cet horaire">' +
-                  '<button type="button" class="pedit-theme-btn" data-pedit-theme="2" role="radio" aria-checked="' + (tActuel === 2) + '" aria-label="Bleu">' +
-                  '<span class="pedit-pastille" style="background:#1d4fd7"></span> Bleu</button>' +
-                  '<button type="button" class="pedit-theme-btn" data-pedit-theme="1" role="radio" aria-checked="' + (tActuel === 1) + '" aria-label="Vert">' +
-                  '<span class="pedit-pastille" style="background:#0e8655"></span> Vert</button>' +
-                  '<button type="button" class="pedit-theme-btn" data-pedit-theme="3" role="radio" aria-checked="' + (tActuel === 3) + '" aria-label="Rose">' +
-                  '<span class="pedit-pastille" style="background:#d14d8a"></span> Rose</button>' +
-                  '</div>' +
-                  '<button type="button" class="pedit-valider" data-valider="' + txt(p.id) + '" aria-label="Valider les modifications">✓ Enregistrer</button></div>';
-        } else {
-          html += '<button type="button" class="pop-act" data-act="modifier" data-id="' + txt(p.id) + '">Modifier</button>' +
-            (estRenomme(p) ? '<button type="button" class="pop-act" data-act="details" data-id="' + txt(p.id) + '">Détails</button>' : "") +
-            '<button type="button" class="pop-act danger-txt" data-act="supprimer" data-id="' + txt(p.id) + '">Supprimer</button>';
-        }
-        if (detailsOuverts === p.id) {
-          html += '<div class="pdetails"><div><span class="k">Option : </span>' + txt(p.formation) + "</div>" +
-                  "<div><span class=\"k\">Groupe : </span>" + txt(texteGroupe(p)) +
-                  (p.groupes.length > 1 ? " (" + txt(p.groupes.map(propre).join(", ")) + ")" : "") +
-                  "</div><div><span class=\"k\">École : </span>" + txt(ecoleDe(p.ecole).nom) + "</div></div>";
-        }
-        html += "</div>";
-      }
-      return html + "</div>";
+        '" aria-haspopup="menu" aria-expanded="' + ouvert + '">' + ICONE_DOTS + "</button></div>" +
+        (ouvert
+          ? '<div class="ppop" role="menu">' +
+            '<button type="button" class="pop-act" role="menuitem" data-act="modifier" data-id="' + txt(p.id) + '">' +
+            ICONE_CRAYON + "Modifier</button>" +
+            '<button type="button" class="pop-act danger-txt" role="menuitem" data-act="supprimer" data-id="' + txt(p.id) + '">' +
+            ICONE_CORBEILLE + "Supprimer</button></div>"
+          : "") +
+        "</div>";
     }).join("");
   }
   function profilParId(id) {
     for (var i = 0; i < profils.length; i++) if (profils[i].id === id) return profils[i];
     return null;
-  }
-  function focusEdition(id) {
-    var inp = document.querySelector('input[data-edit="' + id + '"]');
-    if (inp) { try { inp.focus(); inp.select(); } catch (e) { /* jetable */ } }
   }
   /* Oriente le popup vers le bas, sauf s'il dépasserait de l'écran
      (carte en bas de feuille) : il s'ouvre alors vers le haut. */
@@ -3162,21 +3408,145 @@
     var r = pop.getBoundingClientRect();
     if (r.bottom > window.innerHeight - 8) pop.classList.add("haut");
   }
-  function validerRenommage(id) {
-    var inp = document.querySelector('input[data-edit="' + id + '"]');
-    var nv = inp ? inp.value.replace(/\s+/g, " ").trim().slice(0, 24) : "";
+  /* Ferme les menus ⋮ ouverts (compte et horaires). */
+  function fermerMenus() {
+    var m = document.getElementById("menu-compte");
+    if (!m.hidden) {
+      m.hidden = true;
+      document.getElementById("btn-compte-menu").setAttribute("aria-expanded", "false");
+    }
+    if (carteOuverte !== null) { carteOuverte = null; rendreListeProfils(); }
+  }
+  function menusOuverts() {
+    return carteOuverte !== null || !document.getElementById("menu-compte").hidden;
+  }
+
+  /* ---------- Fenêtre de modification ----------
+     ouvrirEdition({ titre, corps (HTML), theme?, enregistrer(corps) }) :
+     enregistrer renvoie false pour garder la fenêtre ouverte (champ vide). */
+  var edition = null, editionJeton = 0, editionDernierFocus = null;
+  function editionOuverte() { return !!edition; }
+  function htmlChoixThemes(t) {
+    var actuel = normaliserTheme(t);
+    return '<div class="choix-themes" id="edition-themes" role="radiogroup" aria-label="Couleur">' +
+      THEMES.map(function (th) {
+        return '<button type="button" class="theme-opt" data-theme-opt="' + th.id + '" role="radio" aria-checked="' +
+          (actuel === th.id) + '"><span class="theme-pastille" style="background:' + th.couleur + '"></span>' +
+          "<span>" + txt(th.nom) + "</span></button>";
+      }).join("") + "</div>";
+  }
+  function ouvrirEdition(opts) {
+    fermerMenus();
+    edition = opts;
+    editionJeton++;
+    editionDernierFocus = document.activeElement;
+    document.getElementById("edition-titre").textContent = opts.titre;
+    var corps = document.getElementById("edition-corps");
+    corps.innerHTML = opts.corps;
+    var voile = document.getElementById("voile-edition");
+    voile.classList.remove("sortie");
+    voile.hidden = false;
+    document.body.classList.add("confirm-ouverte");
+    var premier = corps.querySelector("input");
+    if (premier) setTimeout(function () { try { premier.focus(); premier.select(); } catch (e) { /* jetable */ } }, 60);
+  }
+  function fermerEdition() {
+    if (!edition) return;
+    edition = null;
+    var jeton = ++editionJeton;
+    var voile = document.getElementById("voile-edition");
+    var fin = function () {
+      if (jeton !== editionJeton) return; // rouverte entre-temps
+      voile.hidden = true;
+      voile.classList.remove("sortie");
+    };
+    document.body.classList.remove("confirm-ouverte");
+    if (sansAnim) fin(); else { voile.classList.add("sortie"); setTimeout(fin, 180); }
+    if (editionDernierFocus && editionDernierFocus.focus && document.contains(editionDernierFocus)) {
+      try { editionDernierFocus.focus({ preventScroll: true }); } catch (e) { /* jetable */ }
+    }
+  }
+  document.getElementById("boite-edition").addEventListener("submit", function (e) {
+    e.preventDefault();
+    if (!edition) return;
+    if (edition.enregistrer(document.getElementById("edition-corps")) === false) return;
+    fermerEdition();
+  });
+  document.getElementById("edition-annuler").addEventListener("click", fermerEdition);
+  // Les clics restent dans la fenêtre : sinon, une fois fermée, le clic
+  // atteindrait le détecteur de clic extérieur et fermerait les réglages.
+  document.getElementById("voile-edition").addEventListener("click", function (e) {
+    e.stopPropagation();
+    if (e.target === this) fermerEdition();
+  });
+  document.getElementById("edition-corps").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-theme-opt]");
+    if (!b || !edition) return;
+    edition.theme = +b.getAttribute("data-theme-opt");
+    majThemeSelection("edition-themes", edition.theme);
+  });
+  document.getElementById("edition-corps").addEventListener("input", function (e) {
+    var bloc = e.target.closest(".champs");
+    if (bloc) bloc.classList.remove("erreur");
+  });
+  document.addEventListener("keydown", function (e) {
+    if (edition && e.key === "Escape") { e.preventDefault(); e.stopPropagation(); fermerEdition(); }
+  }, true);
+
+  function modifierProfil(id) {
     var p = profilParId(id);
-    if (p) {
-      if (nv) p.surnom = nv;
-      if (editionTheme != null) p.theme = normaliserTheme(editionTheme);
-    }
-    sauverProfils();
-    renommeEnCours = null; carteOuverte = null; editionTheme = null;
-    if (profil) {
-      appliquerTheme();
-      afficherHoraire();
-    }
-    rendreListeProfils();
+    if (!p) return;
+    var groupes = texteGroupe(p) + (p.groupes.length > 1 ? " (" + p.groupes.map(propre).join(", ") + ")" : "");
+    ouvrirEdition({
+      titre: "Modifier l'horaire",
+      theme: normaliserTheme(p.theme),
+      corps:
+        '<label class="champ-titre" for="edit-surnom">Nom</label>' +
+        '<div class="champs halo"><div class="champ-ligne">' +
+        '<input class="champ" id="edit-surnom" type="text" maxlength="24" autocomplete="off" spellcheck="false" ' +
+        'placeholder="ex. Info, Droit" value="' + txt(p.surnom) + '"></div></div>' +
+        '<p class="champ-titre">Couleur</p>' + htmlChoixThemes(p.theme) +
+        '<dl class="edition-details">' +
+        "<div><dt>Formation</dt><dd>" + txt(p.formation) + "</dd></div>" +
+        "<div><dt>Groupe</dt><dd>" + txt(groupes) + "</dd></div>" +
+        "<div><dt>École</dt><dd>" + txt(ecoleDe(p.ecole).nom) + "</dd></div></dl>",
+      enregistrer: function (corps) {
+        var nv = corps.querySelector("#edit-surnom").value.replace(/\s+/g, " ").trim().slice(0, 24);
+        if (nv) p.surnom = nv;
+        p.theme = normaliserTheme(edition.theme);
+        sauverProfils();
+        if (profil) { appliquerTheme(); afficherHoraire(); }
+        rendreListeProfils();
+      }
+    });
+  }
+  function modifierIdentite() {
+    var champ = function (id, auto, lib, val) {
+      return '<div class="champ-ligne"><input class="champ" id="' + id + '" type="text" maxlength="30" autocomplete="' + auto +
+        '" autocorrect="off" spellcheck="false" placeholder="' + lib + '" aria-label="' + lib + '" value="' + txt(val) + '"></div>';
+    };
+    ouvrirEdition({
+      titre: "Ton nom",
+      corps: '<div class="champs halo">' +
+        champ("edit-prenom", "given-name", "Prénom", compte && compte.prenom) +
+        champ("edit-nom", "family-name", "Nom", compte && compte.nom) + "</div>",
+      enregistrer: function (corps) {
+        var ip = corps.querySelector("#edit-prenom"), inn = corps.querySelector("#edit-nom");
+        var p = ip.value.replace(/\s+/g, " ").trim().slice(0, 30);
+        var n = inn.value.replace(/\s+/g, " ").trim().slice(0, 30);
+        if (!p || !n) {
+          corps.querySelector(".champs").classList.add("erreur");
+          try { (p ? inn : ip).focus(); } catch (e) { /* jetable */ }
+          return false;
+        }
+        if (!compte) compte = { fournisseur: "local", nom: "", prenom: "" };
+        compte.prenom = p; compte.nom = n;
+        sauverCompte();
+        pousserIdentite();
+        rendreAvatar();
+        document.getElementById("reg-nom").textContent = p + " " + n;
+      }
+    });
   }
   function supprimerProfil(id) {
     var p = profilParId(id);
@@ -3195,7 +3565,7 @@
       if (idx >= 0) profils.splice(idx, 1);
       supprimerProfilDistant(id); // efface aussi la ligne cloud, si connecté
       if (profil && profil.id === id) profil = profils[Math.min(idx, profils.length - 1)] || null;
-      carteOuverte = null; renommeEnCours = null; detailsOuverts = null; editionTheme = null; editionTheme = null;
+      carteOuverte = null;
       sauverProfils();
       fermerFeuille();
       fermerPdf();
@@ -3217,55 +3587,25 @@
     // Stoppe ici : chaque tap re-rend la liste (la cible est détachée),
     // et le détecteur de clic-extérieur fermerait la feuille par erreur.
     e.stopPropagation();
-    var pt = e.target.closest("[data-pedit-theme]");
-    if (pt) {
-      editionTheme = +pt.getAttribute("data-pedit-theme");
-      var btns = pt.parentElement.querySelectorAll("[data-pedit-theme]");
-      Array.prototype.forEach.call(btns, function (b) {
-        b.setAttribute("aria-checked", b === pt ? "true" : "false");
-      });
-      return;
-    }
-    var v = e.target.closest("[data-valider]");
-    if (v) { validerRenommage(v.getAttribute("data-valider")); return; }
     var a = e.target.closest("[data-act]");
     if (a) {
       var id = a.getAttribute("data-id"), act = a.getAttribute("data-act");
-      if (act === "renommer" || act === "modifier") {
-        renommeEnCours = id;
-        var pCur = profilParId(id);
-        editionTheme = pCur ? normaliserTheme(pCur.theme) : 2;
-        detailsOuverts = null;
-        rendreListeProfils(); orienterPopup(id); focusEdition(id);
-      } else if (act === "details") {
-        detailsOuverts = detailsOuverts === id ? null : id;
-        rendreListeProfils(); orienterPopup(id);
-      } else if (act === "supprimer") {
-        supprimerProfil(id);
-      }
+      if (act === "modifier") modifierProfil(id);
+      else if (act === "supprimer") { fermerMenus(); supprimerProfil(id); }
       return;
     }
     var d = e.target.closest("[data-dots]");
     if (d) {
       var did = d.getAttribute("data-dots");
       var ouvre = carteOuverte !== did;
-      carteOuverte = ouvre ? did : null;
-      if (!ouvre) { renommeEnCours = null; detailsOuverts = null; editionTheme = null; }
-      rendreListeProfils();
-      if (ouvre) orienterPopup(did);
+      fermerMenus();
+      if (ouvre) { carteOuverte = did; rendreListeProfils(); orienterPopup(did); }
       return;
     }
     var b = e.target.closest("button[data-liste]");
-    if (!b) return;
+    if (!b) { fermerMenus(); return; }
     fermerFeuille();
     choisirProfil(b.getAttribute("data-liste"));
-  });
-  // Entrée = valider le nouveau nom, Échap = annuler (sans fermer la feuille).
-  document.getElementById("liste-profils").addEventListener("keydown", function (e) {
-    var inp = e.target.closest ? e.target.closest("[data-edit]") : null;
-    if (!inp) return;
-    if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); validerRenommage(inp.getAttribute("data-edit")); }
-    else if (e.key === "Escape") { e.stopPropagation(); renommeEnCours = null; editionTheme = null; rendreListeProfils(); }
   });
   // Dépliages : un seul écouteur, qui survit aux nouveaux rendus.
   document.getElementById("jours").addEventListener("click", function (e) {
@@ -3417,11 +3757,9 @@
       document.getElementById("reg-fournisseur").textContent =
         NOMS_FOURNISSEURS[compte.fournisseur] || "Compte";
     }
-    carteOuverte = null; renommeEnCours = null; detailsOuverts = null;
+    carteOuverte = null;
     document.getElementById("menu-compte").hidden = true;
-    document.getElementById("menu-compte-choix").hidden = false;
     document.getElementById("btn-compte-menu").setAttribute("aria-expanded", "false");
-    document.getElementById("reg-edit").hidden = true;
     rendreListeProfils();
     feuille.style.transform = "";
     feuille.classList.add("visible");
@@ -3437,7 +3775,9 @@
     if (feuille.classList.contains("visible")) fermerFeuille(); else ouvrirFeuille();
   });
   document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape") { if (confirmationOuverte()) return; fermerFeuille(); fermerPop(); }
+    if (e.key !== "Escape" || confirmationOuverte() || editionOuverte()) return;
+    if (menusOuverts()) { fermerMenus(); return; } // Échap ferme d'abord le menu, puis les réglages
+    fermerFeuille(); fermerPop();
   });
   /* Glissé vers le bas : suit le doigt, puis ferme ou revient en place.
      Ne démarre pas sur les boutons pour ne pas bloquer le clic. */
@@ -3482,45 +3822,21 @@
     fermerFeuille();
     demarrerAjout();
   });
-  /* ⋮ du compte : popup Modifier (nom/prénom en édition + ✓) / Se déconnecter. */
+  /* ⋮ du compte : menu Modifier mon nom (fenêtre) / Se déconnecter.
+     Un clic ailleurs dans les réglages referme les menus ouverts. */
   document.getElementById("btn-compte-menu").addEventListener("click", function () {
     var m = document.getElementById("menu-compte");
     var ouvre = m.hidden;
-    carteOuverte = null; renommeEnCours = null; detailsOuverts = null;
-    rendreListeProfils();
-    document.getElementById("menu-compte-choix").hidden = false;
-    document.getElementById("reg-edit").hidden = true;
+    fermerMenus();
     m.hidden = !ouvre;
-    document.getElementById("btn-compte-menu").setAttribute("aria-expanded", ouvre ? "true" : "false");
+    this.setAttribute("aria-expanded", ouvre ? "true" : "false");
   });
-  document.getElementById("btn-modifier-identite").addEventListener("click", function () {
-    document.getElementById("menu-compte-choix").hidden = true;
-    document.getElementById("edit-prenom").value = (compte && compte.prenom) || "";
-    document.getElementById("edit-nom").value = (compte && compte.nom) || "";
-    document.getElementById("reg-edit").hidden = false;
-    try { document.getElementById("edit-prenom").focus(); } catch (e) { /* jetable */ }
-  });
-  document.getElementById("btn-valider-identite").addEventListener("click", function () {
-    var p = document.getElementById("edit-prenom").value.replace(/\s+/g, " ").trim().slice(0, 30);
-    var n = document.getElementById("edit-nom").value.replace(/\s+/g, " ").trim().slice(0, 30);
-    if (!p || !n) return;
-    if (!compte) compte = { fournisseur: "local", nom: "", prenom: "" };
-    compte.prenom = p; compte.nom = n;
-    sauverCompte();
-    pousserIdentite();
-    rendreAvatar();
-    document.getElementById("reg-nom").textContent = p + " " + n;
-    document.getElementById("reg-edit").hidden = true;
-    document.getElementById("menu-compte-choix").hidden = false;
-    document.getElementById("menu-compte").hidden = true;
-    document.getElementById("btn-compte-menu").setAttribute("aria-expanded", "false");
-  });
-  Array.prototype.forEach.call(document.querySelectorAll("#reg-edit input"), function (inp) {
-    inp.addEventListener("keydown", function (e) {
-      if (e.key === "Enter") { e.preventDefault(); document.getElementById("btn-valider-identite").click(); }
-    });
+  document.getElementById("btn-modifier-identite").addEventListener("click", modifierIdentite);
+  feuille.addEventListener("click", function (e) {
+    if (!e.target.closest(".ppop, .dots")) fermerMenus();
   });
   document.getElementById("btn-logout").addEventListener("click", function () {
+    fermerMenus();
     demanderConfirmation({
       titre: "Se déconnecter ?",
       message: "Tes horaires restent enregistrés sur ton compte.<br>Tu pourras les retrouver en te reconnectant.",

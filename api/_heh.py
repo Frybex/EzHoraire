@@ -366,7 +366,7 @@ def horaire(formation, budget=75, frais=False):
             "groupes": sorted(tous, key=tri_naturel),
             "cours": cours,
         }
-    return _memo(("horaire", formation), 120, calcul, frais)
+    return _memo(("horaire", formation), 900, calcul, frais)
 
 
 def pdf_semaine(formation, groupe, semaine, budget=40):

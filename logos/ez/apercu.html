@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>EzHoraire — logos</title>
+<link rel="icon" href="v3-negatif/favicon.svg" type="image/svg+xml">
+<style>
+  body { margin: 0; padding: 40px; font: 15px/1.5 system-ui, sans-serif; background: #ecebe6; color: #1a1a15; }
+  h1 { font-size: 22px; margin: 0 0 32px; }
+  #variantes { display: grid; grid-template-columns: repeat(auto-fill, minmax(520px, 1fr)); gap: 32px; }
+  .carte { background: #fff; border-radius: 16px; padding: 28px; }
+  .carte h2 { font-size: 16px; margin: 0 0 4px; }
+  .carte p { margin: 0 0 20px; color: #666; font-size: 13px; }
+  .logo { width: 100%; max-width: 420px; display: block; margin-bottom: 28px; }
+  .rangee { display: flex; gap: 24px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 24px; }
+  .onglet { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 8px 8px 0 0; font-size: 13px; }
+  .onglet.clair { background: #f1f3f4; }
+  .onglet.sombre { background: #35363a; color: #e8eaed; }
+  .ecran { display: flex; gap: 28px; padding: 22px; border-radius: 20px; background: linear-gradient(160deg, #3a4a7a, #7a3a5a); }
+  .ecran figure { margin: 0; color: #fff; font-size: 12px; text-align: center; }
+  .app { width: 64px; height: 64px; overflow: hidden; margin-bottom: 6px; }
+  .app img { width: 100%; height: 100%; display: block; }
+  .ios { border-radius: 14px; }
+  /* Android : le lanceur ne montre que le centre (≈ 80 %) de l'icône maskable */
+  .android img { transform: scale(1.25); }
+  .rond { border-radius: 50%; }
+  .squircle { border-radius: 30%; }
+</style>
+</head>
+<body>
+<h1>EzHoraire — propositions</h1>
+<div id="variantes"></div>
+<script>
+  var VARIANTES = [
+    ["v3-negatif", "V3 — Négatif", "Fond noir, cases du calendrier en gris très sombre, la grille découpe les lettres."],
+    ["v4-bleu", "V4 — Plaque bleue", "Fond bleu plein, aucune case visible : la grille n'existe que dans la découpe des lettres."],
+    ["v2-connecte", "V2 — Lettres connectées (précédente)", "Style croquis, fond crème."],
+    ["v1-original", "V1 — Fidèle au croquis (précédente)", "Style croquis, fond crème."]
+  ];
+  document.getElementById("variantes").innerHTML = VARIANTES.map(function (v) {
+    var d = v[0] + "/";
+    return '<section class="carte"><h2>' + v[1] + '</h2><p>' + v[2] + '</p>' +
+      '<img class="logo" src="' + d + 'logo.svg" alt="">' +
+      '<div class="rangee">' +
+        '<div class="onglet clair"><img src="' + d + 'favicon.svg" width="16" height="16" alt="">EzHoraire</div>' +
+        '<div class="onglet sombre"><img src="' + d + 'favicon.svg" width="16" height="16" alt="">EzHoraire</div>' +
+        '<img src="' + d + 'favicon.svg" width="32" height="32" alt="">' +
+      '</div>' +
+      '<div class="ecran">' +
+        '<figure><div class="app ios"><img src="' + d + 'apple-touch-icon.png" alt=""></div>iPhone</figure>' +
+        '<figure><div class="app android rond"><img src="' + d + 'icon-maskable-512.png" alt=""></div>Android rond</figure>' +
+        '<figure><div class="app android squircle"><img src="' + d + 'icon-maskable-512.png" alt=""></div>Android carré</figure>' +
+      '</div></section>';
+  }).join("");
+</script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 340" width="100%" height="100%">
+  <rect width="340" height="340" fill="#FFFFFF" />
+  <g transform="translate(30, 30)">
+    <rect x="0" y="0" width="130" height="55" fill="#2456e0" />
+    <rect x="0" y="55" width="55" height="170" fill="#2456e0" />
+    <rect x="55" y="112" width="105" height="56" fill="#2456e0" />
+    <rect x="0" y="225" width="130" height="55" fill="#2456e0" />
+
+    <rect x="150" y="0" width="130" height="55" fill="#18181B" />
+    <polygon points="280,55 210,55 120,225 190,225" fill="#18181B" />
+    <rect x="150" y="225" width="130" height="55" fill="#E11D48" />
+
+    <!-- Minimalist Watch Dial in Top Slot -->
+    <g transform="translate(215, 27.5)">
+      <circle cx="0" cy="0" r="16" fill="none" stroke="#FFFFFF" stroke-width="2.5" />
+      <line x1="0" y1="0" x2="0" y2="-9" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" />
+      <line x1="0" y1="0" x2="7" y2="0" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" />
+    </g>
+
+    <rect x="0" y="0" width="280" height="280" fill="none" stroke="#18181B" stroke-width="3" />
+    <line x1="70" y1="0" x2="70" y2="280" stroke="#E5E7EB" stroke-width="1.5" />
+    <line x1="140" y1="0" x2="140" y2="280" stroke="#18181B" stroke-width="2" />
+    <line x1="210" y1="0" x2="210" y2="280" stroke="#E5E7EB" stroke-width="1.5" />
+    <line x1="0" y1="70" x2="280" y2="70" stroke="#E5E7EB" stroke-width="1.5" />
+    <line x1="0" y1="140" x2="280" y2="140" stroke="#18181B" stroke-width="2" />
+    <line x1="0" y1="210" x2="280" y2="210" stroke="#E5E7EB" stroke-width="1.5" />
+  </g>
+</svg>

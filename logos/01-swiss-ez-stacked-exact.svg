@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 440" width="100%" height="100%">
+  <rect width="320" height="440" fill="#F8F9FA" />
+  <g transform="translate(30, 30)">
+    <!-- 6 columns x 9 rows grid (cell size: 43.33 x 42.22) -->
+    <!-- Grid total width: 260, height: 380 -->
+    <!-- Col width = 260/6 = 43.333, Row height = 380/9 = 42.222 -->
+    
+    <!-- Top 'E': Rows 1 to 4 -->
+    <!-- E top bar (blue) -->
+    <rect x="43.33" y="42.22" width="173.33" height="42.22" fill="#1D4ED8" />
+    <!-- E spine (blue & black) -->
+    <rect x="43.33" y="42.22" width="43.33" height="168.88" fill="#1D4ED8" />
+    <rect x="65" y="42.22" width="21.66" height="168.88" fill="#18181B" />
+    <!-- E middle bar (crimson red) -->
+    <rect x="86.66" y="84.44" width="86.66" height="42.22" fill="#E11D48" />
+    <!-- E lower bar (blue) -->
+    <rect x="86.66" y="126.66" width="130" height="42.22" fill="#1D4ED8" />
+
+    <!-- JUNCTION BAR: Red bar where bottom of E touches top of Z (ZERO GAP) -->
+    <rect x="43.33" y="168.88" width="173.33" height="42.22" fill="#E11D48" />
+
+    <!-- Bottom 'Z': Rows 5 to 7 -->
+    <!-- Z diagonal (Blue and Black) -->
+    <polygon points="173.33,211.11 216.66,211.11 86.66,337.77 43.33,337.77" fill="#18181B" />
+    <polygon points="130,211.11 173.33,211.11 43.33,337.77 43.33,295.55" fill="#1D4ED8" />
+    <!-- Z bottom base (Black & Blue) -->
+    <rect x="43.33" y="295.55" width="43.33" height="42.22" fill="#1D4ED8" />
+    <rect x="86.66" y="295.55" width="130" height="42.22" fill="#18181B" />
+
+    <!-- Perfectly closed timetable grid: stops exactly at the bottom border -->
+    <rect x="0" y="0" width="260" height="380" fill="none" stroke="#18181B" stroke-width="4" />
+    
+    <!-- Vertical grid lines -->
+    <line x1="43.33" y1="0" x2="43.33" y2="380" stroke="#18181B" stroke-width="2" />
+    <line x1="86.66" y1="0" x2="86.66" y2="380" stroke="#18181B" stroke-width="2" />
+    <line x1="130" y1="0" x2="130" y2="380" stroke="#18181B" stroke-width="2" />
+    <line x1="173.33" y1="0" x2="173.33" y2="380" stroke="#18181B" stroke-width="2" />
+    <line x1="216.66" y1="0" x2="216.66" y2="380" stroke="#18181B" stroke-width="2" />
+    
+    <!-- Horizontal grid lines -->
+    <line x1="0" y1="42.22" x2="260" y2="42.22" stroke="#18181B" stroke-width="2" />
+    <line x1="0" y1="84.44" x2="260" y2="84.44" stroke="#18181B" stroke-width="2" />
+    <line x1="0" y1="126.66" x2="260" y2="126.66" stroke="#18181B" stroke-width="2" />
+    <line x1="0" y1="168.88" x2="260" y2="168.88" stroke="#18181B" stroke-width="2" />
+    <line x1="0" y1="211.11" x2="260" y2="211.11" stroke="#18181B" stroke-width="2" />
+    <line x1="0" y1="253.33" x2="260" y2="253.33" stroke="#18181B" stroke-width="2" />
+    <line x1="0" y1="295.55" x2="260" y2="295.55" stroke="#18181B" stroke-width="2" />
+    <line x1="0" y1="337.77" x2="260" y2="337.77" stroke="#18181B" stroke-width="2" />
+  </g>
+</svg>

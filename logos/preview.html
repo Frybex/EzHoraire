@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EzHoraire — 10 Propositions Bauhaus & Swiss Grid</title>
+  <style>
+    :root {
+      --bg: #0e1117;
+      --card-bg: #161b22;
+      --card-border: #30363d;
+      --text: #f0f6fc;
+      --muted: #8b949e;
+      --accent: #2456e0;
+      --accent-light: #58a6ff;
+    }
+    body.light-mode {
+      --bg: #f6f8fa;
+      --card-bg: #ffffff;
+      --card-border: #d0d7de;
+      --text: #1f2328;
+      --muted: #656d76;
+      --accent: #2456e0;
+      --accent-light: #0969da;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 32px 20px 80px;
+      transition: background-color 0.2s, color 0.2s;
+    }
+    .header {
+      max-width: 1200px;
+      margin: 0 auto 36px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 24px;
+    }
+    .title h1 { font-size: 26px; font-weight: 700; }
+    .title p { color: var(--muted); font-size: 15px; margin-top: 4px; }
+    .theme-btn {
+      background: var(--card-bg);
+      color: var(--text);
+      border: 1px solid var(--card-border);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .grid {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 24px;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+      transition: transform 0.15s, border-color 0.15s;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent-light);
+    }
+    .card-preview {
+      height: 240px;
+      background: repeating-conic-gradient(rgba(128,128,128,0.05) 0% 25%, transparent 0% 50%) 50% / 20px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      border-bottom: 1px solid var(--card-border);
+      position: relative;
+    }
+    .card-preview svg {
+      max-width: 180px;
+      max-height: 180px;
+      filter: drop-shadow(0 8px 16px rgba(0,0,0,0.15));
+    }
+    .favicon-scales {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(0,0,0,0.4);
+      backdrop-filter: blur(8px);
+      padding: 6px 10px;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .fav-16 { width: 16px; height: 16px; }
+    .fav-32 { width: 24px; height: 24px; }
+    .card-body {
+      padding: 18px 20px 20px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .card-tag {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--accent-light);
+      margin-bottom: 6px;
+    }
+    .card-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .card-desc {
+      font-size: 13.5px;
+      color: var(--muted);
+      margin-bottom: 16px;
+      flex: 1;
+    }
+    .card-actions {
+      display: flex;
+      gap: 10px;
+    }
+    .btn {
+      flex: 1;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      text-align: center;
+      border: 1px solid var(--card-border);
+      background: var(--bg);
+      color: var(--text);
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+    .btn:hover {
+      background: var(--card-border);
+    }
+    .btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .btn-primary:hover {
+      opacity: 0.9;
+    }
+    .copied-toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #10B981;
+      color: #ffffff;
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-weight: 600;
+      font-size: 14px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+      opacity: 0;
+      transition: opacity 0.25s ease;
+      pointer-events: none;
+      z-index: 100;
+    }
+    .copied-toast.show {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="title">
+      <h1>EzHoraire — Exploration Bauhaus & Swiss Timetable</h1>
+      <p>10 déclinaisons vectorielles (SVG) : grille d'horaires fermée, E et Z connectés, zéro ligne pendante.</p>
+    </div>
+    <button class="theme-btn" onclick="toggleTheme()">🌓 Mode Clair / Sombre</button>
+  </div>
+
+  <div class="grid" id="grid">
+    <!-- Populated by JS -->
+  </div>
+
+  <div class="copied-toast" id="toast">Code SVG copié dans le presse-papier !</div>
+
+  <script>
+    const logos = [
+      {
+        id: "01-swiss-original-connected",
+        title: "01. Swiss Original Connecté",
+        tag: "Correction exacte V9",
+        file: "01-swiss-original-connected.svg",
+        desc: "La version originale corrigée : grille rigoureusement fermée à la base (aucune ligne qui dépasse en bas), chiffres supprimés, et jonction continue entre le E et le Z."
+      },
+      {
+        id: "02-swiss-pure-4x4",
+        title: "02. Grille 4x4 Carrée Pure",
+        tag: "Minimalisme Absolu",
+        file: "02-swiss-pure-4x4.svg",
+        desc: "Grille carrée 4x4 symétrique. Le E (2 colonnes) et le Z (2 colonnes) se partagent le centre sans interstice avec des aplats francs."
+      },
+      {
+        id: "03-swiss-ez-app-blue",
+        title: "03. Charte Bleue EzHoraire",
+        tag: "Brand Match",
+        file: "03-swiss-ez-app-blue.svg",
+        desc: "Utilise la palette exacte de l'application : Bleu #2456e0, Dark Slate #0f172a, Bleu ciel #8ba6ff et touche de vert #5fce96."
+      },
+      {
+        id: "04-swiss-continuous-ribbon",
+        title: "04. Ruban Continu EZ",
+        tag: "Flux & Fluidité",
+        file: "04-swiss-continuous-ribbon.svg",
+        desc: "Un unique tracé vectoriel épais et continu qui serpente dans la grille pour dessiner le E puis le Z en une seule ligne continue."
+      },
+      {
+        id: "05-swiss-monochrome-stark",
+        title: "05. Monochrome Suisse Noir & Blanc",
+        tag: "Vignelli / Helvetica",
+        file: "05-swiss-monochrome-stark.svg",
+        desc: "Design radical à fort contraste. Fonctionne avec une lisibilité maximale sur n'importe quel support ou document officiel."
+      },
+      {
+        id: "06-swiss-curves-rhythm",
+        title: "06. Courbes & Arcs Bauhaus",
+        tag: "Rythme Géométrique",
+        file: "06-swiss-curves-rhythm.svg",
+        desc: "Harmonie d'arcs de cercles et de disques colorés qui équilibrent la rigidité de la grille temporelle."
+      },
+      {
+        id: "07-swiss-clock-accent",
+        title: "07. Accent Horloge Intégré",
+        tag: "Détail Horloger",
+        file: "07-swiss-clock-accent.svg",
+        desc: "Une discrète montre minimale à 2 aiguilles vectorielles logée dans la case supérieure, marquant la fonction horaire."
+      },
+      {
+        id: "08-swiss-app-icon-squircle",
+        title: "08. Icône Squircle iOS / PWA",
+        tag: "Prêt pour écran d'accueil",
+        file: "08-swiss-app-icon-squircle.svg",
+        desc: "Déclinaison sous forme d'icône d'application 512x512 avec coins arrondis squircle et profondeur soignée."
+      },
+      {
+        id: "09-swiss-timetable-slots",
+        title: "09. Blocs de Cours Décalés",
+        tag: "Planning Étudiant",
+        file: "09-swiss-timetable-slots.svg",
+        desc: "Les cellules représentent des créneaux de durées réelles (cours de 1h, 2h, TP de 3h) qui s'imbriquent pour composer le EZ."
+      },
+      {
+        id: "10-swiss-micro-favicon",
+        title: "10. Micro-Favicon 16x16",
+        tag: "Lisibilité Micro-Scale",
+        file: "10-swiss-micro-favicon.svg",
+        desc: "Épaisseurs de traits calibrées pour ne jamais être floues ni pixelisées dans la barre d'onglets du navigateur."
+      }
+    ];
+
+    const container = document.getElementById("grid");
+
+    async function loadLogos() {
+      for (const logo of logos) {
+        let svgCode = "";
+        try {
+          const res = await fetch(logo.file);
+          svgCode = await res.text();
+        } catch(e) {
+          svgCode = "<p>Erreur chargement SVG</p>";
+        }
+
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="card-preview">
+            <div class="favicon-scales" title="Aperçu aux tailles Favicon (16px et 24px)">
+              <div class="fav-16">${svgCode}</div>
+              <div class="fav-32">${svgCode}</div>
+            </div>
+            ${svgCode}
+          </div>
+          <div class="card-body">
+            <div class="card-tag">${logo.tag}</div>
+            <div class="card-title">${logo.title}</div>
+            <div class="card-desc">${logo.desc}</div>
+            <div class="card-actions">
+              <button class="btn btn-primary" onclick="copySvg('${logo.file}')">Copier SVG</button>
+              <a class="btn" href="${logo.file}" download="${logo.file}">Télécharger</a>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      }
+    }
+
+    async function copySvg(filename) {
+      try {
+        const res = await fetch(filename);
+        const code = await res.text();
+        await navigator.clipboard.writeText(code);
+        showToast();
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function showToast() {
+      const toast = document.getElementById("toast");
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2200);
+    }
+
+    function toggleTheme() {
+      document.body.classList.toggle("light-mode");
+    }
+
+    loadLogos();
+  </script>
+</body>
+</html>

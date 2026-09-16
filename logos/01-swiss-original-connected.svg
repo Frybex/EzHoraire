@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 400" width="100%" height="100%">
+  <!-- Background canvas -->
+  <rect width="340" height="400" fill="#F9F9F7" />
+  
+  <g transform="translate(30, 30)">
+    <!-- Colored Bauhaus blocks forming E and Z connected -->
+    <!-- Row 0 -->
+    <rect x="0" y="0" width="70" height="68" fill="#1D4ED8" />
+    <path d="M 70,0 A 70,70 0 0 0 0,70 L 70,70 Z" fill="#18181B" opacity="0.9" />
+    <rect x="70" y="0" width="70" height="68" fill="#F9F9F7" />
+    <rect x="70" y="0" width="35" height="68" fill="#18181B" />
+    <rect x="140" y="0" width="70" height="68" fill="#F9F9F7" />
+    <rect x="175" y="0" width="35" height="68" fill="#1D4ED8" />
+    <polygon points="210,0 280,0 210,68" fill="#18181B" />
+
+    <!-- Row 1 -->
+    <rect x="0" y="68" width="70" height="68" fill="#1D4ED8" />
+    <rect x="70" y="68" width="70" height="68" fill="#E11D48" />
+    <rect x="140" y="68" width="70" height="68" fill="#F9F9F7" />
+    <polygon points="210,68 280,68 245,136 210,136" fill="#E11D48" />
+
+    <!-- Row 2: Junction point where E and Z connect seamlessly -->
+    <rect x="0" y="136" width="70" height="68" fill="#E11D48" />
+    <rect x="70" y="136" width="70" height="68" fill="#E11D48" />
+    <!-- Center arm of E bridges directly into Z diagonal -->
+    <polygon points="140,136 210,136 175,204 140,204" fill="#E11D48" />
+    <rect x="210" y="136" width="70" height="68" fill="#18181B" />
+
+    <!-- Row 3 -->
+    <path d="M 0,204 A 70,70 0 0 1 70,272 L 0,272 Z" fill="#18181B" />
+    <rect x="70" y="204" width="70" height="68" fill="#F9F9F7" />
+    <polygon points="140,204 175,204 105,272 70,272" fill="#1D4ED8" />
+    <rect x="210" y="204" width="70" height="68" fill="#F9F9F7" />
+
+    <!-- Row 4: Base where bottom of E touches base of Z -->
+    <path d="M 0,340 A 70,70 0 0 1 70,272 L 70,340 Z" fill="#1D4ED8" />
+    <rect x="70" y="272" width="70" height="68" fill="#1D4ED8" />
+    <!-- Connection bridge between E bottom and Z bottom -->
+    <polygon points="140,272 210,272 280,340 140,340" fill="#E11D48" />
+    <rect x="210" y="272" width="70" height="68" fill="#18181B" />
+
+    <!-- Grid structure: stops exactly at bottom line, no hanging lines -->
+    <!-- Vertical lines -->
+    <line x1="0" y1="0" x2="0" y2="340" stroke="#18181B" stroke-width="4" stroke-linecap="square" />
+    <line x1="70" y1="0" x2="70" y2="340" stroke="#18181B" stroke-width="3" />
+    <line x1="140" y1="0" x2="140" y2="340" stroke="#18181B" stroke-width="3" />
+    <line x1="210" y1="0" x2="210" y2="340" stroke="#18181B" stroke-width="3" />
+    <line x1="280" y1="0" x2="280" y2="340" stroke="#18181B" stroke-width="4" stroke-linecap="square" />
+
+    <!-- Horizontal lines -->
+    <line x1="0" y1="0" x2="280" y2="0" stroke="#18181B" stroke-width="4" stroke-linecap="square" />
+    <line x1="0" y1="68" x2="280" y2="68" stroke="#18181B" stroke-width="3" />
+    <line x1="0" y1="136" x2="280" y2="136" stroke="#18181B" stroke-width="3" />
+    <line x1="0" y1="204" x2="280" y2="204" stroke="#18181B" stroke-width="3" />
+    <line x1="0" y1="272" x2="280" y2="272" stroke="#18181B" stroke-width="3" />
+    <line x1="0" y1="340" x2="280" y2="340" stroke="#18181B" stroke-width="4" stroke-linecap="square" />
+  </g>
+</svg>

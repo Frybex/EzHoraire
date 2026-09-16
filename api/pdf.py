@@ -1,8 +1,12 @@
 """GET /api/pdf?ecole=heh&formation=<nom>&groupe=<nom>&semaine=4 — PDF officiel d'une semaine.
 
 `groupe` facultatif : sans lui, PDF de toute la formation.
-Le PDF est demandé à l'école à chaque clic et renvoyé directement : rien
-n'est gardé, donc il est toujours à jour.
+
+Le PDF d'une semaine est le même pour tous les étudiants d'un même groupe :
+un cache partagé le garde 30 minutes, ce qui évite de redemander à l'école
+un document identique à chaque clic. C'est le point d'entrée le plus coûteux
+(une session complète + génération + téléchargement), donc celui qu'il faut
+le plus amortir. Si l'école tombe, le dernier bon PDF reste servi 24 h.
 """
 import os
 import sys
@@ -16,6 +20,8 @@ if ICI not in sys.path:
 from _ecoles import ECOLES, ecole, repondre_texte  # noqa: E402
 
 BUDGET = 40  # s, sous la limite de durée de la fonction chez l'hébergeur
+CACHE_PARTAGE = ("public, max-age=0, s-maxage=1800, "
+                 "stale-while-revalidate=3600, stale-if-error=86400")
 
 
 class handler(BaseHTTPRequestHandler):
@@ -39,7 +45,7 @@ class handler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", "application/pdf")
         self.send_header("Content-Length", str(len(contenu)))
         self.send_header("Content-Disposition", f"inline; filename*=UTF-8''{quote(nom)}")
-        self.send_header("Cache-Control", "no-store")
+        self.send_header("Cache-Control", CACHE_PARTAGE)
         self.end_headers()
         self.wfile.write(contenu)
 

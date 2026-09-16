@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 340" width="100%" height="100%">
+  <rect width="340" height="340" fill="#FFFFFF" />
+  <g transform="translate(30, 30)">
+    <!-- 4x4 Grid of 70x70 = 280x280 -->
+    <!-- E on left (col 0, 1), Z on right (col 2, 3), touching seamlessly across col 1 and 2 -->
+    <!-- E top bar -->
+    <rect x="0" y="0" width="140" height="70" fill="#2456e0" />
+    <!-- E spine -->
+    <rect x="0" y="70" width="70" height="140" fill="#2456e0" />
+    <!-- E center bar bridging directly into Z diagonal -->
+    <rect x="70" y="105" width="105" height="70" fill="#E11D48" />
+    
+    <!-- Z top bar -->
+    <rect x="140" y="0" width="140" height="70" fill="#18181B" />
+    <!-- Z diagonal -->
+    <polygon points="280,70 210,70 105,210 175,210" fill="#18181B" />
+    
+    <!-- E base and Z base connecting -->
+    <rect x="0" y="210" width="140" height="70" fill="#2456e0" />
+    <rect x="140" y="210" width="140" height="70" fill="#E11D48" />
+
+    <!-- Closed Grid lines -->
+    <rect x="0" y="0" width="280" height="280" fill="none" stroke="#18181B" stroke-width="4" />
+    <line x1="70" y1="0" x2="70" y2="280" stroke="#18181B" stroke-width="2.5" />
+    <line x1="140" y1="0" x2="140" y2="280" stroke="#18181B" stroke-width="3" />
+    <line x1="210" y1="0" x2="210" y2="280" stroke="#18181B" stroke-width="2.5" />
+    
+    <line x1="0" y1="70" x2="280" y2="70" stroke="#18181B" stroke-width="2.5" />
+    <line x1="0" y1="140" x2="280" y2="140" stroke="#18181B" stroke-width="3" />
+    <line x1="0" y1="210" x2="280" y2="210" stroke="#18181B" stroke-width="2.5" />
+  </g>
+</svg>

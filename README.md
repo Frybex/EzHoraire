@@ -15,6 +15,13 @@ droite ouvre les **Réglages** (identité, déconnexion, mes horaires).
 L'horaire se met à jour tout seul à chaque ouverture : recharger la page
 suffit, il n'y a aucun bouton d'actualisation.
 
+Couleurs des cours : un intitulé = une couleur. Les matières de la
+formation sont triées par ordre alphabétique puis réparties sur une
+palette sobre (`preparerCouleurs()`), donc deux intitulés différents
+n'ont jamais la même couleur, et la couleur d'un cours ne change pas
+d'une semaine à l'autre. Rendu volontairement mat : fond très peu
+saturé, rail de couleur à gauche, texte neutre.
+
 Écoles prises en charge : **HEH** (HEH Planning, espace invités public).
 Objectif : la plupart des universités et hautes écoles belges, puis les
 applications iOS et Android, et les comptes (Google, GitHub, email).
@@ -45,16 +52,26 @@ Reste côté consoles (une fois le projet Supabase créé) :
    + RLS « chacun ne voit que ses lignes »).
 2. Vercel → Settings → Environment Variables : `SUPABASE_URL` +
    `SUPABASE_ANON_KEY` (Production + Preview), puis redéployer.
-3. Supabase → Authentication → URL Configuration : Site URL = domaine
-   Vercel + Redirect URLs += `http://localhost:8902` (essais locaux).
+3. Supabase → Authentication → URL Configuration : Site URL =
+   `https://www.ezhoraire.be` + Redirect URLs += `https://www.ezhoraire.be/**`,
+   `https://ezhoraire.be/**` et `http://localhost:8902/**` (essais locaux).
+   Les deux domaines comptent : `ezhoraire.be` renvoie vers `www`.
 4. **Google** : Google Cloud Console → Client ID OAuth (origine autorisée =
    ton domaine + `https://<projet>.supabase.co`), à renseigner dans
    Supabase → Authentication → Providers → Google.
 5. **GitHub** : GitHub → Settings → Developer settings → OAuth App
    (callback = `https://<projet>.supabase.co/auth/v1/callback`), puis
    Supabase → Providers → GitHub.
-6. **Email** : natif Supabase (mot de passe déjà câblé ;
-   régler « Confirm email » selon qu'on veut vérifier l'adresse ou non).
+6. **Email** : natif Supabase (mot de passe déjà câblé). Si « Confirm
+   email » est activé, il faut un SMTP perso (Resend, Brevo…) : l'envoi
+   par défaut de Supabase ne part que vers les membres de l'équipe du
+   projet, les autres ne reçoivent jamais le lien. Sans SMTP, désactiver
+   « Confirm email » : le compte est créé et connecté tout de suite.
+
+En local : `vercel env pull .env.local` une fois (fichier ignoré par git
+et par Vercel), `serve.py` le charge au démarrage. Sans ce fichier, l'app
+tourne en connexion factice (uniquement sur localhost ; en ligne, la
+connexion est refusée avec un message si le cloud est injoignable).
 
 Il n'y a volontairement aucun bouton de connexion ni d'actualisation dans
 les Réglages : on se connecte avant d'entrer, et tout se met à jour
@@ -92,7 +109,7 @@ python3 serve.py
 
 ## En ligne (Vercel)
 
-Projet `ezhoraire` → https://ezhoraire.vercel.app (nom en minuscules
+Projet `ezhoraire` → https://www.ezhoraire.be (nom en minuscules
 imposé par Vercel). Redéployer après des changements :
 
 ```bash

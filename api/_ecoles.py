@@ -31,11 +31,11 @@ def repondre_json(h, statut, objet, cache="no-store"):
     h.wfile.write(payload)
 
 
-def repondre_texte(h, statut, message):
+def repondre_texte(h, statut, message, cache="no-store"):
     payload = message.encode("utf-8")
     h.send_response(statut)
     h.send_header("Content-Type", "text/plain; charset=utf-8")
     h.send_header("Content-Length", str(len(payload)))
-    h.send_header("Cache-Control", "no-store")
+    h.send_header("Cache-Control", cache)
     h.end_headers()
     h.wfile.write(payload)

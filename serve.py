@@ -47,8 +47,23 @@ class Handler(SimpleHTTPRequestHandler):
         pass  # silencieux
 
 
+def charger_env_local(chemin=".env.local"):
+    """Clés Supabase en local : `vercel env pull .env.local` les récupère,
+    on les charge ici (sans écraser une variable déjà définie)."""
+    if not os.path.exists(chemin):
+        return
+    with open(chemin, encoding="utf-8") as f:
+        for ligne in f:
+            ligne = ligne.strip()
+            if not ligne or ligne.startswith("#") or "=" not in ligne:
+                continue
+            cle, val = ligne.split("=", 1)
+            os.environ.setdefault(cle.strip(), val.strip().strip('"').strip("'"))
+
+
 if __name__ == "__main__":
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    charger_env_local()
     try:
         srv = Serveur(("::", PORT), Handler)
     except OSError:
