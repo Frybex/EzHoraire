@@ -92,6 +92,13 @@
     text-align: center; margin: 0; user-select: none;
   }
   .title span { color: var(--accent); }
+  /* Le logo est un bouton : un appui relance l'app (barre d'accent en haut). */
+  .title button {
+    border: none; background: none; font: inherit; color: inherit;
+    padding: 0 8px; min-height: 44px; cursor: pointer;
+    transition: transform .12s;
+  }
+  .title button:active { transform: scale(.96); }
   .topbar .gauche, .topbar .droite {
     position: absolute; top: 50%; transform: translateY(-50%);
     border: none; background: none; font: inherit; cursor: pointer;
@@ -695,15 +702,14 @@
   .csub-in div { padding: 1px 0; }
   .csub-in .k { color: var(--muted); }
   .csub-in .nc { color: var(--muted); font-style: italic; }
-  /* Pause : discrète, sans filets. */
+  /* Pause : filets symétriques de part et d'autre du texte. */
   .detail li.p {
-    display: flex; align-items: center; gap: 8px;
-    padding: 7px 0 7px 18px; color: var(--muted);
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 0; color: var(--muted);
     font-size: .78rem; font-weight: 600; letter-spacing: .02em; white-space: nowrap;
   }
-  .detail li.p::before {
-    content: ""; flex: none; width: 4px; height: 4px; border-radius: 50%;
-    background: color-mix(in srgb, var(--muted) 60%, transparent);
+  .detail li.p::before, .detail li.p::after {
+    content: ""; flex: 1; height: 1px; background: var(--line);
   }
 
   .empty {
@@ -1332,7 +1338,7 @@
 <div class="wrap">
   <div class="topbar">
     <button class="gauche" id="btn-retour" type="button" hidden>‹ Retour</button>
-    <h1 class="title">Ez<span>Horaire</span></h1>
+    <h1 class="title"><button type="button" id="btn-reload" title="Recharger" aria-label="Recharger la page">Ez<span>Horaire</span></button></h1>
     <button class="droite" id="btn-moi" type="button" aria-label="Réglages" hidden>
       <span class="moi-txt" id="moi-txt"></span>
       <span class="avatar" id="avatar"><span id="avatar-init" hidden></span><svg id="avatar-icone" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -2155,7 +2161,12 @@
   // L'école double parfois les espaces dans les noms de groupes.
   function propre(s) { return String(s).replace(/\s+/g, " ").trim(); }
   function txt(s) {
-    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
   }
 
   /* Demande de confirmation custom (remplace window.confirm partout).
@@ -3883,6 +3894,30 @@
       actualiser(false).catch(function () { /* on garde ce qui est affiché */ });
     }
   });
+
+  /* Rechargement manuel : un appui sur le logo du haut relance l'app.
+     Animation de départ (~0,26 s) puis rechargement ; la nouvelle page
+     joue l'arrivée grâce au drapeau de session, dans la couleur de
+     l'horaire affiché (data-theme, sinon l'accent par défaut). */
+  var CLE_RECHARGE = "recharge";
+  document.getElementById("btn-reload").addEventListener("click", function () {
+    if (document.body.classList.contains("depart")) return;
+    document.body.classList.add("depart");
+    try { sessionStorage.setItem(CLE_RECHARGE, document.body.getAttribute("data-theme") || ""); }
+    catch (e) { /* navigation privée */ }
+    setTimeout(function () { location.reload(); }, sansAnim ? 0 : 260);
+  });
+  try {
+    var drapeauRecharge = sessionStorage.getItem(CLE_RECHARGE);
+    if (drapeauRecharge !== null) {
+      sessionStorage.removeItem(CLE_RECHARGE);
+      // La barre d'arrivée prend la couleur de l'horaire tout de suite.
+      if (drapeauRecharge) document.body.setAttribute("data-theme", drapeauRecharge);
+      document.body.classList.add("arrivee");
+      // retirée ensuite : sinon chaque nouveau rendu rejouerait la cascade
+      setTimeout(function () { document.body.classList.remove("arrivee"); }, 650);
+    }
+  } catch (e) { /* navigation privée */ }
 
   /* ---------- Démarrage ----------
      Ouvre le dernier horaire revu (connecté par défaut) : le cache local

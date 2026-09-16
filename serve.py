@@ -37,7 +37,21 @@ class Serveur(ThreadingHTTPServer):
 
 class Handler(SimpleHTTPRequestHandler):
     def do_GET(self):
-        route = ROUTES.get(self.path.split("?")[0])
+        # Sécurité : n'accepter que les connexions provenant de la machine locale
+        ip = self.client_address[0]
+        if ip not in ("127.0.0.1", "::1", "::ffff:127.0.0.1"):
+            self.send_error(403, "Accès interdit : serveur de développement local uniquement")
+            return
+
+        chemin = self.path.split("?")[0]
+
+        # Sécurité : bloquer l'accès aux fichiers et dossiers cachés (.env, .git, etc.)
+        parties = [p for p in chemin.strip("/").split("/") if p]
+        if any(p.startswith(".") for p in parties):
+            self.send_error(404, "Fichier non trouvé")
+            return
+
+        route = ROUTES.get(chemin)
         if route:
             route.do_GET(self)
         else:
