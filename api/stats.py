@@ -22,6 +22,7 @@ import sys
 from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler
 from urllib.parse import parse_qs, urlparse
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 ICI = os.path.dirname(os.path.abspath(__file__))
@@ -123,6 +124,16 @@ class handler(BaseHTTPRequestHandler):
                 "&created_at=gte." + limite.replace("+", "%2B") +
                 "&order=created_at.desc&limit=20000",
                 dict(h_svc, Accept="application/json"), timeout=20) or []
+        except HTTPError as e:  # noqa: BLE001 - clé invalide, table manquante…
+            if e.code == 401:
+                return repondre_json(self, 502, {"ok": False, "erreur":
+                    "Clé service_role refusée par Supabase : vérifie SUPABASE_SERVICE_ROLE_KEY "
+                    "dans Vercel (c'est la clé « service_role » secrète, pas « anon »), puis redéploie."})
+            if e.code == 404:
+                return repondre_json(self, 502, {"ok": False, "erreur":
+                    "Table introuvable : recolle supabase/schema.sql dans le SQL Editor."})
+            return repondre_json(self, 502, {"ok": False,
+                "erreur": "Supabase injoignable (erreur %s)." % e.code})
         except Exception as e:  # noqa: BLE001
             return repondre_json(self, 502, {"ok": False,
                 "erreur": "Supabase injoignable : " + str(e)[-200:]})
