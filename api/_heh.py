@@ -314,6 +314,21 @@ def tri_naturel(texte):
     return [int(t) if t.isdigit() else t.lower() for t in re.split(r"(\d+)", texte)]
 
 
+def _propre(valeur):
+    """Rend une valeur sûre à écrire dans le journal.
+
+    Le nom de formation vient de l'adresse demandée et n'est pas vérifié
+    avant d'être journalisé (journal() tourne dans un finally, donc même
+    pour une formation inexistante). Sans ce filtrage, un saut de ligne
+    dans le paramètre permettrait de fabriquer de fausses lignes « ezh »
+    et de fausser le comptage qu'on veut justement mesurer.
+    """
+    if isinstance(valeur, int):
+        return str(valeur)
+    texte = "".join(c for c in str(valeur) if c.isprintable() and c != '"')
+    return f'"{texte[:80]}"'  # les noms contiennent des espaces
+
+
 def journal(quoi, ec, debut, **details):
     """Une ligne par récupération réelle chez l'école (visible chez l'hébergeur).
 
@@ -322,7 +337,7 @@ def journal(quoi, ec, debut, **details):
     Chercher « ezh » dans les journaux donne donc directement le nombre de
     requêtes envoyées à l'école, et par quelle formation.
     """
-    champs = " ".join(f"{k}={v}" for k, v in details.items())
+    champs = " ".join(f"{k}={_propre(v)}" for k, v in details.items())
     print(f'ezh {quoi} {champs} appels={ec.total_appels()} '
           f'reconnexions={ec.reconnexions} duree={time.monotonic() - debut:.1f}s',
           flush=True)  # sans flush, l'hébergeur peut perdre la ligne
@@ -363,7 +378,7 @@ def horaire(formation, budget=75, frais=False):
             return _recuperer(ecole, formation)
         finally:
             journal("horaire", ecole, debut,
-                    formation=f'"{formation}"', frais=int(frais))
+                    formation=formation, frais=int(frais))
 
     def _recuperer(ecole, formation):
         info = ecole.faire(lambda hp: hp.formation(formation))
@@ -421,8 +436,8 @@ def pdf_semaine(formation, groupe, semaine, budget=40):
     try:
         return ecole.faire(action)
     finally:
-        journal("pdf", ecole, debut, formation=f'"{formation}"',
-                groupe=f'"{groupe}"', semaine=semaine)
+        journal("pdf", ecole, debut, formation=formation,
+                groupe=groupe, semaine=semaine)
 
 
 def maintenant():
