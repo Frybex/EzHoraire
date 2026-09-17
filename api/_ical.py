@@ -186,13 +186,17 @@ def horaire_ical(lien, budget=30):
     lundi0 = min(e["debut"][0] for e in cours_bruts) - timedelta(
         days=min(e["debut"][0] for e in cours_bruts).weekday())
 
-    cours, feries, semaines = {}, set(), set()
+    cours, feries, noms_feries, semaines = {}, set(), {}, set()
     for e in evenements:
         date, heure = e["debut"]
         if heure is None:  # journée entière : congé
             n = (date - lundi0).days + 1
             if n > 0:
                 feries.add(n)
+                # TimeEdit préfixe le nom du congé par « Info: » dans le résumé.
+                nom = re.sub(r"^\s*info\s*:\s*", "", str(e.get("summary") or ""), flags=re.I).strip()
+                if nom and n not in noms_feries:
+                    noms_feries[n] = nom
             continue
         sem = (date - lundi0).days // 7 + 1
         if sem < 1:
@@ -226,6 +230,7 @@ def horaire_ical(lien, budget=30):
             "premier_lundi": lundi0.isoformat(),
             "periode": format_ensemble(list(range(1, max(semaines) + 1))),
             "feries": format_ensemble(sorted(feries)),
+            "feries_noms": {str(k): v for k, v in noms_feries.items()},
             "source": "Lien d'abonnement TimeEdit (iCal)",
         },
         "formation": "",

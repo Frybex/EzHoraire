@@ -812,7 +812,10 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   }
   .dsum.busy { color: var(--ink); font-weight: 600; }
   .dsum.free { color: var(--free); font-weight: 550; }
-  .dsum.ferie { color: var(--accent); font-weight: 650; }
+  .dsum.ferie {
+    color: var(--accent); font-weight: 650;
+    max-width: 46%; overflow: hidden; text-overflow: ellipsis;
+  }
   .chev {
     flex: none; width: 9px; height: 9px; margin: 0 4px 0 2px;
     border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted);
@@ -1350,7 +1353,10 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .cal-jour small.libre { color: var(--free); }
-    .cal-jour small.ferie { color: var(--accent); font-weight: 600; }
+    .cal-jour small.ferie {
+      color: var(--accent); font-weight: 600;
+      max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
     .cal-corps { flex: 1; min-height: 0; }
     .cal-heures { position: relative; }
     .cal-heures span {
@@ -2867,6 +2873,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   var COURS = [];        // ses cours, filtrés selon les groupes de l'étudiant
   var LUNDI0 = null, SEMAINES = [];
   var FERIES = {};       // jours fériés / de congé de l'école : { n° de jour : true }
+  var FERIES_NOMS = {};  // leur nom quand l'école en donne un (« Toussaint »)
   var sem = 1;
 
   function parseDate(iso) {
@@ -2881,7 +2888,10 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   function fmtDate(d) { return d.getDate() + " " + MOIS[d.getMonth()]; }
   function fmtH(h) { return String(h).replace(/^0/, ""); } // "08h15" -> "8h15"
   // n° de jour de l'école : 1 = premier lundi (voir HP.feries côté API).
-  function estFerie(s, jour) { return !!FERIES[(s - 1) * 7 + jour + 1]; }
+  function numJour(s, jour) { return (s - 1) * 7 + jour + 1; }
+  function estFerie(s, jour) { return !!FERIES[numJour(s, jour)]; }
+  // « Férié » remplacé par le nom officiel quand l'école le donne.
+  function nomFerie(s, jour) { return FERIES_NOMS[numJour(s, jour)] || "Férié"; }
   function memeJour(a, b) {
     return a.getFullYear() === b.getFullYear() &&
            a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
@@ -4448,6 +4458,8 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     SEMAINES = parseEns(DATA.meta.periode).sort(function (a, b) { return a - b; });
     FERIES = {};
     parseEns(DATA.meta.feries || "[]").forEach(function (n) { FERIES[n] = true; });
+    FERIES_NOMS = (DATA.meta.feries_noms && typeof DATA.meta.feries_noms === "object")
+      ? DATA.meta.feries_noms : {};
     // Groupe enregistré sous une autre forme (préfixé ou non) que celle de
     // l'école : on reprend la forme de l'école s'il n'y a qu'un candidat.
     var repris = false;
@@ -4600,11 +4612,13 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
 
     var i = SEMAINES.indexOf(sem);
     document.getElementById("sem-titre").textContent = "Semaine " + sem;
-    var lun = dateSemJour(sem, 0), ven = dateSemJour(sem, 4);
+    var lun = dateSemJour(sem, 0);
+    // La semaine va jusqu'au samedi quand il y a cours ce jour-là (ULB).
+    var fin = coursDe(sem, 5).length ? dateSemJour(sem, 5) : dateSemJour(sem, 4);
     document.getElementById("sem-dates").textContent =
-      (lun.getMonth() === ven.getMonth()
-        ? lun.getDate() + " – " + fmtDate(ven)
-        : fmtDate(lun) + " – " + fmtDate(ven)) + " " + ven.getFullYear();
+      (lun.getMonth() === fin.getMonth()
+        ? lun.getDate() + " – " + fmtDate(fin)
+        : fmtDate(lun) + " – " + fmtDate(fin)) + " " + fin.getFullYear();
     // La visionneuse PDF sous le bouton est conservée telle quelle
     // (un dépliage de jour ne doit pas la refermer).
     majBoutonPdf();
@@ -4624,7 +4638,9 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       var resume = liste.length
         ? '<span class="dsum busy">' + fmtH(liste[0].debut) + " → " +
           fmtH(liste.reduce(function (m, c) { return c.fin > m ? c.fin : m; }, liste[0].fin)) + "</span>"
-        : (estFerie(sem, j) ? '<span class="dsum free ferie">Férié</span>' : '<span class="dsum free">Libre</span>');
+        : (estFerie(sem, j)
+            ? '<span class="dsum free ferie" title="' + txt(nomFerie(sem, j)) + '">' + txt(nomFerie(sem, j)) + "</span>"
+            : '<span class="dsum free">Libre</span>');
       html += '<li class="day' + (estAuj ? " today" : "") + (joursOuverts[j] ? " open" : "") + '">' +
         '<button data-jour="' + j + '" aria-expanded="' + (!!joursOuverts[j]) + '">' +
         '<span class="dot" aria-hidden="true"></span>' +
@@ -4635,10 +4651,17 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
         (liste.length ? detailJour(liste, j) : "<div></div>") +
         "</div></li>";
     }
+    var nomsConge = [];
+    if (conge) {
+      for (var n2 = 0; n2 < 5; n2++) {
+        if (estFerie(sem, n2) && FERIES_NOMS[numJour(sem, n2)]) nomsConge.push(FERIES_NOMS[numJour(sem, n2)]);
+      }
+    }
     document.getElementById("jours").innerHTML = vide
       ? '<div class="empty">' + (SEMAINES.indexOf(sem) < 0
           ? "Semaine non publiée par l'école (congés ?)."
-          : (conge ? "Semaine de congé." : "Aucun cours cette semaine.")) + "</div>"
+          : (conge ? "Semaine de congé" + (nomsConge.length ? " — " + txt(nomsConge.join(", ")) : "") + "."
+                   : "Aucun cours cette semaine.")) + "</div>"
       : html;
     rendreCal();
     rendreInfos();
@@ -4728,13 +4751,16 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       var resume = d.cours.length
         ? "<small>" + fmtH(d.cours[0].debut) + " – " +
           fmtH(d.cours.reduce(function (m, c) { return c.fin > m ? c.fin : m; }, d.cours[0].fin)) + "</small>"
-        : (estFerie(sem, d.j) ? '<small class="libre ferie">Férié</small>' : '<small class="libre">Libre</small>');
+        : (estFerie(sem, d.j)
+            ? '<small class="libre ferie" title="' + txt(nomFerie(sem, d.j)) + '">' + txt(nomFerie(sem, d.j)) + "</small>"
+            : '<small class="libre">Libre</small>');
       tete += '<div class="cal-jour' + (estAuj ? " today" : "") + '" title="' + JOURS[d.j] + " " + fmtDate(date) + '">' +
               "<span>" + JOURS[d.j].slice(0, 3) + "</span><strong>" + date.getDate() + "</strong>" + resume + "</div>";
       corps += '<div class="cal-col' + (estAuj ? " today" : "") + '">';
       if (!d.cours.length) {
         corps += estFerie(sem, d.j)
-          ? '<div class="cal-libre ferie"><p><strong>Férié</strong></p></div>'
+          ? '<div class="cal-libre ferie" title="' + txt(nomFerie(sem, d.j)) + '"><p><strong>' +
+            txt(nomFerie(sem, d.j)) + "</strong></p></div>"
           : '<div class="cal-libre"><p><strong>Pas de cours</strong></p></div>';
       }
       couloirs(d.cours).forEach(function (x) {

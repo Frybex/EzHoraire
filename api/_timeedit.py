@@ -340,16 +340,21 @@ class ClientTimeEdit:
         lundi0 = datetime.strptime(self.premier_lundi_defaut, "%Y-%m-%d").date()
         reservations = self._reservations(sel["ids"], budget=budget)
         i_ens, i_salle = 4, 5
-        cours, feries, semaines = {}, [], set()
+        cours, feries, noms_feries, semaines = {}, [], {}, set()
         for r in reservations:
             cols = list(r.get("columns") or [])
             while len(cols) <= max(i_ens, i_salle):
                 cols.append("")
             if self._est_conge(r):
+                # L'ULB nomme ses fermetures (« Toussaint », « St Verhaegen ») :
+                # le nom part avec le jour, pour l'afficher au lieu de « férié ».
+                nom = str(cols[0] or "").strip()
                 for jour in self._jours_conge(r):
                     n = (jour - lundi0).days + 1
                     if n > 0:
                         feries.append(n)
+                        if nom.strip("_ ") and str(n) not in noms_feries:
+                            noms_feries[str(n)] = nom
                 continue
             try:
                 date = _date(r["startdate"])
@@ -401,6 +406,7 @@ class ClientTimeEdit:
                 "premier_lundi": self.premier_lundi_defaut,
                 "periode": format_ensemble(list(range(1, max(semaines) + 1))),
                 "feries": format_ensemble(sorted(set(feries))),
+                "feries_noms": noms_feries,
                 "source": self.source,
             },
             "formation": formation,
