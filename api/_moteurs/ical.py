@@ -10,6 +10,7 @@ Le garde-fou SSRF n'accepte que les hôtes connus (TimeEdit et Mon
 horaire) : ce point d'entrée fait une requête réseau à partir d'une
 adresse fournie par l'utilisateur.
 """
+import os
 import re
 from datetime import datetime, timedelta, timezone
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
@@ -25,6 +26,15 @@ TAILLE_MAX = 2 * 1024 * 1024  # 2 Mo : un quadrimestre entier tient largement
 
 HOTES = (".timeedit.net", ".timeedit.com")
 HOTE_MONHORAIRE = "monhoraire.uclouvain.be"
+
+
+def _monhoraire_ouvert():
+    """Mon horaire (UCLouvain) n'est lu que si l'école est exposée.
+
+    L'UCLouvain est codée mais pas publiée (EZH_UCL, voir _ecoles/) : sans
+    la variable, ce point d'entrée ne doit pas non plus aller la chercher
+    par la porte du lien d'abonnement."""
+    return os.environ.get("EZH_UCL") == "1"
 RX_UE = re.compile(r"^[A-Z]{2,6}[0-9]{2,4}$")
 RX_GROUPE = re.compile(
     r"^[A-Z][A-Z0-9-]{1,12}\s*[:(-]"                       # B-DROIB:2, M-CRIMS:1 - PAD5
@@ -53,12 +63,15 @@ def url_autorisee(lien):
         lien = "https://" + lien[len("webcals://"):]
     u = urlparse(lien)
     hote = (u.hostname or "").lower()
-    if hote == HOTE_MONHORAIRE:
+    if hote == HOTE_MONHORAIRE and _monhoraire_ouvert():
         return _url_monhoraire(u)
     if u.scheme != "https" or not any(hote.endswith(h) for h in HOTES):
+        # Le message ne cite une école que si elle est publiée : sinon il
+        # annoncerait l'existence d'une école qu'on ne veut pas montrer.
+        ou = (" ou « Exporter → Lien d'abonnement » (Mon horaire UCLouvain)"
+              if _monhoraire_ouvert() else "")
         raise ValueError("Ce lien n'est pas un lien d'abonnement reconnu. "
-                         "Copie-le depuis « S'abonner » (TimeEdit) ou "
-                         "« Exporter → Lien d'abonnement » (Mon horaire UCLouvain).")
+                         "Copie-le depuis « S'abonner » (TimeEdit)" + ou + ".")
     chemin = u.path
     if not chemin.lower().endswith(".ics"):
         chemin = chemin + "s" if chemin.lower().endswith(".ic") else chemin + ".ics"
@@ -165,13 +178,52 @@ def _analyse_resume(resume, description):
     return ", ".join(codes), typ, profs, groupes
 
 
+REDIRECTIONS_MAX = 4
+
+
+def _hote_autorise(lien):
+    """`lien` s'il est en https sur un hôte connu, sinon ValueError."""
+    u = urlparse(lien)
+    hote = (u.hostname or "").lower()
+    connu = any(hote.endswith(h) for h in HOTES) or (
+        hote == HOTE_MONHORAIRE and _monhoraire_ouvert())
+    if u.scheme != "https" or not connu:
+        raise ValueError("Ce lien redirige hors de l'école : recopie-le "
+                         "depuis « S'abonner ».")
+    return lien
+
+
+def _lire(lien, timeout):
+    """GET en suivant les redirections À LA MAIN, une par une.
+
+    `url_autorisee` ne vérifie que l'adresse de départ : avec le suivi
+    automatique, un hôte autorisé qui renvoie un « Location: » vers une
+    adresse interne ferait faire à notre serveur une requête qu'un client
+    ne peut pas faire lui-même (SSRF). Chaque saut repasse donc par le même
+    contrôle d'hôte."""
+    entetes = {"User-Agent": UA, "Accept": "text/calendar,*/*"}
+    for _ in range(REDIRECTIONS_MAX + 1):
+        r = requests.get(lien, headers=entetes, timeout=timeout, allow_redirects=False)
+        if r.status_code not in (301, 302, 303, 307, 308):
+            r.raise_for_status()
+            return r
+        suite = r.headers.get("Location") or ""
+        if not suite:
+            r.raise_for_status()
+            return r
+        # Une redirection relative reste sur le même hôte, déjà autorisé ;
+        # une absolue doit repasser le contrôle d'hôte. Pas `url_autorisee`
+        # ici : sa réparation du « .ics » abîmerait une adresse de
+        # redirection légitime (« /telecharger?x=1 »).
+        lien = _hote_autorise(urljoin(lien, suite))
+    raise ValueError("Ce lien renvoie en boucle : recopie-le depuis « S'abonner ».")
+
+
 def horaire_ical(lien, budget=30):
     """Flux iCal -> {meta, formation, groupes, cours} (format des écoles)."""
     lien = url_autorisee(lien)
     try:
-        r = requests.get(lien, headers={"User-Agent": UA, "Accept": "text/calendar,*/*"},
-                         timeout=min(TIMEOUT, max(5, budget)))
-        r.raise_for_status()
+        r = _lire(lien, timeout=min(TIMEOUT, max(5, budget)))
     except requests.RequestException as e:
         raise ValueError("Ce lien ne répond pas (expiré, révoqué ou réservé à ton compte) : "
                          "recopie-le depuis « S'abonner ».") from e
