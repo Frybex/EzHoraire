@@ -23,11 +23,16 @@ d'une semaine à l'autre. Rendu volontairement mat : fond très peu
 saturé, rail de couleur à gauche, texte neutre.
 
 Écoles prises en charge : **HEH** (HEH Planning), **UMONS** (UMONS Planning,
-espace invités public), **UCLouvain** (Mon horaire, la vue publique de
-l'outil officiel) et **ULB** (TimeEdit, vue publique « je n'ai pas encore
-d'ULBID »). Objectif : la plupart des universités et hautes écoles belges,
-puis les applications iOS et Android, et les comptes (Google, GitHub,
-email).
+espace invités public), **ULB** (TimeEdit, vue publique « je n'ai pas
+encore d'ULBID ») et **UCLouvain** (Mon horaire, en test — voir plus bas).
+Objectif : la plupart des universités et hautes écoles belges, puis les
+applications iOS et Android, et les comptes (Google, GitHub, email).
+
+Une école peut être codée sans être publiée : elle est enregistrée dans
+`api/_ecoles.py` derrière `EZH_UCL=1` et l'app ne la propose que si
+`/api/config` la liste (`ECOLES_ACTIVES`). Sans la variable, un
+déploiement Vercel n'expose ni l'école, ni sa recherche, ni ses
+horaires. `serve.py` pose la variable pour le développement.
 
 ## Comptes (Supabase Auth, branché)
 
@@ -159,11 +164,12 @@ personnel (`api/ical`), sans que le moindre mot de passe passe par nous, et
 sans PDF (il n'y en a pas pour un lien). La liste des niveaux n'est pas
 téléchargée : le champ de recherche appelle `api/recherche`.
 
-Spécificités UCLouvain : un même « code » désigne un cours
-(`LINFO1101`) ou un programme (`SINF11BA`), et la recherche publique
-(`api/recherche`) répond les deux. Trois entrées, comme pour l'ULB : par
-programme, par codes de cours (« PAR:LINFO1101,LEPL1101 »), ou l'horaire
-personnel via le lien d'abonnement iCal de Mon horaire
+Spécificités UCLouvain (**en test, publiée seulement si `EZH_UCL=1`**) :
+un même « code » désigne un cours (`LINFO1101`) ou un programme
+(`SINF11BA`), et la recherche publique (`api/recherche`) répond les
+deux. Trois entrées, comme pour l'ULB : par programme, par codes de cours
+(« PAR:LINFO1101,LEPL1101 »), ou l'horaire personnel via le lien
+d'abonnement iCal de Mon horaire
 (monhoraire.uclouvain.be → « Exporter » → « Lien d'abonnement », ou le
 lien de partage). Le moteur lit la vue publique de Mon horaire
 (`/calendar/<recherche>`, `/api/events`), sans session ni identifiant ;

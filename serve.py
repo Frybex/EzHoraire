@@ -24,6 +24,11 @@ from urllib.parse import unquote
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "api"))
 
+# Le serveur local montre toutes les écoles, y compris celles en test
+# (UCLouvain) : sur Vercel, sans EZH_UCL, elles restent invisibles.
+# `EZH_UCL=0 python3 serve.py` simule la production.
+os.environ.setdefault("EZH_UCL", "1")
+
 import formations  # noqa: E402
 import horaires  # noqa: E402
 import ical  # noqa: E402

@@ -17,15 +17,21 @@ if ICI not in sys.path:
 
 import _heh  # noqa: E402
 import _umons  # noqa: E402
-import _ucl  # noqa: E402
 import _ulb  # noqa: E402
 
+# L'UCLouvain est développé mais pas encore publié : il n'est exposé
+# (proposé par l'app, accepté par recherche/horaires, listé dans
+# /api/config) que si l'hébergeur pose EZH_UCL=1. serve.py le pose pour le
+# développement ; sur Vercel, sans la variable, rien ne l'expose.
 ECOLES = {
     "heh": _heh,
     "umons": _umons,
-    "ucl": _ucl,
     "ulb": _ulb,
 }
+if os.environ.get("EZH_UCL") == "1":
+    import _ucl  # noqa: E402
+
+    ECOLES["ucl"] = _ucl
 
 
 def requete(h, ordre, erreur):

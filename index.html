@@ -2157,6 +2157,12 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     for (var i = 0; i < ECOLES.length; i++) if (ECOLES[i].id === id) return ECOLES[i];
     return null;
   }
+  /* Écoles réellement publiées : le serveur les liste dans /api/config.
+     Tant qu'il n'a pas répondu, on reste sur les écoles sûres — une école
+     développée mais pas encore ouverte (l'UCLouvain, voir EZH_UCL côté
+     api/) ne doit jamais apparaître par défaut. */
+  var ECOLES_ACTIVES = ["heh", "umons", "ulb"];
+  function ecoleActive(id) { return ECOLES_ACTIVES.indexOf(id) >= 0; }
 
   /* Écoles « recherche » : pas de liste complète à télécharger (l'ULB a
      plus de 2 000 niveaux) — l'app fait une recherche serveur
@@ -2527,6 +2533,11 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     return fetchDelai("api/config", 8000).then(function (r) { return r.json(); }).then(function (rep) {
       var s = (rep && rep.supabase) || {};
       SUPABASE_CONFIG = { URL: s.url || "", CLE_ANON: s.anonKey || "" };
+      // Le serveur dit quelles écoles il expose (UCLouvain en test :
+      // absente tant qu'EZH_UCL n'est pas posé côté hébergeur).
+      if (rep && Array.isArray(rep.ecoles) && rep.ecoles.length) {
+        ECOLES_ACTIVES = rep.ecoles.filter(function (id) { return !!ecoleDe(id); });
+      }
       return !!(SUPABASE_CONFIG.URL && SUPABASE_CONFIG.CLE_ANON);
     }, function () { return false; });
   }
@@ -3720,7 +3731,9 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   }
   function ouvrirEcoles() {
     montrer("ecole");
-    document.getElementById("liste-ecoles").innerHTML = ECOLES.map(function (e) {
+    document.getElementById("liste-ecoles").innerHTML = ECOLES.filter(function (e) {
+      return ecoleActive(e.id);
+    }).map(function (e) {
       // Le sigle/logo est dans le carré : le titre donne le nom complet.
       var parts = String(e.detail).split(" · ");
       var badge = e.logo
