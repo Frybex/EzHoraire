@@ -222,6 +222,15 @@ pip install -r requirements.txt   # une seule fois
 python3 serve.py
 ```
 
+Pour ouvrir l'app depuis un autre appareil du réseau local (téléphone,
+second ordinateur), `--lan` affiche l'adresse à utiliser et accepte ces
+connexions ; sans lui, seul `localhost` répond. `--port` change le port
+quand deux dossiers de travail tournent en même temps :
+
+```bash
+python3 serve.py --lan --port 8912
+```
+
 ## En ligne (Vercel)
 
 Projet `ezhoraire` → https://www.ezhoraire.be (nom en minuscules

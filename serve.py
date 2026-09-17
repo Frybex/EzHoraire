@@ -1,7 +1,14 @@
 """Sert l'app en local, avec la même API qu'en ligne.
 
-Usage :  python3 serve.py
+Usage :  python3 serve.py [--lan] [--port 8902]
 App :    http://localhost:8902 (8901 est pris par Horairelm)
+
+--lan : accepte aussi les autres appareils du réseau local (téléphone,
+        second ordinateur) et affiche l'adresse à ouvrir. Sans lui, seules
+        les connexions de la machine répondent : en production c'est
+        Vercel qui protège, ici c'est ce garde-fou qui tient le rôle.
+--port : change le port (utile quand deux dossiers de travail tournent
+        en même temps).
 
 GET /api/formations?ecole=heh                      formations de l'école
 GET /api/horaires?ecole=heh&formation=..           horaire complet d'une formation
@@ -25,7 +32,7 @@ import recherche  # noqa: E402
 import config  # noqa: E402
 import stats  # noqa: E402
 
-PORT = 8902
+PORT_DEFAUT = 8902
 ROUTES = {"/api/formations": formations.handler,
           "/api/horaires": horaires.handler,
           "/api/recherche": recherche.handler,
@@ -65,12 +72,14 @@ class Serveur(ThreadingHTTPServer):
 
 
 class Handler(SimpleHTTPRequestHandler):
+    LAN = False  # réglé par --lan : accepte les autres appareils du réseau
+
     def _chemin_autorise(self):
-        """Chemin décodé si la requête vient de la machine locale et ne vise
-        pas un fichier caché, sinon None (une erreur a déjà été envoyée)."""
-        # Sécurité : n'accepter que les connexions provenant de la machine locale
+        """Chemin décodé si l'accès est permis et qu'il ne vise pas un
+        fichier caché, sinon None (une erreur a déjà été envoyée)."""
+        # Sécurité : sans --lan, n'accepter que la machine locale.
         ip = self.client_address[0]
-        if ip not in ("127.0.0.1", "::1", "::ffff:127.0.0.1"):
+        if not Handler.LAN and ip not in ("127.0.0.1", "::1", "::ffff:127.0.0.1"):
             self.send_error(403, "Accès interdit : serveur de développement local uniquement")
             return None
 
@@ -124,15 +133,53 @@ def charger_env_local(chemin=".env.local"):
             os.environ.setdefault(cle.strip(), val.strip().strip('"').strip("'"))
 
 
-if __name__ == "__main__":
+def adresse_reseau():
+    """Adresse IPv4 de la machine sur le réseau local, vide si introuvable.
+
+    Un socket UDP « connecté » n'envoie rien : il laisse le système
+    choisir la route, donc la bonne carte (Wi-Fi, Ethernet)."""
+    for cible in (("8.8.8.8", 53), ("1.1.1.1", 53)):
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            s.connect(cible)
+            return s.getsockname()[0]
+        except OSError:
+            continue
+        finally:
+            s.close()
+    try:
+        return socket.gethostbyname(socket.gethostname())
+    except OSError:
+        return ""
+
+
+def main(argv):
+    lan = "--lan" in argv or os.environ.get("EZH_LAN") == "1"
+    port = PORT_DEFAUT
+    if "--port" in argv:
+        try:
+            port = int(argv[argv.index("--port") + 1])
+        except (IndexError, ValueError):
+            sys.exit("--port attend un numéro, ex. --port 8912.")
+    Handler.LAN = lan
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     charger_env_local()
     try:
-        srv = Serveur(("::", PORT), Handler)
+        srv = Serveur(("::", port), Handler)
     except OSError:
-        sys.exit(f"Le port {PORT} est déjà utilisé : un autre serve.py tourne sans doute encore "
-                 f"(voir `lsof -i :{PORT}`).")
+        sys.exit(f"Le port {port} est déjà utilisé : un autre serve.py tourne sans doute "
+                 f"encore (voir `lsof -i :{port}`) — `--port 8912` en prend un autre.")
     with srv:
-        print(f"EzHoraire : http://localhost:{PORT}")
-        print("Ctrl+C pour arrêter.")
+        print(f"EzHoraire : http://localhost:{port}", flush=True)
+        if lan:
+            ip = adresse_reseau()
+            if ip:
+                print(f"Réseau local : http://{ip}:{port}", flush=True)
+            print("Mode réseau local : tout appareil du réseau peut lire l'app "
+                  "(pas d'authentification côté serveur).", flush=True)
+        print("Ctrl+C pour arrêter.", flush=True)
         srv.serve_forever()
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
