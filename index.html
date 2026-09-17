@@ -292,7 +292,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   #ulb-cours { margin: 2px 0 12px; }
   /* Import d'une liste de cours : bloc replié, dans le creux des autres. */
   #ulb-import {
-    margin: 0 0 14px; padding: 0 14px; border-radius: 14px;
+    margin: 0 0 14px; padding: 0 14px 18px; border-radius: 14px;
     background: var(--creux); box-shadow: inset 0 0 0 1px var(--line);
   }
   #ulb-import > summary {
@@ -311,12 +311,17 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     font-size: .9rem; line-height: 1.45; color: var(--ink); background: var(--surface);
     box-shadow: inset 0 0 0 1px var(--line);
   }
-  #ulb-import #ulb-import-voir { margin: 12px 0 14px; }
+  #ulb-import #ulb-import-voir { margin: 12px 0 0; } /* l'air du bas est porté par le bloc */
   #ulb-import textarea::-webkit-scrollbar { width: 8px; }
   #ulb-import textarea::-webkit-scrollbar-track { background: transparent; }
   #ulb-import textarea::-webkit-scrollbar-thumb {
     background: color-mix(in srgb, var(--muted) 40%, transparent); border-radius: 999px;
   }
+  #ulb-import.depot-sur {
+    background: color-mix(in srgb, var(--accent) 7%, var(--creux));
+    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 55%, transparent);
+  }
+  #ulb-import.depot-sur .capture-bouton { color: var(--accent); }
   #ulb-import .capture { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 10px; }
   #ulb-import .capture-bouton {
     display: inline-flex; align-items: center; gap: 8px;
@@ -2017,17 +2022,12 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     <div id="ulb-cours" hidden>
       <details id="ulb-import">
         <summary>Importer une liste de cours</summary>
-        <p class="aide">Donne ta liste : une capture d'écran (lue sur ton appareil, rien n'est
-          envoyé) ou son texte collé. Chaque code est vérifié dans le catalogue ULB de l'année ;
-          les codes abîmés sont tranchés par un modèle, et tu valides la liste avant de créer
-          l'horaire.</p>
         <div class="capture">
           <label class="capture-bouton halo" for="ulb-capture-fichier">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="3"/><circle cx="12" cy="13" r="3.4"/><path d="M8.5 6 10 3.5h4L15.5 6"/></svg>
             Choisir une capture
           </label>
           <input type="file" id="ulb-capture-fichier" accept="image/*" hidden>
-          <span class="capture-aide">ou colle une image (⌘V / Ctrl+V)</span>
         </div>
         <textarea id="ulb-import-texte" rows="4" spellcheck="false"
                   placeholder="COMMB300, Droit de l'information et de la communication&#10;LANGB305, Anglais III"></textarea>
@@ -4042,7 +4042,12 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   }
   function ulbLireCapture(fichier) {
     var statut = document.getElementById("ulb-import-status");
-    if (!fichier || !/^image\//.test(fichier.type || "")) return;
+    var image = fichier && (/^image\//.test(fichier.type || "") ||
+      /\.(png|jpe?g|webp|gif|bmp|heic|heif)$/i.test(fichier.name || ""));
+    if (!image) {
+      erreur(statut, "Ce fichier n'est pas une image.");
+      return;
+    }
     attente(statut, "Ouverture de la capture…");
     ulbChargerOCR().then(function (T) {
       return T.recognize(fichier, "fra", {
@@ -4073,6 +4078,36 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     setTimeout(ulbAjusterChamp, 0);
   });
   window.addEventListener("resize", ulbAjusterChamp);
+  (function () {
+    // Glisser-déposer une capture sur le bloc (enfants compris) : compteur
+    // pour ne pas clignoter quand la souris passe d'un élément à un autre.
+    var bloc = document.getElementById("ulb-import");
+    var dessus = 0;
+    function entre(e) {
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+      dessus++;
+      bloc.classList.add("depot-sur");
+    }
+    bloc.addEventListener("dragenter", entre);
+    bloc.addEventListener("dragover", entre);
+    bloc.addEventListener("dragleave", function () {
+      dessus = Math.max(0, dessus - 1);
+      if (!dessus) bloc.classList.remove("depot-sur");
+    });
+    bloc.addEventListener("drop", function (e) {
+      e.preventDefault();
+      dessus = 0;
+      bloc.classList.remove("depot-sur");
+      var fichiers = (e.dataTransfer && e.dataTransfer.files) || [];
+      if (!fichiers.length) {
+        erreur(document.getElementById("ulb-import-status"), "Aucune image dans ce dépôt.");
+        return;
+      }
+      if (!bloc.open) bloc.open = true;
+      ulbLireCapture(fichiers[0]);
+    });
+  })();
   document.getElementById("ulb-capture-fichier").addEventListener("change", function () {
     if (this.files && this.files[0]) ulbLireCapture(this.files[0]);
     this.value = "";
