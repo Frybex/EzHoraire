@@ -10,7 +10,7 @@ fait une requête réseau à partir d'une adresse fournie par l'utilisateur.
 """
 import re
 from datetime import datetime, timedelta, timezone
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunparse
 
 import requests
 
@@ -37,8 +37,12 @@ def _fuseau():
 
 
 def url_autorisee(lien):
-    """https:// (ou webcal://) sur un hôte TimeEdit uniquement."""
-    lien = str(lien or "").strip().strip('"').strip("'").replace("&amp;", "&")
+    """https:// (ou webcal://) sur un hôte TimeEdit, terminé par « .ics ».
+
+    Le copier-coller ajoute parfois des espaces ou perd le « s » final
+    (le serveur répond alors 404) : on recoud la bonne adresse plutôt que
+    d'échouer sur une virgule de trop."""
+    lien = "".join(str(lien or "").split()).strip('"').strip("'").replace("&amp;", "&")
     if lien.startswith("webcal://"):
         lien = "https://" + lien[len("webcal://"):]
     if lien.startswith("webcals://"):
@@ -48,7 +52,11 @@ def url_autorisee(lien):
     if u.scheme != "https" or not any(hote.endswith(h) for h in HOTES):
         raise ValueError("Ce lien n'est pas un lien d'abonnement TimeEdit (ULB). "
                          "Copie-le depuis « S'abonner » dans Mon horaire.")
-    return lien
+    chemin = u.path
+    if not chemin.lower().endswith(".ics"):
+        chemin = chemin + "s" if chemin.lower().endswith(".ic") else chemin + ".ics"
+        u = u._replace(path=chemin)
+    return urlunparse(u)
 
 
 def _deplier(texte):
@@ -172,8 +180,9 @@ def horaire_ical(lien, budget=30):
 
     cours_bruts = [e for e in evenements if e["debut"][1]]
     if not cours_bruts:
-        raise ValueError("Ce calendrier ne contient aucun cours (choisis « toute la durée affichée » "
-                         "au moment de t'abonner).")
+        raise ValueError("Le lien répond, mais son calendrier est vide. Ouvre-le dans une "
+                         "fenêtre privée : s'il est vide là aussi, régénère-le connecté "
+                         "(Mon horaire → « S'abonner » → toute la durée affichée).")
     lundi0 = min(e["debut"][0] for e in cours_bruts) - timedelta(
         days=min(e["debut"][0] for e in cours_bruts).weekday())
 

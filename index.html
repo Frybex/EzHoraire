@@ -3831,7 +3831,9 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   function ulbVerifierLien() {
     var statut = document.getElementById("ulb-lien-status");
     var btn = document.getElementById("ulb-lien-voir");
-    var lien = document.getElementById("ulb-lien-champ").value.trim();
+    // Le copier-coller ajoute parfois des espaces ou coupe un caractère :
+    // on colle le lien recollé (sans espaces) tel quel.
+    var lien = document.getElementById("ulb-lien-champ").value.replace(/\s+/g, "");
     if (!lien) { erreur(statut, "Colle d'abord le lien d'abonnement (« S'abonner » dans Mon horaire)."); return; }
     btn.disabled = true;
     attente(statut, "Lecture de ton calendrier…");
