@@ -510,6 +510,14 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   #reg-compte { position: relative; }
   #menu-compte { right: 0; }
 
+  /* Mode essai (?essai=1, origines locales) : un repère discret en haut. */
+  #essai-badge {
+    position: fixed; top: max(8px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%);
+    z-index: 50; margin: 0; padding: 4px 12px; border-radius: 999px;
+    font-size: .72rem; font-weight: 600; color: var(--muted);
+    background: var(--surface); box-shadow: inset 0 0 0 1px var(--line), var(--ombre-btn);
+    pointer-events: none; white-space: nowrap;
+  }
   /* Connexion (écran d'entrée). Téléphone : titre, aperçu d'une semaine
      (qui s'efface vers le bas), puis Google / GitHub côte à côte et
      l'email. Ordinateur : formulaire à gauche, aperçu en grand à droite.
@@ -2518,6 +2526,11 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     if (el) { el.hidden = true; effacer(el); }
   }
   var EN_LOCAL = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+  // Mode essai (?essai=1) : uniquement depuis une origine locale (cette
+  // machine ou le réseau privé), jamais depuis le site en ligne. Aucun
+  // compte, aucun cloud : tout reste dans ce navigateur.
+  var MODE_ESSAI = /[?&]essai=1(?:&|$)/.test(location.search) &&
+    /^(localhost|127\.0\.0\.1|\[::1\]|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(location.hostname);
   /* Erreurs Supabase Auth → phrase claire (le code est stable, le texte non). */
   function codeAuth(err) {
     if (!err) return "";
@@ -5888,13 +5901,32 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
      arrive avec sa session), on tire les horaires du
      compte, puis on route : pas de compte -> connexion, compte sans nom ->
      identité, sinon dernier horaire revu (connecté par défaut). */
-  chargerConfigSupabase().then(function () { return initSupabase(); }).then(function () {
-    if (sessionSupabase && sessionSupabase.user) {
+  chargerConfigSupabase().then(function () {
+    return MODE_ESSAI ? null : initSupabase();
+  }).then(function () {
+    if (!MODE_ESSAI && sessionSupabase && sessionSupabase.user) {
       return pullProfils().then(function () { return null; }, function () { return null; });
     }
     return null;
   }).then(function () {
     demarrageFini = true;
+    if (MODE_ESSAI) {
+      // Pas de connexion : un compte local de circonstance, pas de synchro.
+      if (!compte || compte.fournisseur !== "essai") {
+        compte = { fournisseur: "essai", nom: "Essai", prenom: "Local" };
+        sauverCompte();
+      }
+      sessionSupabase = null;
+      document.body.setAttribute("data-essai", "1");
+      var badge = document.createElement("p");
+      badge.id = "essai-badge";
+      badge.textContent = "Mode essai — aucun compte, tout reste ici";
+      document.body.appendChild(badge);
+      rendreAvatar();
+      if (profil) demarrerHoraire();
+      else ouvrirEcoles();
+      return;
+    }
     // Retour du lien « mot de passe oublié » : nouveau mot de passe d'abord.
     if (recuperationEnCours) {
       ouvrirResetMdp();
