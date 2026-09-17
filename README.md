@@ -152,6 +152,11 @@ au maximum : un changement de salle apparaît au plus tard après ça).
   des niveaux d'études ou des unités d'enseignement (ULB).
 - `GET /api/ical?lien=<url>` : horaire d'un lien d'abonnement TimeEdit
   (« S'abonner » dans Mon horaire), au même format que api/horaires.
+- `POST /api/importer` (corps `{"ecole": "ulb", "liste": "<texte collé>"}`) :
+  une liste de cours copiée (ou lue sur une capture) → les codes du
+  catalogue. En POST parce que c'est le programme de cours d'une personne :
+  dans une adresse, il finirait dans les journaux de l'hébergeur, dans
+  l'historique du navigateur et dans le `Referer`.
 - `GET /api/pdf?ecole=heh&formation=..&groupe=..&semaine=..` : PDF officiel.
 
 Selon la formation, l'école a un groupe par classe (BA2P Informatique),

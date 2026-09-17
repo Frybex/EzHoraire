@@ -3616,11 +3616,20 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   }
   function effacer(el) { el.textContent = ""; el.style.display = "none"; }
 
-  /* Requêtes vers l'API, avec délai maximum et message lisible. */
-  function fetchDelai(url, ms) {
+  /* Requêtes vers l'API, avec délai maximum et message lisible.
+     `corps` (facultatif) = objet envoyé en POST, au format JSON : ce qui
+     ne doit pas voyager dans une adresse (journaux de l'hébergeur,
+     historique, Referer) passe par là. */
+  function fetchDelai(url, ms, corps) {
     var ctrl = new AbortController();
     var timer = setTimeout(function () { ctrl.abort(); }, ms);
-    return fetch(url, { cache: "no-store", signal: ctrl.signal })
+    var options = { cache: "no-store", signal: ctrl.signal };
+    if (corps !== undefined) {
+      options.method = "POST";
+      options.headers = { "Content-Type": "application/json" };
+      options.body = JSON.stringify(corps);
+    }
+    return fetch(url, options)
       .then(function (r) { clearTimeout(timer); return r; }, function (e) {
         clearTimeout(timer);
         throw new Error(e && e.name === "AbortError"
@@ -3628,8 +3637,8 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
           : "pas de connexion à internet ?");
       });
   }
-  function api(url, ms) {
-    return fetchDelai(url, ms).then(function (r) {
+  function api(url, ms, corps) {
+    return fetchDelai(url, ms, corps).then(function (r) {
       return r.json().catch(function () {
         throw new Error("réponse illisible du serveur (" + r.status + ").");
       });
@@ -4314,8 +4323,9 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     }
     btn.disabled = true;
     attente(statut, "Vérification des cours…");
-    api("api/importer?ecole=" + encodeURIComponent(choix.ecole) +
-        "&liste=" + encodeURIComponent(texte), 60000)
+    // En POST : la liste de cours d'un étudiant n'a rien à faire dans une
+    // adresse (journaux, historique, Referer).
+    api("api/importer", 60000, { ecole: choix.ecole, liste: texte })
       .then(function (rep) {
         btn.disabled = false;
         var d = rep.data || {};

@@ -14,7 +14,7 @@ GET /api/formations?ecole=heh                      formations de l'école
 GET /api/horaires?ecole=heh&formation=..           horaire complet d'une formation
 GET /api/recherche?ecole=ulb&genre=niveau&q=..     recherche en direct (ULB, UCLouvain)
 GET /api/ical?lien=..                              horaire d'un lien d'abonnement
-GET /api/importer?ecole=ulb&liste=..               liste de cours collée -> cours
+POST /api/importer  {"ecole":"ulb","liste":"…"}     liste de cours collée -> cours
 GET /api/pdf?ecole=heh&formation=..&groupe=..&semaine=..   PDF officiel
 """
 import os
@@ -111,6 +111,18 @@ class Handler(SimpleHTTPRequestHandler):
             route.do_GET(self)
         else:
             super().do_GET()
+
+    def do_POST(self):
+        # Seuls les points d'entrée de l'API acceptent POST ; le reste du
+        # serveur local ne sert que des fichiers.
+        chemin = self._chemin_autorise()
+        if chemin is None:
+            return
+        route = ROUTES.get(chemin)
+        if route and hasattr(route, "do_POST"):
+            route.do_POST(self)
+        else:
+            self.send_error(405, "Méthode non autorisée")
 
     def do_HEAD(self):
         # Même garde que GET : do_HEAD hérité la contournerait entièrement.

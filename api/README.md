@@ -10,7 +10,7 @@ api/
 ├── horaires.py     GET /api/horaires?ecole=…&formation=…  horaire complet
 ├── recherche.py    GET /api/recherche?ecole=…&genre=…&q=… recherche en direct
 ├── ical.py         GET /api/ical?lien=…                   horaire d'un lien perso
-├── importer.py     GET /api/importer?ecole=…&liste=…      liste collée → cours
+├── importer.py     POST /api/importer (corps JSON)        liste collée → cours
 ├── pdf.py          GET /api/pdf?ecole=…&semaine=…         PDF officiel
 ├── config.py       GET /api/config                        clés publiques + écoles exposées
 ├── stats.py        GET /api/stats                         dashboard admin (réservé)
