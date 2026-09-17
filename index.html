@@ -250,17 +250,33 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--ink) 42%, transparent), inset 0 1px 0 var(--reflet);
   }
   .modes button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  /* Cours choisis : code en tête, intitulé en dessous, une seule ligne
+     (les intitulés ULB sont longs : on coupe proprement au lieu d'empiler). */
+  #ulb-cours-chips .chip { max-width: 100%; }
+  #ulb-cours-chips .chip-textes { max-width: 100%; }
+  #ulb-cours-chips .chip-textes > span,
+  #ulb-cours-chips .chip-textes small {
+    max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  #ulb-cours-chips .chip-textes small { font-size: .74rem; font-weight: 450; opacity: .75; }
+  /* Retrait à confirmer : même relief que les autres pastilles, teinté
+     danger (comme la confirmation de l'app), pas d'aplat rouge. */
   .chip.chip-suppr {
-    color: #fff;
-    background: linear-gradient(180deg, #e05a4f, #c33f3f);
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .28), var(--ombre-btn);
+    color: var(--danger);
+    background: linear-gradient(180deg,
+      color-mix(in srgb, var(--danger) 7%, var(--relief-haut)),
+      color-mix(in srgb, var(--danger) 13%, var(--relief-bas)));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 40%, transparent),
+                inset 0 1px 0 var(--reflet), var(--ombre-btn);
   }
   .chip.chip-suppr .coche {
-    background: #fff; box-shadow: none; display: grid; place-items: center;
+    display: grid; place-items: center;
+    background: color-mix(in srgb, var(--danger) 13%, transparent);
+    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--danger) 55%, transparent);
   }
   .chip.chip-suppr .coche::after {
     content: "\2715"; position: static; border: none; transform: none;
-    font-size: .68rem; font-weight: 800; line-height: 1; color: #c33f3f;
+    font-size: .6rem; font-weight: 800; line-height: 1; color: var(--danger);
   }
   #ulb-cours { margin: 2px 0 12px; }
   #ulb-cours .chips { margin: 6px 0 8px; }
@@ -3847,9 +3863,12 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   function ulbRendreCours() {
     document.getElementById("ulb-cours-chips").innerHTML = ulb.cours.map(function (cle) {
       var arme = ulb.arme === cle;
+      var parties = String(cle).split(" · ");
+      var code = parties[0] || cle, titre = parties.slice(1).join(" · ");
       return '<button type="button" class="chip' + (arme ? " chip-suppr" : "") + '" data-cours="' + txt(cle) +
-        '" aria-pressed="true">' +
-        '<span class="coche" aria-hidden="true"></span>' + txt(joliFormation(cle)) + "</button>";
+        '" aria-pressed="true"><span class="coche" aria-hidden="true"></span>' +
+        '<span class="chip-textes"><span>' + txt(code) + "</span>" +
+        (titre ? "<small>" + txt(titre) + "</small>" : "") + "</span></button>";
     }).join("");
     var btn = document.getElementById("ulb-cours-voir");
     btn.textContent = ulb.cours.length
@@ -3860,7 +3879,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     var avis = document.getElementById("ulb-cours-avis");
     avis.hidden = ulb.arme == null;
     avis.textContent = ulb.arme == null ? ""
-      : "Touche encore le cours rouge pour confirmer qu’il quitte ta sélection.";
+      : "Un appui de plus retire ce cours de ta sélection.";
   }
   function ulbVoirCours() {
     if (!ulb.cours.length) return;
