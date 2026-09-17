@@ -28,6 +28,11 @@ encore d'ULBID ») et **UCLouvain** (Mon horaire, en test — voir plus bas).
 Objectif : la plupart des universités et hautes écoles belges, puis les
 applications iOS et Android, et les comptes (Google, GitHub, email).
 
+L'UMONS et l'ULB, branchées récemment, portent une étiquette **Bêta** sur
+l'écran des écoles (`beta: true` dans `ECOLES`, `index.html`) : elles
+n'ont pas encore vu une année entière. À retirer quand elles auront tenu
+une rentrée.
+
 Une école peut être codée sans être publiée : elle est enregistrée dans
 `api/_ecoles/__init__.py` derrière `EZH_UCL=1` et l'app ne la propose que si
 `/api/config` la liste (`ECOLES_ACTIVES`). Sans la variable, un
@@ -197,14 +202,35 @@ marqué commun à la formation. Les séances « événement » sans intitulé
 langues`). Avec plusieurs groupes, la visionneuse PDF propose de choisir
 le groupe (ou toute la formation).
 
-Protection de l'école : le cache partagé (15 min horaires, 30 min PDF)
-absorbe l'usage normal, une limite par IP en mémoire (`_ecoles.debit` :
-60 formations, 12 horaires, 12 PDF / min) et un fuse (120 sessions
-école / min / instance) coupent les rafales anormales. Ces compteurs sont
-propres à chaque instance serverless. À la
-rentrée, si l'école se plaint ou si le dashboard montre des rafales,
-activer aussi une limite de débit sur `/api/*` dans Vercel → Firewall →
-Rate Limiting.
+Protection de l'école, en quatre couches :
+
+1. **Le cache partagé de l'hébergeur** (`s-maxage` : 15 min pour un
+   horaire, 30 min pour un PDF, 1 h pour une recherche) absorbe l'usage
+   normal — tous les étudiants d'une même formation ne comptent que pour
+   une visite chez l'école.
+2. **Le cache d'instance** (`_memo`) rattrape ce qui passe à côté :
+   horaire 15 min, listes / recherches / résolution d'une formation 1 h.
+   Une recherche refaite à chaque frappe corrigée ne coûte qu'une fois, et
+   ouvrir six semaines de PDF ne relance pas six fois la même résolution.
+3. **La limite par IP et par point d'entrée** (`_ecoles.debit`, par
+   minute) : 60 formations, 40 recherches, 12 horaires, 12 PDF, 12 iCal,
+   6 imports. Un import cherche jusqu'à 25 fois chez l'école, d'où sa
+   limite plus basse.
+4. **Le fusible par instance** : 120 sessions / min chez Hyperplanning
+   (HEH, UMONS), 400 appels / min chez TimeEdit (ULB), 300 chez
+   l'UCLouvain. Au-delà, l'app répond « réessaie dans une minute » au lieu
+   d'insister.
+
+Les couches 2 à 4 sont propres à chaque instance serverless : c'est la
+couche 1 qui fait le gros du travail. À la rentrée, si l'école se plaint
+ou si le dashboard montre des rafales, activer aussi une limite de débit
+sur `/api/*` dans Vercel → Firewall → Rate Limiting.
+
+Toute demande est vérifiée **avant** d'appeler l'école quand c'est
+possible : nom de formation inconnu, groupe qui n'existe pas, semaine
+au-delà de ce que l'école publie, paramètre d'URL en trop ou en double
+(qui contournerait le cache partagé) — tout ça se refuse sur ce qui est
+déjà en mémoire.
 
 Les libs chargées depuis les CDN (`supabase-js` 2.116.0, `pdf.js`
 3.11.174) sont épinglées et protégées par `integrity` ; la CSP de
