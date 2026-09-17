@@ -1593,8 +1593,16 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
        centré verticalement : elle se retrouve à mi-chemin entre le titre
        et la rangée prof/heures. Sans espace libre, elle reste collée
        sous le titre comme avant. */
-    .ev .es { font-size: .78rem; font-weight: 600; opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      flex-grow: 1; display: grid; align-content: center; }
+    .ev .es {
+      font-size: .78rem; font-weight: 600; opacity: .85; line-height: 1.25;
+      /* Salles longues : deux lignes au lieu d'une coupure sèche. On borne
+         la hauteur à deux lignes et on laisse la grille centrer le texte
+         dans l'espace libre (pas de -webkit-box, qui casserait le
+         centrage vertical). */
+      white-space: normal; overflow-wrap: anywhere;
+      max-height: 2.5em; overflow: hidden;
+      flex-grow: 1; display: grid; align-content: center;
+    }
     .ev .ep { font-size: .74rem; opacity: .68; }
     .ev .eh { font-size: .72rem; font-weight: 500; opacity: .55; font-variant-numeric: tabular-nums; }
     /* Bas de case : prof à gauche, horaires calés en bas à droite sur la
