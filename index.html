@@ -528,9 +528,9 @@
   .ap-jour.today strong { background: var(--accent); color: var(--sur-accent); }
   .ap-corps { height: 330px; }
   .ap-col {
-    --h: 10; position: relative; border-radius: 10px;
-    background-image: linear-gradient(to bottom, var(--line) 1px, transparent 1px);
-    background-size: 100% calc(100% / var(--h));
+    position: relative; border-radius: 10px;
+    /* Comme la vraie grille : seule la ligne de 13h (pause de midi). */
+    background: linear-gradient(var(--line), var(--line)) 0 50% / 100% 1px no-repeat;
   }
   .ap-col.today { background-color: color-mix(in srgb, var(--accent) 6%, transparent); }
   .ap-ev {
@@ -663,6 +663,7 @@
   }
   .dsum.busy { color: var(--ink); font-weight: 600; }
   .dsum.free { color: var(--free); font-weight: 550; }
+  .dsum.ferie { color: var(--accent); font-weight: 650; }
   .chev {
     flex: none; width: 9px; height: 9px; margin: 0 4px 0 2px;
     border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted);
@@ -1168,17 +1169,24 @@
       font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .cal-jour small.libre { color: var(--free); }
+    .cal-jour small.ferie { color: var(--accent); font-weight: 600; }
     .cal-corps { flex: 1; min-height: 0; }
     .cal-heures { position: relative; }
     .cal-heures span {
       position: absolute; right: 12px; transform: translateY(-50%);
       color: var(--muted); font-size: .72rem; font-variant-numeric: tabular-nums;
     }
-    /* Colonne du jour : fond gravé, lignes d'heures discrètes. */
     .cal-col {
       position: relative; border-radius: 12px;
-      background-image: linear-gradient(to bottom, var(--line) 1px, transparent 1px);
-      background-size: 100% calc(100% / var(--h));
+    }
+    /* Pause de midi : un trait à 13h (--pause vient de rendreCal) qui
+       déborde de 4px de chaque côté, pour se raccorder au jour voisin à
+       travers l'espace entre colonnes, y compris sous les rayures d'un
+       jour sans cours. z-index -1 : sous les cours,
+       mais peint après la carte d'aujourd'hui, donc par-dessus elle. */
+    .cal-col::after {
+      content: ""; position: absolute; z-index: -1; pointer-events: none;
+      left: -4px; right: -4px; top: var(--pause, 50%); height: 1px; background: var(--line);
     }
     /* Aujourd'hui : une carte surélevée qui englobe l'en-tête et la colonne,
        et déborde légèrement du cadre en haut et en bas. La semaine reste
@@ -1187,6 +1195,13 @@
        Géométrie : 72px = marge haute de .cal (16) + date (34) + écart
        sous l'en-tête (14) + débord (8) ; 26px = marge basse (18) + débord. */
     .cal { isolation: isolate; }
+    /* Sur la carte d'aujourd'hui, la ligne de 13h s'arrête avant les
+       bords (petit espace de chaque côté, comme les lignes sur mobile) :
+       elle ne touche plus le contour de la carte. */
+    .cal-col.today::after {
+      background: color-mix(in srgb, var(--accent) 22%, var(--line));
+      left: 3px; right: 3px;
+    }
     .cal-col.today::before {
       content: ""; position: absolute; z-index: -1;
       top: -72px; bottom: -26px; left: -4px; right: -4px; border-radius: 18px;
@@ -1197,10 +1212,37 @@
         0 18px 40px -18px rgba(15, 20, 40, .35),
         0 2px 6px -2px rgba(15, 20, 40, .1);
     }
+    /* Jour sans cours : colonne rayée (code habituel des agendas pour
+       « rien ici »), sans carte ni bord pour ne pas passer pour un cours.
+       Férié : rayures et texte à la couleur du thème ; simple jour
+       libre : « Pas de cours » en gris neutre. */
     .cal-libre {
-      position: absolute; inset: 0; display: grid; place-items: center;
-      color: var(--muted); font-size: .88rem; font-weight: 500;
+      --rayure: color-mix(in srgb, var(--muted) 13%, transparent);
+      position: absolute; inset: 0; border-radius: 12px; overflow: hidden;
+      display: grid; place-items: center;
+      color: var(--muted); text-align: center;
     }
+    /* Rayures : une diagonale par tuile (≈ 23px entre deux traits), calée
+       sur la ligne de 13h. Le calque démarre 1616px (50,5 tuiles) au-dessus
+       de la ligne : elle tombe au milieu d'une tuile, jamais sur la pointe
+       d'une rayure au bord de la colonne. En largeur, « round » ajuste la
+       tuile pour un nombre entier de tuiles : même garantie à droite.
+       « to top right » garde la diagonale d'un coin à l'autre même si la
+       tuile n'est plus carrée. */
+    .cal-libre::before {
+      content: ""; position: absolute; left: 0; right: 0;
+      top: calc(var(--pause, 50%) - 1616px); height: 3232px; pointer-events: none;
+      background: linear-gradient(to top right, transparent calc(50% - .6px), var(--rayure) calc(50% - .6px),
+                                  var(--rayure) calc(50% + .6px), transparent calc(50% + .6px))
+                  0 0 / 32px 32px round repeat;
+    }
+    .cal-libre p {
+      position: relative; margin: 0; padding: 8px 16px; border-radius: 14px; background: var(--relief-haut);
+    }
+    .today .cal-libre p { background: var(--surface); }
+    .cal-libre strong { font-size: 1.05rem; font-weight: 650; letter-spacing: -.01em; }
+    .cal-libre.ferie { --rayure: color-mix(in srgb, var(--accent) 18%, transparent); }
+    .cal-libre.ferie strong { color: var(--accent); }
     /* Cours : fond mat teinté (une couleur par
        intitulé, jamais deux intitulés avec la même — voir preparerCouleurs). */
     .ev {
@@ -1216,7 +1258,7 @@
       isolation: isolate; /* le fond reste un calque derrière, jamais devant le texte */
     }
     /* Le texte peint toujours au-dessus du bloc coloré. */
-    .ev > span { position: relative; z-index: 1; }
+    .ev span { position: relative; z-index: 1; }
     .ev:hover, .ev.actif {
       z-index: 2; transform: translateY(-1px);
       box-shadow: 0 12px 26px -14px rgba(15, 20, 40, .5);
@@ -1230,15 +1272,28 @@
       font-size: .82rem; font-weight: 650; line-height: 1.25; letter-spacing: -.005em;
       display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden;
     }
-    /* Hiérarchie de lecture : titre > salle > prof > horaires.
+    /* Hiérarchie de lecture : titre > salle > bas de case (prof + horaires).
        Les formats s'identifient seuls (code de salle, nom, heures en « h ») :
        pas de libellés répétés sur chaque case, seule la typo distingue
-       les niveaux. L'ordre du HTML donne aussi l'ordre de rognage :
-       quand une petite case déborde, les horaires sautent en premier. */
-    .ev .eh, .ev .ep, .ev .es { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .ev .es { font-size: .78rem; font-weight: 600; opacity: .85; }
+       les niveaux. Le bas de case est poussé en bas (margin-top: auto) :
+       quand une petite case déborde, c'est lui qui saute en premier.
+       La salle absorbe l'espace libre restant (flex-grow) avec son texte
+       centré verticalement : elle se retrouve à mi-chemin entre le titre
+       et la rangée prof/heures. Sans espace libre, elle reste collée
+       sous le titre comme avant. */
+    .ev .es { font-size: .78rem; font-weight: 600; opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      flex-grow: 1; display: grid; align-content: center; }
     .ev .ep { font-size: .74rem; opacity: .68; }
     .ev .eh { font-size: .72rem; font-weight: 500; opacity: .55; font-variant-numeric: tabular-nums; }
+    /* Bas de case : prof à gauche, horaires calés en bas à droite sur la
+       même ligne. Ça rend une ligne au titre, qui n'est plus coupé quand
+       la colonne est étroite. Sans prof, les horaires restent à droite. */
+    .ev .eb { display: flex; align-items: baseline; gap: 8px; margin-top: auto; }
+    .ev .eb .ep { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ev .eb .eh { flex: none; margin-left: auto; white-space: nowrap; }
+    /* Case courte (< 75 min) : la rangée redevient transparente pour
+       garder la ligne titre + salle + prof d'avant. */
+    .ev.court .eb { display: contents; }
     .ev.court { flex-direction: row; align-items: baseline; gap: 8px; padding-top: 4px; }
     .ev.court .et { -webkit-line-clamp: 1; flex: 1; min-width: 0; }
     .ev.court .es { flex: none; max-width: 36%; min-width: 0; font-size: .74rem; }
@@ -1248,6 +1303,19 @@
        les horaires plutôt qu'un titre seul. */
     .ev.court .eh { display: none; }
     .ev.court:not(:has(.es)):not(:has(.ep)) .eh { display: block; flex: none; }
+    /* Colonne étroite (fenêtre ~1024px, semaine de 6 jours…) : la hauteur
+       des cases ne change pas, donc on resserre le texte plutôt que de le
+       couper — piloté par la largeur réelle de la colonne. En compact,
+       titre 3 lignes + salle + prof/heures tiennent dans une case de 2h. */
+    .cal-col { container-type: inline-size; }
+    @container (max-width: 175px) {
+      .ev { padding: 4px 8px; gap: 1px; }
+      .ev .et { font-size: .78rem; line-height: 1.2; }
+      .ev .es { font-size: .7rem; }
+      .ev .eb { gap: 6px; }
+      .ev .eb .ep { font-size: .7rem; }
+      .ev .eb .eh { font-size: .68rem; }
+    }
 
     /* Détail d'un cours, en bulle flottante */
     #pop {
@@ -3363,7 +3431,7 @@
       var resume = liste.length
         ? '<span class="dsum busy">' + fmtH(liste[0].debut) + " → " +
           fmtH(liste.reduce(function (m, c) { return c.fin > m ? c.fin : m; }, liste[0].fin)) + "</span>"
-        : '<span class="dsum free">' + (estFerie(sem, j) ? "Férié" : "Libre") + "</span>";
+        : (estFerie(sem, j) ? '<span class="dsum free ferie">Férié</span>' : '<span class="dsum free">Libre</span>');
       html += '<li class="day' + (estAuj ? " today" : "") + (joursOuverts[j] ? " open" : "") + '">' +
         '<button data-jour="' + j + '" aria-expanded="' + (!!joursOuverts[j]) + '">' +
         '<span class="dot" aria-hidden="true"></span>' +
@@ -3457,12 +3525,14 @@
       var resume = d.cours.length
         ? "<small>" + fmtH(d.cours[0].debut) + " – " +
           fmtH(d.cours.reduce(function (m, c) { return c.fin > m ? c.fin : m; }, d.cours[0].fin)) + "</small>"
-        : '<small class="libre">' + (estFerie(sem, d.j) ? "Férié" : "Libre") + "</small>";
+        : (estFerie(sem, d.j) ? '<small class="libre ferie">Férié</small>' : '<small class="libre">Libre</small>');
       tete += '<div class="cal-jour' + (estAuj ? " today" : "") + '" title="' + JOURS[d.j] + " " + fmtDate(date) + '">' +
               "<span>" + JOURS[d.j].slice(0, 3) + "</span><strong>" + date.getDate() + "</strong>" + resume + "</div>";
       corps += '<div class="cal-col' + (estAuj ? " today" : "") + '">';
       if (!d.cours.length) {
-        corps += '<div class="cal-libre">' + (estFerie(sem, d.j) ? "Férié" : "Pas de cours") + "</div>";
+        corps += estFerie(sem, d.j)
+          ? '<div class="cal-libre ferie"><p><strong>Férié</strong></p></div>'
+          : '<div class="cal-libre"><p><strong>Pas de cours</strong></p></div>';
       }
       couloirs(d.cours).forEach(function (x) {
         var c = x.c, a = mins(c.debut), b = mins(c.fin);
@@ -3472,8 +3542,9 @@
           ";--l:" + (x.k / x.n) + ";--w:" + (1 / x.n) + '">' +
           '<span class="et">' + txt(c.matiere || "Cours") + "</span>" +
           (c.salles ? '<span class="es">' + txt(c.salles) + "</span>" : "") +
+          '<span class="eb">' +
           (c.profs ? '<span class="ep">' + txt(c.profs) + "</span>" : "") +
-          '<span class="eh">' + fmtH(c.debut) + " – " + fmtH(c.fin) + "</span>" + "</button>";
+          '<span class="eh">' + fmtH(c.debut) + " – " + fmtH(c.fin) + "</span></span></button>";
       });
       corps += "</div>";
     });
@@ -3482,7 +3553,7 @@
     cal.style.setProperty("--cols", jours.map(function (d) {
       return memeJour(dateSemJour(sem, d.j), auj) ? "minmax(0, 1.12fr)" : "minmax(0, 1fr)";
     }).join(" "));
-    cal.style.setProperty("--h", duree / 60);
+    cal.style.setProperty("--pause", pc(13 * 60) + "%");
     cal.innerHTML = '<div class="cal-tete">' + tete + '</div><div class="cal-corps">' + corps + "</div>";
   }
 
