@@ -383,6 +383,10 @@ class ClientTimeEdit:
                 # (Etudiants de R à Z) ») : c'est aussi un choix à proposer.
                 "ens": [t.strip() for t in str(cols[i_ens] or "").split(",") if t.strip()],
                 "info": self._groupe_info(cols[1] if len(cols) > 1 else ""),
+                # Info brut : sert d'étiquette quand un atelier n'a que ça
+                # (« Allison », le nom de l'encadrant) — le filtre de groupe
+                # ci-dessus, lui, ne garde que les vraies divisions.
+                "info_brut": " ".join(str(cols[1] if len(cols) > 1 else "").split()),
                 "sem": sem,
             })
             semaines.add(sem)
@@ -398,6 +402,8 @@ class ClientTimeEdit:
                 groupes = {labels[t] for t in sc["ens"] if t in labels}
                 if sc["info"]:
                     groupes.add(labels.get(sc["info"], sc["info"]))
+                if sc.get("synth"):
+                    groupes.add(sc["synth"])  # atelier en parallèle
             groupes = sorted(groupes, key=tri_naturel)
             cle = (sc["jour"], sc["debut"], sc["fin"], sc["matiere"], sc["profs"],
                    sc["salles"], sc["type"], tuple(groupes))
@@ -523,7 +529,58 @@ class ClientTimeEdit:
                 continue  # deux jetons qui donnent le même choix : un seul suffit
             deja[libelle] = jeton
             labels[jeton] = libelle
+        self._ateliers_paralleles(seances, deja)
         return labels
+
+    @staticmethod
+    def _minutes(heure):
+        m = re.fullmatch(r"(\d{1,2})h(\d{2})", str(heure or ""))
+        return int(m.group(1)) * 60 + int(m.group(2)) if m else None
+
+    def _ateliers_paralleles(self, seances, deja):
+        """Ateliers en parallèle : le choix se lit sur la séance, pas sur un code.
+
+        L'ULB met parfois plusieurs ateliers du même cours au même moment
+        (COMMB320 : même prof, encadrants et salles différents). Rien dans
+        « Ensemble d'étudiants » ne les distingue : le nom de l'encadrant est
+        dans la colonne « Info ». On en fait un choix par séance
+        (« Allison — S.NB7.BOUT »), posé sur la séance elle-même."""
+        par_ue = {}
+        for i, sc in enumerate(seances):
+            for code in sc["codes"]:
+                par_ue.setdefault(code, []).append(i)
+        for indices in par_ue.values():
+            par_lot = {}
+            for i in indices:
+                par_lot.setdefault((seances[i]["jour"], seances[i]["sem"]), []).append(i)
+            for lot in par_lot.values():
+                if len(lot) < 2:
+                    continue
+                lot.sort(key=lambda i: (seances[i]["debut"], seances[i]["fin"], i))
+                clusters, fin_max = [], None
+                for i in lot:
+                    a = self._minutes(seances[i]["debut"])
+                    b = self._minutes(seances[i]["fin"]) or a
+                    if clusters and a is not None and fin_max is not None and a < fin_max:
+                        clusters[-1].append(i)
+                        fin_max = max(fin_max, b or a or 0)
+                    else:
+                        clusters.append([i])
+                        fin_max = b
+                for cl in clusters:
+                    if len(cl) < 2:
+                        continue
+                    cles = {(seances[i]["info"], seances[i]["salles"]) for i in cl}
+                    if len(cles) < 2:
+                        continue  # mêmes séances listées deux fois : rien à choisir
+                    for i in cl:
+                        bouts = [b for b in (seances[i].get("info_brut"), seances[i]["salles"]) if b]
+                        if bouts:
+                            libelle = " — ".join(bouts)
+                            if libelle in deja and deja[libelle] is not None:
+                                continue
+                            deja[libelle] = None
+                            seances[i]["synth"] = libelle
 
     @staticmethod
     def _groupe_info(texte):
