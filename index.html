@@ -243,8 +243,9 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   .chip:active { transform: scale(.97); }
   .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   /* Onglets du choix ULB : par niveau, par codes de cours, lien perso. */
-  .modes { display: flex; gap: 6px; margin: 0 0 12px; flex-wrap: wrap; }
+  .modes { display: flex; gap: 6px; margin: 14px 0 12px; flex-wrap: wrap; }
   .modes button {
+    position: relative;
     min-height: 40px; padding: 0 14px; border: none; border-radius: 12px;
     font: inherit; font-size: .88rem; font-weight: 600; color: var(--muted); cursor: pointer;
     background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
@@ -256,6 +257,14 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--ink) 42%, transparent), inset 0 1px 0 var(--reflet);
   }
   .modes button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  /* Étiquette « Recommandé » : petite capsule posée au-dessus de l'onglet. */
+  .mode-tag {
+    position: absolute; top: -11px; right: 4px; padding: 2px 7px; border-radius: 999px;
+    font-size: .6rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+    color: var(--accent); background: color-mix(in srgb, var(--accent) 13%, var(--surface));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 32%, transparent);
+    pointer-events: none; white-space: nowrap;
+  }
   /* Cours choisis : code en tête, intitulé en dessous, une seule ligne
      (les intitulés ULB sont longs : on coupe proprement au lieu d'empiler). */
   #ulb-cours-chips .chip { max-width: 100%; }
@@ -302,7 +311,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   #ulb-import > summary::-webkit-details-marker { display: none; }
   #ulb-import > summary::after { content: " ▾"; color: var(--muted); }
   #ulb-import[open] > summary::after { content: " ▴"; }
-  #ulb-import[open] > summary { border-bottom: 1px solid var(--line); margin-bottom: 10px; }
+  #ulb-import[open] > summary { margin-bottom: 10px; }
   #ulb-import textarea {
     width: 100%; box-sizing: border-box; min-height: 96px; resize: none;
     overflow-y: hidden; /* agrandi par le script ; style de repli discret ci-dessous */
@@ -2007,8 +2016,8 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     <p class="etapes" role="img" aria-label="Étape 2 sur 3"><span class="on"></span><span class="on"></span><span></span></p>
     <h2 class="q" id="formation-titre">Ta formation</h2>
     <div class="modes" id="ulb-modes" role="tablist" aria-label="Comment trouver tes cours" hidden>
-      <button type="button" role="tab" data-mode="niveau" aria-selected="true">Par niveau d'études</button>
-      <button type="button" role="tab" data-mode="cours" aria-selected="false">Par codes de cours</button>
+      <button type="button" role="tab" data-mode="cours" aria-selected="true">Par codes de cours<span class="mode-tag">Recommandé</span></button>
+      <button type="button" role="tab" data-mode="niveau" aria-selected="false">Par niveau d'études</button>
       <button type="button" role="tab" data-mode="lien" aria-selected="false">Mon horaire ULB</button>
     </div>
     <p class="aide" id="formation-aide"></p>
@@ -2028,6 +2037,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
             Choisir une capture
           </label>
           <input type="file" id="ulb-capture-fichier" accept="image/*" hidden>
+          <span class="capture-aide">ou colle une image (⌘V / Ctrl+V)</span>
         </div>
         <textarea id="ulb-import-texte" rows="4" spellcheck="false"
                   placeholder="COMMB300, Droit de l'information et de la communication&#10;LANGB305, Anglais III"></textarea>
@@ -3849,7 +3859,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
      - « Mon horaire ULB » : l'horaire personnel via le lien d'abonnement
        iCal de Mon horaire (api/ical) — aucun identifiant ne passe par nous. */
   var ULB_LIEN_FORMATION = "Mon horaire (lien d'abonnement)";
-  var ulb = { mode: "niveau", cours: [], resultats: [], arme: null, requete: 0, minuteur: 0, ocr: null };
+  var ulb = { mode: "cours", cours: [], resultats: [], arme: null, requete: 0, minuteur: 0, ocr: null };
   function ulbOuvrir() {
     ulbAppliquerMode(false);
     if (window.matchMedia("(hover: hover)").matches && ulb.mode !== "lien") {
@@ -4082,23 +4092,26 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     // Glisser-déposer une capture sur le bloc (enfants compris) : compteur
     // pour ne pas clignoter quand la souris passe d'un élément à un autre.
     var bloc = document.getElementById("ulb-import");
-    var dessus = 0;
-    function entre(e) {
+    function allumer(e) {
       e.preventDefault();
       if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
-      dessus++;
       bloc.classList.add("depot-sur");
     }
-    bloc.addEventListener("dragenter", entre);
-    bloc.addEventListener("dragover", entre);
-    bloc.addEventListener("dragleave", function () {
-      dessus = Math.max(0, dessus - 1);
-      if (!dessus) bloc.classList.remove("depot-sur");
+    function eteindre() { bloc.classList.remove("depot-sur"); }
+    bloc.addEventListener("dragenter", allumer);
+    bloc.addEventListener("dragover", allumer);
+    // On ne retire qu'en sortant VRAIMENT du bloc : passer d'un enfant à
+    // l'autre (bouton, champ) déclenche aussi un dragleave, sans quitter.
+    bloc.addEventListener("dragleave", function (e) {
+      var vers = e.relatedTarget;
+      if (!vers || !bloc.contains(vers)) eteindre();
     });
+    // Dépôt ailleurs sur la page, ou glisser annulé (Échap) : on éteint.
+    document.addEventListener("dragend", eteindre);
+    document.addEventListener("drop", eteindre);
     bloc.addEventListener("drop", function (e) {
       e.preventDefault();
-      dessus = 0;
-      bloc.classList.remove("depot-sur");
+      eteindre();
       var fichiers = (e.dataTransfer && e.dataTransfer.files) || [];
       if (!fichiers.length) {
         erreur(document.getElementById("ulb-import-status"), "Aucune image dans ce dépôt.");
