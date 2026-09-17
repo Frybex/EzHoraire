@@ -48,7 +48,11 @@
     }
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body { touch-action: manipulation; }
+  /* Pas de zoom du navigateur (pincement) sur la page : un pincement
+     à côté du PDF zoomerait tout le site au lieu du PDF (qui a son
+     propre zoom) et créerait des écrans de vide. pan-x pan-y garde le
+     défilement tactile mais coupe le pincement et le double-toucher. */
+  html, body { touch-action: pan-x pan-y; }
   button, a { touch-action: manipulation; }
   body {
     /* Relief premium : dégradé vertical + reflet d'1 px en haut ; creux =
@@ -634,6 +638,9 @@
     border-radius: 16px;
     background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
     box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    /* Ancre pour le recentrage auto à l'ouverture : la carte se cale
+       un peu sous le haut de l'écran, jamais collée au bord. */
+    scroll-margin-top: 12px;
   }
   .day.today {
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 50%, transparent),
@@ -740,6 +747,19 @@
      Le PDF se zoome sur place, isolé du reste du site. */
   #pdf-zone { margin: 12px -16px 0; }
   #pdf-zone[hidden] { display: none; }
+  /* Téléphone, pendant le chargement uniquement (.attente) : la zone
+     réserve d'emblée la place du futur PDF (environ une page) et le
+     texte d'attente est centré dedans, au futur centre du PDF. Dès que
+     le contenu arrive, la réserve saute et la page se termine juste
+     sous le PDF : aucun vide en dessous où pincer à côté. Ordinateur :
+     le panneau latéral garde ses propres dimensions (règle bureau). */
+  @media (max-width: 1023px) {
+    #pdf-zone.attente {
+      min-height: 68vh; min-height: 68dvh;
+      display: flex; flex-direction: column;
+    }
+    #pdf-zone.attente > .pdf-status { margin: auto; }
+  }
   /* Texte d'attente : un reflet balaie les lettres de gauche à droite,
      en boucle jusqu'à l'arrivée du PDF, puis le texte disparaît.
      Fluide même pendant le téléchargement : uniquement des transform,
@@ -797,7 +817,8 @@
   /* Pages rendues en images : 100 % de largeur au repos, entièrement
      visibles, rien n'est coupé. Le zoom élargit ce bloc (200 %, 300 %…). */
   .pdf-pages { width: 100%; margin: 0 auto; background: var(--creux); }
-  .pdf-pages canvas { display: block; width: 100%; height: auto; background: #fff; }
+  .pdf-pages canvas { display: block; width: 100%; height: auto; background: #fff; animation: pdf-page .35s ease-out both; }
+  @keyframes pdf-page { from { opacity: 0; } to { opacity: 1; } }
   .pdf-pages canvas + canvas { margin-top: 10px; }
   /* Bouton flottant pour revenir à la taille normale : collé en bas de
      l'écran tant que le PDF zoomé est visible, masqué au repos. */
@@ -1127,7 +1148,9 @@
     }
     .cal-tete, .cal-corps {
       display: grid; column-gap: 8px;
-      grid-template-columns: 58px repeat(var(--n), minmax(0, 1fr));
+      /* --cols vient de rendreCal : la colonne du jour est un peu plus large,
+         pour compenser l'effet « plus étroit » de sa carte blanche. */
+      grid-template-columns: 58px var(--cols, repeat(var(--n), minmax(0, 1fr)));
     }
     .cal-tete { padding-bottom: 14px; }
     .cal-jour { display: flex; align-items: center; gap: 8px; padding: 0 8px; min-width: 0; }
@@ -1139,7 +1162,7 @@
       font-size: 1.3rem; font-weight: 600; letter-spacing: -.03em; font-variant-numeric: tabular-nums;
     }
     .cal-jour.today span { color: var(--accent); }
-    .cal-jour.today strong { background: var(--accent); color: var(--sur-accent); }
+    .cal-jour.today strong { color: var(--accent); }
     .cal-jour small {
       margin-left: auto; color: var(--muted); font-size: .76rem;
       font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -1157,10 +1180,22 @@
       background-image: linear-gradient(to bottom, var(--line) 1px, transparent 1px);
       background-size: 100% calc(100% / var(--h));
     }
-    /* Aujourd'hui : un simple trait sous la date, pas de pavé teinté. */
+    /* Aujourd'hui : une carte surélevée qui englobe l'en-tête et la colonne,
+       et déborde légèrement du cadre en haut et en bas. La semaine reste
+       un seul bloc (les jours suivants ne sont pas isolés) : c'est le jour
+       qui « sort » du cadre, pas le cadre qui se coupe.
+       Géométrie : 72px = marge haute de .cal (16) + date (34) + écart
+       sous l'en-tête (14) + débord (8) ; 26px = marge basse (18) + débord. */
+    .cal { isolation: isolate; }
     .cal-col.today::before {
-      content: ""; position: absolute; left: 0; right: 0; top: -7px; height: 2px;
-      border-radius: 2px; background: var(--accent);
+      content: ""; position: absolute; z-index: -1;
+      top: -72px; bottom: -26px; left: -4px; right: -4px; border-radius: 18px;
+      background: var(--surface);
+      box-shadow:
+        inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, var(--line)),
+        inset 0 1px 0 var(--reflet),
+        0 18px 40px -18px rgba(15, 20, 40, .35),
+        0 2px 6px -2px rgba(15, 20, 40, .1);
     }
     .cal-libre {
       position: absolute; inset: 0; display: grid; place-items: center;
@@ -1213,14 +1248,6 @@
        les horaires plutôt qu'un titre seul. */
     .ev.court .eh { display: none; }
     .ev.court:not(:has(.es)):not(:has(.ep)) .eh { display: block; flex: none; }
-    .cal-now {
-      position: absolute; left: -5px; right: 0; height: 2px; z-index: 3; pointer-events: none;
-      background: #e5484d; border-radius: 2px;
-    }
-    .cal-now::before {
-      content: ""; position: absolute; left: 0; top: -4px;
-      width: 10px; height: 10px; border-radius: 50%; background: #e5484d;
-    }
 
     /* Détail d'un cours, en bulle flottante */
     #pop {
@@ -1337,6 +1364,7 @@
     .pdf-reflet { display: none; }
     .pdf-dezoom { transition: none; }
     .ap-ev { animation: none; }
+    .pdf-pages canvas { animation: none; }
     .btn-entree, .champs, .halo::before, .halo::after { transition: none; }
   }
 </style>
@@ -1667,6 +1695,43 @@
   var CLE_PROFILS = "ezh_profils";
   var CLE_COURANT = "ezh_courant";
   var CLE_PROFIL_LEGACY = "ezh_profil";
+  var CLE_PWA_PROPOSE = "ezh_pwa_propose";
+
+  /* Ajout à l'écran d'accueil : proposé une seule fois, juste après la
+     création du tout premier horaire, uniquement sur mobile. Android
+     capture l'évènement natif pour déclencher la vraie invite d'install ;
+     iOS n'a pas cet évènement, on affiche juste la marche à suivre. */
+  var inviteInstallAndroid = null;
+  window.addEventListener("beforeinstallprompt", function (e) {
+    e.preventDefault();
+    inviteInstallAndroid = e;
+  });
+  function appDejaInstallee() {
+    return (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
+           window.navigator.standalone === true;
+  }
+  function estIOS() { return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream; }
+  function estAndroid() { return /Android/.test(navigator.userAgent); }
+  function proposerEcranAccueil() {
+    if (appDejaInstallee() || lire(CLE_PWA_PROPOSE)) return;
+    if (!estIOS() && !estAndroid()) return; // seulement sur mobile
+    ecrire(CLE_PWA_PROPOSE, true);
+    if (estAndroid()) {
+      demanderConfirmation({
+        titre: "Ajouter à l'écran d'accueil ?",
+        message: "Installe EzHoraire comme une appli pour la retrouver en un tapotement, sans passer par le navigateur.",
+        annuler: "Plus tard", confirmer: "Installer", danger: false
+      }).then(function (ok) {
+        if (ok && inviteInstallAndroid) { inviteInstallAndroid.prompt(); inviteInstallAndroid = null; }
+      });
+    } else if (estIOS()) {
+      demanderConfirmation({
+        titre: "Ajouter à l'écran d'accueil",
+        message: "Touche <strong>Partager</strong>, puis « Sur l'écran d'accueil » pour retrouver EzHoraire en un tapotement.",
+        annuler: "Plus tard", confirmer: "Compris", danger: false
+      });
+    }
+  }
   var THEMES = [
     { id: 2, nom: "Bleu", couleur: "#1d4fd7" },
     { id: 1, nom: "Vert", couleur: "#0e8655" },
@@ -2229,6 +2294,7 @@
   var DATA = null;       // horaire complet de la formation affichée
   var COURS = [];        // ses cours, filtrés selon les groupes de l'étudiant
   var LUNDI0 = null, SEMAINES = [];
+  var FERIES = {};       // jours fériés / de congé de l'école : { n° de jour : true }
   var sem = 1;
 
   function parseDate(iso) {
@@ -2242,6 +2308,8 @@
   }
   function fmtDate(d) { return d.getDate() + " " + MOIS[d.getMonth()]; }
   function fmtH(h) { return String(h).replace(/^0/, ""); } // "08h15" -> "8h15"
+  // n° de jour de l'école : 1 = premier lundi (voir HP.feries côté API).
+  function estFerie(s, jour) { return !!FERIES[(s - 1) * 7 + jour + 1]; }
   function memeJour(a, b) {
     return a.getFullYear() === b.getFullYear() &&
            a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
@@ -2403,7 +2471,14 @@
     var maxPx = pdfDoc ? Math.max(2.5e6, Math.min(1e7, 3e7 / pdfDoc.numPages)) : 1e7;
     (function suivante() {
       if (jeton !== pdfJetonRendu || !pdfDoc || !conteneur.isConnected) return;
-      if (page > pdfDoc.numPages) return;
+      if (page > pdfDoc.numPages) {
+        // Rendu complet : la réserve saute (le contenu a sa vraie hauteur,
+        // quasi identique si elle était calibrée : aucun saut visible),
+        // puis on retient la hauteur et on corrige le cadrage une fois.
+        var zf = document.getElementById("pdf-zone");
+        if (zf) { zf.classList.remove("attente"); zf.style.minHeight = ""; }
+        memoriserHauteurPdf(); recadrerPdfFinal(); return;
+      }
       pdfDoc.getPage(page).then(function (pg) {
         if (jeton !== pdfJetonRendu) return;
         var base = pg.getViewport({ scale: 1 });
@@ -2463,6 +2538,7 @@
   function fermerPdf() {
     pdfDemande++; // invalide un téléchargement en cours
     pdfCharge = false; pdfOuvert = false;
+    pdfOublierMain(); pdfMainUtilisateur = false;
     oublierPdfDoc();
     arreterAnimZoomPdf();
     pdfPagesEl = null; pdfPinceEl = null; pdfDezoomEl = null; pdfEchelle = 1; pdfZoomable = false;
@@ -2470,6 +2546,8 @@
     var zone = document.getElementById("pdf-zone");
     var status = document.getElementById("pdf-status");
     zone.hidden = true;
+    zone.classList.remove("attente");
+    zone.style.minHeight = "";
     statutPdfAttente(status);
     Array.prototype.forEach.call(zone.querySelectorAll(".pdf-apercu, .pdf-astuce"), function (n) {
       n.remove();
@@ -3067,6 +3145,7 @@
     var surnom = document.getElementById("surnom").value.replace(/\s+/g, " ").trim() ||
                  surnomDefaut(choix.formation, sel);
     surnom = surnom.slice(0, 24);
+    var premierHoraire = !choix.editionId && profils.length === 0;
     if (choix.editionId) {
       for (var i = 0; i < profils.length; i++) {
         if (profils[i].id === choix.editionId) {
@@ -3099,6 +3178,7 @@
     resetDepliage(); deplierAujourdhui();
     afficherHoraire();
     actualiser(false).catch(function () { /* garde le cache local */ });
+    if (premierHoraire) setTimeout(proposerEcranAccueil, 700);
   });
 
   /* ---------- 4. Horaire (multi-profils) ---------- */
@@ -3150,6 +3230,8 @@
     preparerCouleurs(data && data.cours);
     LUNDI0 = parseDate(DATA.meta.premier_lundi);
     SEMAINES = parseEns(DATA.meta.periode).sort(function (a, b) { return a - b; });
+    FERIES = {};
+    parseEns(DATA.meta.feries || "[]").forEach(function (n) { FERIES[n] = true; });
     var sel = profil.groupes;
     COURS = DATA.cours.filter(function (c) {
       if (!sel.length || !c.groupes.length) return true; // séance de toute la formation
@@ -3270,17 +3352,18 @@
     document.getElementById("btn-auj").classList.toggle("cache", sem === semaineCourante());
 
     var auj = new Date();
-    var html = "", vide = true;
+    var html = "", vide = true, conge = true;
     for (var j = 0; j < 6; j++) {
       var liste = coursDe(sem, j);
       if (liste.length) vide = false;
+      if (j < 5 && !estFerie(sem, j)) conge = false;
       if (j === 5 && !liste.length) continue;
       var date = dateSemJour(sem, j);
       var estAuj = memeJour(date, auj);
       var resume = liste.length
         ? '<span class="dsum busy">' + fmtH(liste[0].debut) + " → " +
           fmtH(liste.reduce(function (m, c) { return c.fin > m ? c.fin : m; }, liste[0].fin)) + "</span>"
-        : '<span class="dsum free">Libre</span>';
+        : '<span class="dsum free">' + (estFerie(sem, j) ? "Férié" : "Libre") + "</span>";
       html += '<li class="day' + (estAuj ? " today" : "") + (joursOuverts[j] ? " open" : "") + '">' +
         '<button data-jour="' + j + '" aria-expanded="' + (!!joursOuverts[j]) + '">' +
         '<span class="dot" aria-hidden="true"></span>' +
@@ -3292,7 +3375,7 @@
         "</div></li>";
     }
     document.getElementById("jours").innerHTML = vide
-      ? '<div class="empty">Aucun cours cette semaine.</div>'
+      ? '<div class="empty">' + (conge ? "Semaine de congé." : "Aucun cours cette semaine.") + "</div>"
       : html;
     rendreCal();
     rendreInfos();
@@ -3364,7 +3447,7 @@
     fin = Math.ceil(fin / 60) * 60;
     var duree = fin - debut;
     function pc(m) { return (m - debut) / duree * 100; }
-    var auj = new Date(), maintenant = auj.getHours() * 60 + auj.getMinutes();
+    var auj = new Date();
     evCal = [];
     var tete = "<div></div>", corps = '<div class="cal-heures" aria-hidden="true">';
     for (var h = debut / 60; h <= fin / 60; h++) corps += '<span style="top:' + pc(h * 60) + '%">' + h + "h</span>";
@@ -3374,11 +3457,13 @@
       var resume = d.cours.length
         ? "<small>" + fmtH(d.cours[0].debut) + " – " +
           fmtH(d.cours.reduce(function (m, c) { return c.fin > m ? c.fin : m; }, d.cours[0].fin)) + "</small>"
-        : '<small class="libre">Libre</small>';
+        : '<small class="libre">' + (estFerie(sem, d.j) ? "Férié" : "Libre") + "</small>";
       tete += '<div class="cal-jour' + (estAuj ? " today" : "") + '" title="' + JOURS[d.j] + " " + fmtDate(date) + '">' +
               "<span>" + JOURS[d.j].slice(0, 3) + "</span><strong>" + date.getDate() + "</strong>" + resume + "</div>";
       corps += '<div class="cal-col' + (estAuj ? " today" : "") + '">';
-      if (!d.cours.length) corps += '<div class="cal-libre">Pas de cours</div>';
+      if (!d.cours.length) {
+        corps += '<div class="cal-libre">' + (estFerie(sem, d.j) ? "Férié" : "Pas de cours") + "</div>";
+      }
       couloirs(d.cours).forEach(function (x) {
         var c = x.c, a = mins(c.debut), b = mins(c.fin);
         var i = evCal.push(c) - 1;
@@ -3390,20 +3475,16 @@
           (c.profs ? '<span class="ep">' + txt(c.profs) + "</span>" : "") +
           '<span class="eh">' + fmtH(c.debut) + " – " + fmtH(c.fin) + "</span>" + "</button>";
       });
-      if (estAuj && maintenant > debut && maintenant < fin) {
-        corps += '<div class="cal-now" style="top:' + pc(maintenant) + '%" aria-hidden="true"></div>';
-      }
       corps += "</div>";
     });
     var cal = document.getElementById("cal");
     cal.style.setProperty("--n", jours.length);
+    cal.style.setProperty("--cols", jours.map(function (d) {
+      return memeJour(dateSemJour(sem, d.j), auj) ? "minmax(0, 1.12fr)" : "minmax(0, 1fr)";
+    }).join(" "));
     cal.style.setProperty("--h", duree / 60);
     cal.innerHTML = '<div class="cal-tete">' + tete + '</div><div class="cal-corps">' + corps + "</div>";
   }
-  // Le trait « maintenant » avance tout seul.
-  setInterval(function () {
-    if (vue === "horaire" && DATA && SEMAINES.length && bureau() && !popSource) rendreCal();
-  }, 60000);
 
   /* Bulle de détail d'un cours : à côté du bloc cliqué. */
   var pop = document.getElementById("pop"), popSource = null;
@@ -3462,9 +3543,12 @@
     else return;
     e.preventDefault();
   });
+  /* Version visible en pied de page : permet de vérifier que le
+     téléphone affiche bien la dernière version (raccourci iOS). */
+  var VERSION_APP = "24";
   function rendreInfos() {
     if (!DATA || !profil) return;
-    document.getElementById("maj").textContent = "Mis à jour le " + DATA.meta.fetched_at + ".";
+    document.getElementById("maj").textContent = "Mis à jour le " + DATA.meta.fetched_at + " · v" + VERSION_APP;
     rendreListeProfils();
   }
   var COULEURS_POINTS = ["#1d4fd7", "#0e8655", "#1d4fd7", "#d14d8a"];
@@ -3733,18 +3817,123 @@
     choisirProfil(b.getAttribute("data-liste"));
   });
   // Dépliages : un seul écouteur, qui survit aux nouveaux rendus.
+  // À l'ouverture, la carte (jour) ou le cours est recalé dans la zone
+  // visible : sans ça, un vendredi déplié s'ouvre hors écran, vers le bas.
+  function calerDansEcran(elt, haut) {
+    if (!elt || bureau()) return;
+    requestAnimationFrame(function () {
+      try {
+        var r = elt.getBoundingClientRect();
+        var margeHaute = 12;
+        var margeBasse = 12;
+        if (haut) {
+          // Jour : le contenu déborde en bas (ou la carte sort en haut) :
+          // on remonte la carte un peu sous le haut de l'écran.
+          if (r.bottom > window.innerHeight - margeBasse || r.top < margeHaute) {
+            window.scrollTo({ top: r.top + window.scrollY - margeHaute, behavior: sansAnim ? "auto" : "smooth" });
+          }
+        } else if (r.bottom > window.innerHeight - margeBasse) {
+          // Cours : on descend juste de quoi lire prof + salle.
+          window.scrollBy({ top: r.bottom - window.innerHeight + margeBasse, behavior: sansAnim ? "auto" : "smooth" });
+        } else if (r.top < margeHaute) {
+          window.scrollBy({ top: r.top - margeHaute, behavior: sansAnim ? "auto" : "smooth" });
+        }
+      } catch (e) { /* jetable */ }
+    });
+  }
+  // Hauteur du PDF mesurée au repos (zoom 1), par horaire : elle calibre
+  // la réserve de place affichée pendant le chargement suivant, pour que
+  // le cadrage tombe juste (ni vide béant, ni PDF coupé).
+  function cleHauteurPdf() { return "ezh_pdf_h:" + profil.ecole + ":" + profil.formation; }
+  function memoriserHauteurPdf() {
+    try {
+      if (!profil || !pdfPagesEl || !pdfPagesEl.isConnected) return;
+      if (Math.abs(pdfEchelle - 1) > 0.02) return; // zoomé : fausserait la mesure
+      var h = Math.round(pdfPagesEl.offsetHeight + 70); // pages + astuce/marges
+      if (h >= 200 && h <= window.innerHeight * 1.5) ecrire(cleHauteurPdf(), h);
+    } catch (e) { /* jetable */ }
+  }
+  function hauteurPdfMemorisee() {
+    try {
+      if (!profil) return 0;
+      var h = +lire(cleHauteurPdf());
+      if (!(h >= 200)) return 0;
+      return Math.min(h, Math.round(window.innerHeight * 0.85)); // jamais de vide béant
+    } catch (e) { return 0; }
+  }
+  // PDF (téléphone) : UN SEUL cadrage, instantané, au moment du toucher.
+  // Le bouton se cale sous le haut de l'écran pendant que la zone (qui
+  // réserve déjà la place du futur PDF) charge. Ensuite, plus aucun
+  // défilement : le contenu grandit vers le bas depuis une ancre stable.
+  // (Un scroll animé + un second scroll à l'arrivée se battaient avec
+  // l'agrandissement de la zone : saut en bas, flash, retour arrière.)
+  // Sur ordinateur, la zone est un panneau latéral : rien à recaler.
+  function calerPdf() {
+    if (bureau()) return;
+    var btn = document.getElementById("btn-pdf");
+    if (!btn) return;
+    try {
+      var r = btn.getBoundingClientRect();
+      if (Math.abs(r.top - 12) > 2) {
+        window.scrollTo(0, r.top + window.scrollY - 12);
+      }
+    } catch (e) { /* jetable */ }
+  }
+  // L'utilisateur a-t-il défilé de lui-même pendant le chargement ? Si
+  // oui, on ne touche plus à l'écran quand le PDF arrive.
+  var pdfMainUtilisateur = false;
+  function pdfPriseEnMain() { pdfMainUtilisateur = true; }
+  function pdfSurveillerMain() {
+    pdfMainUtilisateur = false;
+    window.addEventListener("wheel", pdfPriseEnMain, { passive: true });
+    window.addEventListener("touchmove", pdfPriseEnMain, { passive: true });
+  }
+  function pdfOublierMain() {
+    window.removeEventListener("wheel", pdfPriseEnMain);
+    window.removeEventListener("touchmove", pdfPriseEnMain);
+  }
+  // Correction finale unique, instantanée (aucune animation à combattre),
+  // une fois le contenu en place : bouton sorti en haut → on le recale ;
+  // sinon zone coupée en bas mais tenant à l'écran → on descend juste de
+  // quoi tout voir. Si l'utilisateur a repris la main, on ne fait rien.
+  function recadrerPdfFinal() {
+    pdfOublierMain();
+    if (bureau() || pdfMainUtilisateur) return;
+    var btn = document.getElementById("btn-pdf"), zone = document.getElementById("pdf-zone");
+    if (!btn || !zone || zone.hidden) return;
+    try {
+      var rb = btn.getBoundingClientRect(), rz = zone.getBoundingClientRect();
+      if (rb.top < 12) {
+        window.scrollTo(0, rb.top + window.scrollY - 12);
+      } else if (rz.bottom > window.innerHeight &&
+                 (rz.bottom - Math.max(rb.top, 12)) <= window.innerHeight - 24) {
+        window.scrollBy(0, rz.bottom - window.innerHeight + 12);
+      }
+    } catch (e) { /* jetable */ }
+  }
   document.getElementById("jours").addEventListener("click", function (e) {
     var c = e.target.closest(".cbtn");
     if (c) {
       var cle = c.getAttribute("data-cle");
-      if (coursOuverts[cle]) { delete coursOuverts[cle]; } else { coursOuverts[cle] = true; }
-      rendre(); return;
+      var ouvreCours = !coursOuverts[cle];
+      if (ouvreCours) { coursOuverts[cle] = true; } else { delete coursOuverts[cle]; }
+      rendre();
+      if (ouvreCours) {
+        var btnCours = document.querySelector('#jours .cbtn[data-cle="' + cle + '"]');
+        calerDansEcran(btnCours && btnCours.closest ? btnCours.closest("li.c") : btnCours, false);
+      }
+      return;
     }
     var b = e.target.closest(".day > button");
     if (!b) return;
     var j = +b.getAttribute("data-jour");
-    if (joursOuverts[j]) { delete joursOuverts[j]; } else { joursOuverts[j] = true; }
+    var ouvreJour = !joursOuverts[j];
+    if (ouvreJour) { joursOuverts[j] = true; } else { delete joursOuverts[j]; }
     rendre();
+    if (ouvreJour) {
+      var btnJour = document.querySelector('#jours .day > button[data-jour="' + j + '"]');
+      calerDansEcran(btnJour && btnJour.closest ? btnJour.closest(".day") : btnJour, true);
+    }
   });
 
   document.getElementById("sem-prec").addEventListener("click", function () {
@@ -3787,7 +3976,12 @@
     btn.disabled = true;
     majBoutonPdf();
     zone.hidden = false;
+    zone.classList.add("attente"); // réserve la place du futur PDF
+    var reservePdf = hauteurPdfMemorisee(); // vraie hauteur du PDF précédent, si connue
+    if (reservePdf) zone.style.minHeight = reservePdf + "px";
     statutPdfAttente(status);
+    calerPdf(); // un seul cadrage, immédiat : rien ne bouge après
+    pdfSurveillerMain(); // un geste annule la correction finale
     fetch("api/pdf?ecole=" + encodeURIComponent(profil.ecole) +
           "&formation=" + encodeURIComponent(profil.formation) +
           "&groupe=" + encodeURIComponent(groupePdf()) +
@@ -3835,6 +4029,10 @@
         pdfCharge = false;
         btn.disabled = false;
         majBoutonPdf();
+        // Le contenu est arrivé mais les pages se dessinent une par une :
+        // la réserve de hauteur RESTE jusqu'au rendu complet (voir plus
+        // bas) pour éviter que la zone s'écrase puis regonfle en flash.
+        // Aucun défilement ici : l'écran ne bouge plus.
         // Rendu en images : si indisponible, repli sur le visualiseur natif.
         function repliIframe() {
           if (maDemande !== pdfDemande || !pages.isConnected) return;
@@ -3846,6 +4044,9 @@
           frame.title = "PDF officiel de la semaine " + sem;
           frame.src = pdfURL;
           pages.appendChild(frame);
+          var zi = document.getElementById("pdf-zone");
+          if (zi) { zi.classList.remove("attente"); zi.style.minHeight = ""; }
+          memoriserHauteurPdf(); recadrerPdfFinal(); // hauteur fixe immédiate : on corrige tout de suite
         }
         if (typeof pdfjsLib === "undefined") { repliIframe(); return; }
         try {
@@ -3868,6 +4069,9 @@
         status.textContent = "Échec : " + (e && e.message || "erreur inconnue.") + " Touchez le bouton pour réessayer.";
         btn.disabled = false;
         majBoutonPdf();
+        zone.classList.remove("attente");
+        zone.style.minHeight = "";
+        recadrerPdfFinal();
       });
   });
 
@@ -4038,7 +4242,7 @@
      Une réponse plus ancienne que ce qui est affiché est ignorée : deux
      requêtes qui se croisent ne peuvent pas faire revenir en arrière. */
   function empreinte(d) {
-    return JSON.stringify([d.cours, d.groupes, d.meta.periode, d.meta.premier_lundi]);
+    return JSON.stringify([d.cours, d.groupes, d.meta.periode, d.meta.premier_lundi, d.meta.feries]);
   }
   var derniereMaj = 0;
   function actualiser(frais) {
@@ -4069,12 +4273,46 @@
      joue l'arrivée grâce au drapeau de session, dans la couleur de
      l'horaire affiché (data-theme, sinon l'accent par défaut). */
   var CLE_RECHARGE = "recharge";
+  /* Triple appui rapproché sur le logo : rechargement forcé (dur). Les
+     raccourcis d'écran d'accueil (iOS) reprennent la page en mémoire sans
+     recharger, et un appui simple rejoue parfois l'ancien HTML en cache :
+     trois appuis vident les caches et rechargent avec un paramètre unique
+     (retiré au démarrage). Les horaires et réglages sont conservés. */
+  var tapsLogo = 0, minuteurLogo = 0, rechargeLogo = 0;
+  function rechargeDure() {
+    document.body.classList.add("depart");
+    try {
+      if ("caches" in window && caches.keys) caches.keys().then(function (cles) {
+        cles.forEach(function (c) { try { caches.delete(c); } catch (e) {} });
+      }).catch(function () {});
+      if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+        navigator.serviceWorker.getRegistrations().then(function (regs) {
+          regs.forEach(function (r) { try { r.unregister(); } catch (e) {} });
+        }).catch(function () {});
+      }
+    } catch (e) {}
+    try { sessionStorage.setItem(CLE_RECHARGE, document.body.getAttribute("data-theme") || ""); }
+    catch (e) { /* navigation privée */ }
+    location.href = location.pathname + "?dur=" + Date.now();
+  }
   document.getElementById("btn-reload").addEventListener("click", function () {
-    if (document.body.classList.contains("depart")) return;
+    clearTimeout(rechargeLogo);
+    tapsLogo++;
+    clearTimeout(minuteurLogo);
+    minuteurLogo = setTimeout(function () { tapsLogo = 0; }, 900);
+    if (tapsLogo >= 3) {
+      tapsLogo = 0; clearTimeout(minuteurLogo);
+      rechargeDure(); return;
+    }
+    if (document.body.classList.contains("depart")) {
+      // Appui pendant l'animation : on relance juste le rechargement prévu.
+      rechargeLogo = setTimeout(function () { location.reload(); }, sansAnim ? 0 : 260);
+      return;
+    }
     document.body.classList.add("depart");
     try { sessionStorage.setItem(CLE_RECHARGE, document.body.getAttribute("data-theme") || ""); }
     catch (e) { /* navigation privée */ }
-    setTimeout(function () { location.reload(); }, sansAnim ? 0 : 260);
+    rechargeLogo = setTimeout(function () { location.reload(); }, sansAnim ? 0 : 260);
   });
   try {
     var drapeauRecharge = sessionStorage.getItem(CLE_RECHARGE);
@@ -4087,6 +4325,11 @@
       setTimeout(function () { document.body.classList.remove("arrivee"); }, 650);
     }
   } catch (e) { /* navigation privée */ }
+  /* Retour d'un rechargement forcé (?dur=…) : on nettoie l'adresse pour
+     retrouver l'URL normale, sans recharger. */
+  try {
+    if (/(^|[?&])dur=\d+/.test(location.search)) history.replaceState(null, "", location.pathname);
+  } catch (e) {}
 
   /* ---------- Démarrage ----------
      Ouvre le dernier horaire revu (connecté par défaut) : le cache local

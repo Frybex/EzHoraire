@@ -110,6 +110,19 @@ class HP:
         m = re.fullmatch(r"(\d\d)/(\d\d)/(\d{4})", str((v or {}).get("V", "")))
         return f"{m.group(3)}-{m.group(2)}-{m.group(1)}" if m else PREMIER_LUNDI_DEFAUT
 
+    def feries(self):
+        """Jours fériés / de congé de l'école, ex. '[39..50,59,...]'.
+
+        Numérotés à partir de 1 = premier lundi (vérifié : 59 = 11/11/2026,
+        197 = lundi de Pâques 2027, 246 = lundi de Pentecôte 2027).
+        L'école ne donne pas le nom du congé, seulement les jours.
+        """
+        v = _cherche(self.params, "JoursFeries")
+        try:
+            return format_ensemble(parse_ensemble((v or {}).get("V", "")))
+        except ValueError:
+            return "[]"  # forme inattendue : on affiche juste « Pas de cours »
+
     def formations(self):
         if self._formations is None:
             r = self.call("FonctionRenvoyerListeDeRessource",
@@ -463,6 +476,7 @@ def horaire(formation, budget=75, frais=False):
                 "ts": int(maj.timestamp() * 1000),  # pour comparer deux versions
                 "premier_lundi": ecole.faire(lambda hp: hp.premier_lundi()),
                 "periode": format_ensemble(info["semaines"]),
+                "feries": ecole.faire(lambda hp: hp.feries()),
                 "source": SOURCE,
             },
             "formation": formation,

@@ -51,6 +51,30 @@ def _get_json(url, entetes, timeout=20):
         return json.loads(r.read().decode("utf-8") or "null")
 
 
+def _identite(compte):
+    """(prénom, nom) d'un compte : d'abord ceux saisis dans l'app, sinon
+    ceux fournis par Google / GitHub (nom complet coupé au 1er espace,
+    comme l'app), sinon le pseudo GitHub en prénom."""
+    sources = [compte.get("user_metadata") or {}] + [
+        i.get("identity_data") or {} for i in (compte.get("identities") or [])]
+    for m in sources:
+        if m.get("prenom") or m.get("nom"):
+            return m.get("prenom") or "", m.get("nom") or ""
+    for m in sources:
+        if m.get("given_name") or m.get("family_name"):
+            return m.get("given_name") or "", m.get("family_name") or ""
+    for m in sources:
+        complet = " ".join(str(m.get("full_name") or m.get("name") or "").split())
+        if complet:
+            prenom, _, nom = complet.partition(" ")
+            return prenom, nom
+    for m in sources:
+        pseudo = m.get("user_name") or m.get("preferred_username")
+        if pseudo:
+            return "@" + str(pseudo).lstrip("@"), ""
+    return "", ""
+
+
 def _iso_date(s):
     try:
         return datetime.fromisoformat(str(s).replace("Z", "+00:00"))
@@ -194,7 +218,7 @@ class handler(BaseHTTPRequestHandler):
         utilisateurs = []
         for c in comptes:
             uid = c.get("id")
-            meta = c.get("user_metadata") or {}
+            prenom, nom = _identite(c)
             profs = profils_par_user.get(uid, [])
             stats = visites_par_user.get(uid, {"total": 0, "dates": []})
             dates = sorted(stats["dates"])
@@ -202,8 +226,8 @@ class handler(BaseHTTPRequestHandler):
             utilisateurs.append({
                 "user_id": uid,
                 "email": c.get("email") or "",
-                "prenom": meta.get("prenom") or meta.get("given_name") or "",
-                "nom": meta.get("nom") or meta.get("family_name") or "",
+                "prenom": prenom,
+                "nom": nom,
                 "compte_cree": c.get("created_at") or "",
                 "derniere_connexion": c.get("last_sign_in_at") or "",
                 "profils": [{
