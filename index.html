@@ -1826,7 +1826,7 @@
     themeChoisiIdentite = 2;
     ecrire(CLE_PROFILS, profils);
     ecrire(CLE_COURANT, null);
-    ecrire(CLE_PROFIL_LEGACY, null);
+    try { localStorage.removeItem(CLE_PROFIL_LEGACY); } catch (e) { /* jetable */ }
     adminVerifie = false;
     var boutonAdmin = document.getElementById("btn-admin");
     if (boutonAdmin) boutonAdmin.hidden = true;
