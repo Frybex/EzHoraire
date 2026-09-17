@@ -11,6 +11,7 @@ import os
 import socket
 import sys
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+from urllib.parse import unquote
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "api"))
 
@@ -38,26 +39,41 @@ class Serveur(ThreadingHTTPServer):
 
 
 class Handler(SimpleHTTPRequestHandler):
-    def do_GET(self):
+    def _chemin_autorise(self):
+        """Chemin décodé si la requête vient de la machine locale et ne vise
+        pas un fichier caché, sinon None (une erreur a déjà été envoyée)."""
         # Sécurité : n'accepter que les connexions provenant de la machine locale
         ip = self.client_address[0]
         if ip not in ("127.0.0.1", "::1", "::ffff:127.0.0.1"):
             self.send_error(403, "Accès interdit : serveur de développement local uniquement")
-            return
+            return None
 
-        chemin = self.path.split("?")[0]
+        # Sécurité : décoder AVANT de filtrer, sinon « %2Eenv » passe le test
+        # puis est décodé par SimpleHTTPRequestHandler, qui sert le fichier.
+        chemin = unquote(self.path.split("?")[0])
 
         # Sécurité : bloquer l'accès aux fichiers et dossiers cachés (.env, .git, etc.)
         parties = [p for p in chemin.strip("/").split("/") if p]
         if any(p.startswith(".") for p in parties):
             self.send_error(404, "Fichier non trouvé")
-            return
+            return None
+        return chemin
 
+    def do_GET(self):
+        chemin = self._chemin_autorise()
+        if chemin is None:
+            return
         route = ROUTES.get(chemin)
         if route:
             route.do_GET(self)
         else:
             super().do_GET()
+
+    def do_HEAD(self):
+        # Même garde que GET : do_HEAD hérité la contournerait entièrement.
+        if self._chemin_autorise() is None:
+            return
+        super().do_HEAD()
 
     def log_message(self, *args):
         pass  # silencieux
