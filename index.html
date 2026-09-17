@@ -2119,9 +2119,14 @@
         return Promise.resolve(false);
       }
       statutAuthChargement("Redirection vers " + (fournisseur === "github" ? "GitHub" : "Google") + "…");
+      var options = { redirectTo: location.origin + location.pathname };
+      // Google : forcer l'écran de choix du compte. Sans ça, après une
+      // déconnexion, Google reconnecte silencieusement le dernier compte
+      // au lieu de proposer d'en choisir un autre.
+      if (fournisseur === "google") options.queryParams = { prompt: "select_account" };
       return sb.auth.signInWithOAuth({
         provider: fournisseur,
-        options: { redirectTo: location.origin + location.pathname }
+        options: options
       }).then(function (res) {
         if (res.error) statutAuthErreur("Échec : " + res.error.message);
         return !res.error; // vrai = redirection en cours
