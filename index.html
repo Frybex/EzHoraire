@@ -250,6 +250,18 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--ink) 42%, transparent), inset 0 1px 0 var(--reflet);
   }
   .modes button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .chip.chip-suppr {
+    color: #fff;
+    background: linear-gradient(180deg, #e05a4f, #c33f3f);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .28), var(--ombre-btn);
+  }
+  .chip.chip-suppr .coche {
+    background: #fff; box-shadow: none; display: grid; place-items: center;
+  }
+  .chip.chip-suppr .coche::after {
+    content: "\2715"; position: static; border: none; transform: none;
+    font-size: .68rem; font-weight: 800; line-height: 1; color: #c33f3f;
+  }
   #ulb-cours { margin: 2px 0 12px; }
   #ulb-cours .chips { margin: 6px 0 8px; }
   #ulb-lien .champs { margin-bottom: 12px; }
@@ -1923,6 +1935,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     </div>
     <div id="ulb-cours" hidden>
       <div class="chips" id="ulb-cours-chips"></div>
+      <p class="aide" id="ulb-cours-avis" hidden></p>
       <p class="aide" id="ulb-cours-vide">Aucun cours choisi. Cherche un code (DROIC2001) ou un intitulé, puis touche le cours pour l'ajouter.</p>
       <button class="primaire halo" id="ulb-cours-voir" type="button" disabled>Voir mon horaire</button>
     </div>
@@ -3727,7 +3740,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
      - « Mon horaire ULB » : l'horaire personnel via le lien d'abonnement
        iCal de Mon horaire (api/ical) — aucun identifiant ne passe par nous. */
   var ULB_LIEN_FORMATION = "Mon horaire (lien d'abonnement)";
-  var ulb = { mode: "niveau", cours: [], requete: 0, minuteur: 0 };
+  var ulb = { mode: "niveau", cours: [], resultats: [], arme: null, requete: 0, minuteur: 0 };
   function ulbOuvrir() {
     ulbAppliquerMode(false);
     if (window.matchMedia("(hover: hover)").matches && ulb.mode !== "lien") {
@@ -3743,6 +3756,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       b.setAttribute("aria-selected", String(b.getAttribute("data-mode") === ulb.mode));
     });
     effacer(document.getElementById("formations-status"));
+    ulb.arme = null;
     ulb.requete++; // invalide une recherche en vol
     liste.innerHTML = "";
     document.getElementById("formation-recherche").hidden = ulb.mode === "lien";
@@ -3789,29 +3803,52 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   }
   function ulbRendreResultats(resultats) {
     var liste = document.getElementById("liste-formations");
-    if (!resultats.length) {
+    if (resultats) ulb.resultats = resultats;
+    // Un cours déjà choisi quitte la liste : pas de second clic ambigu.
+    // `ulb.resultats` garde la liste brute, pour qu'il revienne quand on
+    // retire le cours de la sélection.
+    var visibles = ulb.mode === "cours"
+      ? ulb.resultats.filter(function (r) { return ulb.cours.indexOf(r.cle) < 0; })
+      : ulb.resultats;
+    if (ulb.mode === "cours" && ulb.resultats.length && !visibles.length) {
+      liste.innerHTML = '<li class="empty">Tous ces résultats sont déjà dans ta sélection.</li>';
+      return;
+    }
+    if (!visibles.length) {
       liste.innerHTML = '<li class="empty">Aucun résultat. Essaie un autre mot ou le code exact.</li>';
       return;
     }
     var parCours = ulb.mode === "cours";
-    liste.innerHTML = resultats.map(function (r) {
-      var choisi = parCours && ulb.cours.indexOf(r.cle) >= 0;
+    liste.innerHTML = visibles.map(function (r) {
       return '<li><button type="button" class="halo" data-formation="' + txt(r.cle) + '"' +
-        (parCours ? ' aria-pressed="' + choisi + '"' : "") + '><span class="nom">' +
+        (parCours ? ' aria-pressed="false"' : "") + '><span class="nom">' +
         txt(joliFormation(r.cle)) + '</span><span class="chev" aria-hidden="true"></span></button></li>';
     }).join("");
   }
-  function ulbBasculeCours(cle) {
+  function ulbAjouterCours(cle) {
+    if (ulb.cours.indexOf(cle) >= 0) return;
+    ulb.cours.push(cle);
+    ulb.arme = null;
+    ulbRendreCours();
+    ulbRendreResultats(ulb.resultats);
+  }
+  function ulbRetirerCours(cle) {
     var i = ulb.cours.indexOf(cle);
-    if (i >= 0) ulb.cours.splice(i, 1); else ulb.cours.push(cle);
-    Array.prototype.forEach.call(document.querySelectorAll("#liste-formations button[data-formation]"), function (b) {
-      if (b.getAttribute("data-formation") === cle) b.setAttribute("aria-pressed", String(i < 0));
-    });
+    if (i >= 0) ulb.cours.splice(i, 1);
+    ulb.arme = null;
+    ulbRendreCours();
+    ulbRendreResultats(ulb.resultats);
+  }
+  function ulbDesarmer() {
+    if (ulb.arme == null) return;
+    ulb.arme = null;
     ulbRendreCours();
   }
   function ulbRendreCours() {
     document.getElementById("ulb-cours-chips").innerHTML = ulb.cours.map(function (cle) {
-      return '<button type="button" class="chip" data-cours="' + txt(cle) + '" aria-pressed="true">' +
+      var arme = ulb.arme === cle;
+      return '<button type="button" class="chip' + (arme ? " chip-suppr" : "") + '" data-cours="' + txt(cle) +
+        '" aria-pressed="true">' +
         '<span class="coche" aria-hidden="true"></span>' + txt(joliFormation(cle)) + "</button>";
     }).join("");
     var btn = document.getElementById("ulb-cours-voir");
@@ -3820,6 +3857,10 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       : "Voir mon horaire";
     btn.disabled = !ulb.cours.length;
     document.getElementById("ulb-cours-vide").hidden = !!ulb.cours.length;
+    var avis = document.getElementById("ulb-cours-avis");
+    avis.hidden = ulb.arme == null;
+    avis.textContent = ulb.arme == null ? ""
+      : "Touche encore le cours rouge pour confirmer qu’il quitte ta sélection.";
   }
   function ulbVoirCours() {
     if (!ulb.cours.length) return;
@@ -3859,7 +3900,11 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   });
   document.getElementById("ulb-cours-chips").addEventListener("click", function (e) {
     var b = e.target.closest("button[data-cours]");
-    if (b) ulbBasculeCours(b.getAttribute("data-cours"));
+    if (!b) return;
+    var cle = b.getAttribute("data-cours");
+    if (ulb.arme === cle) { ulbRetirerCours(cle); return; } // confirmation
+    ulb.arme = cle;                                        // premier appui : rouge
+    ulbRendreCours();
   });
   document.getElementById("ulb-cours-voir").addEventListener("click", ulbVoirCours);
   document.getElementById("ulb-lien-voir").addEventListener("click", ulbVerifierLien);
@@ -3954,6 +3999,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   document.getElementById("recherche").addEventListener("input", function () {
     var ec = ecoleDe(choix.ecole);
     if (ec && ec.recherche) { // ULB : recherche serveur, avec un petit délai
+      ulbDesarmer();
       clearTimeout(ulb.minuteur);
       ulb.minuteur = setTimeout(ulbChercher, 220);
       return;
@@ -3964,8 +4010,8 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     var b = e.target.closest("button[data-formation]");
     if (!b) return;
     var ec = ecoleDe(choix.ecole);
-    if (ec && ec.recherche && ulb.mode === "cours") { // on coche le cours
-      ulbBasculeCours(b.getAttribute("data-formation"));
+    if (ec && ec.recherche && ulb.mode === "cours") { // on ajoute le cours
+      ulbAjouterCours(b.getAttribute("data-formation"));
       return;
     }
     var memeFormation = choix.formation === b.getAttribute("data-formation");
