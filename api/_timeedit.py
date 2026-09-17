@@ -35,7 +35,6 @@ FENETRE_APPELS = 60.0
 
 RX_UE = re.compile(r"^[A-Z]{2,6}[0-9]{2,4}$")  # DROIC2001, LANGC2001
 RX_GROUPE_ENCODE = re.compile(r"-\d{2}$")      # B-KIRE:2-01
-RX_SOUS_GROUPE = re.compile(r"groupe|gr\.|s[ée]rie|pad\d|option|module|mineure", re.I)
 # Division explicite dans la colonne « Info » : « Groupe 2 », « Série 3
 # (Etudiants de R à Z) »… mais pas « TP Biochimie » ni « Allison ».
 RX_INFO_GROUPE = re.compile(
@@ -450,22 +449,16 @@ class ClientTimeEdit:
 
         En mode niveau, les jetons d'autres formations sont ignorés (cours
         mutualisé : « B-DROIB:2, B-PPHIL:2 ») et le niveau lui-même est un
-        cours commun. En mode parcours, tout jeton qui n'est pas un code UE
-        devient un filtre (le niveau « B-DROIB:2 », ses groupes, etc.).
+        cours commun. En mode parcours, tous les jetons d'« Ensemble
+        d'étudiants » deviennent des filtres possibles (la cohorte
+        « B-COMM:2 », les mineures, les groupes…) : c'est exactement ce que
+        l'ULB affiche à l'étudiant dans le détail d'une séance.
         """
         niveau_code = sel.get("niveau_code")
         if not niveau_code:
-            # Parcours : les cohortes (« B-DROIB:2 ») ne sont pas des
-            # groupes — on ne garde que les sous-groupes (« groupe 01 »,
-            # « PAD5 », « série 2 »…) comme filtres possibles.
-            garde = set()
-            for jeton in str(ensemble).split(","):
-                jeton = jeton.strip()
-                if not jeton or RX_UE.match(jeton):
-                    continue
-                if " - " in jeton or RX_SOUS_GROUPE.search(jeton):
-                    garde.add(jeton)
-            return sorted(garde, key=tri_naturel)
+            return sorted({t.strip() for t in str(ensemble).split(",")
+                           if re.search(r"[A-Za-z0-9]", t)
+                           and not RX_UE.match(t.strip())}, key=tri_naturel)
         enfants = sel.get("enfants") or {}
         trouve = set()
         for jeton in str(ensemble).split(","):
