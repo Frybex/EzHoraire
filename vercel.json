@@ -21,8 +21,11 @@
     }
   ],
   "functions": {
+    "api/formations.py": { "maxDuration": 60 },
     "api/horaires.py": { "maxDuration": 90 },
     "api/pdf.py": { "maxDuration": 60 },
+    "api/recherche.py": { "maxDuration": 30 },
+    "api/ical.py": { "maxDuration": 30 },
     "api/stats.py": { "maxDuration": 30 }
   }
 }

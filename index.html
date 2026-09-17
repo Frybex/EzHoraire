@@ -231,6 +231,23 @@
   }
   .chip:active { transform: scale(.97); }
   .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  /* Onglets du choix ULB : par niveau, par codes de cours, lien perso. */
+  .modes { display: flex; gap: 6px; margin: 0 0 12px; flex-wrap: wrap; }
+  .modes button {
+    min-height: 40px; padding: 0 14px; border: none; border-radius: 12px;
+    font: inherit; font-size: .88rem; font-weight: 600; color: var(--muted); cursor: pointer;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet);
+    transition: color .2s, box-shadow .2s;
+  }
+  .modes button[aria-selected="true"] {
+    color: var(--ink);
+    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--ink) 42%, transparent), inset 0 1px 0 var(--reflet);
+  }
+  .modes button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  #ulb-cours { margin: 2px 0 12px; }
+  #ulb-cours .chips { margin: 6px 0 8px; }
+  #ulb-lien .champs { margin-bottom: 12px; }
   /* Bouton d'action des étapes : relief, collé en bas tant qu'on défile. */
   .primaire {
     position: sticky; bottom: calc(14px + env(safe-area-inset-bottom)); z-index: 5;
@@ -1717,14 +1734,38 @@
   <!-- 2. Formation -->
   <section id="v-formation" hidden>
     <p class="etapes" role="img" aria-label="Étape 2 sur 3"><span class="on"></span><span class="on"></span><span></span></p>
-    <h2 class="q">Ta formation</h2>
+    <h2 class="q" id="formation-titre">Ta formation</h2>
+    <div class="modes" id="ulb-modes" role="tablist" aria-label="Comment trouver tes cours" hidden>
+      <button type="button" role="tab" data-mode="niveau" aria-selected="true">Par niveau d'études</button>
+      <button type="button" role="tab" data-mode="cours" aria-selected="false">Par codes de cours</button>
+      <button type="button" role="tab" data-mode="lien" aria-selected="false">Mon horaire ULB</button>
+    </div>
     <p class="aide" id="formation-aide"></p>
-    <div class="champs recherche-bloc halo">
+    <div class="champs recherche-bloc halo" id="formation-recherche">
       <div class="champ-ligne">
         <svg class="champ-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg>
         <input class="champ" id="recherche" type="search" placeholder="Rechercher, ex. bac 2 informatique"
                aria-label="Rechercher une formation" autocomplete="off" autocorrect="off" spellcheck="false">
       </div>
+    </div>
+    <div id="ulb-cours" hidden>
+      <div class="chips" id="ulb-cours-chips"></div>
+      <p class="aide" id="ulb-cours-vide">Aucun cours choisi. Cherche un code (DROIC2001) ou un intitulé, puis touche le cours pour l'ajouter.</p>
+      <button class="primaire halo" id="ulb-cours-voir" type="button" disabled>Voir mon horaire</button>
+    </div>
+    <div id="ulb-lien" hidden>
+      <p class="aide">Ton horaire personnel (MonULB) s'abonne dans TimeEdit : ouvre
+        <a href="https://cloud.timeedit.net/be_ulb/web/etudiant/" target="_blank" rel="noopener">Mon horaire</a>
+        avec ton ULBID, choisis « toute la durée affichée » puis « S'abonner », et colle ici le lien obtenu.</p>
+      <div class="champs halo">
+        <div class="champ-ligne">
+          <svg class="champ-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M9 15l6-6M8 7h6a5 5 0 0 1 0 10H8a5 5 0 0 1 0-10z"/></svg>
+          <input class="champ" id="ulb-lien-champ" type="url" inputmode="url" autocomplete="off" autocorrect="off" spellcheck="false"
+                 placeholder="https://cloud.timeedit.net/be_ulb/web/…">
+        </div>
+      </div>
+      <button class="primaire halo" id="ulb-lien-voir" type="button">Vérifier le lien</button>
+      <p class="pdf-status" id="ulb-lien-status" role="status"></p>
     </div>
     <p class="pdf-status" id="formations-status" role="status"></p>
     <ul class="liste" id="liste-formations"></ul>
@@ -1894,7 +1935,8 @@
   /* Écoles prises en charge (même identifiant que ECOLES dans api/_ecoles.py). */
   var ECOLES = [
     { id: "heh", nom: "HEH", detail: "Haute École en Hainaut · Mons, Tournai", logo: "logos/ecoles/heh.svg" },
-    { id: "umons", nom: "UMONS", detail: "Université de Mons · Mons, Charleroi", logo: "logos/ecoles/umons.svg" }
+    { id: "umons", nom: "UMONS", detail: "Université de Mons · Mons, Charleroi", logo: "logos/ecoles/umons.svg" },
+    { id: "ulb", nom: "ULB", detail: "Université libre de Bruxelles · Bruxelles, Charleroi", logo: "logos/ecoles/ulb.svg", recherche: true }
   ];
   function ecoleDe(id) {
     for (var i = 0; i < ECOLES.length; i++) if (ECOLES[i].id === id) return ECOLES[i];
@@ -1993,12 +2035,26 @@
   function ecrire(cle, valeur) {
     try { localStorage.setItem(cle, JSON.stringify(valeur)); } catch (e) { /* plein / privé */ }
   }
-  function cleHoraire(ecole, formation) { return "ezh_horaire:" + ecole + ":" + formation; }
+  /* Lien d'abonnement personnel (ULB) : la clé de cache ne doit jamais
+     contenir le lien (localStorage partagé, journaux…) — une empreinte
+     suffit, et deux liens différents ne se marchent pas dessus. */
+  function empreinteLien(lien) {
+    var h = 5381, s = String(lien);
+    for (var i = 0; i < s.length; i++) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0;
+    return h.toString(36);
+  }
+  function cleHoraire(ecole, formation, ical) {
+    if (ical) return "ezh_horaire:" + ecole + ":lien:" + empreinteLien(ical);
+    return "ezh_horaire:" + ecole + ":" + formation;
+  }
   function valide(d) {
     return !!(d && d.meta && d.meta.periode && d.meta.premier_lundi && d.cours && d.groupes);
   }
   function profilValide(p) {
-    return !!(p && p.id && ecoleDe(p.ecole) && p.formation && Array.isArray(p.groupes));
+    if (!(p && p.id && ecoleDe(p.ecole) && p.formation && Array.isArray(p.groupes))) return false;
+    // Lien d'abonnement (ULB) : chaîne courte uniquement, jamais un objet.
+    if (p.ical != null && typeof p.ical !== "string") return false;
+    return true;
   }
   function nouveauId() {
     return "p" + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36);
@@ -2049,6 +2105,8 @@
         p.groupes = nets;
         profilsSales = true;
       }
+      if (typeof p.ical !== "string") p.ical = "";
+      else if (p.ical.length > 1200) p.ical = p.ical.slice(0, 1200);
       if (!p.surnom) p.surnom = surnomDefaut(p.formation);
       // Répare les noms auto-générés par l'ancienne version raccourcie.
       else if (p.surnom !== p.formation && p.surnom === ancienSurnomAuto(p.formation, p.groupes)) {
@@ -2138,7 +2196,7 @@
     COURS = [];
     LUNDI0 = null;
     SEMAINES = [];
-    choix = { ecole: null, formation: null, data: null, groupes: [], editionId: null, theme: null };
+    choix = { ecole: null, formation: null, data: null, groupes: [], ical: null, editionId: null, theme: null };
     themeChoisiIdentite = 2;
     ecrire(CLE_PROFILS, profils);
     ecrire(CLE_COURANT, null);
@@ -2342,7 +2400,15 @@
     if (!SUPABASE_OK || !sb || !sessionSupabase || !sessionSupabase.user || !compte || compte.supabase_id !== sessionSupabase.user.id) return Promise.resolve(false);
     var uid = sessionSupabase.user.id;
     var generation = generationCompte;
-    return sb.from("profils").select("id,surnom,ecole,formation,groupes,theme,updated_at").eq("user_id", uid).then(function (res) {
+    // Base pas encore migrée (colonne `ical` absente) : on relit sans elle,
+    // la synchro reste vivante en attendant le schema.sql à jour.
+    function lire(colonnes) { return sb.from("profils").select(colonnes).eq("user_id", uid); }
+    return lire("id,surnom,ecole,formation,groupes,ical,theme,updated_at").then(function (res) {
+      if (res.error && /ical/i.test(String(res.error.message || ""))) {
+        return lire("id,surnom,ecole,formation,groupes,theme,updated_at");
+      }
+      return res;
+    }).then(function (res) {
       if (generation !== generationCompte || !sessionSupabase || !sessionSupabase.user || sessionSupabase.user.id !== uid || !compte || compte.supabase_id !== uid) return false;
       if (res.error) throw res.error;
       var parId = {};
@@ -2353,6 +2419,7 @@
                         ecole: ecoleDe(l.ecole) ? l.ecole : "heh",
                         formation: String(l.formation || ""),
                         groupes: Array.isArray(l.groupes) ? l.groupes.map(propre).filter(Boolean) : [],
+                        ical: typeof l.ical === "string" ? l.ical.slice(0, 1200) : "",
                         theme: normaliserTheme(l.theme),
                         maj: Date.parse(l.updated_at) || 0 };
         // Nom auto-généré avec l'ancien format ('.BAB1 - …', point UMONS) :
@@ -2382,10 +2449,23 @@
     var uid = sessionSupabase.user.id;
     var lignes = profils.filter(profilValide).map(function (p) {
       return { user_id: uid, id: p.id, surnom: p.surnom, ecole: p.ecole,
-               formation: p.formation, groupes: p.groupes, theme: normaliserTheme(p.theme) };
+               formation: p.formation, groupes: p.groupes,
+               ical: typeof p.ical === "string" ? p.ical.slice(0, 1200) : "",
+               theme: normaliserTheme(p.theme) };
     });
     if (!lignes.length) return Promise.resolve(true);
-    return sb.from("profils").upsert(lignes, { onConflict: "user_id,id" }).then(function (res) {
+    // Base pas encore migrée : on pousse sans `ical` plutôt que d'échouer.
+    function ecrire(liste) { return sb.from("profils").upsert(liste, { onConflict: "user_id,id" }); }
+    return ecrire(lignes).then(function (res) {
+      if (res.error && /ical/i.test(String(res.error.message || ""))) {
+        return ecrire(lignes.map(function (l) {
+          var copie = {};
+          for (var k in l) if (k !== "ical") copie[k] = l[k];
+          return copie;
+        }));
+      }
+      return res;
+    }).then(function (res) {
       if (res.error) throw res.error;
       return true;
     });
@@ -2620,8 +2700,16 @@
   }
   // Nom de formation affichable : l'UMONS préfixe d'un point
   // ('.BAB1 - Droit'). La valeur complète reste la clé d'API.
+  // ULB : « PAR:CODE1,CODE2 » (cours choisis) et le libellé du lien perso
+  // sont résumés pour l'affichage.
   function joliFormation(f) {
-    return String(f == null ? "" : f).replace(/^\s*[.\s]+/, "").replace(/\s+/g, " ").trim();
+    var s = String(f == null ? "" : f);
+    if (s.indexOf("PAR:") === 0) {
+      var codes = s.slice(4).split(",").filter(Boolean);
+      return codes.length > 3 ? codes.length + " cours choisis" : codes.join(" · ");
+    }
+    if (/^Mon horaire \(lien/.test(s)) return "Mon horaire";
+    return s.replace(/^\s*[.\s]+/, "").replace(/\s+/g, " ").trim();
   }
   function txt(s) {
     return String(s == null ? "" : s)
@@ -2719,6 +2807,13 @@
     '<path d="M14 3v5h5M9 13h6M9 17h4"/></svg>';
   function majBoutonPdf() {
     var btn = document.getElementById("btn-pdf");
+    // Horaire importé d'un lien : il n'y a pas de PDF officiel côté école.
+    if (profil && profil.ical) {
+      btn.hidden = true;
+      document.getElementById("horaire-contenu").classList.remove("pdf-ouvert");
+      return;
+    }
+    btn.hidden = false;
     var ouvert = pdfOuvert || pdfCharge;
     // Sur ordinateur, seul le début du texte s'affiche (la semaine est déjà en titre).
     btn.innerHTML = ICONE_PDF + "<span>" + (ouvert ? "Masquer le PDF" : "PDF officiel") +
@@ -3060,13 +3155,17 @@
   }
   /* L'horaire se met à jour à l'ouverture : recharger la page suffit.
      Pas de rafraîchissement forcé (l'API n'en propose pas : elle sert
-     un cache partagé de 15 min pour protéger l'école). */
-  function chargerHoraire(ecole, formation) {
-    return api("api/horaires?ecole=" + encodeURIComponent(ecole) +
-               "&formation=" + encodeURIComponent(formation), 95000)
+     un cache partagé de 15 min pour protéger l'école). Un profil « lien
+     d'abonnement » (ULB) lit son flux iCal à la place. */
+  function chargerHoraire(ecole, formation, ical) {
+    var url = ical
+      ? "api/ical?lien=" + encodeURIComponent(ical)
+      : "api/horaires?ecole=" + encodeURIComponent(ecole) +
+        "&formation=" + encodeURIComponent(formation);
+    return api(url, 95000)
       .then(function (rep) {
         if (!valide(rep.data)) throw new Error("réponse incomplète.");
-        ecrire(cleHoraire(ecole, formation), rep.data);
+        ecrire(cleHoraire(ecole, formation, ical), rep.data);
         return rep.data;
       });
   }
@@ -3252,9 +3351,9 @@
 
   /* ---------- 1. École ---------- */
   // choix.editionId : null = nouvel horaire ; sinon id du profil modifié.
-  var choix = { ecole: null, formation: null, data: null, groupes: [], editionId: null, theme: null };
+  var choix = { ecole: null, formation: null, data: null, groupes: [], ical: null, editionId: null, theme: null };
   function demarrerAjout() {
-    choix = { ecole: profil ? profil.ecole : "heh", formation: null, data: null, groupes: [], editionId: null, theme: suggereThemeSuivant() };
+    choix = { ecole: profil ? profil.ecole : "heh", formation: null, data: null, groupes: [], ical: null, editionId: null, theme: suggereThemeSuivant() };
     document.getElementById("surnom").value = "";
     pile = ["horaire"];
     ouvrirEcoles();
@@ -3277,7 +3376,7 @@
     if (!b) return;
     var keepEdition = choix.editionId;
     var keepTheme = choix.theme;
-    choix = { ecole: b.getAttribute("data-ecole"), formation: null, data: null, groupes: [], editionId: keepEdition, theme: keepTheme };
+    choix = { ecole: b.getAttribute("data-ecole"), formation: null, data: null, groupes: [], ical: null, editionId: keepEdition, theme: keepTheme };
     aller("formation");
   });
 
@@ -3292,6 +3391,14 @@
     document.getElementById("formation-aide").textContent = ec.nom + " · " + ec.detail;
     var status = document.getElementById("formations-status");
     var champ = document.getElementById("recherche");
+    var estUlb = !!(ec && ec.recherche);
+    document.getElementById("ulb-modes").hidden = !estUlb;
+    if (estUlb) { ulbOuvrir(); return; }
+    document.getElementById("ulb-cours").hidden = true;
+    document.getElementById("ulb-lien").hidden = true;
+    document.getElementById("formation-recherche").hidden = false;
+    document.getElementById("liste-formations").hidden = false;
+    document.getElementById("formation-titre").textContent = "Ta formation";
     if (formations.ecole === choix.ecole && formations.liste) {
       effacer(status); listerFormations(); return;
     }
@@ -3307,6 +3414,155 @@
       if (vue === "formation") erreur(status, "Échec : " + e.message + " Reviens en arrière pour réessayer.");
     });
   }
+
+  /* ---------- 2b. ULB : par niveau, par codes de cours, ou lien perso ----------
+     L'ULB publie plus de 2 000 niveaux d'études : pas de liste complète à
+     télécharger, une recherche serveur (api/recherche). Trois entrées :
+     - « Par niveau d'études » : les blocs d'année (« B-DROIB:2 · Bachelier
+       en droit… »), puis l'écran des groupes habituel (groupe 01, PAD6,
+       options…) ;
+     - « Par codes de cours » : on coche des unités d'enseignement (code ou
+       intitulé), la clé de formation devient « PAR:CODE1,CODE2 » ;
+     - « Mon horaire ULB » : l'horaire personnel via le lien d'abonnement
+       iCal de Mon horaire (api/ical) — aucun identifiant ne passe par nous. */
+  var ULB_LIEN_FORMATION = "Mon horaire (lien d'abonnement)";
+  var ulb = { mode: "niveau", cours: [], requete: 0, minuteur: 0 };
+  function ulbOuvrir() {
+    ulbAppliquerMode(false);
+    if (window.matchMedia("(hover: hover)").matches && ulb.mode !== "lien") {
+      document.getElementById("recherche").focus();
+    }
+  }
+  function ulbAppliquerMode(relancer) {
+    var champ = document.getElementById("recherche");
+    var liste = document.getElementById("liste-formations");
+    var titre = document.getElementById("formation-titre");
+    var aide = document.getElementById("formation-aide");
+    Array.prototype.forEach.call(document.querySelectorAll("#ulb-modes button"), function (b) {
+      b.setAttribute("aria-selected", String(b.getAttribute("data-mode") === ulb.mode));
+    });
+    effacer(document.getElementById("formations-status"));
+    ulb.requete++; // invalide une recherche en vol
+    liste.innerHTML = "";
+    document.getElementById("formation-recherche").hidden = ulb.mode === "lien";
+    document.getElementById("ulb-cours").hidden = ulb.mode !== "cours";
+    document.getElementById("ulb-lien").hidden = ulb.mode !== "lien";
+    if (ulb.mode === "niveau") {
+      titre.textContent = "Ton niveau d'études";
+      champ.placeholder = "Recherche, ex. droit bloc 2, polytech…";
+      champ.setAttribute("aria-label", "Rechercher un niveau d'études");
+      aide.textContent = "Écris au moins 2 lettres : l'ULB publie plus de 2 000 niveaux d'études.";
+    } else if (ulb.mode === "cours") {
+      titre.textContent = "Tes cours (UE)";
+      champ.placeholder = "Code ou intitulé, ex. DROIC2001, droit pénal…";
+      champ.setAttribute("aria-label", "Rechercher un cours");
+      aide.textContent = "Coche les cours que tu suis, puis « Voir mon horaire ».";
+      ulbRendreCours();
+    } else {
+      titre.textContent = "Ton horaire personnel";
+      aide.textContent = "Le lien d'abonnement de MonULB (TimeEdit). Il donne accès à ton horaire : " +
+        "garde-le pour toi, et supprime-le d'ici si tu le révoques un jour.";
+      var champLien = document.getElementById("ulb-lien-champ");
+      if (choix.ical) champLien.value = choix.ical;
+      champLien.focus();
+    }
+    if (relancer && ulb.mode !== "lien") ulbChercher();
+  }
+  function ulbChercher() {
+    var champ = document.getElementById("recherche");
+    var status = document.getElementById("formations-status");
+    var texte = champ.value.replace(/\s+/g, " ").trim();
+    var genre = ulb.mode === "cours" ? "ue" : "niveau";
+    var seq = ++ulb.requete;
+    if (texte.length < 2) { effacer(status); return; }
+    attente(status, "Recherche…");
+    api("api/recherche?ecole=ulb&genre=" + genre + "&q=" + encodeURIComponent(texte), 20000)
+      .then(function (rep) {
+        if (seq !== ulb.requete || vue !== "formation") return;
+        effacer(status);
+        ulbRendreResultats(rep.resultats || []);
+      }, function (e) {
+        if (seq !== ulb.requete || vue !== "formation") return;
+        erreur(status, "Échec : " + e.message + " Vérifie ta connexion et réessaie.");
+      });
+  }
+  function ulbRendreResultats(resultats) {
+    var liste = document.getElementById("liste-formations");
+    if (!resultats.length) {
+      liste.innerHTML = '<li class="empty">Aucun résultat. Essaie un autre mot ou le code exact.</li>';
+      return;
+    }
+    var parCours = ulb.mode === "cours";
+    liste.innerHTML = resultats.map(function (r) {
+      var choisi = parCours && ulb.cours.indexOf(r.cle) >= 0;
+      return '<li><button type="button" class="halo" data-formation="' + txt(r.cle) + '"' +
+        (parCours ? ' aria-pressed="' + choisi + '"' : "") + '><span class="nom">' +
+        txt(joliFormation(r.cle)) + '</span><span class="chev" aria-hidden="true"></span></button></li>';
+    }).join("");
+  }
+  function ulbBasculeCours(cle) {
+    var i = ulb.cours.indexOf(cle);
+    if (i >= 0) ulb.cours.splice(i, 1); else ulb.cours.push(cle);
+    Array.prototype.forEach.call(document.querySelectorAll("#liste-formations button[data-formation]"), function (b) {
+      if (b.getAttribute("data-formation") === cle) b.setAttribute("aria-pressed", String(i < 0));
+    });
+    ulbRendreCours();
+  }
+  function ulbRendreCours() {
+    document.getElementById("ulb-cours-chips").innerHTML = ulb.cours.map(function (cle) {
+      return '<button type="button" class="chip" data-cours="' + txt(cle) + '" aria-pressed="true">' +
+        '<span class="coche" aria-hidden="true"></span>' + txt(joliFormation(cle)) + "</button>";
+    }).join("");
+    var btn = document.getElementById("ulb-cours-voir");
+    btn.textContent = ulb.cours.length
+      ? "Voir mon horaire · " + ulb.cours.length + " cours"
+      : "Voir mon horaire";
+    btn.disabled = !ulb.cours.length;
+    document.getElementById("ulb-cours-vide").hidden = !!ulb.cours.length;
+  }
+  function ulbVoirCours() {
+    if (!ulb.cours.length) return;
+    choix.formation = "PAR:" + ulb.cours.map(function (c) { return c.split(" · ")[0]; }).join(",");
+    choix.data = null; choix.groupes = []; choix.ical = null;
+    document.getElementById("recherche").blur();
+    aller("groupes");
+  }
+  function ulbVerifierLien() {
+    var statut = document.getElementById("ulb-lien-status");
+    var btn = document.getElementById("ulb-lien-voir");
+    var lien = document.getElementById("ulb-lien-champ").value.trim();
+    if (!lien) { erreur(statut, "Colle d'abord le lien d'abonnement (« S'abonner » dans Mon horaire)."); return; }
+    btn.disabled = true;
+    attente(statut, "Lecture de ton calendrier…");
+    api("api/ical?lien=" + encodeURIComponent(lien), 40000).then(function (rep) {
+      btn.disabled = false;
+      effacer(statut);
+      choix.formation = ULB_LIEN_FORMATION;
+      choix.ical = lien;
+      choix.data = rep.data;
+      choix.groupes = [];
+      aller("groupes");
+    }, function (e) {
+      btn.disabled = false;
+      erreur(statut, "Échec : " + e.message);
+    });
+  }
+  document.getElementById("ulb-modes").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-mode]");
+    if (!b || b.getAttribute("data-mode") === ulb.mode) return;
+    ulb.mode = b.getAttribute("data-mode");
+    document.getElementById("recherche").value = "";
+    ulbAppliquerMode(true);
+  });
+  document.getElementById("ulb-cours-chips").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-cours]");
+    if (b) ulbBasculeCours(b.getAttribute("data-cours"));
+  });
+  document.getElementById("ulb-cours-voir").addEventListener("click", ulbVoirCours);
+  document.getElementById("ulb-lien-voir").addEventListener("click", ulbVerifierLien);
+  document.getElementById("ulb-lien-champ").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") { e.preventDefault(); ulbVerifierLien(); }
+  });
   /* Recherche : les écoles abrègent (UMONS : « BAB1 », « MAB2 », « Ir. »,
      « (Ch) »…). Chaque nom reçoit des mots-clés en clair, pour qu'on trouve
      « bac 1 droit », « master gestion », « ingénieur civil » ou « charleroi ». */
@@ -3393,11 +3649,22 @@
       : '<li class="empty">Aucune formation ne correspond.</li>';
   }
   document.getElementById("recherche").addEventListener("input", function () {
+    var ec = ecoleDe(choix.ecole);
+    if (ec && ec.recherche) { // ULB : recherche serveur, avec un petit délai
+      clearTimeout(ulb.minuteur);
+      ulb.minuteur = setTimeout(ulbChercher, 220);
+      return;
+    }
     if (formations.liste) listerFormations();
   });
   document.getElementById("liste-formations").addEventListener("click", function (e) {
     var b = e.target.closest("button[data-formation]");
     if (!b) return;
+    var ec = ecoleDe(choix.ecole);
+    if (ec && ec.recherche && ulb.mode === "cours") { // on coche le cours
+      ulbBasculeCours(b.getAttribute("data-formation"));
+      return;
+    }
     var memeFormation = choix.formation === b.getAttribute("data-formation");
     choix.formation = b.getAttribute("data-formation");
     if (!memeFormation) { choix.data = null; choix.groupes = []; }
@@ -3446,8 +3713,9 @@
     if (choix.data) { effacer(status); listerGroupes(); return; }
     attente(status, "Recherche des groupes de " + joliFormation(choix.formation) + "…");
     var demande = choix.formation;
-    chargerHoraire(choix.ecole, demande).then(function (data) {
-      if (choix.formation !== demande) return;
+    var icalDemande = choix.ical;
+    chargerHoraire(choix.ecole, demande, icalDemande).then(function (data) {
+      if (choix.formation !== demande || choix.ical !== icalDemande) return;
       choix.data = data;
       if (vue !== "groupes") return;
       effacer(status); listerGroupes();
@@ -3629,8 +3897,11 @@
   }
   /* Groupes par cours (options, langues…) : sans sélection, l'horaire
      mélangerait toutes les options, illisible et trompeur. On exige au
-     moins un groupe au-delà de 8. */
+     moins un groupe au-delà de 8. Ni un parcours ULB (« PAR:… ») ni un
+     horaire importé (lien d'abonnement) n'ont d'options : rien à exiger. */
   function groupeObligatoire() {
+    if (choix.ical) return false;
+    if (choix.formation && choix.formation.indexOf("PAR:") === 0) return false;
     return !!(choix.data && choix.data.groupes && choix.data.groupes.length > 8);
   }
   function majValider() {
@@ -3688,6 +3959,7 @@
           profils[i].ecole = choix.ecole;
           profils[i].formation = choix.formation;
           profils[i].groupes = sel;
+          profils[i].ical = choix.ical || "";
           profils[i].surnom = surnom;
           if (choix.theme != null) profils[i].theme = normaliserTheme(choix.theme);
           profil = profils[i];
@@ -3699,7 +3971,7 @@
       profil = {
         id: nouveauId(), surnom: surnom,
         ecole: choix.ecole, formation: choix.formation,
-        groupes: sel, theme: theme
+        groupes: sel, ical: choix.ical || "", theme: theme
       };
       profils.push(profil);
     }
@@ -3730,7 +4002,7 @@
     sauverProfils();
     fermerPdf();
     DATA = null;
-    var memo = lire(cleHoraire(profil.ecole, profil.formation));
+    var memo = lire(cleHoraire(profil.ecole, profil.formation, profil.ical));
     if (valide(memo)) installer(memo);
     sem = semaineCourante();
     resetDepliage(); deplierAujourdhui();
@@ -4403,7 +4675,7 @@
       fermerPdf();
       DATA = null;
       if (profil) {
-        var memo = lire(cleHoraire(profil.ecole, profil.formation));
+        var memo = lire(cleHoraire(profil.ecole, profil.formation, profil.ical));
         if (valide(memo)) installer(memo);
         sem = semaineCourante();
         resetDepliage(); deplierAujourdhui();
@@ -4820,7 +5092,7 @@
     if (!profil) return;
     fermerFeuille();
     document.getElementById("surnom").value = profil.surnom;
-    choix = { ecole: profil.ecole, formation: profil.formation, data: DATA, groupes: profil.groupes, editionId: profil.id, theme: normaliserTheme(profil.theme) };
+    choix = { ecole: profil.ecole, formation: profil.formation, data: DATA, groupes: profil.groupes, ical: profil.ical || null, editionId: profil.id, theme: normaliserTheme(profil.theme) };
     aller("groupes");
   }
   document.getElementById("btn-ajouter").addEventListener("click", function () {
@@ -4875,7 +5147,7 @@
     if (!profil) return Promise.resolve(false);
     derniereMaj = Date.now();
     var p = profil;
-    return chargerHoraire(p.ecole, p.formation).then(function (data) {
+    return chargerHoraire(p.ecole, p.formation, p.ical).then(function (data) {
       if (profil !== p) return false; // profil changé entre-temps
       if (DATA && DATA.formation === data.formation && data.meta.ts < DATA.meta.ts) return false;
       var premier = !DATA;
@@ -4961,7 +5233,7 @@
      Ouvre le dernier horaire revu (connecté par défaut) : le cache local
      s'affiche tout de suite, puis actualiser() va chercher l'école. */
   function demarrerHoraire() {
-    var memo = lire(cleHoraire(profil.ecole, profil.formation));
+    var memo = lire(cleHoraire(profil.ecole, profil.formation, profil.ical));
     if (valide(memo)) {
       installer(memo);
       sem = semaineCourante();

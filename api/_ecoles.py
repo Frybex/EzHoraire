@@ -17,10 +17,12 @@ if ICI not in sys.path:
 
 import _heh  # noqa: E402
 import _umons  # noqa: E402
+import _ulb  # noqa: E402
 
 ECOLES = {
     "heh": _heh,
     "umons": _umons,
+    "ulb": _ulb,
 }
 
 
@@ -89,6 +91,8 @@ _DEBIT_MAX = {
     "formations": (60, 60.0),  # liste légère : 60 / min / IP
     "horaires": (12, 60.0),    # ~50 appels école chacun : 12 / min / IP
     "pdf": (12, 60.0),         # session + génération : 12 / min / IP
+    "recherche": (60, 60.0),   # recherche en direct (niveaux, cours) : 60 / min / IP
+    "ical": (12, 60.0),        # lien d'abonnement personnel : 12 / min / IP
 }
 _DEBIT = {}  # (point d'entrée, ip) -> deque des horodatages (monotonic)
 _DEBIT_VERROU = threading.Lock()

@@ -18,10 +18,14 @@ create table if not exists public.profils (
   ecole      text        not null default 'heh',
   formation  text        not null default '',
   groupes    jsonb       not null default '[]'::jsonb,
+  ical       text        not null default '', -- lien d'abonnement perso (ULB), vide sinon
   theme      smallint    not null default 2, -- 2: Bleu, 1: Vert, 3: Rose
   updated_at timestamptz not null default now(),
   primary key (user_id, id)
 );
+
+-- Bases créées avant la colonne `ical` : l'ajouter sans rien casser.
+alter table public.profils add column if not exists ical text not null default '';
 
 -- Horodatage auto (l'app s'en sert pour fusionner local <-> cloud).
 create or replace function public.toucher_updated_at()
@@ -59,21 +63,24 @@ create policy "profils_delete_propres" on public.profils
 -- Bornes sur profils : l'app écrit via la clé anon (RLS), un client
 -- trafiqué pourrait y stocker n'importe quoi (volume, dashboard
 -- pollué). Mêmes bornes que l'app : surnom 24, ecole 24, formation
--- 200, id 120, theme 1/2/3, groupes < 8 ko de JSON.
--- Rejouable : chaque contrainte n'est ajoutée que si elle manque.
+-- 200, lien d'abonnement 1200, id 120, theme 1/2/3, groupes < 8 ko.
+-- Rejouable : la contrainte est recréée à chaque passage (les bases
+-- d'avant la colonne `ical` reçoivent la borne au passage).
 -- ---------------------------------------------------------------
 do $$
 begin
-  if not exists (select 1 from pg_constraint where conname = 'profils_bornes') then
-    alter table public.profils add constraint profils_bornes check (
-      char_length(id) <= 120
-      and char_length(surnom) <= 24
-      and char_length(ecole) <= 24
-      and char_length(formation) <= 200
-      and theme in (1, 2, 3)
-      and octet_length(groupes::text) <= 8000
-    );
+  if exists (select 1 from pg_constraint where conname = 'profils_bornes') then
+    alter table public.profils drop constraint profils_bornes;
   end if;
+  alter table public.profils add constraint profils_bornes check (
+    char_length(id) <= 120
+    and char_length(surnom) <= 24
+    and char_length(ecole) <= 24
+    and char_length(formation) <= 200
+    and char_length(ical) <= 1200
+    and theme in (1, 2, 3)
+    and octet_length(groupes::text) <= 8000
+  );
 end
 $$;
 

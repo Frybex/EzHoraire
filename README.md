@@ -22,9 +22,11 @@ n'ont jamais la même couleur, et la couleur d'un cours ne change pas
 d'une semaine à l'autre. Rendu volontairement mat : fond très peu
 saturé, rail de couleur à gauche, texte neutre.
 
-Écoles prises en charge : **HEH** (HEH Planning) et **UMONS** (UMONS Planning, espace invités public).
-Objectif : la plupart des universités et hautes écoles belges, puis les
-applications iOS et Android, et les comptes (Google, GitHub, email).
+Écoles prises en charge : **HEH** (HEH Planning), **UMONS** (UMONS Planning,
+espace invités public) et **ULB** (TimeEdit, vue publique « je n'ai pas
+encore d'ULBID »). Objectif : la plupart des universités et hautes écoles
+belges, puis les applications iOS et Android, et les comptes (Google,
+GitHub, email).
 
 ## Comptes (Supabase Auth, branché)
 
@@ -49,7 +51,9 @@ démarrage, fusion par `id` (le dernier écrit gagne via `maj` /
 Reste côté consoles (une fois le projet Supabase créé) :
 
 1. Supabase → SQL Editor : coller `supabase/schema.sql` (table `profils`
-   + RLS « chacun ne voit que ses lignes »).
+   + RLS « chacun ne voit que ses lignes »). Rejouable : recoller le
+   fichier après une mise à jour (il ajoute au passage la colonne `ical`,
+   le lien d'abonnement personnel des horaires ULB).
 2. Vercel → Settings → Environment Variables : `SUPABASE_URL` +
    `SUPABASE_ANON_KEY` (Production + Preview), puis redéployer.
 3. Supabase → Authentication → URL Configuration : Site URL =
@@ -118,11 +122,17 @@ au maximum : un changement de salle apparaît au plus tard après ça).
 
 ## Fonctionnement
 
-- `GET /api/formations?ecole=heh` : formations de l'école.
+- `GET /api/formations?ecole=heh` : formations de l'école. L'ULB en a plus
+  de 2 000 (niveaux d'études) : l'app ne télécharge pas cette liste, elle
+  utilise `api/recherche`.
 - `GET /api/horaires?ecole=heh&formation=<nom>` : horaire complet de la
   formation, semaine par semaine ; chaque cours porte ses groupes (vide =
   toute la formation). L'app filtre selon les groupes de l'étudiant : une
   seule récupération par formation, partagée par tous ses étudiants.
+- `GET /api/recherche?ecole=ulb&genre=niveau|ue&q=..` : recherche en direct
+  des niveaux d'études ou des unités d'enseignement (ULB).
+- `GET /api/ical?lien=<url>` : horaire d'un lien d'abonnement TimeEdit
+  (« S'abonner » dans Mon horaire), au même format que api/horaires.
 - `GET /api/pdf?ecole=heh&formation=..&groupe=..&semaine=..` : PDF officiel.
 
 Selon la formation, l'école a un groupe par classe (BA2P Informatique),
@@ -135,6 +145,18 @@ une seule liste. Un rappel signale les cours pour lesquels aucun groupe
 n'est coché (cours silencieusement absents de l'horaire autrement).
 Au-delà de 8 groupes, l'app exige au moins une sélection (sans elle,
 l'horaire mélangerait toutes les options).
+
+Spécificités ULB (TimeEdit) : deux façons de composer un horaire — par
+niveau d'études (« B-DROIB:2 · Bachelier en droit… », puis le groupe :
+groupe 01, PAD6, option…) et par cours (« PAR:DROIC2001,DROIC2007 », pour
+les cours isolés et les programmes à la carte). Le moteur lit la vue
+publique de TimeEdit (`objects.json`, `ri.json`, `ri.pdf`), sans session ni
+identifiant ; les groupes d'un cours viennent de la colonne « Ensemble
+d'étudiants » des réservations. L'étudiant qui a un ULBID peut aussi coller
+le lien d'abonnement iCal de son Mon horaire : l'app lit alors son horaire
+personnel (`api/ical`), sans que le moindre mot de passe passe par nous, et
+sans PDF (il n'y en a pas pour un lien). La liste des niveaux n'est pas
+téléchargée : le champ de recherche appelle `api/recherche`.
 
 Spécificités UMONS (382 formations) : chaque groupe est préfixé par sa
 formation (`<.BAB1 - Droit>Dr. rom - Gr 1`), l'API renvoie les noms
@@ -167,10 +189,14 @@ les sources. `logos/ecoles/` est déployé, `logos/da/` et `logos/ez/`
 - `api/_hyperplanning.py` — moteur commun pour les écoles sous Hyperplanning (authentification, décodage, requêtes).
 - `api/_heh.py` — configuration et adaptation pour la HEH (Haute École en Hainaut).
 - `api/_umons.py` — configuration et adaptation pour l'UMONS (Université de Mons).
+- `api/_timeedit.py` — moteur commun TimeEdit (recherche, réservations, PDF, cache).
+- `api/_ulb.py` — configuration et adaptation pour l'ULB (Université libre de Bruxelles).
+- `api/_ical.py` — lecture d'un lien d'abonnement iCal (TimeEdit) → format des écoles.
 - `api/_ecoles.py` — liste des écoles + aides HTTP. Ajouter une école : un
   module comme `_heh.py` ou `_umons.py` (NOM, formations(), horaire(), pdf_semaine()),
   une ligne dans `ECOLES`, et une entrée dans `ECOLES` de `index.html`.
-- `api/formations.py`, `api/horaires.py`, `api/pdf.py` — points d'entrée.
+- `api/formations.py`, `api/horaires.py`, `api/recherche.py`, `api/ical.py`,
+  `api/pdf.py` — points d'entrée.
 - `serve.py` — serveur local avec la même API (http://localhost:8902).
 
 ## Sur l'ordinateur
@@ -192,4 +218,6 @@ vercel --prod --yes
 À la rentrée prochaine : adapter `BASE` (`hehplanning2026`) dans
 `api/_heh.py` ET `BASE` (`hplanning2026`) + `PREMIER_LUNDI_DEFAUT` dans
 `api/_umons.py`. Sans ça, l'école concernée répond « L'école ne répond
-pas correctement » partout.
+pas correctement » partout. Pour l'ULB : `PREMIER_LUNDI_DEFAUT` et `ANNEE`
+(`202627`) dans `api/_ulb.py` (le reste — vues publiques `sid`, fin de
+fenêtre — TimeEdit s'en occupe).
