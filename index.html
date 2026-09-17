@@ -209,6 +209,20 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   .chips-avis { margin: -8px 2px 22px; }
   /* Options : une ligne par option, avec les cours qu'elle contient. */
   .options-liste { display: grid; gap: 8px; }
+  /* Écran des groupes : les sections s'empilent (jamais côte à côte), avec
+     de l'air entre elles, et le titre du groupe ressort. Les options
+     reprennent le style « pastilles » des groupes, pas des barres. */
+  #v-groupes #chips {
+    display: flex; flex-direction: column; align-items: stretch;
+    gap: 26px; margin: 0 0 26px;
+  }
+  #v-groupes .section-groupe { margin: 0; }
+  #v-groupes .section-titre {
+    margin: 0 0 10px 2px; color: var(--ink);
+    font-size: .95rem; font-weight: 700; letter-spacing: -.01em;
+  }
+  #v-groupes .options-liste { display: flex; flex-wrap: wrap; gap: 8px; }
+  #v-groupes .chip.chip-option { display: inline-flex; width: auto; max-width: 100%; }
   .chip.chip-option {
     display: flex; width: 100%; min-height: 52px; padding: 9px 16px 9px 13px;
     border-radius: 16px; text-align: left;
@@ -304,6 +318,9 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     margin: 0 0 14px; padding: 0 14px 18px; border-radius: 14px;
     background: var(--creux); box-shadow: inset 0 0 0 1px var(--line);
   }
+  /* Fermé : juste le titre, pas de vide en dessous. */
+  #ulb-import:not([open]) { padding-bottom: 0; }
+  #ulb-import:not([open]) > summary { padding: 8px 0; }
   #ulb-import > summary {
     cursor: pointer; padding: 12px 0; list-style: none;
     font-size: .92rem; font-weight: 600; color: var(--ink);
@@ -312,15 +329,32 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   #ulb-import > summary::after { content: " ▾"; color: var(--muted); }
   #ulb-import[open] > summary::after { content: " ▴"; }
   #ulb-import[open] > summary { margin-bottom: 10px; }
+  #ulb-import .import-ligne { display: flex; gap: 10px; align-items: flex-end; }
   #ulb-import textarea {
-    width: 100%; box-sizing: border-box; min-height: 96px; resize: none;
+    flex: 1 1 auto; min-width: 0; min-height: 96px; resize: none;
     overflow-y: hidden; /* agrandi par le script ; style de repli discret ci-dessous */
     scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--muted) 42%, transparent) transparent;
-    border: none; border-radius: 12px; padding: 10px 12px; font: inherit;
-    font-size: .9rem; line-height: 1.45; color: var(--ink); background: var(--surface);
-    box-shadow: inset 0 0 0 1px var(--line);
+    border: none; border-radius: 14px; padding: 12px 14px; font: inherit;
+    font-size: .9rem; line-height: 1.45; color: var(--ink);
+    /* Même relief que les boutons : le champ se lit comme « on écrit ici ». */
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
   }
-  #ulb-import #ulb-import-voir { margin: 12px 0 0; } /* l'air du bas est porté par le bloc */
+  #ulb-import textarea:focus {
+    outline: none;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent),
+      inset 0 1px 0 var(--reflet), var(--ombre-btn),
+      0 0 0 4px color-mix(in srgb, var(--accent) 8%, transparent);
+  }
+  #ulb-import #ulb-import-voir {
+    position: static; flex: none; width: auto; min-width: 0; height: 54px; padding: 0 20px;
+    border-radius: 14px; white-space: nowrap;
+  }
+  @media (max-width: 560px) {
+    #ulb-import .import-ligne { flex-direction: column; align-items: stretch; }
+    #ulb-import #ulb-import-voir { width: 100%; }
+  }
+
   #ulb-import textarea::-webkit-scrollbar { width: 8px; }
   #ulb-import textarea::-webkit-scrollbar-track { background: transparent; }
   #ulb-import textarea::-webkit-scrollbar-thumb {
@@ -2029,7 +2063,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       </div>
     </div>
     <div id="ulb-cours" hidden>
-      <details id="ulb-import">
+      <details id="ulb-import" open>
         <summary>Importer une liste de cours</summary>
         <div class="capture">
           <label class="capture-bouton halo" for="ulb-capture-fichier">
@@ -2039,9 +2073,11 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
           <input type="file" id="ulb-capture-fichier" accept="image/*" hidden>
           <span class="capture-aide">ou colle une image (⌘V / Ctrl+V)</span>
         </div>
-        <textarea id="ulb-import-texte" rows="4" spellcheck="false"
-                  placeholder="COMMB300, Droit de l'information et de la communication&#10;LANGB305, Anglais III"></textarea>
-        <button class="primaire halo" id="ulb-import-voir" type="button">Analyser la liste</button>
+        <div class="import-ligne">
+          <textarea id="ulb-import-texte" rows="4" spellcheck="false"
+                    placeholder="COMMB300, Droit de l'information et de la communication&#10;LANGB305, Anglais III"></textarea>
+          <button class="primaire halo" id="ulb-import-voir" type="button">Analyser la liste</button>
+        </div>
         <p class="pdf-status" id="ulb-import-status" role="status" hidden></p>
         <div id="ulb-import-doutes" hidden></div>
       </details>
