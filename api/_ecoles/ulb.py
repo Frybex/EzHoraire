@@ -14,11 +14,11 @@ Deux façons de composer un horaire :
 import os
 import sys
 
-ICI = os.path.dirname(os.path.abspath(__file__))
+ICI = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ICI not in sys.path:
     sys.path.insert(0, ICI)
 
-from _timeedit import ClientTimeEdit  # noqa: E402
+from _moteurs.timeedit import ClientTimeEdit  # noqa: E402
 
 BASE = "https://cloud.timeedit.net/be_ulb/web/public"
 NOM = "ULB — Université libre de Bruxelles"

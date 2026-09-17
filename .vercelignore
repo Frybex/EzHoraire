@@ -13,9 +13,19 @@ __pycache__/
 .DS_Store
 .env*
 serve.log
-# Logos de travail uniquement : logos/ecoles/ (affichés par l'app) reste déployé.
+# Ateliers de logos : seul logos/ecoles/ est affiché par l'app. Les essais
+# et les scripts de génération n'ont rien à faire en ligne. Chaque dossier
+# est listé un par un : « logos/* » + « !logos/ecoles/ » emporterait tout
+# (la ré-inclusion d'un sous-dossier n'est pas honorée ici — vérifié).
 logos/da/
 logos/ez/
+logos/*.svg
+logos/*.py
+logos/preview.html
+
+# Visuels d'affiche (QR codes, maquettes) : 5,8 Mo servis sans que l'app
+# ni aucune page ne les référence.
+qr/
 
 # Prototypes & propositions en cours de conception (non publiés sur Vercel)
 propositions/

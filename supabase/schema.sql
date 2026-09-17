@@ -24,8 +24,13 @@ create table if not exists public.profils (
   primary key (user_id, id)
 );
 
--- Bases créées avant la colonne `ical` : l'ajouter sans rien casser.
-alter table public.profils add column if not exists ical text not null default '';
+-- Bases créées avant une colonne : l'ajouter sans rien casser. `create
+-- table if not exists` ne touche pas une table déjà là, donc toute
+-- colonne ajoutée après coup a besoin de sa ligne ici — sinon la
+-- contrainte profils_bornes plus bas échoue sur une base existante et
+-- tout le fichier s'arrête.
+alter table public.profils add column if not exists ical  text     not null default '';
+alter table public.profils add column if not exists theme smallint not null default 2;
 
 -- Horodatage auto (l'app s'en sert pour fusionner local <-> cloud).
 create or replace function public.toucher_updated_at()

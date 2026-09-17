@@ -1,6 +1,6 @@
 """Moteur commun pour les écoles utilisant Pronote Campus / Hyperplanning (espace invités).
 
-Utilisé par _heh.py et _umons.py.
+Utilisé par _ecoles/heh.py et _ecoles/umons.py.
 """
 import base64
 import collections

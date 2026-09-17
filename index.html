@@ -271,14 +271,21 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--ink) 42%, transparent), inset 0 1px 0 var(--reflet);
   }
   .modes button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  /* Étiquette « Recommandé » : petite capsule posée au-dessus de l'onglet. */
-  .mode-tag {
-    position: absolute; top: -11px; right: 4px; padding: 2px 7px; border-radius: 999px;
+  /* Petite capsule posée au-dessus d'un élément : « Recommandé » sur un
+     onglet de recherche, « Bêta » sur une école encore peu éprouvée. */
+  .mode-tag, .ecole-tag {
+    position: absolute; padding: 2px 7px; border-radius: 999px;
     font-size: .6rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
     color: var(--accent); background: color-mix(in srgb, var(--accent) 13%, var(--surface));
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 32%, transparent);
     pointer-events: none; white-space: nowrap;
   }
+  .mode-tag { top: -11px; right: 4px; }
+  /* La carte de l'école a `overflow: hidden` : la capsule se pose DANS le
+     bouton (elle fait ainsi partie de ce qu'un lecteur d'écran annonce),
+     en haut à droite, au-dessus du chevron. */
+  .liste button { position: relative; }
+  .ecole-tag { top: 7px; right: 12px; }
   /* Cours choisis : code en tête, intitulé en dessous, une seule ligne
      (les intitulés ULB sont longs : on coupe proprement au lieu d'empiler). */
   #rech-cours-chips .chip { max-width: 100%; }
@@ -2342,11 +2349,11 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   var MOIS = ["janv.", "févr.", "mars", "avr.", "mai", "juin",
               "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 
-  /* Écoles prises en charge (même identifiant que ECOLES dans api/_ecoles.py). */
+  /* Écoles prises en charge (même identifiant que ECOLES dans api/_ecoles/). */
   var ECOLES = [
     { id: "heh", nom: "HEH", detail: "Haute École en Hainaut · Mons, Tournai", logo: "logos/ecoles/heh.svg" },
-    { id: "umons", nom: "UMONS", detail: "Université de Mons · Mons, Charleroi", logo: "logos/ecoles/umons.svg" },
-    { id: "ulb", nom: "ULB", detail: "Université libre de Bruxelles · Bruxelles, Charleroi", logo: "logos/ecoles/ulb.svg", recherche: true },
+    { id: "umons", nom: "UMONS", detail: "Université de Mons · Mons, Charleroi", logo: "logos/ecoles/umons.svg", beta: true },
+    { id: "ulb", nom: "ULB", detail: "Université libre de Bruxelles · Bruxelles, Charleroi", logo: "logos/ecoles/ulb.svg", recherche: true, beta: true },
     { id: "ucl", nom: "UCLouvain", detail: "Université catholique de Louvain · Louvain-la-Neuve, Bruxelles, Mons…",
       logo: "logos/ecoles/ucl.svg", recherche: true, pdf: false }
   ];
@@ -3937,7 +3944,10 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       var badge = e.logo
         ? '<span class="sigle sigle-logo" aria-hidden="true"><img src="' + txt(e.logo) + '" alt="" loading="lazy" onerror="this.parentElement.classList.remove(\'sigle-logo\'); this.remove();"><span class="sigle-txt">' + txt(e.nom) + '</span></span>'
         : '<span class="sigle" aria-hidden="true">' + txt(e.nom) + '</span>';
-      return '<li><button type="button" class="halo" data-ecole="' + txt(e.id) + '">' +
+      // « Bêta » : école branchée récemment, pas encore éprouvée par une
+      // année entière. Dit à l'étudiant, pas caché dans le code.
+      var tag = e.beta ? '<span class="ecole-tag">Bêta</span>' : "";
+      return '<li><button type="button" class="halo" data-ecole="' + txt(e.id) + '">' + tag +
              badge + '<span class="nom">' + txt(parts[0]) +
              "<small>" + txt(parts.slice(1).join(" · ")) + '</small></span><span class="chev" aria-hidden="true"></span></button></li>';
     }).join("");

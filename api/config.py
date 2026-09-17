@@ -8,7 +8,7 @@ elles, l'app tourne en mode local (stub, comme avant) : rien ne casse.
 
 `ecoles` est la liste réellement exposée par le serveur : l'app ne
 propose que celles-là. Une école en test (UCLouvain) n'y apparaît que si
-l'hébergeur pose EZH_UCL=1 (voir api/_ecoles.py).
+l'hébergeur pose EZH_UCL=1 (voir api/_ecoles/__init__.py).
 """
 import os
 import sys

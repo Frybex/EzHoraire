@@ -1,6 +1,6 @@
 """Moteur commun pour les écoles publiant leurs horaires sur TimeEdit.
 
-Utilisé par _ulb.py. Contrairement aux écoles Hyperplanning, aucune session
+Utilisé par _ecoles/ulb.py. Contrairement aux écoles Hyperplanning, aucune session
 n'est ouverte : la vue publique de TimeEdit (celle de « je n'ai pas encore
 d'identifiant ») expose des points d'entrée JSON et PDF lisibles sans compte.
 On s'en tient à ceux-là :
@@ -10,7 +10,7 @@ On s'en tient à ceux-là :
 - ri.pdf      : grille officielle, une page par semaine.
 
 Le cache mémoire (15 min horaire, 1 h listes) et le fuse par instance
-imitent _hyperplanning : deux étudiants de la même formation ne font pas
+imitent hyperplanning.py : deux étudiants de la même formation ne font pas
 travailler l'école deux fois.
 """
 import json
@@ -21,7 +21,7 @@ from datetime import datetime, timedelta
 
 import requests
 
-from _hyperplanning import Surcharge, format_ensemble, journal, maintenant, tri_naturel
+from .hyperplanning import Surcharge, format_ensemble, journal, maintenant, tri_naturel
 
 UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/126.0 Safari/537.36")
@@ -55,7 +55,7 @@ def _heure(texte):
 
 
 class _Appels:
-    """Faux compteur d'appels, pour réutiliser journal() de _hyperplanning."""
+    """Faux compteur d'appels, pour réutiliser journal() de hyperplanning.py."""
 
     def __init__(self, client):
         self.client = client
@@ -651,7 +651,7 @@ class ClientTimeEdit:
             raise ValueError("semaine invalide")
         if not 1 <= semaine <= 60:
             raise ValueError("semaine invalide")
-        # Même garde que les écoles Hyperplanning (_hyperplanning.pdf_semaine) :
+        # Même garde que les écoles Hyperplanning (_moteurs/hyperplanning.py) :
         # une semaine que l'école ne publie pas est refusée sans l'appeler.
         # L'horaire déjà en mémoire dit jusqu'où va l'année ; sans lui (instance
         # froide) on laisse passer, TimeEdit tranchera.

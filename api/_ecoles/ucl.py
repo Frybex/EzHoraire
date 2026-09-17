@@ -26,7 +26,7 @@ from urllib.parse import quote
 
 import requests
 
-from _hyperplanning import Surcharge, format_ensemble, journal, maintenant, tri_naturel
+from _moteurs.hyperplanning import Surcharge, format_ensemble, journal, maintenant, tri_naturel
 
 UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/126.0 Safari/537.36")
@@ -280,7 +280,7 @@ class ClientUCL:
 
 
 class _Appels:
-    """Faux compteur d'appels, pour réutiliser journal() de _hyperplanning."""
+    """Faux compteur d'appels, pour réutiliser journal() de hyperplanning.py."""
 
     def __init__(self, client):
         self.client = client

@@ -16,8 +16,8 @@ if ICI not in sys.path:
     sys.path.insert(0, ICI)
 
 from _ecoles import ECOLES, debit, repondre_json, requete  # noqa: E402
-from _hyperplanning import Surcharge  # noqa: E402
-from _import import importer  # noqa: E402
+from _moteurs.hyperplanning import Surcharge  # noqa: E402
+from _moteurs.import_liste import importer  # noqa: E402
 
 PARAMS = ("ecole", "liste")
 LONGUEUR_MAX = 4000

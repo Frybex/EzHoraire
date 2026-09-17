@@ -22,7 +22,7 @@ if ICI not in sys.path:
     sys.path.insert(0, ICI)
 
 from _ecoles import ECOLES, debit, repondre_json, requete  # noqa: E402
-from _hyperplanning import Surcharge  # noqa: E402
+from _moteurs.hyperplanning import Surcharge  # noqa: E402
 
 BUDGET = 75  # s, sous la limite de durée de la fonction chez l'hébergeur
 CACHE_PARTAGE = "public, max-age=0, s-maxage=900, stale-while-revalidate=1800, stale-if-error=604800"

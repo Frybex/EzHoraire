@@ -6,11 +6,11 @@ par serve.py sur l'ordinateur.
 import os
 import sys
 
-ICI = os.path.dirname(os.path.abspath(__file__))
+ICI = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ICI not in sys.path:
     sys.path.insert(0, ICI)
 
-from _hyperplanning import ClientHyperplanning  # noqa: E402
+from _moteurs.hyperplanning import ClientHyperplanning  # noqa: E402
 
 BASE = "https://hehplanning2026.umons.ac.be"
 NOM = "HEH — Haute École en Hainaut"

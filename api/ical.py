@@ -17,8 +17,8 @@ if ICI not in sys.path:
     sys.path.insert(0, ICI)
 
 from _ecoles import debit, repondre_json, requete  # noqa: E402
-from _hyperplanning import Surcharge  # noqa: E402
-from _ical import horaire_ical  # noqa: E402
+from _moteurs.hyperplanning import Surcharge  # noqa: E402
+from _moteurs.ical import horaire_ical  # noqa: E402
 
 PARAMS = ("lien",)
 

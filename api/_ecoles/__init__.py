@@ -1,7 +1,15 @@
 """Écoles prises en charge et petites aides HTTP communes aux points d'entrée.
 
-Ajouter une école : un module (comme _heh.py ou _umons.py) qui expose NOM,
-formations(), horaire() et pdf_semaine(), puis une ligne dans ECOLES.
+Un fichier par école, à côté de celui-ci : heh.py, umons.py, ulb.py,
+ucl.py. Chacun n'est qu'une configuration — l'adresse de l'école, son nom,
+sa rentrée — posée sur un moteur de `_moteurs/` (hyperplanning.py pour la
+HEH et l'UMONS, timeedit.py pour l'ULB). Une école sans moteur commun
+(ucl.py) écrit le sien dans son propre fichier.
+
+Ajouter une école : un module ici qui expose NOM, formations(), horaire()
+et pdf_semaine() — recherche() en plus si sa liste de formations est trop
+grosse à télécharger —, une ligne dans ECOLES ci-dessous, et une entrée
+dans le tableau ECOLES de index.html.
 """
 import json
 import os
@@ -11,27 +19,29 @@ import time
 from collections import deque
 from urllib.parse import parse_qs, unquote_plus, urlparse
 
-ICI = os.path.dirname(os.path.abspath(__file__))
+# api/ sur le chemin : les écoles y trouvent _moteurs/ quel que soit le
+# point d'entrée qui les importe.
+ICI = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ICI not in sys.path:
     sys.path.insert(0, ICI)
 
-import _heh  # noqa: E402
-import _umons  # noqa: E402
-import _ulb  # noqa: E402
+from . import heh  # noqa: E402
+from . import umons  # noqa: E402
+from . import ulb  # noqa: E402
 
 # L'UCLouvain est développé mais pas encore publié : il n'est exposé
 # (proposé par l'app, accepté par recherche/horaires, listé dans
 # /api/config) que si l'hébergeur pose EZH_UCL=1. serve.py le pose pour le
 # développement ; sur Vercel, sans la variable, rien ne l'expose.
 ECOLES = {
-    "heh": _heh,
-    "umons": _umons,
-    "ulb": _ulb,
+    "heh": heh,
+    "umons": umons,
+    "ulb": ulb,
 }
 if os.environ.get("EZH_UCL") == "1":
-    import _ucl  # noqa: E402
+    from . import ucl  # noqa: E402
 
-    ECOLES["ucl"] = _ucl
+    ECOLES["ucl"] = ucl
 
 
 def requete(h, ordre, erreur):
@@ -93,7 +103,7 @@ def repondre_texte(h, statut, message, cache="no-store"):
 # même formation, mais pas quelqu'un qui balaie les 382 formations UMONS
 # (chaque nom inédit = cache manqué = travail réel). On borne donc les
 # appels par adresse IP et par point d'entrée. C'est un complément au fuse
-# global par instance (SESSIONS_PAR_MINUTE dans _hyperplanning.py), pas un
+# global par instance (SESSIONS_PAR_MINUTE dans _moteurs/hyperplanning.py), pas un
 # remplacement : en serverless, chaque instance a son propre compteur.
 _DEBIT_MAX = {
     "formations": (60, 60.0),  # liste légère : 60 / min / IP

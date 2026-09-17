@@ -73,3 +73,9 @@ Thumbs.db
 
 # Journal du serveur local
 serve.log
+
+# Artefacts écrits par `vercel build` (le constructeur Python les
+# régénère à chaque fois, en local comme chez l'hébergeur).
+/pyproject.toml
+/uv.lock
+/.python-version

@@ -29,7 +29,7 @@ Objectif : la plupart des universités et hautes écoles belges, puis les
 applications iOS et Android, et les comptes (Google, GitHub, email).
 
 Une école peut être codée sans être publiée : elle est enregistrée dans
-`api/_ecoles.py` derrière `EZH_UCL=1` et l'app ne la propose que si
+`api/_ecoles/__init__.py` derrière `EZH_UCL=1` et l'app ne la propose que si
 `/api/config` la liste (`ECOLES_ACTIVES`). Sans la variable, un
 déploiement Vercel n'expose ni l'école, ni sa recherche, ni ses
 horaires. `serve.py` pose la variable pour le développement.
@@ -221,19 +221,20 @@ les sources. `logos/ecoles/` est déployé, `logos/da/` et `logos/ez/`
 - `emails/reset-password.html` — modèle de l'email « mot de passe oublié »
   (à coller dans Supabase → Authentication → Emails → Reset Password ;
   dossier non déployé, c'est un modèle, pas une page du site).
-- `api/_hyperplanning.py` — moteur commun pour les écoles sous Hyperplanning (authentification, décodage, requêtes).
-- `api/_heh.py` — configuration et adaptation pour la HEH (Haute École en Hainaut).
-- `api/_umons.py` — configuration et adaptation pour l'UMONS (Université de Mons).
-- `api/_timeedit.py` — moteur commun TimeEdit (recherche, réservations, PDF, cache).
-- `api/_ulb.py` — configuration et adaptation pour l'ULB (Université libre de Bruxelles).
-- `api/_ucl.py` — lecture des horaires publics UCLouvain (Mon horaire : recherche, événements, cache).
-- `api/_ical.py` — lecture d'un lien d'abonnement iCal (TimeEdit ou Mon horaire UCLouvain) → format des écoles.
-- `api/_ecoles.py` — liste des écoles + aides HTTP. Ajouter une école : un
-  module comme `_heh.py` ou `_umons.py` (NOM, formations(), horaire(), pdf_semaine()),
-  une ligne dans `ECOLES`, et une entrée dans `ECOLES` de `index.html`.
-- `api/formations.py`, `api/horaires.py`, `api/recherche.py`, `api/ical.py`,
-  `api/pdf.py` — points d'entrée.
+- `api/` — le serveur, rangé en trois étages (détail : `api/README.md`) :
+  les **points d'entrée** à la racine (`formations.py`, `horaires.py`,
+  `recherche.py`, `ical.py`, `importer.py`, `pdf.py`, `config.py`,
+  `stats.py`), les **écoles** dans `api/_ecoles/` (un fichier par école :
+  `heh.py`, `umons.py`, `ulb.py`, `ucl.py`, plus `__init__.py` qui tient
+  le registre et les aides HTTP), et les **moteurs** partagés dans
+  `api/_moteurs/` (`hyperplanning.py`, `timeedit.py`, `ical.py`,
+  `import_liste.py`, `typesafe.py`).
 - `serve.py` — serveur local avec la même API (http://localhost:8902).
+
+Chercher quelque chose qui touche une école précise ? Tout ce qui lui est
+propre tient dans `api/_ecoles/<école>.py` côté serveur, et dans les
+tableaux `ECOLES` / `RECHERCHE` en haut du script de `index.html` côté
+app. Le reste est commun à toutes.
 
 ## Sur l'ordinateur
 
@@ -265,8 +266,8 @@ vercel --prod --yes
 ```
 
 À la rentrée prochaine : adapter `BASE` (`hehplanning2026`) dans
-`api/_heh.py` ET `BASE` (`hplanning2026`) + `PREMIER_LUNDI_DEFAUT` dans
-`api/_umons.py`. Sans ça, l'école concernée répond « L'école ne répond
+`api/_ecoles/heh.py` ET `BASE` (`hplanning2026`) + `PREMIER_LUNDI_DEFAUT` dans
+`api/_ecoles/umons.py`. Sans ça, l'école concernée répond « L'école ne répond
 pas correctement » partout. Pour l'ULB : `PREMIER_LUNDI_DEFAUT` et `ANNEE`
-(`202627`) dans `api/_ulb.py` (le reste — vues publiques `sid`, fin de
+(`202627`) dans `api/_ecoles/ulb.py` (le reste — vues publiques `sid`, fin de
 fenêtre — TimeEdit s'en occupe).

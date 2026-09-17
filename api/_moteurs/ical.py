@@ -16,7 +16,7 @@ from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 import requests
 
-from _hyperplanning import format_ensemble, maintenant, tri_naturel
+from .hyperplanning import format_ensemble, maintenant, tri_naturel
 
 UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/126.0 Safari/537.36")

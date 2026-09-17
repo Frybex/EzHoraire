@@ -11,7 +11,7 @@ if ICI not in sys.path:
     sys.path.insert(0, ICI)
 
 from _ecoles import ECOLES, debit, repondre_json, requete  # noqa: E402
-from _hyperplanning import Surcharge  # noqa: E402
+from _moteurs.hyperplanning import Surcharge  # noqa: E402
 
 # La liste bouge rarement : gardée 1 h par un éventuel cache partagé (CDN).
 CACHE_PARTAGE = "public, max-age=0, s-maxage=3600, stale-if-error=604800"

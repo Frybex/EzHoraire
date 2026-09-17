@@ -8,7 +8,7 @@ L'app montre ensuite la liste trouvée à l'étudiant : c'est lui qui valide.
 import difflib
 import re
 
-import _typesafe
+from . import typesafe as _typesafe
 
 RX_CODE = re.compile(r"\b([A-Z]{2,6}[0-9]{3,4})\b")
 # Code abîmé (OCR, frappe) : O/0, I/1, S/5 se confondent — on le repère quand
