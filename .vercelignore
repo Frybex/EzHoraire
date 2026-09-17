@@ -1,6 +1,9 @@
 # Fichiers utilitaires : ne pas déployer sur Vercel
 serve.py
 README.md
+AGENTS.md
+CLAUDE.md
+supabase/
 __pycache__/
 *.pyc
 .DS_Store
