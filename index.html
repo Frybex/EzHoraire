@@ -4245,8 +4245,22 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       x.groupes.push(g);
       Object.keys(parGroupe[g] || {}).forEach(function (m) { x.vu[m] = true; });
     });
+    // Un cours mutualisé porte plusieurs codes dans sa case (« COMMB115,
+    // COMMB230, … ») : on n'affiche que ceux de l'étudiant, sinon des
+    // intitulés qui ne lui parlent pas apparaissent dans les titres.
+    var codesChoisis = (choix.formation && choix.formation.indexOf("PAR:") === 0)
+      ? choix.formation.slice(4).split(",").map(propre).filter(Boolean) : null;
     sections.forEach(function (x) {
       x.matieres = Object.keys(x.vu).sort(function (a, b) { return a.localeCompare(b, "fr"); });
+      if (codesChoisis) {
+        var gardees = [];
+        x.matieres.forEach(function (m) {
+          var siens = m.split(",").map(propre)
+            .filter(function (c) { return codesChoisis.indexOf(c) >= 0; });
+          if (siens.length) gardees.push(siens.join(", "));
+        });
+        if (gardees.length) x.matieres = gardees;
+      }
       x.option = x.groupes.length === 1;
       x.cours = x.matieres[0] || ""; // cours principal de la section
     });

@@ -39,6 +39,8 @@ RX_GROUPE_ENCODE = re.compile(r"-\d{2}$")      # B-KIRE:2-01
 # (Etudiants de R à Z) »… mais pas « TP Biochimie » ni « Allison ».
 RX_INFO_GROUPE = re.compile(
     r"^(groupe|grp|gr\.?|s[ée]rie)\s*[- ]?\s*([0-9]{1,2}|[A-Z])\s*(\([^()]*\))?$", re.I)
+# Un libellé que l'étudiant comprend tel quel (il le retrouve dans son PAE).
+RX_LISIBLE = re.compile(r"groupe|gr\.|s[ée]rie|pad\d|mineure|module|option|anglais|espagnol|allemand|n[ée]erlandais|italien", re.I)
 
 
 def _date(texte):
@@ -340,7 +342,7 @@ class ClientTimeEdit:
         lundi0 = datetime.strptime(self.premier_lundi_defaut, "%Y-%m-%d").date()
         reservations = self._reservations(sel["ids"], budget=budget)
         i_ens, i_salle = 4, 5
-        cours, feries, noms_feries, semaines = {}, [], {}, set()
+        seances, feries, noms_feries, semaines = [], [], {}, set()
         for r in reservations:
             cols = list(r.get("columns") or [])
             while len(cols) <= max(i_ens, i_salle):
@@ -370,26 +372,44 @@ class ClientTimeEdit:
             matiere = str(cols[0] or "").strip()
             if not matiere:
                 continue
-            groupes = set(self._groupes(str(cols[i_ens] or ""), sel))
-            # Division dite dans la colonne « Info » (« Groupe 2 », « Série 3
-            # (Etudiants de R à Z) ») : c'est aussi un choix à proposer.
-            info_groupe = self._groupe_info(cols[1] if len(cols) > 1 else "")
-            if info_groupe:
-                groupes.add(info_groupe)
+            codes = [c.strip() for c in matiere.split(",") if RX_UE.match(c.strip())]
+            seances.append({
+                "jour": date.weekday(), "debut": debut_h, "fin": fin_h,
+                "matiere": matiere, "codes": codes or [matiere],
+                "profs": str(cols[3] or "").strip(),
+                "salles": str(cols[i_salle] or "").strip(),
+                "type": str(cols[2] or "").strip(),
+                # Division dite dans la colonne « Info » (« Groupe 2 », « Série 3
+                # (Etudiants de R à Z) ») : c'est aussi un choix à proposer.
+                "ens": [t.strip() for t in str(cols[i_ens] or "").split(",") if t.strip()],
+                "info": self._groupe_info(cols[1] if len(cols) > 1 else ""),
+                "sem": sem,
+            })
+            semaines.add(sem)
+        # Mode parcours : ne garder que les choix qui changent l'horaire.
+        labels = {} if sel.get("niveau_code") else self._choix_utiles(seances)
+        cours = {}
+        for sc in seances:
+            if sel.get("niveau_code"):
+                groupes = set(self._groupes(", ".join(sc["ens"]), sel))
+                if sc["info"]:
+                    groupes.add(sc["info"])
+            else:
+                groupes = {labels[t] for t in sc["ens"] if t in labels}
+                if sc["info"]:
+                    groupes.add(labels.get(sc["info"], sc["info"]))
             groupes = sorted(groupes, key=tri_naturel)
-            profs = str(cols[3] or "").strip()
-            salles = str(cols[i_salle] or "").strip()
-            typ = str(cols[2] or "").strip()
-            cle = (date.weekday(), debut_h, fin_h, matiere, profs, salles, typ, tuple(groupes))
+            cle = (sc["jour"], sc["debut"], sc["fin"], sc["matiere"], sc["profs"],
+                   sc["salles"], sc["type"], tuple(groupes))
             ligne = cours.get(cle)
             if ligne is None:
-                cours[cle] = {"jour": cle[0], "debut": debut_h, "fin": fin_h,
-                              "matiere": matiere, "profs": profs, "salles": salles,
-                              "type": typ, "couleur": "#888888",
-                              "groupes": list(groupes), "semaines": [sem]}
-            elif sem not in ligne["semaines"]:
-                ligne["semaines"].append(sem)
-            semaines.add(sem)
+                cours[cle] = {"jour": cle[0], "debut": sc["debut"], "fin": sc["fin"],
+                              "matiere": sc["matiere"], "profs": sc["profs"],
+                              "salles": sc["salles"], "type": sc["type"],
+                              "couleur": "#888888", "groupes": list(groupes),
+                              "semaines": [sc["sem"]]}
+            elif sc["sem"] not in ligne["semaines"]:
+                ligne["semaines"].append(sc["sem"])
         liste = sorted(cours.values(), key=lambda c: (min(c["semaines"]), c["jour"], c["debut"]))
         for c in liste:
             c["semaines"].sort()
@@ -436,6 +456,74 @@ class ClientTimeEdit:
             jours.append(cur)
             cur += timedelta(days=1)
         return jours
+
+    @staticmethod
+    def _signature(sc):
+        return (sc["jour"], sc["debut"], sc["fin"], sc["profs"], sc["salles"])
+
+    @staticmethod
+    def _creneau(sc):
+        return (sc["jour"], sc["debut"], sc["fin"])
+
+    @staticmethod
+    def _etiquette(sc):
+        """« KEMLO Justine — S.K.4.601 » : le choix se lit sur la séance."""
+        morceaux = [m for m in (sc["profs"], sc["salles"]) if m]
+        return " — ".join(morceaux) if morceaux else sc["matiere"]
+
+    def _choix_utiles(self, seances):
+        """Choix qui changent réellement l'horaire (mode parcours).
+
+        Beaucoup d'« ensembles d'étudiants » ne sont que des étiquettes :
+        tous les inscrits au cours ont le même horaire. On ne garde que les
+        jetons qui séparent les séances d'un cours, et quand la seule
+        différence est le prof ou la salle, on l'annonce tel quel plutôt que
+        par un code obscur (« M-COMUA:1 »).
+
+        Un code de promo opaque (« M-COMUA:1 », « B1-COMM ») n'est proposé
+        que s'il ne change que le prof ou la salle — sinon l'étudiant ne
+        peut rien en faire, on le laisse hors des choix.
+
+        Retourne {jeton: libellé affiché}."""
+        par_ue = {}
+        for i, sc in enumerate(seances):
+            for code in sc["codes"]:
+                par_ue.setdefault(code, []).append(i)
+        candidats = set()
+        for sc in seances:
+            candidats.update(sc["ens"])
+            if sc["info"]:
+                candidats.add(sc["info"])
+        labels, deja = {}, {}
+        for jeton in sorted(candidats, key=tri_naturel):
+            utile, prof_salle_seul, temoin = False, True, None
+            for indices in par_ue.values():
+                avec = [i for i in indices if jeton in seances[i]["ens"] or seances[i]["info"] == jeton]
+                if not avec or len(avec) == len(indices):
+                    continue  # ne sépare pas ce cours : étiquette de promo
+                sans = [i for i in indices if i not in set(avec)]
+                sig_avec = {self._signature(seances[i]) for i in avec}
+                sig_sans = {self._signature(seances[i]) for i in sans}
+                if sig_avec == sig_sans:
+                    continue  # exactement les mêmes séances des deux côtés
+                utile = True
+                temoin = temoin or seances[avec[0]]
+                if {self._creneau(seances[i]) for i in avec} != {self._creneau(seances[i]) for i in sans}:
+                    prof_salle_seul = False
+            if not utile:
+                continue
+            lisible = bool(RX_LISIBLE.search(jeton) or RX_INFO_GROUPE.match(jeton))
+            if lisible:
+                libelle = jeton
+            elif prof_salle_seul and temoin:
+                libelle = self._etiquette(temoin)
+            else:
+                continue  # code opaque qui déplace des séances : inexploitable
+            if libelle in deja:
+                continue  # deux jetons qui donnent le même choix : un seul suffit
+            deja[libelle] = jeton
+            labels[jeton] = libelle
+        return labels
 
     @staticmethod
     def _groupe_info(texte):
