@@ -217,10 +217,19 @@ class ClientTimeEdit:
         return self._memo(("formations",), 3600, calcul)
 
     def recherche(self, texte, genre="niveau", budget=15):
-        """Recherche en direct : niveaux d'études ou unités d'enseignement."""
+        """Recherche en direct : niveaux d'études ou unités d'enseignement.
+
+        Gardée 1 h par instance : l'écran de recherche rejoue la même
+        requête à chaque frappe corrigée, et l'import d'une liste de cours
+        cherche souvent le même préfixe ligne après ligne. Sans ce cache,
+        chaque appel retouchait TimeEdit."""
         texte = " ".join(str(texte or "").split())
         if len(texte) < 2:
             return []
+        return self._memo(("recherche", genre, texte.lower()), 3600,
+                          lambda: self._chercher(texte, genre, budget))
+
+    def _chercher(self, texte, genre, budget):
         types = 5 if genre == "ue" else 6
         fe = f"89.{self.annee}" if genre == "ue" else None
         objets = self._objets(texte, types, fe=fe, pages=2, budget=budget)
@@ -282,7 +291,16 @@ class ClientTimeEdit:
         return f"groupe {court}" if court.isdigit() else (court or nom)
 
     def _selection(self, formation, budget=20):
-        """Résout la clé de formation : objets à interroger, groupes connus."""
+        """Résout la clé de formation : objets à interroger, groupes connus.
+
+        Gardée 1 h : c'est le préalable de l'horaire ET de chaque PDF de
+        semaine. Sans cache, ouvrir six semaines de PDF relançait six fois
+        la même recherche d'objets chez TimeEdit. Le résultat n'est jamais
+        modifié par les appelants (ils copient la liste d'identifiants)."""
+        return self._memo(("selection", formation), 3600,
+                          lambda: self._resoudre(formation, budget))
+
+    def _resoudre(self, formation, budget=20):
         if formation.startswith("PAR:"):
             codes = [c.strip() for c in formation[4:].split(",") if c.strip()]
             if not codes:
@@ -633,6 +651,16 @@ class ClientTimeEdit:
             raise ValueError("semaine invalide")
         if not 1 <= semaine <= 60:
             raise ValueError("semaine invalide")
+        # Même garde que les écoles Hyperplanning (_hyperplanning.pdf_semaine) :
+        # une semaine que l'école ne publie pas est refusée sans l'appeler.
+        # L'horaire déjà en mémoire dit jusqu'où va l'année ; sans lui (instance
+        # froide) on laisse passer, TimeEdit tranchera.
+        vu = self._memo_data.get(("horaire", formation))
+        if vu and time.monotonic() - vu[0] < 900:
+            semaines = [c_sem for c in (vu[1].get("cours") or [])
+                        for c_sem in (c.get("semaines") or [])]
+            if semaines and semaine > max(semaines):
+                raise ValueError(f"semaine {semaine} non publiée par l'école")
         sel = self._selection(formation, budget=20)
         ids = list(sel["ids"])
         if groupe and sel.get("niveau_code"):

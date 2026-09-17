@@ -1,13 +1,18 @@
 """Sert l'app en local, avec la même API qu'en ligne.
 
-Usage :  python3 serve.py            (cette machine uniquement)
-         python3 serve.py --lan      (+ les autres machines du réseau local)
-
+Usage :  python3 serve.py [--lan] [--port 8902]
 App :    http://localhost:8902 (8901 est pris par Horairelm)
+
+--lan : accepte aussi les autres appareils du réseau local (téléphone,
+        second ordinateur) et affiche l'adresse à ouvrir. Sans lui, seules
+        les connexions de la machine répondent : en production c'est
+        Vercel qui protège, ici c'est ce garde-fou qui tient le rôle.
+--port : change le port (utile quand deux dossiers de travail tournent
+        en même temps).
 
 GET /api/formations?ecole=heh                      formations de l'école
 GET /api/horaires?ecole=heh&formation=..           horaire complet d'une formation
-GET /api/recherche?ecole=ulb&genre=niveau&q=..     recherche en direct (ULB)
+GET /api/recherche?ecole=ulb&genre=niveau&q=..     recherche en direct (ULB, UCLouvain)
 GET /api/ical?lien=..                              horaire d'un lien d'abonnement
 GET /api/importer?ecole=ulb&liste=..               liste de cours collée -> cours
 GET /api/pdf?ecole=heh&formation=..&groupe=..&semaine=..   PDF officiel
@@ -20,6 +25,11 @@ from urllib.parse import unquote
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "api"))
 
+# Le serveur local montre toutes les écoles, y compris celles en test
+# (UCLouvain) : sur Vercel, sans EZH_UCL, elles restent invisibles.
+# `EZH_UCL=0 python3 serve.py` simule la production.
+os.environ.setdefault("EZH_UCL", "1")
+
 import formations  # noqa: E402
 import horaires  # noqa: E402
 import ical  # noqa: E402
@@ -29,12 +39,7 @@ import recherche  # noqa: E402
 import config  # noqa: E402
 import stats  # noqa: E402
 
-PORT = 8902
-# --lan : accepter les autres machines du réseau local (téléphone, 2e PC…).
-# Sans ce drapeau, serve.py refuse tout ce qui ne vient pas de cette machine :
-# c'est un serveur de développement, pas une mise en production.
-ACCEPTER_RESEAU = "--lan" in sys.argv or os.environ.get("EZH_LAN") == "1"
-LOCALES = ("127.0.0.1", "::1", "::ffff:127.0.0.1")
+PORT_DEFAUT = 8902
 ROUTES = {"/api/formations": formations.handler,
           "/api/horaires": horaires.handler,
           "/api/recherche": recherche.handler,
@@ -75,15 +80,15 @@ class Serveur(ThreadingHTTPServer):
 
 
 class Handler(SimpleHTTPRequestHandler):
+    LAN = False  # réglé par --lan : accepte les autres appareils du réseau
+
     def _chemin_autorise(self):
-        """Chemin décodé si la requête est autorisée et ne vise pas un fichier
-        caché, sinon None (une erreur a déjà été envoyée)."""
-        # Sécurité : par défaut, seules les connexions de cette machine.
-        # --lan ouvre explicitement aux autres machines du réseau local.
+        """Chemin décodé si l'accès est permis et qu'il ne vise pas un
+        fichier caché, sinon None (une erreur a déjà été envoyée)."""
+        # Sécurité : sans --lan, n'accepter que la machine locale.
         ip = self.client_address[0]
-        if ip not in LOCALES and not ACCEPTER_RESEAU:
-            self.send_error(403, "Accès interdit : serveur de développement local uniquement "
-                                 "(lance-le avec --lan pour le partager sur le réseau)")
+        if not Handler.LAN and ip not in ("127.0.0.1", "::1", "::ffff:127.0.0.1"):
+            self.send_error(403, "Accès interdit : serveur de développement local uniquement")
             return None
 
         # Sécurité : décoder AVANT de filtrer, sinon « %2Eenv » passe le test
@@ -122,19 +127,6 @@ class Handler(SimpleHTTPRequestHandler):
         super().end_headers()
 
 
-def adresse_reseau():
-    """IP de cette machine sur le réseau local (pour l'afficher au démarrage)."""
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        try:
-            s.connect(("8.8.8.8", 80))
-            return s.getsockname()[0]
-        finally:
-            s.close()
-    except OSError:
-        return ""
-
-
 def charger_env_local(chemin=".env.local"):
     """Clés Supabase en local : `vercel env pull .env.local` les récupère,
     on les charge ici (sans écraser une variable déjà définie)."""
@@ -149,23 +141,53 @@ def charger_env_local(chemin=".env.local"):
             os.environ.setdefault(cle.strip(), val.strip().strip('"').strip("'"))
 
 
-if __name__ == "__main__":
+def adresse_reseau():
+    """Adresse IPv4 de la machine sur le réseau local, vide si introuvable.
+
+    Un socket UDP « connecté » n'envoie rien : il laisse le système
+    choisir la route, donc la bonne carte (Wi-Fi, Ethernet)."""
+    for cible in (("8.8.8.8", 53), ("1.1.1.1", 53)):
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            s.connect(cible)
+            return s.getsockname()[0]
+        except OSError:
+            continue
+        finally:
+            s.close()
+    try:
+        return socket.gethostbyname(socket.gethostname())
+    except OSError:
+        return ""
+
+
+def main(argv):
+    lan = "--lan" in argv or os.environ.get("EZH_LAN") == "1"
+    port = PORT_DEFAUT
+    if "--port" in argv:
+        try:
+            port = int(argv[argv.index("--port") + 1])
+        except (IndexError, ValueError):
+            sys.exit("--port attend un numéro, ex. --port 8912.")
+    Handler.LAN = lan
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     charger_env_local()
     try:
-        srv = Serveur(("::", PORT), Handler)
+        srv = Serveur(("::", port), Handler)
     except OSError:
-        sys.exit(f"Le port {PORT} est déjà utilisé : un autre serve.py tourne sans doute encore "
-                 f"(voir `lsof -i :{PORT}`).")
+        sys.exit(f"Le port {port} est déjà utilisé : un autre serve.py tourne sans doute "
+                 f"encore (voir `lsof -i :{port}`) — `--port 8912` en prend un autre.")
     with srv:
-        print(f"EzHoraire : http://localhost:{PORT}")
-        if ACCEPTER_RESEAU:
-            reseau = adresse_reseau()
-            if reseau:
-                print(f"Réseau local : http://{reseau}:{PORT}")
-                print("(les autres machines du même réseau peuvent ouvrir cette adresse ; "
-                      "le pare-feu macOS peut demander l'autorisation)")
-        else:
-            print("Cette machine uniquement (--lan pour partager sur le réseau local).")
-        print("Ctrl+C pour arrêter.")
+        print(f"EzHoraire : http://localhost:{port}", flush=True)
+        if lan:
+            ip = adresse_reseau()
+            if ip:
+                print(f"Réseau local : http://{ip}:{port}", flush=True)
+            print("Mode réseau local : tout appareil du réseau peut lire l'app "
+                  "(pas d'authentification côté serveur).", flush=True)
+        print("Ctrl+C pour arrêter.", flush=True)
         srv.serve_forever()
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])

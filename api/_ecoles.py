@@ -19,11 +19,19 @@ import _heh  # noqa: E402
 import _umons  # noqa: E402
 import _ulb  # noqa: E402
 
+# L'UCLouvain est développé mais pas encore publié : il n'est exposé
+# (proposé par l'app, accepté par recherche/horaires, listé dans
+# /api/config) que si l'hébergeur pose EZH_UCL=1. serve.py le pose pour le
+# développement ; sur Vercel, sans la variable, rien ne l'expose.
 ECOLES = {
     "heh": _heh,
     "umons": _umons,
     "ulb": _ulb,
 }
+if os.environ.get("EZH_UCL") == "1":
+    import _ucl  # noqa: E402
+
+    ECOLES["ucl"] = _ucl
 
 
 def requete(h, ordre, erreur):
@@ -91,9 +99,12 @@ _DEBIT_MAX = {
     "formations": (60, 60.0),  # liste légère : 60 / min / IP
     "horaires": (12, 60.0),    # ~50 appels école chacun : 12 / min / IP
     "pdf": (12, 60.0),         # session + génération : 12 / min / IP
-    "recherche": (60, 60.0),   # recherche en direct (niveaux, cours) : 60 / min / IP
+    "recherche": (40, 60.0),   # recherche en direct (niveaux, cours) : 40 / min / IP
     "ical": (12, 60.0),        # lien d'abonnement personnel : 12 / min / IP
-    "importer": (12, 60.0),    # import d'une liste de cours : 12 / min / IP
+    # Un import cherche jusqu'à RECHERCHES_MAX (25) fois chez l'école :
+    # 6 / min / IP le garde sous le fuse d'instance (400 appels / min),
+    # même quand plusieurs imports tombent en même temps.
+    "importer": (6, 60.0),
 }
 _DEBIT = {}  # (point d'entrée, ip) -> deque des horodatages (monotonic)
 _DEBIT_VERROU = threading.Lock()

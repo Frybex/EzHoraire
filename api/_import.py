@@ -15,7 +15,13 @@ RX_CODE = re.compile(r"\b([A-Z]{2,6}[0-9]{3,4})\b")
 # il reste au moins deux chiffres et une majorité de lettres.
 RX_CODE_ABIME = re.compile(r"\b([A-Z]{3,6}[0-9A-Z]{2,6})\b")
 RX_ANNEE = re.compile(r"\b(?:20[0-9]{2}[-/]20[0-9]{2}|20[0-9]{4})\b")
-LIGNES_MAX = 60
+LIGNES_MAX = 40
+# Chaque recherche inédite = un appel à l'école. Une liste collée en compte
+# autant que de lignes ; on borne donc le nombre de recherches DIFFÉRENTES
+# d'un import (les répétitions, elles, sont gratuites : `_Catalogue` les
+# mémorise). Au-delà, les lignes restantes partent en « à confirmer »
+# plutôt que de faire travailler l'école pour un copier-coller géant.
+RECHERCHES_MAX = 25
 # Sous ce seuil, on ne choisit pas à la place de l'étudiant : la ligne part
 # en « à confirmer » avec les candidats (plusieurs cours peuvent porter le
 # même intitulé — « Espagnol I » existe dans plusieurs facultés).
@@ -48,6 +54,29 @@ def _proches(candidats, cible, clef, nombre=PROPOSITIONS):
     return sorted(candidats, key=note, reverse=True)[:nombre]
 
 
+class _Catalogue:
+    """Recherches de l'école pour un import : sans doublon, et bornées.
+
+    Une liste collée cherche souvent la même chose plusieurs fois (deux
+    lignes du même cours, le préfixe de lettres d'un code abîmé). Une fois
+    le plafond atteint, `cherche()` ne rend que ce qui est déjà connu."""
+
+    def __init__(self, mod, maximum=RECHERCHES_MAX):
+        self.mod = mod
+        self.maximum = maximum
+        self.vu = {}
+
+    def cherche(self, texte, genre="ue"):
+        cle = (genre, " ".join(str(texte or "").split()).lower())
+        if cle in self.vu:
+            return self.vu[cle]
+        if len(self.vu) >= self.maximum:
+            return []
+        essais = self.mod.recherche(texte, genre)
+        self.vu[cle] = essais
+        return essais
+
+
 def _exact(resultats, code, annee):
     for r in resultats:
         if r.get("code") == code and str(r.get("annee") or annee) == annee:
@@ -62,6 +91,7 @@ def importer(texte, mod, annee, budget=40):
     """Liste collée -> cours reconnus, doublons retirés, flous tranchés par Jev."""
     lignes = [" ".join(l.split()) for l in str(texte or "").splitlines()]
     lignes = [l for l in lignes if l][:LIGNES_MAX]
+    catalogue = _Catalogue(mod)
     resultats, doutes = [], []
     for i, ligne in enumerate(lignes):
         code, titre = _ligne(ligne)
@@ -69,7 +99,7 @@ def importer(texte, mod, annee, budget=40):
         if len(cible) < 2:
             doutes.append({"i": i, "ligne": ligne, "motif": "illisible", "propositions": []})
             continue
-        essais = mod.recherche(cible, "ue")
+        essais = catalogue.cherche(cible)
         if code:
             trouve = _exact(essais, code, annee)
             if trouve:
@@ -78,7 +108,7 @@ def importer(texte, mod, annee, budget=40):
             # Code abîmé (OCR, frappe) : on cherche par préfixe de lettres.
             lettres = re.match(r"[A-Z]+", code)
             if lettres and lettres.group(0) != code:
-                essais = essais + mod.recherche(lettres.group(0), "ue")
+                essais = essais + catalogue.cherche(lettres.group(0))
         elif titre:
             if len(essais) == 1:
                 resultats.append(dict(essais[0], source="titre"))

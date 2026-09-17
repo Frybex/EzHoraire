@@ -281,13 +281,13 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   }
   /* Cours choisis : code en tête, intitulé en dessous, une seule ligne
      (les intitulés ULB sont longs : on coupe proprement au lieu d'empiler). */
-  #ulb-cours-chips .chip { max-width: 100%; }
-  #ulb-cours-chips .chip-textes { max-width: 100%; }
-  #ulb-cours-chips .chip-textes > span,
-  #ulb-cours-chips .chip-textes small {
+  #rech-cours-chips .chip { max-width: 100%; }
+  #rech-cours-chips .chip-textes { max-width: 100%; }
+  #rech-cours-chips .chip-textes > span,
+  #rech-cours-chips .chip-textes small {
     max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  #ulb-cours-chips .chip-textes small { font-size: .74rem; font-weight: 450; opacity: .75; }
+  #rech-cours-chips .chip-textes small { font-size: .74rem; font-weight: 450; opacity: .75; }
   /* Retrait à confirmer : même relief que les autres pastilles, teinté
      danger (comme la confirmation de l'app), pas d'aplat rouge. */
   .chip.chip-suppr,
@@ -312,35 +312,35 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       linear-gradient(var(--danger), var(--danger)) center / 1.6px 9px no-repeat;
     transform: rotate(45deg);
   }
-  #ulb-cours { margin: 2px 0 12px; }
+  #rech-cours { margin: 2px 0 12px; }
   /* Import d'une liste de cours : bloc replié, dans le creux des autres. */
-  #ulb-import {
+  #rech-import {
     margin: 0 0 14px; padding: 0 14px 18px; border-radius: 14px;
     background: var(--creux); box-shadow: inset 0 0 0 1px var(--line);
   }
   /* Fermé : juste le titre, pas de vide en dessous. */
-  #ulb-import:not([open]) { padding-bottom: 0; }
-  #ulb-import:not([open]) > summary { padding: 8px 0; }
-  #ulb-import > summary {
+  #rech-import:not([open]) { padding-bottom: 0; }
+  #rech-import:not([open]) > summary { padding: 8px 0; }
+  #rech-import > summary {
     cursor: pointer; padding: 12px 0; list-style: none;
     font-size: .92rem; font-weight: 600; color: var(--ink);
   }
-  #ulb-import > summary::-webkit-details-marker { display: none; }
-  #ulb-import > summary::after { content: " ▾"; color: var(--muted); }
-  #ulb-import[open] > summary::after { content: " ▴"; }
-  #ulb-import[open] > summary { margin-bottom: 10px; }
+  #rech-import > summary::-webkit-details-marker { display: none; }
+  #rech-import > summary::after { content: " ▾"; color: var(--muted); }
+  #rech-import[open] > summary::after { content: " ▴"; }
+  #rech-import[open] > summary { margin-bottom: 10px; }
   /* Repli du texte lu / collé : discret, mais là pour corriger. */
-  #ulb-texte { margin: 4px 0 0; }
-  #ulb-texte > summary {
+  #rech-texte { margin: 4px 0 0; }
+  #rech-texte > summary {
     cursor: pointer; padding: 6px 0; list-style: none;
     font-size: .84rem; font-weight: 600; color: var(--muted);
   }
-  #ulb-texte > summary::-webkit-details-marker { display: none; }
-  #ulb-texte > summary::after { content: " ▾"; }
-  #ulb-texte[open] > summary::after { content: " ▴"; }
-  #ulb-texte[open] > summary { margin-bottom: 8px; }
-  #ulb-import .import-ligne { display: flex; gap: 10px; align-items: flex-end; }
-  #ulb-import textarea {
+  #rech-texte > summary::-webkit-details-marker { display: none; }
+  #rech-texte > summary::after { content: " ▾"; }
+  #rech-texte[open] > summary::after { content: " ▴"; }
+  #rech-texte[open] > summary { margin-bottom: 8px; }
+  #rech-import .import-ligne { display: flex; gap: 10px; align-items: flex-end; }
+  #rech-import textarea {
     flex: 1 1 auto; min-width: 0; min-height: 96px; resize: none;
     overflow-y: hidden; /* agrandi par le script ; style de repli discret ci-dessous */
     scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--muted) 42%, transparent) transparent;
@@ -350,46 +350,46 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
     box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
   }
-  #ulb-import textarea:focus {
+  #rech-import textarea:focus {
     outline: none;
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent),
       inset 0 1px 0 var(--reflet), var(--ombre-btn),
       0 0 0 4px color-mix(in srgb, var(--accent) 8%, transparent);
   }
-  #ulb-import #ulb-import-voir {
+  #rech-import #rech-import-voir {
     position: static; flex: none; width: auto; min-width: 0; height: 54px; padding: 0 20px;
     border-radius: 14px; white-space: nowrap;
   }
   @media (max-width: 560px) {
-    #ulb-import .import-ligne { flex-direction: column; align-items: stretch; }
-    #ulb-import #ulb-import-voir { width: 100%; }
+    #rech-import .import-ligne { flex-direction: column; align-items: stretch; }
+    #rech-import #rech-import-voir { width: 100%; }
   }
 
-  #ulb-import textarea::-webkit-scrollbar { width: 8px; }
-  #ulb-import textarea::-webkit-scrollbar-track { background: transparent; }
-  #ulb-import textarea::-webkit-scrollbar-thumb {
+  #rech-import textarea::-webkit-scrollbar { width: 8px; }
+  #rech-import textarea::-webkit-scrollbar-track { background: transparent; }
+  #rech-import textarea::-webkit-scrollbar-thumb {
     background: color-mix(in srgb, var(--muted) 40%, transparent); border-radius: 999px;
   }
-  #ulb-import.depot-sur {
+  #rech-import.depot-sur {
     background: color-mix(in srgb, var(--accent) 7%, var(--creux));
     box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 55%, transparent);
   }
-  #ulb-import.depot-sur .capture-bouton { color: var(--accent); }
-  #ulb-import .capture { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 10px; }
-  #ulb-import .capture-bouton {
+  #rech-import.depot-sur .capture-bouton { color: var(--accent); }
+  #rech-import .capture { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 10px; }
+  #rech-import .capture-bouton {
     display: inline-flex; align-items: center; gap: 8px;
     min-height: 40px; padding: 0 14px; border-radius: 12px;
     font-size: .9rem; font-weight: 600; color: var(--ink); cursor: pointer;
     background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
     box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
   }
-  #ulb-import .capture-bouton:active { transform: scale(.98); }
-  #ulb-import .capture-aide { font-size: .82rem; color: var(--muted); }
-  #ulb-import-status { margin: 8px 0 10px; }
-  #ulb-import-doutes .doute { margin: 0 0 12px; }
-  #ulb-import-doutes .prop { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 0; }
-  #ulb-cours .chips { margin: 6px 0 8px; }
-  #ulb-lien .champs { margin-bottom: 12px; }
+  #rech-import .capture-bouton:active { transform: scale(.98); }
+  #rech-import .capture-aide { font-size: .82rem; color: var(--muted); }
+  #rech-import-status { margin: 8px 0 10px; }
+  #rech-import-doutes .doute { margin: 0 0 12px; }
+  #rech-import-doutes .prop { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 0; }
+  #rech-cours .chips { margin: 6px 0 8px; }
+  #rech-lien .champs { margin-bottom: 12px; }
   /* Bouton d'action des étapes : relief, collé en bas tant qu'on défile. */
   .primaire {
     position: sticky; bottom: calc(14px + env(safe-area-inset-bottom)); z-index: 5;
@@ -1124,8 +1124,21 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     margin: 0; padding: 10px 16px 0; text-align: center;
     font-size: .85rem; color: var(--muted);
   }
-  footer { text-align: center; color: var(--muted); font-size: .8rem; margin-top: 18px; }
+  /* Pied de page : « Mis à jour… » et « Confidentialité » côte à côte,
+     séparés d'un point — empilés, ils prenaient deux lignes pour rien.
+     Sur ordinateur (voir plus bas), ils s'écartent aux deux bords. */
+  footer {
+    display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline;
+    gap: 4px 10px; text-align: center; color: var(--muted); font-size: .8rem; margin-top: 18px;
+  }
+  footer p { margin: 0; }
   footer a { color: var(--muted); }
+  /* Le point de séparation disparaît quand les deux passent à la ligne
+     (il ne pendrait au bout de nulle part) ou en vue ordinateur. */
+  footer .sep { opacity: .55; }
+  /* Tant que « Mis à jour… » est vide (horaire pas encore chargé), le
+     point ne doit pas flotter tout seul devant « Confidentialité ». */
+  footer #maj:empty + .sep { display: none; }
 
   /* Réglages sur téléphone : feuille qui monte du bas, fond assombri,
      se ferme en glissant vers le bas (attrapable de n'importe où, le fond
@@ -1432,8 +1445,13 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       color: var(--ink);
       box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 40%, transparent), inset 0 1px 0 var(--reflet), var(--ombre-btn);
     }
-    footer { grid-area: foot; margin: 0; text-align: left; }
-    footer p { margin: 0; }
+    /* Ordinateur : « Mis à jour… » à gauche de l'horaire, « Confidentialité »
+       à droite, sur la même ligne — un de chaque côté, jamais empilés. */
+    footer {
+      grid-area: foot; margin: 0; text-align: left;
+      flex-wrap: nowrap; justify-content: space-between; gap: 16px;
+    }
+    footer .sep { display: none; }
 
     /* Grille de la semaine */
     .days { display: none; }
@@ -2076,10 +2094,10 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   <section id="v-formation" hidden>
     <p class="etapes" role="img" aria-label="Étape 2 sur 3"><span class="on"></span><span class="on"></span><span></span></p>
     <h2 class="q" id="formation-titre">Ta formation</h2>
-    <div class="modes" id="ulb-modes" role="tablist" aria-label="Comment trouver tes cours" hidden>
-      <button type="button" role="tab" data-mode="cours" aria-selected="true">Par codes de cours<span class="mode-tag">Recommandé</span></button>
-      <button type="button" role="tab" data-mode="niveau" aria-selected="false">Par niveau d'études</button>
-      <button type="button" role="tab" data-mode="lien" aria-selected="false">Mon horaire ULB</button>
+    <div class="modes" id="rech-modes" role="tablist" aria-label="Comment trouver tes cours" hidden>
+      <button type="button" role="tab" data-mode="cours" aria-selected="true"><span class="mode-nom">Par codes de cours</span><span class="mode-tag">Recommandé</span></button>
+      <button type="button" role="tab" data-mode="niveau" aria-selected="false"><span class="mode-nom">Par niveau d'études</span></button>
+      <button type="button" role="tab" data-mode="lien" aria-selected="false"><span class="mode-nom">Mon horaire ULB</span></button>
     </div>
     <p class="aide" id="formation-aide"></p>
     <div class="champs recherche-bloc halo" id="formation-recherche">
@@ -2089,45 +2107,43 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
                aria-label="Rechercher une formation" autocomplete="off" autocorrect="off" spellcheck="false">
       </div>
     </div>
-    <div id="ulb-cours" hidden>
-      <details id="ulb-import" open>
+    <div id="rech-cours" hidden>
+      <details id="rech-import" open>
         <summary>Importer une liste de cours</summary>
         <div class="capture">
-          <label class="capture-bouton halo" for="ulb-capture-fichier">
+          <label class="capture-bouton halo" for="rech-capture-fichier">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="3"/><circle cx="12" cy="13" r="3.4"/><path d="M8.5 6 10 3.5h4L15.5 6"/></svg>
             Choisir une capture
           </label>
-          <input type="file" id="ulb-capture-fichier" accept="image/*" hidden>
+          <input type="file" id="rech-capture-fichier" accept="image/*" hidden>
           <span class="capture-aide">ou colle une image (⌘V / Ctrl+V)</span>
         </div>
-        <p class="pdf-status" id="ulb-import-status" role="status" hidden></p>
-        <div id="ulb-import-doutes" hidden></div>
-        <details id="ulb-texte">
+        <p class="pdf-status" id="rech-import-status" role="status" hidden></p>
+        <div id="rech-import-doutes" hidden></div>
+        <details id="rech-texte">
           <summary>Voir ou coller le texte</summary>
           <div class="import-ligne">
-            <textarea id="ulb-import-texte" rows="4" spellcheck="false"
+            <textarea id="rech-import-texte" rows="4" spellcheck="false"
                       placeholder="COMMB300, Droit de l'information et de la communication&#10;LANGB305, Anglais III"></textarea>
-            <button class="primaire halo" id="ulb-import-voir" type="button">Analyser la liste</button>
+            <button class="primaire halo" id="rech-import-voir" type="button">Analyser la liste</button>
           </div>
         </details>
       </details>
-      <div class="chips" id="ulb-cours-chips"></div>
-      <p class="aide" id="ulb-cours-vide">Aucun cours choisi. Cherche un code (DROIC2001) ou un intitulé, puis touche le cours pour l'ajouter.</p>
-      <button class="primaire halo" id="ulb-cours-voir" type="button" disabled>Voir mon horaire</button>
+      <div class="chips" id="rech-cours-chips"></div>
+      <p class="aide" id="rech-cours-vide">Aucun cours choisi. Cherche un code (DROIC2001) ou un intitulé, puis touche le cours pour l'ajouter.</p>
+      <button class="primaire halo" id="rech-cours-voir" type="button" disabled>Voir mon horaire</button>
     </div>
-    <div id="ulb-lien" hidden>
-      <p class="aide">Ton horaire personnel (MonULB) s'abonne dans TimeEdit : ouvre
-        <a href="https://cloud.timeedit.net/be_ulb/web/etudiant/" target="_blank" rel="noopener">Mon horaire</a>
-        avec ton ULBID, choisis « toute la durée affichée » puis « S'abonner », et colle ici le lien obtenu.</p>
+    <div id="rech-lien" hidden>
+      <p class="aide" id="rech-lien-aide"></p>
       <div class="champs halo">
         <div class="champ-ligne">
           <svg class="champ-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M9 15l6-6M8 7h6a5 5 0 0 1 0 10H8a5 5 0 0 1 0-10z"/></svg>
-          <input class="champ" id="ulb-lien-champ" type="url" inputmode="url" autocomplete="off" autocorrect="off" spellcheck="false"
+          <input class="champ" id="rech-lien-champ" type="url" inputmode="url" autocomplete="off" autocorrect="off" spellcheck="false"
                  placeholder="https://cloud.timeedit.net/be_ulb/web/…">
         </div>
       </div>
-      <button class="primaire halo" id="ulb-lien-voir" type="button">Vérifier le lien</button>
-      <p class="pdf-status" id="ulb-lien-status" role="status"></p>
+      <button class="primaire halo" id="rech-lien-voir" type="button">Vérifier le lien</button>
+      <p class="pdf-status" id="rech-lien-status" role="status"></p>
     </div>
     <p class="pdf-status" id="formations-status" role="status"></p>
     <ul class="liste" id="liste-formations"></ul>
@@ -2225,7 +2241,11 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
         <p class="pdf-status" id="pdf-status" role="status"></p>
       </div>
 
-      <footer><p id="maj"></p><p><a href="/confidentialite.html">Confidentialité</a></p></footer>
+      <footer>
+        <p id="maj"></p>
+        <span class="sep" aria-hidden="true">·</span>
+        <p><a href="/confidentialite.html">Confidentialité</a></p>
+      </footer>
     </div>
   </section>
 </div>
@@ -2326,12 +2346,54 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   var ECOLES = [
     { id: "heh", nom: "HEH", detail: "Haute École en Hainaut · Mons, Tournai", logo: "logos/ecoles/heh.svg" },
     { id: "umons", nom: "UMONS", detail: "Université de Mons · Mons, Charleroi", logo: "logos/ecoles/umons.svg" },
-    { id: "ulb", nom: "ULB", detail: "Université libre de Bruxelles · Bruxelles, Charleroi", logo: "logos/ecoles/ulb.svg", recherche: true }
+    { id: "ulb", nom: "ULB", detail: "Université libre de Bruxelles · Bruxelles, Charleroi", logo: "logos/ecoles/ulb.svg", recherche: true },
+    { id: "ucl", nom: "UCLouvain", detail: "Université catholique de Louvain · Louvain-la-Neuve, Bruxelles, Mons…",
+      logo: "logos/ecoles/ucl.svg", recherche: true, pdf: false }
   ];
   function ecoleDe(id) {
     for (var i = 0; i < ECOLES.length; i++) if (ECOLES[i].id === id) return ECOLES[i];
     return null;
   }
+  /* Écoles réellement publiées : le serveur les liste dans /api/config.
+     Tant qu'il n'a pas répondu, on reste sur les écoles sûres — une école
+     développée mais pas encore ouverte (l'UCLouvain, voir EZH_UCL côté
+     api/) ne doit jamais apparaître par défaut. */
+  var ECOLES_ACTIVES = ["heh", "umons", "ulb"];
+  function ecoleActive(id) { return ECOLES_ACTIVES.indexOf(id) >= 0; }
+
+  /* Libellés des écoles « recherche » (pas de liste complète à
+     télécharger : l'app interroge api/recherche). Chaque école donne les
+     siens — rien n'est deviné à partir de l'autre. */
+  var RECHERCHE = {
+    ulb: {
+      modes: { cours: "Par codes de cours", niveau: "Par niveau d'études", lien: "Mon horaire ULB" },
+      niveau: { titre: "Ton niveau d'études", placeholder: "Recherche, ex. droit bloc 2, polytech…",
+                aide: "Écris au moins 2 lettres : l'ULB publie plus de 2 000 niveaux d'études." },
+      cours: { titre: "Tes cours (UE)", placeholder: "Code ou intitulé, ex. DROIC2001, droit pénal…",
+               aide: "Coche les cours que tu suis, puis « Voir mon horaire »." },
+      lien: { titre: "Ton horaire personnel", placeholder: "https://cloud.timeedit.net/be_ulb/web/…",
+              aide: "Le lien d'abonnement de MonULB (TimeEdit). Il donne accès à ton horaire : " +
+                "garde-le pour toi, et supprime-le d'ici si tu le révoques un jour.",
+              mode: "Ton horaire personnel (MonULB) s'abonne dans TimeEdit : ouvre " +
+                '<a href="https://cloud.timeedit.net/be_ulb/web/etudiant/" target="_blank" rel="noopener">Mon horaire</a> ' +
+                "avec ton ULBID, choisis « toute la durée affichée » puis « S'abonner », " +
+                "et colle ici le lien obtenu." }
+    },
+    ucl: {
+      modes: { cours: "Par codes de cours", niveau: "Par programme", lien: "Mon horaire UCLouvain" },
+      niveau: { titre: "Ton programme", placeholder: "Recherche, ex. ingénieur civil, droit bloc 1…",
+                aide: "Écris au moins 2 lettres : le code du programme (SINF11BA) ou son intitulé." },
+      cours: { titre: "Tes cours", placeholder: "Code du cours, ex. LINFO1101, LDROI1001…",
+               aide: "Cherche par code (le début suffit) et coche les cours que tu suis." },
+      lien: { titre: "Ton horaire personnel", placeholder: "https://monhoraire.uclouvain.be/…",
+              aide: "Le lien d'abonnement de Mon horaire. Il donne accès à ton horaire : " +
+                "garde-le pour toi, et supprime-le d'ici si tu le révoques un jour.",
+              mode: "Ton horaire personnel s'exporte depuis Mon horaire : ouvre " +
+                '<a href="https://monhoraire.uclouvain.be/" target="_blank" rel="noopener">monhoraire.uclouvain.be</a>, ' +
+                "connecte-toi avec ton identifiant UCLouvain, puis « Exporter » → " +
+                "« Lien d'abonnement » et colle ici le lien obtenu." }
+    }
+  };
 
   /* Mémoire de l'appareil (local, sans compte pour l'instant) :
      - ezh_profils : [{id, surnom, ecole, formation, groupes: [...], theme: 0..5}]
@@ -2668,6 +2730,12 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     return fetchDelai("api/config", 8000).then(function (r) { return r.json(); }).then(function (rep) {
       var s = (rep && rep.supabase) || {};
       SUPABASE_CONFIG = { URL: s.url || "", CLE_ANON: s.anonKey || "" };
+      // Le serveur dit quelles écoles il expose (UCLouvain en test :
+      // absente tant qu'EZH_UCL n'est pas posé côté hébergeur). Une
+      // réponse en échec laisse la liste sûre en place.
+      if (rep && Array.isArray(rep.ecoles) && rep.ecoles.length) {
+        ECOLES_ACTIVES = rep.ecoles.filter(function (id) { return !!ecoleDe(id); });
+      }
       return !!(SUPABASE_CONFIG.URL && SUPABASE_CONFIG.CLE_ANON);
     }, function () { return false; });
   }
@@ -3215,8 +3283,10 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     '<path d="M14 3v5h5M9 13h6M9 17h4"/></svg>';
   function majBoutonPdf() {
     var btn = document.getElementById("btn-pdf");
-    // Horaire importé d'un lien : il n'y a pas de PDF officiel côté école.
-    if (profil && profil.ical) {
+    // Horaire importé d'un lien, ou école qui ne publie pas de PDF :
+    // il n'y a pas de document officiel à montrer.
+    var ec = profil && ecoleDe(profil.ecole);
+    if (profil && (profil.ical || (ec && ec.pdf === false))) {
       btn.hidden = true;
       document.getElementById("horaire-contenu").classList.remove("pdf-ouvert");
       return;
@@ -3859,7 +3929,9 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   }
   function ouvrirEcoles() {
     montrer("ecole");
-    document.getElementById("liste-ecoles").innerHTML = ECOLES.map(function (e) {
+    document.getElementById("liste-ecoles").innerHTML = ECOLES.filter(function (e) {
+      return ecoleActive(e.id);
+    }).map(function (e) {
       // Le sigle/logo est dans le carré : le titre donne le nom complet.
       var parts = String(e.detail).split(" · ");
       var badge = e.logo
@@ -3891,10 +3963,10 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     var status = document.getElementById("formations-status");
     var champ = document.getElementById("recherche");
     var estUlb = !!(ec && ec.recherche);
-    document.getElementById("ulb-modes").hidden = !estUlb;
-    if (estUlb) { ulbOuvrir(); return; }
-    document.getElementById("ulb-cours").hidden = true;
-    document.getElementById("ulb-lien").hidden = true;
+    document.getElementById("rech-modes").hidden = !estUlb;
+    if (estUlb) { rechOuvrir(); return; }
+    document.getElementById("rech-cours").hidden = true;
+    document.getElementById("rech-lien").hidden = true;
     document.getElementById("formation-recherche").hidden = false;
     document.getElementById("liste-formations").hidden = false;
     document.getElementById("formation-titre").textContent = "Ta formation";
@@ -3914,89 +3986,109 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     });
   }
 
-  /* ---------- 2b. ULB : par niveau, par codes de cours, ou lien perso ----------
-     L'ULB publie plus de 2 000 niveaux d'études : pas de liste complète à
-     télécharger, une recherche serveur (api/recherche). Trois entrées :
-     - « Par niveau d'études » : les blocs d'année (« B-DROIB:2 · Bachelier
-       en droit… »), puis l'écran des groupes habituel (groupe 01, PAD6,
-       options…) ;
+  /* ---------- 2b. Écoles « recherche » : par niveau/programme, par codes
+     de cours, ou lien perso ----------
+     L'ULB publie plus de 2 000 niveaux d'études, l'UCLouvain des milliers
+     de codes : pas de liste complète à télécharger, une recherche serveur
+     (api/recherche). Trois entrées :
+     - « Par niveau d'études » (ULB) / « Par programme » (UCLouvain) : les
+       blocs d'année (« B-DROIB:2 · Bachelier en droit… »), puis l'écran
+       des groupes habituel (groupe 01, PAD6, options…) ;
      - « Par codes de cours » : on coche des unités d'enseignement (code ou
        intitulé), la clé de formation devient « PAR:CODE1,CODE2 » ;
-     - « Mon horaire ULB » : l'horaire personnel via le lien d'abonnement
-       iCal de Mon horaire (api/ical) — aucun identifiant ne passe par nous. */
-  var ULB_LIEN_FORMATION = "Mon horaire (lien d'abonnement)";
-  var ulb = { mode: "cours", cours: [], resultats: [], arme: null, requete: 0, minuteur: 0, ocr: null };
-  function ulbOuvrir() {
-    ulbAppliquerMode(false);
-    if (window.matchMedia("(hover: hover)").matches && ulb.mode !== "lien") {
+     - « Mon horaire … » : l'horaire personnel via le lien d'abonnement
+       iCal de l'école (api/ical) — aucun identifiant ne passe par nous.
+     Les libellés viennent de RECHERCHE[école] : le reste de l'écran est
+     commun. */
+  var LIEN_FORMATION = "Mon horaire (lien d'abonnement)";
+  var rech = { ecole: null, mode: "cours", cours: [], resultats: [], arme: null, requete: 0, minuteur: 0, ocr: null };
+  function rechConfig() { return RECHERCHE[choix.ecole] || RECHERCHE.ulb; }
+  function rechOuvrir() {
+    // Changer d'école repart de zéro : les cours cochés pour l'ULB n'ont
+    // pas de sens pour l'UCLouvain.
+    if (rech.ecole !== choix.ecole) {
+      rech.ecole = choix.ecole;
+      rech.mode = "cours";
+      rech.cours = [];
+      rech.resultats = [];
+      document.getElementById("recherche").value = "";
+      document.getElementById("rech-lien-champ").value = "";
+    }
+    rechAppliquerMode(false);
+    if (window.matchMedia("(hover: hover)").matches && rech.mode !== "lien") {
       document.getElementById("recherche").focus();
     }
   }
-  function ulbAppliquerMode(relancer) {
+  function rechAppliquerMode(relancer) {
+    var cfg = rechConfig();
     var champ = document.getElementById("recherche");
     var liste = document.getElementById("liste-formations");
     var titre = document.getElementById("formation-titre");
     var aide = document.getElementById("formation-aide");
-    Array.prototype.forEach.call(document.querySelectorAll("#ulb-modes button"), function (b) {
-      b.setAttribute("aria-selected", String(b.getAttribute("data-mode") === ulb.mode));
+    Array.prototype.forEach.call(document.querySelectorAll("#rech-modes button"), function (b) {
+      var mode = b.getAttribute("data-mode");
+      var etiquette = b.querySelector(".mode-nom");
+      if (etiquette && cfg.modes[mode]) etiquette.textContent = cfg.modes[mode];
+      b.setAttribute("aria-selected", String(mode === rech.mode));
     });
     effacer(document.getElementById("formations-status"));
-    ulb.arme = null;
-    ulb.requete++; // invalide une recherche en vol
+    rech.arme = null;
+    rech.requete++; // invalide une recherche en vol
     liste.innerHTML = "";
-    document.getElementById("formation-recherche").hidden = ulb.mode === "lien";
-    document.getElementById("ulb-cours").hidden = ulb.mode !== "cours";
-    document.getElementById("ulb-lien").hidden = ulb.mode !== "lien";
-    if (ulb.mode === "niveau") {
-      titre.textContent = "Ton niveau d'études";
-      champ.placeholder = "Recherche, ex. droit bloc 2, polytech…";
-      champ.setAttribute("aria-label", "Rechercher un niveau d'études");
-      aide.textContent = "Écris au moins 2 lettres : l'ULB publie plus de 2 000 niveaux d'études.";
-    } else if (ulb.mode === "cours") {
-      titre.textContent = "Tes cours (UE)";
-      champ.placeholder = "Code ou intitulé, ex. DROIC2001, droit pénal…";
+    document.getElementById("formation-recherche").hidden = rech.mode === "lien";
+    document.getElementById("rech-cours").hidden = rech.mode !== "cours";
+    document.getElementById("rech-lien").hidden = rech.mode !== "lien";
+    var mode = cfg[rech.mode] || cfg.cours;
+    titre.textContent = mode.titre;
+    aide.textContent = mode.aide;
+    if (rech.mode === "niveau") {
+      champ.placeholder = mode.placeholder;
+      champ.setAttribute("aria-label", "Rechercher un " + (choix.ecole === "ucl" ? "programme" : "niveau d'études"));
+    } else if (rech.mode === "cours") {
+      champ.placeholder = mode.placeholder;
       champ.setAttribute("aria-label", "Rechercher un cours");
-      aide.textContent = "Coche les cours que tu suis, puis « Voir mon horaire ».";
-      ulbRendreCours();
-      setTimeout(ulbAjusterChamp, 0);
+      rechRendreCours();
+      setTimeout(rechAjusterChamp, 0);
     } else {
-      titre.textContent = "Ton horaire personnel";
-      aide.textContent = "Le lien d'abonnement de MonULB (TimeEdit). Il donne accès à ton horaire : " +
-        "garde-le pour toi, et supprime-le d'ici si tu le révoques un jour.";
-      var champLien = document.getElementById("ulb-lien-champ");
+      // Le mode d'emploi du lien porte un lien cliquable : innerHTML sur
+      // une chaîne écrite ici, jamais sur une donnée reçue.
+      document.getElementById("rech-lien-aide").innerHTML = mode.mode;
+      var champLien = document.getElementById("rech-lien-champ");
+      champLien.placeholder = mode.placeholder;
       if (choix.ical) champLien.value = choix.ical;
       champLien.focus();
     }
-    if (relancer && ulb.mode !== "lien") ulbChercher();
+    if (relancer && rech.mode !== "lien") rechChercher();
   }
-  function ulbChercher() {
+  function rechChercher() {
     var champ = document.getElementById("recherche");
     var status = document.getElementById("formations-status");
     var texte = champ.value.replace(/\s+/g, " ").trim();
-    var genre = ulb.mode === "cours" ? "ue" : "niveau";
-    var seq = ++ulb.requete;
+    var genre = rech.mode === "cours" ? "ue" : "niveau";
+    var seq = ++rech.requete;
     if (texte.length < 2) { effacer(status); return; }
     attente(status, "Recherche…");
-    api("api/recherche?ecole=ulb&genre=" + genre + "&q=" + encodeURIComponent(texte), 20000)
+    api("api/recherche?ecole=" + encodeURIComponent(choix.ecole) +
+         "&genre=" + genre + "&q=" + encodeURIComponent(texte), 20000)
       .then(function (rep) {
-        if (seq !== ulb.requete || vue !== "formation") return;
+        if (seq !== rech.requete || vue !== "formation") return;
         effacer(status);
-        ulbRendreResultats(rep.resultats || []);
+        rechRendreResultats(rep.resultats || []);
       }, function (e) {
-        if (seq !== ulb.requete || vue !== "formation") return;
+        if (seq !== rech.requete || vue !== "formation") return;
         erreur(status, "Échec : " + e.message + " Vérifie ta connexion et réessaie.");
       });
   }
-  function ulbRendreResultats(resultats) {
+  function rechRendreResultats(resultats) {
     var liste = document.getElementById("liste-formations");
-    if (resultats) ulb.resultats = resultats;
+    if (resultats) rech.resultats = resultats;
     // Un cours déjà choisi quitte la liste : pas de second clic ambigu.
-    // `ulb.resultats` garde la liste brute, pour qu'il revienne quand on
+    // `rech.resultats` garde la liste brute, pour qu'il revienne quand on
     // retire le cours de la sélection.
-    var visibles = ulb.mode === "cours"
-      ? ulb.resultats.filter(function (r) { return ulb.cours.indexOf(r.cle) < 0; })
-      : ulb.resultats;
-    if (ulb.mode === "cours" && ulb.resultats.length && !visibles.length) {
+    var visibles = rech.mode === "cours"
+      ? rech.resultats.filter(function (r) { return rech.cours.indexOf(r.cle) < 0; })
+      : rech.resultats;
+    if (rech.mode === "cours" && rech.resultats.length && !visibles.length) {
       liste.innerHTML = '<li class="empty">Tous ces résultats sont déjà dans ta sélection.</li>';
       return;
     }
@@ -4004,35 +4096,35 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       liste.innerHTML = '<li class="empty">Aucun résultat. Essaie un autre mot ou le code exact.</li>';
       return;
     }
-    var parCours = ulb.mode === "cours";
+    var parCours = rech.mode === "cours";
     liste.innerHTML = visibles.map(function (r) {
       return '<li><button type="button" class="halo" data-formation="' + txt(r.cle) + '"' +
         (parCours ? ' aria-pressed="false"' : "") + '><span class="nom">' +
         txt(joliFormation(r.cle)) + '</span><span class="chev" aria-hidden="true"></span></button></li>';
     }).join("");
   }
-  function ulbAjouterCours(cle) {
-    if (ulb.cours.indexOf(cle) >= 0) return;
-    ulb.cours.push(cle);
-    ulb.arme = null;
-    ulbRendreCours();
-    ulbRendreResultats(ulb.resultats);
+  function rechAjouterCours(cle) {
+    if (rech.cours.indexOf(cle) >= 0) return;
+    rech.cours.push(cle);
+    rech.arme = null;
+    rechRendreCours();
+    rechRendreResultats(rech.resultats);
   }
-  function ulbRetirerCours(cle) {
-    var i = ulb.cours.indexOf(cle);
-    if (i >= 0) ulb.cours.splice(i, 1);
-    ulb.arme = null;
-    ulbRendreCours();
-    ulbRendreResultats(ulb.resultats);
+  function rechRetirerCours(cle) {
+    var i = rech.cours.indexOf(cle);
+    if (i >= 0) rech.cours.splice(i, 1);
+    rech.arme = null;
+    rechRendreCours();
+    rechRendreResultats(rech.resultats);
   }
-  function ulbDesarmer() {
-    if (ulb.arme == null) return;
-    ulb.arme = null;
-    ulbRendreCours();
+  function rechDesarmer() {
+    if (rech.arme == null) return;
+    rech.arme = null;
+    rechRendreCours();
   }
-  function ulbRendreCours() {
-    document.getElementById("ulb-cours-chips").innerHTML = ulb.cours.map(function (cle) {
-      var arme = ulb.arme === cle;
+  function rechRendreCours() {
+    document.getElementById("rech-cours-chips").innerHTML = rech.cours.map(function (cle) {
+      var arme = rech.arme === cle;
       var parties = String(cle).split(" · ");
       var code = parties[0] || cle, titre = parties.slice(1).join(" · ");
       return '<button type="button" class="chip' + (arme ? " chip-suppr" : "") + '" data-cours="' + txt(cle) +
@@ -4040,33 +4132,33 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
         '<span class="chip-textes"><span>' + txt(code) + "</span>" +
         (titre ? "<small>" + txt(titre) + "</small>" : "") + "</span></button>";
     }).join("");
-    var btn = document.getElementById("ulb-cours-voir");
-    btn.textContent = ulb.cours.length
-      ? "Voir mon horaire · " + ulb.cours.length + " cours"
+    var btn = document.getElementById("rech-cours-voir");
+    btn.textContent = rech.cours.length
+      ? "Voir mon horaire · " + rech.cours.length + " cours"
       : "Voir mon horaire";
-    btn.disabled = !ulb.cours.length;
-    document.getElementById("ulb-cours-vide").hidden = !!ulb.cours.length;
+    btn.disabled = !rech.cours.length;
+    document.getElementById("rech-cours-vide").hidden = !!rech.cours.length;
   }
-  function ulbVoirCours() {
-    if (!ulb.cours.length) return;
-    choix.formation = "PAR:" + ulb.cours.map(function (c) { return c.split(" · ")[0]; }).join(",");
+  function rechVoirCours() {
+    if (!rech.cours.length) return;
+    choix.formation = "PAR:" + rech.cours.map(function (c) { return c.split(" · ")[0]; }).join(",");
     choix.data = null; choix.groupes = []; choix.ical = null;
     document.getElementById("recherche").blur();
     aller("groupes");
   }
-  function ulbVerifierLien() {
-    var statut = document.getElementById("ulb-lien-status");
-    var btn = document.getElementById("ulb-lien-voir");
+  function rechVerifierLien() {
+    var statut = document.getElementById("rech-lien-status");
+    var btn = document.getElementById("rech-lien-voir");
     // Le copier-coller ajoute parfois des espaces ou coupe un caractère :
     // on colle le lien recollé (sans espaces) tel quel.
-    var lien = document.getElementById("ulb-lien-champ").value.replace(/\s+/g, "");
+    var lien = document.getElementById("rech-lien-champ").value.replace(/\s+/g, "");
     if (!lien) { erreur(statut, "Colle d'abord le lien d'abonnement (« S'abonner » dans Mon horaire)."); return; }
     btn.disabled = true;
     attente(statut, "Lecture de ton calendrier…");
     api("api/ical?lien=" + encodeURIComponent(lien), 40000).then(function (rep) {
       btn.disabled = false;
       effacer(statut);
-      choix.formation = ULB_LIEN_FORMATION;
+      choix.formation = LIEN_FORMATION;
       choix.ical = lien;
       choix.data = rep.data;
       choix.groupes = [];
@@ -4076,26 +4168,26 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       erreur(statut, "Échec : " + e.message);
     });
   }
-  document.getElementById("ulb-modes").addEventListener("click", function (e) {
+  document.getElementById("rech-modes").addEventListener("click", function (e) {
     var b = e.target.closest("button[data-mode]");
-    if (!b || b.getAttribute("data-mode") === ulb.mode) return;
-    ulb.mode = b.getAttribute("data-mode");
+    if (!b || b.getAttribute("data-mode") === rech.mode) return;
+    rech.mode = b.getAttribute("data-mode");
     document.getElementById("recherche").value = "";
-    ulbAppliquerMode(true);
+    rechAppliquerMode(true);
   });
-  document.getElementById("ulb-cours-chips").addEventListener("click", function (e) {
+  document.getElementById("rech-cours-chips").addEventListener("click", function (e) {
     var b = e.target.closest("button[data-cours]");
     if (!b) return;
     var cle = b.getAttribute("data-cours");
-    if (ulb.arme === cle) { ulbRetirerCours(cle); return; } // confirmation
-    ulb.arme = cle;                                        // premier appui : rouge
-    ulbRendreCours();
+    if (rech.arme === cle) { rechRetirerCours(cle); return; } // confirmation
+    rech.arme = cle;                                        // premier appui : rouge
+    rechRendreCours();
   });
   var OCR_LIB = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";
   var OCR_INTEGRITE = "sha384-GJqSu7vueQ9qN0E9yLPb3Wtpd7OrgK8KmYzC8T1IysG1bcvxvIO4qtYR/D3A991F";
   var OCR_LANGUES = "https://cdn.jsdelivr.net/gh/naptha/tessdata@gh-pages/4.0.0_fast";
-  function ulbAjusterChamp() {
-    var zone = document.getElementById("ulb-import-texte");
+  function rechAjusterChamp() {
+    var zone = document.getElementById("rech-import-texte");
     if (!zone || vue !== "formation") return;
     var max = Math.round(window.innerHeight * 0.42);
     zone.style.height = "auto";
@@ -4103,10 +4195,10 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     zone.style.height = voulu + "px";
     zone.style.overflowY = zone.scrollHeight > max ? "auto" : "hidden";
   }
-  function ulbChargerOCR() {
+  function rechChargerOCR() {
     if (window.Tesseract) return Promise.resolve(window.Tesseract);
-    if (!ulb.ocr) {
-      ulb.ocr = new Promise(function (ok, ko) {
+    if (!rech.ocr) {
+      rech.ocr = new Promise(function (ok, ko) {
         var s = document.createElement("script");
         s.src = OCR_LIB; s.integrity = OCR_INTEGRITE; s.crossOrigin = "anonymous";
         s.onload = function () { ok(window.Tesseract); };
@@ -4114,10 +4206,10 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
         document.head.appendChild(s);
       });
     }
-    return ulb.ocr;
+    return rech.ocr;
   }
-  function ulbLireCapture(fichier) {
-    var statut = document.getElementById("ulb-import-status");
+  function rechLireCapture(fichier) {
+    var statut = document.getElementById("rech-import-status");
     var image = fichier && (/^image\//.test(fichier.type || "") ||
       /\.(png|jpe?g|webp|gif|bmp|heic|heif)$/i.test(fichier.name || ""));
     if (!image) {
@@ -4125,7 +4217,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       return;
     }
     attente(statut, "Ouverture de la capture…");
-    ulbChargerOCR().then(function (T) {
+    rechChargerOCR().then(function (T) {
       return T.recognize(fichier, "fra", {
         langPath: OCR_LANGUES,
         logger: function (m) {
@@ -4137,25 +4229,25 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     }).then(function (r) {
       var texte = ((r && r.data && r.data.text) || "").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
       if (!texte) { erreur(statut, "Aucun texte lisible sur cette image."); return; }
-      document.getElementById("ulb-import-texte").value = texte;
-      ulbAjusterChamp();
-      ulbImporter(true); // on enchaîne tout seuls : l'étudiant voit ses cours, pas le texte
+      document.getElementById("rech-import-texte").value = texte;
+      rechAjusterChamp();
+      rechImporter(true); // on enchaîne tout seuls : l'étudiant voit ses cours, pas le texte
     }, function (e) {
       erreur(statut, "Impossible de lire la capture : " + e.message);
     });
   }
-  document.getElementById("ulb-import").addEventListener("toggle", function () {
-    if (this.open) ulbAjusterChamp();
+  document.getElementById("rech-import").addEventListener("toggle", function () {
+    if (this.open) rechAjusterChamp();
   });
-  document.getElementById("ulb-import-texte").addEventListener("input", ulbAjusterChamp);
-  document.getElementById("ulb-import-texte").addEventListener("paste", function () {
-    setTimeout(ulbAjusterChamp, 0);
+  document.getElementById("rech-import-texte").addEventListener("input", rechAjusterChamp);
+  document.getElementById("rech-import-texte").addEventListener("paste", function () {
+    setTimeout(rechAjusterChamp, 0);
   });
-  window.addEventListener("resize", ulbAjusterChamp);
+  window.addEventListener("resize", rechAjusterChamp);
   (function () {
     // Glisser-déposer une capture sur le bloc (enfants compris) : compteur
     // pour ne pas clignoter quand la souris passe d'un élément à un autre.
-    var bloc = document.getElementById("ulb-import");
+    var bloc = document.getElementById("rech-import");
     function allumer(e) {
       e.preventDefault();
       if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
@@ -4178,33 +4270,33 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       eteindre();
       var fichiers = (e.dataTransfer && e.dataTransfer.files) || [];
       if (!fichiers.length) {
-        erreur(document.getElementById("ulb-import-status"), "Aucune image dans ce dépôt.");
+        erreur(document.getElementById("rech-import-status"), "Aucune image dans ce dépôt.");
         return;
       }
       if (!bloc.open) bloc.open = true;
-      ulbLireCapture(fichiers[0]);
+      rechLireCapture(fichiers[0]);
     });
   })();
-  document.getElementById("ulb-capture-fichier").addEventListener("change", function () {
-    if (this.files && this.files[0]) ulbLireCapture(this.files[0]);
+  document.getElementById("rech-capture-fichier").addEventListener("change", function () {
+    if (this.files && this.files[0]) rechLireCapture(this.files[0]);
     this.value = "";
   });
   // Coller une image (⌘V / Ctrl+V) quand le bloc d'import est ouvert.
   document.addEventListener("paste", function (e) {
-    var bloc = document.getElementById("ulb-import");
+    var bloc = document.getElementById("rech-import");
     if (!bloc || !bloc.open || vue !== "formation") return;
     var items = (e.clipboardData && e.clipboardData.items) || [];
     for (var i = 0; i < items.length; i++) {
       if (items[i].type && items[i].type.indexOf("image/") === 0) {
         var f = items[i].getAsFile();
-        if (f) { e.preventDefault(); ulbLireCapture(f); return; }
+        if (f) { e.preventDefault(); rechLireCapture(f); return; }
       }
     }
   });
-  function ulbImporter(depuisCapture) {
-    var texte = document.getElementById("ulb-import-texte").value;
-    var statut = document.getElementById("ulb-import-status");
-    var btn = document.getElementById("ulb-import-voir");
+  function rechImporter(depuisCapture) {
+    var texte = document.getElementById("rech-import-texte").value;
+    var statut = document.getElementById("rech-import-status");
+    var btn = document.getElementById("rech-import-voir");
     if (texte.replace(/\s+/g, "").length < 3) {
       if (depuisCapture) erreur(statut, "Aucun texte lisible sur cette capture.");
       else erreur(statut, "Colle d'abord ta liste de cours.");
@@ -4212,21 +4304,22 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     }
     btn.disabled = true;
     attente(statut, "Vérification des cours…");
-    api("api/importer?ecole=ulb&liste=" + encodeURIComponent(texte), 60000)
+    api("api/importer?ecole=" + encodeURIComponent(choix.ecole) +
+        "&liste=" + encodeURIComponent(texte), 60000)
       .then(function (rep) {
         btn.disabled = false;
         var d = rep.data || {};
         (d.cours || []).forEach(function (c) {
-          if (c.cle && ulb.cours.indexOf(c.cle) < 0) ulb.cours.push(c.cle);
+          if (c.cle && rech.cours.indexOf(c.cle) < 0) rech.cours.push(c.cle);
         });
-        ulb.arme = null;
-        ulbRendreCours();
-        ulbRendreResultats(ulb.resultats);
+        rech.arme = null;
+        rechRendreCours();
+        rechRendreResultats(rech.resultats);
         // Rien à raconter : seules les lignes VRAIMENT ambivalentes (des
         // candidats crédibles, plusieurs cours du même intitulé) proposent un
         // choix ; les lignes illisibles sont simplement ignorées.
         var doutes = (d.a_confirmer || []).filter(function (x) { return x.propositions.length; });
-        var zone = document.getElementById("ulb-import-doutes");
+        var zone = document.getElementById("rech-import-doutes");
         zone.hidden = !doutes.length;
         zone.innerHTML = !doutes.length ? "" :
           '<div class="prop">' + doutes.map(function (x) {
@@ -4248,20 +4341,20 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
         erreur(statut, "Échec : " + e.message);
       });
   }
-  document.getElementById("ulb-import-voir").addEventListener("click", function () { ulbImporter(false); });
-  document.getElementById("ulb-import-doutes").addEventListener("click", function (e) {
+  document.getElementById("rech-import-voir").addEventListener("click", function () { rechImporter(false); });
+  document.getElementById("rech-import-doutes").addEventListener("click", function (e) {
     var b = e.target.closest("button[data-cle]");
     if (!b) return;
     var cle = b.getAttribute("data-cle");
-    if (ulb.cours.indexOf(cle) < 0) ulb.cours.push(cle);
-    ulb.arme = null;
-    ulbRendreCours();
+    if (rech.cours.indexOf(cle) < 0) rech.cours.push(cle);
+    rech.arme = null;
+    rechRendreCours();
     b.closest(".doute").hidden = true;
   });
-  document.getElementById("ulb-cours-voir").addEventListener("click", ulbVoirCours);
-  document.getElementById("ulb-lien-voir").addEventListener("click", ulbVerifierLien);
-  document.getElementById("ulb-lien-champ").addEventListener("keydown", function (e) {
-    if (e.key === "Enter") { e.preventDefault(); ulbVerifierLien(); }
+  document.getElementById("rech-cours-voir").addEventListener("click", rechVoirCours);
+  document.getElementById("rech-lien-voir").addEventListener("click", rechVerifierLien);
+  document.getElementById("rech-lien-champ").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") { e.preventDefault(); rechVerifierLien(); }
   });
   /* Recherche : les écoles abrègent (UMONS : « BAB1 », « MAB2 », « Ir. »,
      « (Ch) »…). Chaque nom reçoit des mots-clés en clair, pour qu'on trouve
@@ -4351,9 +4444,9 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   document.getElementById("recherche").addEventListener("input", function () {
     var ec = ecoleDe(choix.ecole);
     if (ec && ec.recherche) { // ULB : recherche serveur, avec un petit délai
-      ulbDesarmer();
-      clearTimeout(ulb.minuteur);
-      ulb.minuteur = setTimeout(ulbChercher, 220);
+      rechDesarmer();
+      clearTimeout(rech.minuteur);
+      rech.minuteur = setTimeout(rechChercher, 220);
       return;
     }
     if (formations.liste) listerFormations();
@@ -4362,8 +4455,8 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     var b = e.target.closest("button[data-formation]");
     if (!b) return;
     var ec = ecoleDe(choix.ecole);
-    if (ec && ec.recherche && ulb.mode === "cours") { // on ajoute le cours
-      ulbAjouterCours(b.getAttribute("data-formation"));
+    if (ec && ec.recherche && rech.mode === "cours") { // on ajoute le cours
+      rechAjouterCours(b.getAttribute("data-formation"));
       return;
     }
     var memeFormation = choix.formation === b.getAttribute("data-formation");
