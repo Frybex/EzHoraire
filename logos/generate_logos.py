@@ -1,6 +1,6 @@
 import os
 
-svg_dir = "/Users/maxencebastin/Documents/Bloem/EzHoraire/logos"
+svg_dir = os.path.dirname(os.path.abspath(__file__))
 os.makedirs(svg_dir, exist_ok=True)
 
 # 1. 01-swiss-ez-stacked-exact.svg (Direct translation of the Bauhaus stacked concept)

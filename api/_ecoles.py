@@ -99,29 +99,40 @@ _DEBIT = {}  # (point d'entrée, ip) -> deque des horodatages (monotonic)
 _DEBIT_VERROU = threading.Lock()
 
 
+def _ip_client(h):
+    """IP du client pour le quota, non falsifiable.
+
+    Sur Vercel, `x-vercel-forwarded-for` (comme `x-real-ip`) est écrit par
+    la plateforme à partir de la connexion TCP et écrase toute valeur fournie
+    par le client : celui-ci ne peut pas choisir sa case. On ne lit que ces
+    deux en-têtes Vercel — jamais `x-forwarded-for` seul, qu'un proxy au-dessus
+    de Vercel peut réécrire — et on prend la DERNIÈRE adresse de la liste :
+    c'est le dernier relais, forcément posé par la plateforme (une valeur
+    inventée par le client resterait à gauche). En local (serve.py, qui refuse
+    toute connexion non locale), l'IP de la connexion fait foi."""
+    for nom in ("x-vercel-forwarded-for", "x-real-ip"):
+        try:
+            valeurs = h.headers.get(nom) or ""
+        except Exception:  # noqa: BLE001 - en-tête absent ou illisible
+            valeurs = ""
+        ip = valeurs.split(",")[-1].strip()
+        if ip:
+            return ip
+    try:
+        return h.client_address[0]
+    except Exception:  # noqa: BLE001
+        return "?"
+
+
 def debit(h, cle, erreur):
     """True si l'appel passe, sinon répond 429 et False.
 
     `erreur(statut, message)` répond dans le format du point d'entrée
     (même convention que `requete`). À appeler après `requete`, avant
     tout travail : seules les requêtes bien formées consomment le quota.
-    L'IP vient des en-têtes posés par l'hébergeur (Vercel les réécrit,
-    le client ne peut pas les imposer), sinon de la connexion directe
-    (serveur local, qui n'écoute que la machine)."""
+    L'IP est celle de `_ip_client` (en-têtes plateforme uniquement)."""
     limite, fenetre = _DEBIT_MAX[cle]
-    ip = ""
-    try:
-        for nom in ("X-Vercel-Forwarded-For", "X-Real-IP", "X-Forwarded-For"):
-            ip = (h.headers.get(nom) or "").split(",")[0].strip()
-            if ip:
-                break
-    except Exception:  # noqa: BLE001 - en-tête absent ou illisible
-        ip = ""
-    if not ip:
-        try:
-            ip = h.client_address[0]
-        except Exception:  # noqa: BLE001
-            ip = "?"
+    ip = _ip_client(h)
     maintenant = time.monotonic()
     with _DEBIT_VERROU:
         file = _DEBIT.get((cle, ip))

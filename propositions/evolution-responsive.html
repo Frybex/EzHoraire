@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Évolution Responsive — Option 1 Dashboard</title>
+<style>
+  :root {
+    --accent: #d14d8a;
+    --accent-soft: rgba(209, 77, 138, .12);
+    --wash: rgba(209, 77, 138, .13);
+    --bg: #fdf1f6;
+    --surface: #ffffff;
+    --ink: #17191d;
+    --muted: #6d7482;
+    --line: #ebdce4;
+    --free: #18794e;
+    --seg-track: #f9e0ec;
+    --relief-haut: #ffffff;
+    --relief-bas: #faebf3;
+    --reflet: rgba(255, 255, 255, .9);
+    --ombre-btn: 0 1px 2px rgba(23, 32, 68, .06), 0 2px 8px -4px rgba(23, 32, 68, .08);
+    --shadow: 0 16px 40px -24px rgba(23, 32, 68, .28);
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  html, body {
+    height: 100%;
+    overflow: hidden;
+  }
+  
+  body {
+    background-color: var(--bg);
+    color: var(--ink);
+    font-family: var(--font);
+    font-size: 15px;
+    line-height: 1.45;
+    padding: 0 36px 18px;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Topbar */
+  .topbar {
+    display: flex; justify-content: space-between; align-items: center;
+    height: 60px; flex-shrink: 0;
+  }
+  .title { font-size: 1.25rem; font-weight: 750; letter-spacing: -.02em; }
+  .title span { color: var(--accent); }
+  
+  .seg {
+    display: flex; background: var(--seg-track); padding: 4px; border-radius: 999px;
+    gap: 4px; box-shadow: inset 0 1px 3px rgba(0,0,0,.06);
+  }
+  .seg button {
+    border: none; background: transparent; padding: 6px 20px; border-radius: 999px;
+    font-size: .88rem; font-weight: 600; color: var(--muted); cursor: pointer;
+  }
+  .seg button.active {
+    background: #ffffff; color: var(--ink);
+    box-shadow: 0 2px 8px rgba(0,0,0,.08); font-weight: 700;
+  }
+
+  .user-avatar {
+    width: 38px; height: 38px; border-radius: 50%;
+    background: var(--relief-bas); border: 1px solid var(--line);
+    display: grid; place-items: center; font-weight: 700; font-size: .86rem;
+  }
+
+  /* Week row */
+  .week-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    height: 40px; margin-bottom: 6px; flex-shrink: 0;
+  }
+  .week-cur { display: flex; align-items: baseline; gap: 12px; }
+  .week-cur strong { font-size: 1.95rem; font-weight: 750; letter-spacing: -.04em; }
+  .week-cur span { color: var(--muted); font-size: 1rem; }
+
+  .btn-relief {
+    height: 36px; padding: 0 16px; border-radius: 999px; border: none;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    font-size: .86rem; font-weight: 600; color: var(--ink); cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-relief.icon { width: 36px; padding: 0; justify-content: center; }
+
+  /* Conteneur principal */
+  #contenu-principal {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    gap: 12px;
+  }
+
+  /* Grille : RÈGLE ABSOLUE demandée par l'utilisateur */
+  /* min-height: 538px (hauteur exacte issue de 800px) */
+  /* max-height: 540px sur grand écran pour stabiliser les cases */
+  .cal {
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    border-radius: 22px; padding: 14px 18px 14px 0;
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    display: flex; flex-direction: column; isolation: isolate;
+    min-height: 538px;
+    height: 538px;
+    flex-shrink: 0;
+  }
+
+  .cal-head {
+    display: grid; grid-template-columns: 54px repeat(5, 1fr); column-gap: 8px;
+    padding-bottom: 10px; flex-shrink: 0;
+  }
+  .cal-jour { display: flex; align-items: center; gap: 8px; padding: 0 8px; }
+  .cal-jour span { color: var(--muted); font-size: .76rem; font-weight: 650; }
+  .cal-jour strong {
+    min-width: 32px; height: 32px; border-radius: 999px; display: grid; place-items: center;
+    font-size: 1.25rem; font-weight: 600;
+  }
+  .cal-jour.today span, .cal-jour.today strong {{ color: var(--accent); }}
+  .cal-jour small { margin-left: auto; color: var(--muted); font-size: .76rem; }
+  .cal-jour small.libre { color: var(--free); font-weight: 600; }
+
+  .cal-body {
+    display: grid; grid-template-columns: 54px repeat(5, 1fr); column-gap: 8px;
+    flex: 1; min-height: 0; position: relative;
+  }
+  .cal-hours { position: relative; }
+  .cal-hours span {
+    position: absolute; right: 10px; transform: translateY(-50%);
+    color: var(--muted); font-size: .74rem; font-variant-numeric: tabular-nums;
+  }
+  .cal-col { position: relative; border-radius: 12px; }
+
+  .cal-col.today::before {
+    content: ""; position: absolute; z-index: -1;
+    top: -54px; bottom: -18px; left: -4px; right: -4px; border-radius: 18px;
+    background: var(--surface);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 26%, var(--line)),
+                inset 0 1px 0 var(--reflet),
+                0 18px 40px -18px rgba(15, 20, 40, .28);
+  }
+
+  .cal-libre {
+    position: absolute; inset: 0; border-radius: 12px;
+    background: repeating-linear-gradient(45deg, transparent, transparent 12px, rgba(109,116,130,.06) 12px, rgba(109,116,130,.06) 24px);
+    display: grid; place-items: center; color: var(--muted);
+  }
+  .cal-libre p { background: var(--surface); padding: 6px 14px; border-radius: 12px; font-weight: 650; }
+
+  .ev {
+    position: absolute; border-radius: 10px; padding: 8px 10px;
+    display: flex; flex-direction: column; overflow: hidden;
+    font-size: .78rem; text-align: left; cursor: pointer;
+  }
+  .ev.rose { background: #fbebf3; color: #6b1d40; }
+  .ev.menthe { background: #eaf7f2; color: #165b43; }
+  .ev.bleu { background: #ebf2ff; color: #173b7d; }
+  .ev.jaune { background: #fdf5df; color: #694a08; }
+  .ev.mauve { background: #f4ecfc; color: #4b1f79; }
+
+  .ev .et { font-weight: 700; font-size: .83rem; line-height: 1.25; }
+  .ev .es { font-weight: 600; opacity: .88; font-size: .78rem; }
+  .ev .eb { display: flex; justify-content: space-between; font-size: .72rem; opacity: .75; margin-top: auto; }
+
+  /* ------------------------------------------------------------- */
+  /* DASHBOARD PROGRESSIF DU BAS (Grandit au fur et à mesure) */
+  /* ------------------------------------------------------------- */
+  #dashboard-bas {
+    display: none; /* Par défaut caché si hauteur <= 820px */
+    grid-template-columns: 1.3fr 1.1fr 0.9fr;
+    gap: 14px;
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* À partir de 830px de hauteur, le dashboard commence discret */
+  @media (min-height: 830px) {
+    #dashboard-bas {
+      display: grid;
+    }
+  }
+
+  .dash-card {
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    border-radius: 18px;
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden;
+    transition: all .2s ease;
+  }
+
+  /* Taille 1 : Très compacte (hauteur 830px à 950px) */
+  /* "Cases toutes petites au départ avec peu de texte" */
+  @media (min-height: 830px) and (max-height: 950px) {
+    body { padding-bottom: 12px; }
+    .dash-card { padding: 10px 16px; }
+    .dash-tag { font-size: .7rem; font-weight: 700; text-transform: uppercase; color: var(--accent); }
+    .dash-val { font-size: .95rem; font-weight: 750; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+    .dash-sub { font-size: .76rem; color: var(--muted); }
+    .dash-foot { display: none; } /* On cache les détails superflus pour rester ultra-fin */
+    .dash-tools { flex-direction: row !important; gap: 6px !important; }
+    .dash-tools button { height: 28px !important; font-size: .74rem !important; }
+  }
+
+  /* Taille 2 : Moyenne et confortable (hauteur 951px à 1150px) */
+  @media (min-height: 951px) and (max-height: 1150px) {
+    body { padding-bottom: 16px; }
+    .dash-card { padding: 16px 20px; }
+    .dash-tag { font-size: .74rem; font-weight: 750; text-transform: uppercase; color: var(--accent); letter-spacing: .03em; }
+    .dash-val { font-size: 1.15rem; font-weight: 750; margin-top: 3px; }
+    .dash-sub { font-size: .84rem; color: var(--muted); margin-top: 2px; }
+    .dash-foot { display: flex; font-size: .78rem; color: var(--muted); border-top: 1px solid var(--line); padding-top: 8px; margin-top: 6px; }
+    .dash-tools button { height: 32px; font-size: .78rem; }
+  }
+
+  /* Taille 3 : Grand écran noble / 4K iMac (hauteur > 1150px) */
+  @media (min-height: 1151px) {
+    body { padding: 0 44px 24px; }
+    .dash-card { padding: 22px 26px; }
+    .dash-tag { font-size: .78rem; font-weight: 750; text-transform: uppercase; color: var(--accent); letter-spacing: .04em; }
+    .dash-val { font-size: 1.35rem; font-weight: 750; margin-top: 4px; }
+    .dash-sub { font-size: .9rem; color: var(--muted); margin-top: 4px; }
+    .dash-foot { display: flex; font-size: .84rem; color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px; margin-top: 10px; }
+    .dash-tools button { height: 36px; font-size: .82rem; }
+  }
+
+  /* Label de résolution en filigrane pour la démo */
+  .res-indicator {
+    position: fixed; bottom: 8px; right: 16px;
+    background: #17191d; color: #ffffff; padding: 4px 10px; border-radius: 6px;
+    font-size: .72rem; font-weight: 600; z-index: 1000; opacity: .85;
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="title">Ez<span>Horaire</span></div>
+  <div class="seg">
+    <button class="active">Maxence</button>
+    <button>Lilian</button>
+    <button>Anthony</button>
+  </div>
+  <div class="user-avatar">MB</div>
+</div>
+
+<div class="week-row">
+  <div class="week-cur">
+    <strong>Semaine 1</strong>
+    <span>14 – 18 sept. 2026</span>
+  </div>
+  <div style="display: flex; gap: 8px;">
+    <button class="btn-relief icon">&lt;</button>
+    <button class="btn-relief icon">&gt;</button>
+    <button class="btn-relief">📄 PDF officiel</button>
+  </div>
+</div>
+
+<div id="contenu-principal">
+  <!-- GRILLE HORAIRE (Toujours maintenue à son ratio parfait de 538px) -->
+  <div class="cal">
+    <div class="cal-head">
+      <div></div>
+      <div class="cal-jour"><span>Lun</span><strong>14</strong><small>8h15 – 16h30</small></div>
+      <div class="cal-jour"><span>Mar</span><strong>15</strong><small>8h15 – 15h30</small></div>
+      <div class="cal-jour"><span>Mer</span><strong>16</strong><small>8h15 – 12h30</small></div>
+      <div class="cal-jour today"><span>Jeu</span><strong>17</strong><small>8h30 – 17h30</small></div>
+      <div class="cal-jour"><span>Ven</span><strong>18</strong><small class="libre">Libre</small></div>
+    </div>
+
+    <div class="cal-body">
+      <div class="cal-hours">
+        <span style="top: 0%">8h</span><span style="top: 20%">10h</span>
+        <span style="top: 40%">12h</span><span style="top: 50%">13h</span>
+        <span style="top: 70%">15h</span><span style="top: 90%">17h</span>
+      </div>
+
+      <div class="cal-col">
+        <div class="ev rose" style="top: 2.5%; height: 42.5%; left: 0; right: 0;">
+          <div class="et">Modélisation 3Dconstruction</div>
+          <div class="es">1/14</div>
+          <div class="eb"><span>Souris</span><span>8h15 – 12h30</span></div>
+        </div>
+        <div class="ev menthe" style="top: 55%; height: 30%; left: 0; right: 0;">
+          <div class="et">Mathématique appliquée</div>
+          <div class="es">2/11</div>
+          <div class="eb"><span>Lebailly</span><span>13h30 – 16h30</span></div>
+        </div>
+      </div>
+
+      <div class="cal-col">
+        <div class="ev rose" style="top: 2.5%; height: 42.5%; left: 0; right: 0;">
+          <div class="et">Modélisation 3Dconstruction</div>
+          <div class="es">1/18</div>
+          <div class="eb"><span>Souris</span><span>8h15 – 12h30</span></div>
+        </div>
+        <div class="ev bleu" style="top: 55%; height: 20%; left: 0; right: 0;">
+          <div class="et">Anglais</div>
+          <div class="es">2/17A</div>
+          <div class="eb"><span>Delmotte</span><span>13h30 – 15h30</span></div>
+        </div>
+      </div>
+
+      <div class="cal-col">
+        <div class="ev menthe" style="top: 2.5%; height: 20%; left: 0; right: 0;">
+          <div class="et">Traitement du son</div>
+          <div class="es">1/32</div>
+          <div class="eb"><span>Sottiaux</span><span>8h15 – 10h15</span></div>
+        </div>
+        <div class="ev menthe" style="top: 25%; height: 20%; left: 0; right: 0;">
+          <div class="et">Mathématique appliquée</div>
+          <div class="es">1/36A</div>
+          <div class="eb"><span>Lebailly</span><span>10h30 – 12h30</span></div>
+        </div>
+      </div>
+
+      <div class="cal-col today">
+        <div class="ev jaune" style="top: 5%; height: 40%; left: 0; right: 0;">
+          <div class="et">Colorimétrie</div>
+          <div class="es">2/10E</div>
+          <div class="eb"><span>Gryspeert</span><span>8h30 – 12h30</span></div>
+        </div>
+        <div class="ev mauve" style="top: 55%; height: 40%; left: 0; right: 0;">
+          <div class="et">Création graphique 3D</div>
+          <div class="es">1/16</div>
+          <div class="eb"><span>D'Hondt</span><span>13h30 – 17h30</span></div>
+        </div>
+      </div>
+
+      <div class="cal-col">
+        <div class="cal-libre"><p>Pas de cours</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD PROGRESSIF : Cases fines au début, grandit avec la hauteur -->
+  <div id="dashboard-bas">
+    <!-- Card 1 : En direct -->
+    <div class="dash-card">
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span class="dash-tag">En ce moment · Jeudi</span>
+          <span style="padding: 2px 8px; border-radius: 999px; background: rgba(36,86,224,.1); color: #1d4fd7; font-size: .72rem; font-weight: 700;">⏱ Reste 1h45</span>
+        </div>
+        <div class="dash-val">Création graphique 3D</div>
+        <div class="dash-sub">Salle <strong>1/16</strong> · Prof. <strong>D'Hondt</strong></div>
+      </div>
+      <div class="dash-foot">
+        <span>📍 Bâtiment 1 · 1er étage</span>
+        <span style="margin: 0 6px;">•</span>
+        <span>Fin à 17h30</span>
+      </div>
+    </div>
+
+    <!-- Card 2 : Synthèse semaine -->
+    <div class="dash-card">
+      <div>
+        <span class="dash-tag" style="color: var(--muted);">Synthèse</span>
+        <div class="dash-val">28h de cours cette semaine</div>
+        <div class="dash-sub">Pic le <strong>Jeudi (8h)</strong> · Vendredi libéré</div>
+      </div>
+      <div class="dash-foot">
+        <span style="color: var(--free); font-weight: 600;">✓ Vendredi libre</span>
+        <span style="margin: 0 6px;">•</span>
+        <span>Pause midi 1h</span>
+      </div>
+    </div>
+
+    <!-- Card 3 : Outils -->
+    <div class="dash-card">
+      <div>
+        <span class="dash-tag" style="color: var(--muted);">Accès direct</span>
+        <div class="dash-val">Raccourcis</div>
+        <div class="dash-tools" style="display: flex; flex-direction: column; gap: 6px; margin-top: 4px;">
+          <button class="btn-relief" style="justify-content: center;">📅 Exporter iCal / Google</button>
+          <button class="btn-relief" style="justify-content: center;">📄 Télécharger PDF</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="res-indicator" id="res">1440 × 900</div>
+
+<script>
+  function majRes() {
+    document.getElementById('res').textContent = window.innerWidth + ' × ' + window.innerHeight + ' px';
+  }
+  majRes();
+  window.addEventListener('resize', majRes);
+</script>
+</body>
+</html>

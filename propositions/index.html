@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EzHoraire — Linear × Design Actuel Strict</title>
+<style>
+  :root {
+    --accent: #d14d8a;
+    --accent-soft: rgba(209, 77, 138, .12);
+    --bg: #121418;
+    --surface: #1e2229;
+    --surface-card: #272c35;
+    --text: #f0f2f5;
+    --muted: #9aa1ad;
+    --line: #333a46;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Barre de navigation supérieure */
+  .control-bar {
+    height: 64px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    flex-shrink: 0;
+    z-index: 100;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .brand-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: -.02em;
+  }
+  .brand-title span { color: var(--accent); }
+  .badge-tag {
+    background: var(--accent-soft);
+    color: #ff7ebb;
+    font-size: .72rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(209, 77, 138, .3);
+  }
+
+  /* Onglets */
+  .tabs {
+    display: flex;
+    background: rgba(0, 0, 0, .3);
+    padding: 4px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    gap: 4px;
+  }
+  .tab-btn {
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-size: .84rem;
+    font-weight: 650;
+    padding: 8px 18px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all .15s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+  }
+  .tab-btn:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, .05);
+  }
+  .tab-btn.active {
+    background: var(--accent);
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(209, 77, 138, .4);
+    font-weight: 750;
+  }
+
+  /* Actions à droite */
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .mode-switch {
+    display: flex;
+    background: rgba(0, 0, 0, .3);
+    padding: 3px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+  }
+  .mode-btn {
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-size: .78rem;
+    font-weight: 650;
+    padding: 5px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all .15s ease;
+  }
+  .mode-btn.active {
+    background: #ffffff;
+    color: #17191d;
+    font-weight: 750;
+  }
+  .btn-open-direct {
+    background: rgba(255, 255, 255, .08);
+    border: 1px solid var(--line);
+    color: #ffffff;
+    font-size: .8rem;
+    font-weight: 600;
+    padding: 7px 14px;
+    border-radius: 999px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all .15s;
+  }
+  .btn-open-direct:hover {
+    background: rgba(255, 255, 255, .15);
+    border-color: #ffffff;
+  }
+
+  /* Zone principale de contenu */
+  .content-area {
+    flex: 1;
+    position: relative;
+    background: #0d0f12;
+    overflow: hidden;
+  }
+
+  iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+    background: #fdf1f6;
+  }
+
+  /* Mode Image Capture */
+  .image-viewer {
+    display: none;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    text-align: center;
+    padding: 20px;
+    background: #0d0f12;
+  }
+  .image-viewer img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .6);
+    border: 1px solid var(--line);
+  }
+
+  /* Barre d'info conceptuelle en bas */
+  .info-bar {
+    height: 42px;
+    background: var(--surface);
+    border-top: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    font-size: .8rem;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+  .info-bar strong { color: var(--text); }
+  .info-tag {
+    background: rgba(255, 255, 255, .06);
+    padding: 2px 8px;
+    border-radius: 4px;
+    color: #d14d8a;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+
+<header class="control-bar">
+  <div class="brand">
+    <div class="brand-title">Ez<span>Horaire</span></div>
+    <span class="badge-tag">Linear Pure Strict</span>
+  </div>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab-btn active" onclick="choisirProp('linear_pure')">
+      <span>★</span> Linear (Design Existant Strict)
+    </button>
+    <button class="tab-btn" onclick="choisirProp(1)">
+      <span>1</span> Cours-Centrique
+    </button>
+    <button class="tab-btn" onclick="choisirProp(3)">
+      <span>3</span> Notion / Craft
+    </button>
+    <button class="tab-btn" onclick="choisirProp(4)">
+      <span>4</span> Frise Deadlines
+    </button>
+    <button class="tab-btn" onclick="choisirProp(5)">
+      <span>5</span> Hub Modulaire
+    </button>
+  </nav>
+
+  <div class="actions">
+    <div class="mode-switch">
+      <button class="mode-btn active" id="btn-mode-live" onclick="changerMode('live')">⚡ Interactif</button>
+      <button class="mode-btn" id="btn-mode-img" onclick="changerMode('img')">🖼️ Capture 4K</button>
+    </div>
+    <a href="nouvelles/linear_pure.html" target="_blank" class="btn-open-direct" id="btn-plein-ecran">
+      <span>Plein écran</span> ↗
+    </a>
+  </div>
+</header>
+
+<main class="content-area">
+  <iframe id="view-frame" src="nouvelles/linear_pure.html"></iframe>
+  <div class="image-viewer" id="view-img">
+    <img id="img-target" src="nouvelles/prop_linear_v13_today_full.png" alt="Capture Proposition">
+  </div>
+</main>
+
+<footer class="info-bar">
+  <div>
+    <span id="info-desc"><strong>Linear (Design Existant Strict)</strong> — Aucun élément existant n'a été touché (bouton PDF officiel avec son SVG d'origine, navigation semaine, rayures de congés, boutons originaux). Ajout pur du planificateur Linear sous la grille.</span>
+  </div>
+  <div style="display: flex; gap: 14px;">
+    <span>Alignement : <span class="info-tag">Grille 58px + 5 colonnes exactes</span></span>
+    <span>Hauteur grille : <span class="info-tag">520px sanctuarisée</span></span>
+  </div>
+</footer>
+
+<script>
+  const PROPOSITIONS = {
+    'linear_pure': {
+      titre: "Linear Strict",
+      fichier: "nouvelles/linear_pure.html",
+      image: "nouvelles/prop_linear_v13_today_full.png",
+      desc: "<strong>Linear (Design Existant Strict)</strong> — Respect à 100% de l'existant : bouton PDF officiel avec son SVG d'origine, boutons ‹ et › à leur place, rayures de cours libres, disposition exacte. Seul le bloc Linear est ajouté en dessous."
+    },
+    1: {
+      titre: "1. Cours-Centrique",
+      fichier: "nouvelles/prop1_cours_centrique.html",
+      image: "nouvelles/prop1_cours_centrique.png",
+      desc: "<strong>Option 1 : Cours-Centrique</strong> — Les devoirs sont rattachés directement aux matières du jour avec leurs couleurs pastel et créneaux horaires."
+    },
+    3: {
+      titre: "3. Notion / Craft",
+      fichier: "nouvelles/prop3_carnet_notes.html",
+      image: "nouvelles/prop3_carnet_notes.png",
+      desc: "<strong>Option 3 : Notion / Craft</strong> — Véritable fiche de notes quotidiennes avec callouts 'Consigne prof', 'Matériel requis' et exercices."
+    },
+    4: {
+      titre: "4. Frise Deadlines",
+      fichier: "nouvelles/prop4_deadlines_timeline.html",
+      image: "nouvelles/prop4_deadlines_timeline.png",
+      desc: "<strong>Option 4 : Frise Chronologique & Deadlines</strong> — Ruban connecté avec jalons, capsules d'avancement et comptes à rebours dynamiques."
+    },
+    5: {
+      titre: "5. Hub Modulaire",
+      fichier: "nouvelles/prop5_hub_modulaire.html",
+      image: "nouvelles/prop5_hub_modulaire.png",
+      desc: "<strong>Option 5 : Hub Modulaire</strong> — Micro-onglets [Devoirs | Ressources Drive] par jour et barre de synthèse globale du semestre en bas."
+    }
+  };
+
+  let propActive = 'linear_pure';
+  let modeActif = 'live';
+
+  function choisirProp(key) {
+    propActive = key;
+    const data = PROPOSITIONS[key];
+    
+    // MAJ onglets
+    const buttons = document.querySelectorAll('.tab-btn');
+    buttons.forEach((btn) => {
+      const isThis = btn.getAttribute('onclick').includes("'" + key + "'") || btn.getAttribute('onclick').includes("(" + key + ")");
+      btn.classList.toggle('active', isThis);
+    });
+
+    // MAJ contenus
+    document.getElementById('view-frame').src = data.fichier;
+    document.getElementById('img-target').src = data.image;
+    document.getElementById('btn-plein-ecran').href = data.fichier;
+    document.getElementById('info-desc').innerHTML = data.desc;
+  }
+
+  function changerMode(mode) {
+    modeActif = mode;
+    document.getElementById('btn-mode-live').classList.toggle('active', mode === 'live');
+    document.getElementById('btn-mode-img').classList.toggle('active', mode === 'img');
+
+    if (mode === 'live') {
+      document.getElementById('view-frame').style.display = 'block';
+      document.getElementById('view-img').style.display = 'none';
+    } else {
+      document.getElementById('view-frame').style.display = 'none';
+      document.getElementById('view-img').style.display = 'block';
+    }
+  }
+</script>
+</body>
+</html>

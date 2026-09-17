@@ -1,0 +1,1367 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Proposition 2 — Mini-Board Style Linear / Things 3 (Statuts & Priorités)</title>
+<style>
+  :root {
+    --accent: #d14d8a;
+    --accent-dark: #b83372;
+    --accent-soft: rgba(209, 77, 138, .12);
+    --accent-glow: rgba(209, 77, 138, .24);
+    --wash: rgba(209, 77, 138, .13);
+    --bg: #fdf1f6;
+    --surface: #ffffff;
+    --surface-glass: rgba(255, 255, 255, 0.68);
+    --ink: #17191d;
+    --muted: #6d7482;
+    --line: #ebdce4;
+    --free: #18794e;
+    --free-soft: #eaf7f2;
+    --seg-track: #f9e0ec;
+    --relief-haut: #ffffff;
+    --relief-bas: #faebf3;
+    --reflet: rgba(255, 255, 255, .9);
+    --ombre-btn: 0 1px 2px rgba(23, 32, 68, .06), 0 2px 8px -4px rgba(23, 32, 68, .08);
+    --shadow: 0 16px 40px -24px rgba(23, 32, 68, .28);
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  body {
+    background-color: var(--bg);
+    color: var(--ink);
+    font-family: var(--font);
+    font-size: 15px;
+    line-height: 1.45;
+    padding: 0 40px 18px;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    -webkit-font-smoothing: antialiased;
+  }
+  
+  /* BANDEAU PROPOSITION */
+  .prop-banner {
+    background: #17191d;
+    color: #ffffff;
+    margin: 0 -40px 10px;
+    padding: 10px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: .88rem;
+    z-index: 50;
+    flex-shrink: 0;
+  }
+  .prop-banner-title {
+    font-weight: 750;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .prop-badge {
+    background: #d14d8a;
+    color: #fff;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: .75rem;
+    font-weight: 700;
+    letter-spacing: .02em;
+  }
+  .prop-banner-desc {
+    color: #a1a7b5;
+    font-size: .84rem;
+  }
+  .prop-banner-desc strong {
+    color: #ffffff;
+  }
+
+  /* TOPBAR */
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 48px;
+    margin-bottom: 8px;
+    flex-shrink: 0;
+  }
+  .title {
+    font-size: 1.25rem;
+    font-weight: 750;
+    letter-spacing: -.02em;
+  }
+  .title span { color: var(--accent); }
+  
+  .seg {
+    display: flex;
+    background: var(--seg-track);
+    padding: 4px;
+    border-radius: 999px;
+    gap: 4px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,.06);
+  }
+  .seg button {
+    border: none;
+    background: transparent;
+    padding: 6px 20px;
+    border-radius: 999px;
+    font-size: .86rem;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .seg button.active {
+    background: #ffffff;
+    color: var(--ink);
+    box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    font-weight: 700;
+  }
+
+  .top-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .filter-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(209, 77, 138, 0.08);
+    border: 1px solid rgba(209, 77, 138, 0.2);
+    color: var(--accent);
+    font-size: .78rem;
+    font-weight: 700;
+    padding: 5px 12px;
+    border-radius: 999px;
+  }
+  .user-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--relief-bas);
+    border: 1px solid var(--line);
+    display: grid;
+    place-items: center;
+    font-weight: 750;
+    font-size: .84rem;
+    color: var(--ink);
+  }
+
+  /* SEMAINE ROW */
+  .week-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    height: 36px;
+    margin-bottom: 10px;
+    flex-shrink: 0;
+  }
+  .week-cur {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+  }
+  .week-cur strong {
+    font-size: 2.05rem;
+    font-weight: 750;
+    letter-spacing: -.04em;
+  }
+  .week-cur span {
+    color: var(--muted);
+    font-size: 1.02rem;
+  }
+
+  .btn-relief {
+    height: 36px;
+    padding: 0 16px;
+    border-radius: 999px;
+    border: none;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    font-size: .86rem;
+    font-weight: 600;
+    color: var(--ink);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-relief.icon {
+    width: 36px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  /* ==========================================================================
+     CALENDRIER (STRUCTURE DE GRILLE EXACTE : 54px + repeat(5, 1fr), gap 8px)
+     ========================================================================== */
+  .cal {
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    border-radius: 22px;
+    padding: 14px 18px 14px 0;
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    display: flex;
+    flex-direction: column;
+    isolation: isolate;
+    height: 524px;
+    flex: none;
+  }
+  .cal-head {
+    display: grid;
+    grid-template-columns: 54px repeat(5, 1fr);
+    column-gap: 8px;
+    padding-bottom: 10px;
+    flex-shrink: 0;
+  }
+  .cal-jour {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 8px;
+  }
+  .cal-jour span {
+    color: var(--muted);
+    font-size: .76rem;
+    font-weight: 650;
+  }
+  .cal-jour strong {
+    min-width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+  .cal-jour.today span,
+  .cal-jour.today strong {
+    color: var(--accent);
+    font-weight: 750;
+  }
+  .cal-jour small {
+    margin-left: auto;
+    color: var(--muted);
+    font-size: .76rem;
+  }
+  .cal-jour small.libre {
+    color: var(--free);
+    font-weight: 600;
+  }
+
+  .cal-body {
+    display: grid;
+    grid-template-columns: 54px repeat(5, 1fr);
+    column-gap: 8px;
+    flex: 1;
+    min-height: 0;
+    position: relative;
+  }
+  .cal-hours {
+    position: relative;
+  }
+  .cal-hours span {
+    position: absolute;
+    right: 10px;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: .74rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .cal-col {
+    position: relative;
+    border-radius: 12px;
+  }
+
+  .cal-col.today::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    top: -54px;
+    bottom: -18px;
+    left: -4px;
+    right: -4px;
+    border-radius: 18px;
+    background: var(--surface);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 26%, var(--line)),
+                inset 0 1px 0 var(--reflet),
+                0 18px 40px -18px rgba(15, 20, 40, .28);
+  }
+
+  .cal-libre {
+    position: absolute;
+    inset: 0;
+    border-radius: 12px;
+    background: repeating-linear-gradient(45deg, transparent, transparent 12px, rgba(109,116,130,.06) 12px, rgba(109,116,130,.06) 24px);
+    display: grid;
+    place-items: center;
+    color: var(--muted);
+  }
+  .cal-libre p {
+    background: var(--surface);
+    padding: 6px 14px;
+    border-radius: 12px;
+    font-weight: 650;
+    font-size: .85rem;
+    box-shadow: 0 2px 6px rgba(0,0,0,.04);
+  }
+
+  .ev {
+    position: absolute;
+    border-radius: 10px;
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    font-size: .78rem;
+    text-align: left;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+  }
+  .ev.rose   { background: #fbebf3; color: #6b1d40; border-left: 3px solid #d14d8a; }
+  .ev.menthe { background: #eaf7f2; color: #165b43; border-left: 3px solid #18794e; }
+  .ev.bleu   { background: #ebf2ff; color: #173b7d; border-left: 3px solid #2563eb; }
+  .ev.jaune  { background: #fdf5df; color: #694a08; border-left: 3px solid #d97706; }
+  .ev.mauve  { background: #f4ecfc; color: #4b1f79; border-left: 3px solid #8b5cf6; }
+
+  .ev .et { font-weight: 700; font-size: .83rem; line-height: 1.25; }
+  .ev .es { font-weight: 600; opacity: .88; font-size: .78rem; }
+  .ev .eb { display: flex; justify-content: space-between; font-size: .72rem; opacity: .75; margin-top: auto; }
+
+
+  /* ==========================================================================
+     PROPOSITION 2 : MINI-BOARD STYLE LINEAR / THINGS 3
+     ALIGNEMENT AU PIXEL PRÈS :
+     - Même conteneur : padding: 14px 18px 14px 0
+     - Même grille : grid-template-columns: 54px repeat(5, 1fr); column-gap: 8px;
+     ========================================================================== */
+  .tasks-board {
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    border-radius: 22px;
+    padding: 14px 18px 14px 0;
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    display: grid;
+    grid-template-columns: 54px repeat(5, 1fr);
+    column-gap: 8px;
+    margin-top: 12px;
+    flex: 1;
+    min-height: 0;
+    isolation: isolate;
+  }
+
+  /* Gouttière gauche 54px (alignée sur la colonne des heures 8h-17h) */
+  .board-gutter {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0 8px;
+  }
+  .gutter-badge-top {
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    display: grid;
+    place-items: center;
+    box-shadow: 0 1px 3px rgba(209, 77, 138, 0.15);
+  }
+  .gutter-title-vert {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font-size: .68rem;
+    font-weight: 800;
+    letter-spacing: .16em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .gutter-stat-ring {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .gutter-circle {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 2px solid var(--accent);
+    background: #ffffff;
+    display: grid;
+    place-items: center;
+    font-size: .68rem;
+    font-weight: 800;
+    color: var(--ink);
+    box-shadow: 0 2px 8px rgba(209, 77, 138, .16);
+  }
+  .gutter-label {
+    font-size: .62rem;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: .02em;
+  }
+
+  /* Colonnes par jour (alignement Lun, Mar, Mer, Jeu, Ven) */
+  .task-col {
+    background: var(--surface-glass);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 16px;
+    border: 1px solid rgba(235, 220, 228, 0.8);
+    padding: 12px 10px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 0;
+    transition: transform .2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow .2s;
+    box-shadow: 0 1px 4px rgba(23, 32, 68, .03);
+  }
+
+  /* Colonne Jeudi (Aujourd'hui) : SURÉLEVÉE & LUMINEUSE */
+  .task-col.today {
+    background: #ffffff;
+    border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+    box-shadow: 0 12px 32px -10px rgba(209, 77, 138, 0.22),
+                0 4px 12px -2px rgba(23, 32, 68, 0.06),
+                inset 0 0 0 1px rgba(209, 77, 138, 0.2);
+    transform: translateY(-2px);
+    position: relative;
+    z-index: 5;
+  }
+
+  /* Header de colonne style Linear / Things 3 */
+  .col-head-box {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(235, 220, 228, 0.65);
+    flex-shrink: 0;
+  }
+  .col-head-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .col-head-name {
+    font-size: .82rem;
+    font-weight: 750;
+    color: var(--ink);
+    letter-spacing: -.01em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .task-col.today .col-head-name {
+    color: var(--accent);
+  }
+  .today-pill-tag {
+    font-size: .62rem;
+    font-weight: 800;
+    background: var(--accent);
+    color: #ffffff;
+    padding: 1px 6px;
+    border-radius: 999px;
+    letter-spacing: .02em;
+    text-transform: uppercase;
+  }
+  .col-head-count {
+    font-size: .72rem;
+    font-weight: 650;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .col-head-count.done {
+    color: var(--free);
+    font-weight: 750;
+  }
+  .col-head-count.active {
+    color: var(--accent);
+    font-weight: 750;
+  }
+
+  /* Micro-jauge de progression élégante */
+  .micro-bar-track {
+    width: 100%;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(23, 32, 68, 0.07);
+    overflow: hidden;
+  }
+  .micro-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: var(--accent);
+    transition: width .3s ease;
+  }
+  .micro-bar-fill.done {
+    background: #18794e;
+  }
+  .micro-bar-fill.active {
+    background: linear-gradient(90deg, #d14d8a, #ff7ab6);
+  }
+
+  /* Liste des cartes de tâches */
+  .tasks-list {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 1px;
+  }
+
+  /* Carte de tâche individuelle */
+  .task-card {
+    background: #ffffff;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 9px 10px;
+    box-shadow: 0 1px 3px rgba(23, 32, 68, 0.04);
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+    cursor: pointer;
+  }
+  .task-card:hover {
+    transform: translateY(-1px);
+    border-color: rgba(209, 77, 138, 0.38);
+    box-shadow: 0 4px 12px -3px rgba(209, 77, 138, 0.12), 0 2px 6px rgba(23, 32, 68, 0.04);
+  }
+  .task-card.is-done {
+    background: rgba(255, 255, 255, 0.65);
+    border-color: rgba(235, 220, 228, 0.5);
+    box-shadow: none;
+  }
+  .task-card.is-done .task-title {
+    text-decoration: line-through;
+    color: var(--muted);
+    opacity: .7;
+  }
+  .task-card.is-done .task-badges {
+    opacity: .55;
+  }
+
+  /* Ligne principale de la tâche (checkbox + titre) */
+  .task-main {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  /* Checkbox circulaire style Things 3 */
+  .things-check {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 19px;
+    height: 19px;
+    flex-shrink: 0;
+    cursor: pointer;
+    margin-top: 1px;
+  }
+  .things-check input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  .things-check .circle-indicator {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 1.6px solid #cfd5de;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all .18s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .things-check:hover .circle-indicator {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(209, 77, 138, 0.18);
+  }
+  .things-check input:checked ~ .circle-indicator {
+    background: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 2px 6px rgba(209, 77, 138, 0.35);
+  }
+  .things-check.mint input:checked ~ .circle-indicator {
+    background: #18794e;
+    border-color: #18794e;
+    box-shadow: 0 2px 6px rgba(24, 121, 78, 0.3);
+  }
+  .things-check .circle-indicator svg {
+    display: none;
+  }
+  .things-check input:checked ~ .circle-indicator svg {
+    display: block;
+  }
+
+  .task-title {
+    font-size: .82rem;
+    font-weight: 650;
+    color: var(--ink);
+    line-height: 1.32;
+    flex: 1;
+    letter-spacing: -.01em;
+  }
+
+  /* Badges de métadonnées style Linear */
+  .task-badges {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5px;
+    padding-left: 26px; /* aligne avec le texte après la checkbox */
+  }
+
+  /* Badges de priorité Linear (P1, P2, P3) */
+  .badge-p1 {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6.5px;
+    border-radius: 5px;
+    background: rgba(209, 77, 138, 0.12);
+    color: #b82b6c;
+    font-size: .70rem;
+    font-weight: 700;
+    border: 1px solid rgba(209, 77, 138, 0.22);
+  }
+  .badge-p2 {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6.5px;
+    border-radius: 5px;
+    background: rgba(217, 119, 6, 0.10);
+    color: #b45309;
+    font-size: .70rem;
+    font-weight: 700;
+    border: 1px solid rgba(217, 119, 6, 0.22);
+  }
+  .badge-p3 {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6.5px;
+    border-radius: 5px;
+    background: rgba(107, 114, 128, 0.10);
+    color: #4b5563;
+    font-size: .70rem;
+    font-weight: 650;
+    border: 1px solid rgba(107, 114, 128, 0.18);
+  }
+
+  /* Badge d'estimation du temps */
+  .badge-time {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6.5px;
+    border-radius: 5px;
+    background: rgba(23, 32, 68, 0.05);
+    color: #434955;
+    font-size: .70rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Tag cours / matière harmonisé avec le calendrier */
+  .badge-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 6px;
+    border-radius: 5px;
+    font-size: .68rem;
+    font-weight: 700;
+  }
+  .badge-tag.mod3d  { background: #fbebf3; color: #751e46; }
+  .badge-tag.math   { background: #eaf7f2; color: #165b43; }
+  .badge-tag.ang    { background: #ebf2ff; color: #173b7d; }
+  .badge-tag.son    { background: #eaf7f2; color: #165b43; }
+  .badge-tag.colo   { background: #fdf5df; color: #7e5509; }
+  .badge-tag.crea3d { background: #f4ecfc; color: #512282; }
+  .badge-tag.libre  { background: #f3f4f6; color: #4b5563; }
+
+  /* Statut "En cours" style Linear */
+  .badge-in-progress {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+    border-radius: 999px;
+    font-size: .67rem;
+    font-weight: 700;
+    background: rgba(217, 119, 6, 0.12);
+    color: #b45309;
+  }
+  .pulse-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #d97706;
+    box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.25);
+  }
+
+  /* Échéance urgente */
+  .badge-due {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 6px;
+    border-radius: 5px;
+    font-size: .67rem;
+    font-weight: 700;
+    background: rgba(209, 77, 138, 0.15);
+    color: var(--accent-dark);
+  }
+
+  /* Bouton d'ajout rapide de tâche style Linear / Things 3 */
+  .btn-add-task {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 6px 9px;
+    background: transparent;
+    border: 1px dashed rgba(209, 77, 138, 0.32);
+    border-radius: 9px;
+    font-size: .75rem;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    margin-top: auto;
+    transition: all .15s ease;
+  }
+  .btn-add-task:hover {
+    background: rgba(209, 77, 138, 0.06);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .btn-add-task .add-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-add-task kbd {
+    font-family: inherit;
+    font-size: .66rem;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: rgba(23, 32, 68, 0.06);
+    color: var(--muted);
+    font-weight: 600;
+  }
+
+</style>
+</head>
+<body>
+
+<!-- BANDEAU PROPOSITION 2 -->
+<div class="prop-banner">
+  <div class="prop-banner-title">
+    <span class="prop-badge">Proposition 2</span>
+    <span>Mini-Board Style Linear / Things 3 · Statuts, Priorités & Estimations</span>
+  </div>
+  <div class="prop-banner-desc">
+    Grille <strong>54px + 5 colonnes</strong> alignée au pixel près · Checkboxes Things 3 · Badges Linear P1/P2/P3 · Jauges de progression micro-élégantes
+  </div>
+</div>
+
+<!-- BARRE DE NAVIGATION & PROFIL -->
+<div class="topbar">
+  <div class="title">Ez<span>Horaire</span></div>
+  <div class="seg">
+    <button class="active">Maxence</button>
+    <button>Lilian</button>
+    <button>Anthony</button>
+  </div>
+  <div class="top-actions">
+    <div class="filter-pill">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+      <span>Tâches Semaine : 7/13 faites</span>
+    </div>
+    <div class="user-avatar">MB</div>
+  </div>
+</div>
+
+<!-- SEMAINE COURANTE & ACTIONS -->
+<div class="week-row">
+  <div class="week-cur">
+    <strong>Semaine 1</strong>
+    <span>14 – 18 sept. 2026</span>
+  </div>
+  <div style="display: flex; gap: 8px;">
+    <button class="btn-relief icon" title="Semaine précédente">&lt;</button>
+    <button class="btn-relief icon" title="Semaine suivante">&gt;</button>
+    <button class="btn-relief">📄 PDF officiel</button>
+  </div>
+</div>
+
+<!-- ==========================================================================
+     1. HORAIRE DU HAUT (524px, 54px + 5 col, gap 8px)
+     ========================================================================== -->
+<div class="cal">
+  <div class="cal-head">
+    <div></div>
+    <div class="cal-jour"><span>Lun</span><strong>14</strong><small>8h15 – 16h30</small></div>
+    <div class="cal-jour"><span>Mar</span><strong>15</strong><small>8h15 – 15h30</small></div>
+    <div class="cal-jour"><span>Mer</span><strong>16</strong><small>8h15 – 12h30</small></div>
+    <div class="cal-jour today"><span>Jeu</span><strong>17</strong><small>8h30 – 17h30</small></div>
+    <div class="cal-jour"><span>Ven</span><strong>18</strong><small class="libre">Libre</small></div>
+  </div>
+  
+  <div class="cal-body">
+    <!-- Colonne 54px Heures -->
+    <div class="cal-hours">
+      <span style="top: 0%">8h</span>
+      <span style="top: 20%">10h</span>
+      <span style="top: 40%">12h</span>
+      <span style="top: 50%">13h</span>
+      <span style="top: 70%">15h</span>
+      <span style="top: 90%">17h</span>
+    </div>
+    
+    <!-- Lundi 14 -->
+    <div class="cal-col">
+      <div class="ev rose" style="top: 2.5%; height: 42.5%; left: 0; right: 0;">
+        <div class="et">Modélisation 3D</div>
+        <div class="es">1/14</div>
+        <div class="eb"><span>Souris</span><span>8h15 – 12h30</span></div>
+      </div>
+      <div class="ev menthe" style="top: 55%; height: 30%; left: 0; right: 0;">
+        <div class="et">Mathématique appliquée</div>
+        <div class="es">2/11</div>
+        <div class="eb"><span>Lebailly</span><span>13h30 – 16h30</span></div>
+      </div>
+    </div>
+    
+    <!-- Mardi 15 -->
+    <div class="cal-col">
+      <div class="ev rose" style="top: 2.5%; height: 42.5%; left: 0; right: 0;">
+        <div class="et">Modélisation 3D</div>
+        <div class="es">1/18</div>
+        <div class="eb"><span>Souris</span><span>8h15 – 12h30</span></div>
+      </div>
+      <div class="ev bleu" style="top: 55%; height: 20%; left: 0; right: 0;">
+        <div class="et">Anglais</div>
+        <div class="es">2/17A</div>
+        <div class="eb"><span>Delmotte</span><span>13h30 – 15h30</span></div>
+      </div>
+    </div>
+    
+    <!-- Mercredi 16 -->
+    <div class="cal-col">
+      <div class="ev menthe" style="top: 2.5%; height: 20%; left: 0; right: 0;">
+        <div class="et">Traitement du son</div>
+        <div class="es">1/32</div>
+        <div class="eb"><span>Sottiaux</span><span>8h15 – 10h15</span></div>
+      </div>
+      <div class="ev menthe" style="top: 25%; height: 20%; left: 0; right: 0;">
+        <div class="et">Mathématique appliquée</div>
+        <div class="es">1/36A</div>
+        <div class="eb"><span>Lebailly</span><span>10h30 – 12h30</span></div>
+      </div>
+    </div>
+    
+    <!-- Jeudi 17 (Aujourd'hui) -->
+    <div class="cal-col today">
+      <div class="ev jaune" style="top: 5%; height: 40%; left: 0; right: 0;">
+        <div class="et">Colorimétrie</div>
+        <div class="es">2/10E</div>
+        <div class="eb"><span>Gryspeert</span><span>8h30 – 12h30</span></div>
+      </div>
+      <div class="ev mauve" style="top: 55%; height: 40%; left: 0; right: 0;">
+        <div class="et">Création graphique 3D</div>
+        <div class="es">1/16</div>
+        <div class="eb"><span>D'Hondt</span><span>13h30 – 17h30</span></div>
+      </div>
+    </div>
+    
+    <!-- Vendredi 18 -->
+    <div class="cal-col">
+      <div class="cal-libre"><p>Pas de cours</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==========================================================================
+     2. PLANIFICATEUR DE TÂCHES / MINI-BOARD LINEAR & THINGS 3
+     ALIGNEMENT RIGORISTE :
+     grid-template-columns: 54px repeat(5, 1fr); column-gap: 8px;
+     padding: 14px 18px 14px 0; (identique à .cal)
+     ========================================================================== -->
+<div class="tasks-board">
+  
+  <!-- GOUTTIÈRE GAUCHE 54px (alignée sous la colonne 8h-17h) -->
+  <div class="board-gutter">
+    <div class="gutter-badge-top" title="Sprint Hebdomadaire Linear">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+        <path d="M9 11l3 3L22 4"/>
+        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+      </svg>
+    </div>
+    <div class="gutter-title-vert">SPRINT HEBDO</div>
+    <div class="gutter-stat-ring">
+      <div class="gutter-circle">7/13</div>
+      <div class="gutter-label">54% FAIT</div>
+    </div>
+  </div>
+
+  <!-- COLONNE 1 : LUNDI 14 -->
+  <div class="task-col">
+    <div class="col-head-box">
+      <div class="col-head-row">
+        <span class="col-head-name">Lundi 14</span>
+        <span class="col-head-count">1/2 terminés</span>
+      </div>
+      <div class="micro-bar-track">
+        <div class="micro-bar-fill" style="width: 50%;"></div>
+      </div>
+    </div>
+
+    <div class="tasks-list">
+      <!-- Tâche 1 : Terminée -->
+      <div class="task-card is-done">
+        <div class="task-main">
+          <label class="things-check">
+            <input type="checkbox" checked onchange="toggleTask(this)">
+            <span class="circle-indicator">
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="2.3"><path d="M2.5 6.2l2.3 2.3 4.7-4.7"/></svg>
+            </span>
+          </label>
+          <span class="task-title">Préparer moodboard & références 3D</span>
+        </div>
+        <div class="task-badges">
+          <span class="badge-tag mod3d">Modélisation</span>
+          <span class="badge-p2">
+            <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor">
+              <rect x="2" y="6" width="3" height="7" rx="1.5"/>
+              <rect x="6.5" y="3" width="3" height="10" rx="1.5"/>
+              <rect x="11" y="3" width="3" height="10" rx="1.5" opacity="0.3"/>
+            </svg>
+            P2 Moyenne
+          </span>
+          <span class="badge-time">⏱ 45 min</span>
+        </div>
+      </div>
+
+      <!-- Tâche 2 : À faire -->
+      <div class="task-card">
+        <div class="task-main">
+          <label class="things-check">
+            <input type="checkbox" onchange="toggleTask(this)">
+            <span class="circle-indicator">
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="2.3"><path d="M2.5 6.2l2.3 2.3 4.7-4.7"/></svg>
+            </span>
+          </label>
+          <span class="task-title">Rendu éclairage 3 points sous Blender</span>
+        </div>
+        <div class="task-badges">
+          <span class="badge-tag mod3d">Modélisation</span>
+          <span class="badge-p1">
+            <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor">
+              <rect x="2" y="3" width="3" height="10" rx="1.5"/>
+              <rect x="6.5" y="3" width="3" height="10" rx="1.5"/>
+              <rect x="11" y="3" width="3" height="10" rx="1.5"/>
+            </svg>
+            P1 Haute
+          </span>
+          <span class="badge-time">⏱ 1h15</span>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-add-task">
+      <span class="add-left">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        <span>Ajouter tâche</span>
+      </span>
+      <kbd>C</kbd>
+    </button>
+  </div>
+
+  <!-- COLONNE 2 : MARDI 15 -->
+  <div class="task-col">
+    <div class="col-head-box">
+      <div class="col-head-row">
+        <span class="col-head-name">Mardi 15</span>
+        <span class="col-head-count">2/3 terminés</span>
+      </div>
+      <div class="micro-bar-track">
+        <div class="micro-bar-fill" style="width: 66%;"></div>
+      </div>
+    </div>
+
+    <div class="tasks-list">
+      <!-- Tâche 1 : Terminée -->
+      <div class="task-card is-done">
+        <div class="task-main">
+          <label class="things-check">
+            <input type="checkbox" checked onchange="toggleTask(this)">
+            <span class="circle-indicator">
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="2.3"><path d="M2.5 6.2l2.3 2.3 4.7-4.7"/></svg>
+            </span>
+          </label>
+          <span class="task-title">Fiche vocabulaire technique Anglais</span>
+        </div>
+        <div class="task-badges">
+          <span class="badge-tag ang">Anglais</span>
+          <span class="badge-p3">P3 Basse</span>
+          <span class="badge-time">⏱ 30 min</span>
+        </div>
+      </div>
+
+      <!-- Tâche 2 : Terminée -->
+      <div class="task-card is-done">
+        <div class="task-main">
+          <label class="things-check">
+            <input type="checkbox" checked onchange="toggleTask(this)">
+            <span class="circle-indicator">
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="2.3"><path d="M2.5 6.2l2.3 2.3 4.7-4.7"/></svg>
+            </span>
+          </label>
+          <span class="task-title">Exercice topologie low-poly</span>
+        </div>
+        <div class="task-badges">
+          <span class="badge-tag mod3d">Modélisation</span>
+          <span class="badge-p2">
+            <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor">
+              <rect x="2" y="6" width="3" height="7" rx="1.5"/>
+              <rect x="6.5" y="3" width="3" height="10" rx="1.5"/>
+              <rect x="11" y="3" width="3" height="10" rx="1.5" opacity="0.3"/>
+            </svg>
+            P2 Moyenne
+          </span>
+          <span class="badge-time">⏱ 1h00</span>
+        </div>
+      </div>
+
+      <!-- Tâche 3 : À faire -->
+      <div class="task-card">
+        <div class="task-main">
+          <label class="things-check">
+            <input type="checkbox" onchange="toggleTask(this)">
+            <span class="circle-indicator">
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="2.3"><path d="M2.5 6.2l2.3 2.3 4.7-4.7"/></svg>
+            </span>
+          </label>
+          <span class="task-title">Révision QCM Grammaire Anglaise</span>
+        </div>
+        <div class="task-badges">
+          <span class="badge-tag ang">Anglais</span>
+          <span class="badge-p2">P2 Moyenne</span>
+          <span class="badge-time">⏱ 35 min</span>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-add-task">
+      <span class="add-left">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        <span>Ajouter tâche</span>
+      </span>
+      <kbd>C</kbd>
+    </button>
+  </div>
+
+  <!-- COLONNE 3 : MERCREDI 16 (100% Terminé) -->
+  <div class="task-col">
+    <div class="col-head-box">
+      <div class="col-head-row">
+        <span class="col-head-name">Mercredi 16</span>
+        <span class="col-head-count done">3/3 terminés ✓</span>
+      </div>
+      <div class="micro-bar-track">
+        <div class="micro-bar-fill done" style="width: 100%;"></div>
+      </div>
+    </div>
+
+    <div class="tasks-list">
+      <!-- Tâche 1 : Terminée -->
+      <div class="task-card is-done">
+        <div class="task-main">
+          <label class="things-check mint">
+            <input type="checkbox" checked onchange="toggleTask(this)">
+            <span class="circle-indicator">
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="2.3"><path d="M2.5 6.2l2.3 2.3 4.7-4.7"/></svg>
+            </span>
+          </label>
+          <span class="task-title">Export multipiste Audacity WAV</span>
+        </div>
+        <div class="task-badges">
+          <span class="badge-tag son">Son</span>
+          <span class="badge-p2">P2 Moyenne</span>
+          <span class="badge-time">⏱ 40 min</span>
+        </div>
+      </div>
+
+      <!-- Tâche 2 : Terminée -->
+      <div class="task-card is-done">
+        <div class="task-main">
+          <label class="things-check mint">
+            <input type="checkbox" checked onchange="toggleTask(this)">
+            <span class="circle-indicator">
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="2.3"><path d="M2.5 6.2l2.3 2.3 4.7-4.7"/></svg>
+            </span>
+          </label>
+          <span class="task-title">Fiche résumé matrices & vecteurs</span>
+        </div>
+        <div class="task-badges">
+          <span class="badge-tag math">Maths</span>
+          <span class="badge-p1">
+            <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor">
+              <rect x="2" y="3" width="3" height="10" rx="1.5"/>
+              <rect x="6.5" y="3" width="3" height="10" rx="1.5"/>
+              <rect x="11" y="3" width="3" height="10" rx="1.5"/>
+            </svg>
+            P1 Haute
+          </span>
+          <span class="badge-time">⏱ 50 min</span>
+        </div>
+      </div>
+
+      <!-- Tâche 3 : Terminée -->
+      <div class="task-card is-done">
+        <div class="task-main">
+          <label class="things-check mint">
+            <input type="checkbox" checked onchange="toggleTask(this)">
+            <span class="circle-indicator">
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="2.3"><path d="M2.5 6.2l2.3 2.3 4.7-4.7"/></svg>
+            </span>
+          </label>
+          <span class="task-title">Déposer devoir Labo 1 sur Moodle</span>
+        </div>
+        <div class="task-badges">
+          <span class="badge-tag math">Maths</span>
+          <span class="badge-p1">P1 Haute</span>
+          <span class="badge-time">⏱ 15 min</span>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-add-task">
+      <span class="add-left">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        <span>Ajouter tâche</span>
+      </span>
+      <kbd>C</kbd>
+    </button>
+  </div>
+
+  <!-- COLONNE 4 : JEUDI 17 (AUJOURD'HUI — CARTE SURÉLEVÉE) -->
+  <div class="task-col today">
+    <div class="col-head-box">
+      <div class="col-head-row">
+        <span class="col-head-name">
+          <span>Jeudi 17</span>
+          <span class="today-pill-tag">Aujourd'hui</span>
+        </span>
+        <span class="col-head-count active">1/3 terminés</span>
+      </div>
+      <div class="micro-bar-track">
+        <div class="micro-bar-fill active" style="width: 33%;"></div>
+      </div>
+    </div>
+
+    <div class="tasks-list">
+      <!-- Tâche 1 : En cours / Haute priorité -->
+      <div class="task-card">
+        <div class="task-main">
+          <label class="things-check">
+            <input type="checkbox" onchange="toggleTask(this)">
+            <span class="circle-indicator">
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="2.3"><path d="M2.5 6.2l2.3 2.3 4.7-4.7"/></svg>
+            </span>
+          </label>
+          <span class="task-title">Nuancier profils ICC & Synthèse soustractive</span>
+        </div>
+        <div class="task-badges">
+          <span class="badge-tag colo">Colorimétrie</span>
+          <span class="badge-p1">
+            <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor">
+              <rect x="2" y="3" width="3" height="10" rx="1.5"/>
+              <rect x="6.5" y="3" width="3" height="10" rx="1.5"/>
+              <rect x="11" y="3" width="3" height="10" rx="1.5"/>
+            </svg>
+            P1 Haute
+          </span>
+          <span class="badge-in-progress">
+            <span class="pulse-dot"></span>
+            En cours
+          </span>
+          <span class="badge-due">Auj. 18h</span>
+          <span class="badge-time">⏱ 1h00</span>
+        </div>
+      </div>
+
+      <!-- Tâche 2 : À faire / Haute priorité -->
+      <div class="task-card">
+        <div class="task-main">
+          <label class="things-check">
+            <input type="checkbox" onchange="toggleTask(this)">
+            <span class="circle-indicator">
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="2.3"><path d="M2.5 6.2l2.3 2.3 4.7-4.7"/></svg>
+            </span>
+          </label>
+          <span class="task-title">Bake textures normales & PBR Substance</span>
+        </div>
+        <div class="task-badges">
+          <span class="badge-tag crea3d">Créa 3D</span>
+          <span class="badge-p1">
+            <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor">
+              <rect x="2" y="3" width="3" height="10" rx="1.5"/>
+              <rect x="6.5" y="3" width="3" height="10" rx="1.5"/>
+              <rect x="11" y="3" width="3" height="10" rx="1.5"/>
+            </svg>
+            P1 Haute
+          </span>
+          <span class="badge-time">⏱ 1h45</span>
+        </div>
+      </div>
+
+      <!-- Tâche 3 : Terminée -->
+      <div class="task-card is-done">
+        <div class="task-main">
+          <label class="things-check">
+            <input type="checkbox" checked onchange="toggleTask(this)">
+            <span class="circle-indicator">
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="2.3"><path d="M2.5 6.2l2.3 2.3 4.7-4.7"/></svg>
+            </span>
+          </label>
+          <span class="task-title">Relecture rapide notes cours Gryspeert</span>
+        </div>
+        <div class="task-badges">
+          <span class="badge-tag colo">Colorimétrie</span>
+          <span class="badge-p2">P2 Moyenne</span>
+          <span class="badge-time">⏱ 25 min</span>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-add-task" style="border-color: rgba(209, 77, 138, 0.5); color: var(--accent);">
+      <span class="add-left">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        <span>Ajouter tâche active</span>
+      </span>
+      <kbd style="background: rgba(209, 77, 138, 0.12); color: var(--accent);">C</kbd>
+    </button>
+  </div>
+
+  <!-- COLONNE 5 : VENDREDI 18 (Journée Libre / Révisions) -->
+  <div class="task-col">
+    <div class="col-head-box">
+      <div class="col-head-row">
+        <span class="col-head-name">Vendredi 18</span>
+        <span class="col-head-count">0/2 terminés</span>
+      </div>
+      <div class="micro-bar-track">
+        <div class="micro-bar-fill" style="width: 0%;"></div>
+      </div>
+    </div>
+
+    <div class="tasks-list">
+      <!-- Tâche 1 : À faire -->
+      <div class="task-card">
+        <div class="task-main">
+          <label class="things-check">
+            <input type="checkbox" onchange="toggleTask(this)">
+            <span class="circle-indicator">
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="2.3"><path d="M2.5 6.2l2.3 2.3 4.7-4.7"/></svg>
+            </span>
+          </label>
+          <span class="task-title">Projet libre : composition sculpt ZBrush</span>
+        </div>
+        <div class="task-badges">
+          <span class="badge-tag crea3d">Créa 3D</span>
+          <span class="badge-p2">
+            <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor">
+              <rect x="2" y="6" width="3" height="7" rx="1.5"/>
+              <rect x="6.5" y="3" width="3" height="10" rx="1.5"/>
+              <rect x="11" y="3" width="3" height="10" rx="1.5" opacity="0.3"/>
+            </svg>
+            P2 Moyenne
+          </span>
+          <span class="badge-time">⏱ 2h30</span>
+        </div>
+      </div>
+
+      <!-- Tâche 2 : À faire -->
+      <div class="task-card">
+        <div class="task-main">
+          <label class="things-check">
+            <input type="checkbox" onchange="toggleTask(this)">
+            <span class="circle-indicator">
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="#fff" stroke-width="2.3"><path d="M2.5 6.2l2.3 2.3 4.7-4.7"/></svg>
+            </span>
+          </label>
+          <span class="task-title">Planification Semaine 2 & Sauvegarde NAS</span>
+        </div>
+        <div class="task-badges">
+          <span class="badge-tag libre">Organisation</span>
+          <span class="badge-p3">P3 Basse</span>
+          <span class="badge-time">⏱ 30 min</span>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-add-task">
+      <span class="add-left">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        <span>Ajouter tâche</span>
+      </span>
+      <kbd>C</kbd>
+    </button>
+  </div>
+
+</div>
+
+<script>
+  function toggleTask(checkbox) {
+    const card = checkbox.closest('.task-card');
+    if (checkbox.checked) {
+      card.classList.add('is-done');
+    } else {
+      card.classList.remove('is-done');
+    }
+    
+    // Mettre à jour la jauge et le ratio de la colonne
+    const col = checkbox.closest('.task-col');
+    if (col) {
+      const allTasks = col.querySelectorAll('.task-card').length;
+      const doneTasks = col.querySelectorAll('.task-card.is-done').length;
+      const countEl = col.querySelector('.col-head-count');
+      const barFill = col.querySelector('.micro-bar-fill');
+      
+      if (countEl && barFill && allTasks > 0) {
+        const pct = Math.round((doneTasks / allTasks) * 100);
+        barFill.style.width = pct + '%';
+        
+        if (doneTasks === allTasks) {
+          countEl.textContent = `${doneTasks}/${allTasks} terminés ✓`;
+          countEl.className = 'col-head-count done';
+          barFill.className = 'micro-bar-fill done';
+        } else {
+          countEl.textContent = `${doneTasks}/${allTasks} terminés`;
+          if (col.classList.contains('today')) {
+            countEl.className = 'col-head-count active';
+            barFill.className = 'micro-bar-fill active';
+          } else {
+            countEl.className = 'col-head-count';
+            barFill.className = 'micro-bar-fill';
+          }
+        }
+      }
+    }
+  }
+</script>
+
+</body>
+</html>

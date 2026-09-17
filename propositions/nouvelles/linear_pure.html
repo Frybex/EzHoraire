@@ -1,0 +1,1967 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>EzHoraire — Planificateur Grand Écran</title>
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --ink: #17191d;
+    --muted: #6d7482;
+    --line: #e4e7ec;
+    --accent: #2456e0;
+    --accent-soft: rgba(36, 86, 224, .09);
+    --wash: rgba(36, 86, 224, 0);
+    --free: #18794e;
+    --seg-track: #e8eaef;
+    --shadow: 0 16px 40px -24px rgba(23, 32, 68, .28);
+    --radius: 14px;
+    --danger: #d42a3c;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  
+  body[data-theme="3"] {
+    --accent: #d14d8a;
+    --accent-soft: rgba(209, 77, 138, .12);
+    --wash: rgba(209, 77, 138, .13);
+    --bg: #fdf1f6;
+    --seg-track: #f9e0ec;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+  }
+  
+  body {
+    --relief-haut: color-mix(in srgb, var(--bg), #fff 78%);
+    --relief-bas: color-mix(in srgb, var(--bg), #fff 44%);
+    --reflet: rgba(255, 255, 255, .9);
+    --ombre-btn: 0 1px 2px rgba(23, 32, 68, .06), 0 2px 8px -4px rgba(23, 32, 68, .08);
+    --creux: color-mix(in srgb, var(--bg), #fff 60%);
+    --creux-ombre: rgba(23, 32, 68, .07);
+    color: var(--ink);
+    background-color: var(--bg);
+    background-image: radial-gradient(110% 34% at 50% -6%, var(--wash), transparent 70%);
+    background-repeat: no-repeat;
+    font-family: var(--font);
+    font-size: 15px;
+    line-height: 1.45;
+    display: flex;
+    flex-direction: column;
+  }
+
+  body.is-resizing {
+    cursor: row-resize !important;
+    user-select: none !important;
+  }
+  body.is-resizing * {
+    user-select: none !important;
+  }
+
+  .wrap {
+    max-width: 1560px;
+    margin: 0 auto;
+    padding: 0 32px 10px;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+  }
+
+  /* Topbar originale */
+  .topbar {
+    position: sticky; top: 0; z-index: 30;
+    display: flex; align-items: center; justify-content: flex-start; gap: 14px;
+    min-height: 52px; margin: 0 -32px; padding: 0 32px;
+    background: transparent;
+    flex-shrink: 0;
+  }
+  .title { font-size: 1.12rem; font-weight: 700; letter-spacing: -.02em; margin: 0; }
+  .title span { color: var(--accent); }
+  .title button { border: none; background: none; font: inherit; color: inherit; padding: 0; cursor: pointer; }
+
+  .topbar .droite {
+    margin-left: auto; width: 40px; height: 40px; padding: 0;
+    display: grid; place-items: center; border-radius: 50%; border: none;
+    font-size: .95rem; font-weight: 700; background: var(--creux);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre);
+    color: var(--ink); cursor: pointer;
+  }
+
+  /* Rail multi-horaires (#seg) */
+  .seg {
+    display: flex; background: var(--seg-track); padding: 3px; border-radius: 999px;
+    width: fit-content; max-width: 560px; margin: 0 0 6px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,.06); position: relative;
+    flex-shrink: 0;
+  }
+  .seg button {
+    border: none; background: transparent; padding: 6px 18px; border-radius: 999px;
+    font: inherit; font-size: .88rem; font-weight: 600; color: var(--muted); cursor: pointer;
+    position: relative; z-index: 2;
+  }
+  .seg button[aria-selected="true"] { color: var(--ink); font-weight: 700; }
+  .seg .pill {
+    position: absolute; top: 3px; bottom: 3px; left: 3px; width: 92px;
+    background: #ffffff; border-radius: 999px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.08); z-index: 1;
+  }
+
+  /* Zone horaire-contenu */
+  #horaire-contenu {
+    display: grid; column-gap: 10px; row-gap: 0;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-rows: auto auto auto 1fr auto;
+    grid-template-areas:
+      "week auj pdfbtn"
+      "cal cal cal"
+      "split split split"
+      "linear linear linear"
+      "foot foot foot";
+    flex: 1; min-height: 0;
+  }
+
+  /* Navigation semaines fonctionnelle */
+  .week {
+    grid-area: week; display: flex; align-items: baseline; gap: 6px; padding: 0 0 8px;
+  }
+  .week .cur {
+    order: -1; margin-right: auto; text-align: left;
+    display: flex; align-items: baseline; gap: 14px; min-width: 0;
+  }
+  .week .cur strong { display: inline; font-size: 2.1rem; font-weight: 700; letter-spacing: -.045em; }
+  .week .cur span { font-size: 1rem; white-space: nowrap; color: var(--muted); }
+  
+  .week button.nav, .thisweek, .official {
+    height: 40px; border-radius: 999px; border: none; color: var(--ink);
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    transition: color .15s, opacity .15s, transform .12s;
+    font: inherit; cursor: pointer;
+  }
+  .week button.nav { width: 40px; font-size: 1.25rem; display: grid; place-items: center; }
+  .week button.nav:hover, .thisweek:hover, .official:hover { transform: translateY(-1px); }
+  
+  .thisweek {
+    grid-area: auj; align-self: center; margin: 0 0 8px; padding: 0 18px; font-size: .9rem; font-weight: 600;
+  }
+  
+  /* Bouton PDF officiel */
+  .official {
+    grid-area: pdfbtn; align-self: center; width: auto; margin: 0 0 8px; padding: 0 18px 0 15px;
+    display: flex; align-items: center; gap: 8px; font-size: .9rem; font-weight: 600;
+  }
+  .official svg { display: block; color: var(--muted); }
+  .official .sm { display: none; }
+
+  /* Grille Calendrier */
+  .cal {
+    grid-area: cal; display: flex; flex-direction: column;
+    height: 460px; min-height: 320px; max-height: 72vh; flex-shrink: 0;
+    padding: 16px 18px 18px 0; border-radius: 24px;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    isolation: isolate;
+    position: relative;
+  }
+  
+  .cal-tete, .cal-corps {
+    display: grid; column-gap: 8px;
+    grid-template-columns: 58px repeat(5, minmax(0, 1fr));
+  }
+  .cal-tete { padding-bottom: 14px; }
+  .cal-jour { display: flex; align-items: center; gap: 8px; padding: 0 8px; min-width: 0; }
+  .cal-jour span { color: var(--muted); font-size: .76rem; font-weight: 650; letter-spacing: .04em; }
+  .cal-jour strong {
+    display: grid; place-items: center; min-width: 34px; height: 34px; border-radius: 999px;
+    font-size: 1.3rem; font-weight: 600; letter-spacing: -.03em; font-variant-numeric: tabular-nums;
+  }
+  .cal-jour.today span, .cal-jour.today strong { color: var(--accent); }
+  .cal-jour small {
+    margin-left: auto; color: var(--muted); font-size: .76rem;
+    font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .cal-jour small.libre { color: var(--free); font-weight: 600; }
+
+  .cal-corps { flex: 1; min-height: 0; position: relative; }
+  .cal-heures { position: relative; }
+  .cal-heures span {
+    position: absolute; right: 12px; transform: translateY(-50%);
+    color: var(--muted); font-size: .72rem; font-variant-numeric: tabular-nums;
+  }
+  .cal-col { position: relative; border-radius: 12px; }
+  
+  .cal-col::after {
+    content: ""; position: absolute; z-index: -1; pointer-events: none;
+    left: -4px; right: -4px; top: 50%; height: 1px; background: var(--line);
+  }
+  .cal-col.today::after {
+    background: color-mix(in srgb, var(--accent) 22%, var(--line));
+    left: 3px; right: 3px;
+  }
+
+  /* CARTE D'AUJOURD'HUI UNIFIÉE (VA BIEN JUSQU'EN BAS DU VOLET DES TÂCHES SANS ÊTRE COUPÉE) */
+  .cal-col.today::before {
+    content: ""; position: absolute; z-index: -1;
+    top: -72px; bottom: -12px; left: -4px; right: -4px;
+    border-radius: 18px 18px 14px 14px;
+    background: var(--surface);
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, var(--line)),
+      inset 0 1px 0 var(--reflet),
+      0 18px 40px -18px rgba(15, 20, 40, .35),
+      0 2px 6px -2px rgba(15, 20, 40, .1);
+  }
+
+  /* Tour coloré sur la colonne aujourd'hui dans les tâches jusqu'au bas */
+  .day-task-col.today {
+    position: relative;
+    z-index: 2;
+  }
+  .day-task-col.today::before {
+    content: ""; position: absolute; z-index: -1;
+    top: -8px; bottom: -10px; left: -4px; right: -4px;
+    border-radius: 14px 14px 18px 18px;
+    background: var(--surface);
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, var(--line)),
+      inset 0 1px 0 var(--reflet),
+      0 18px 40px -18px rgba(15, 20, 40, .35),
+      0 2px 6px -2px rgba(15, 20, 40, .1);
+  }
+
+  .cal-libre {
+    --rayure: color-mix(in srgb, var(--muted) 13%, transparent);
+    position: absolute; inset: 0; border-radius: 12px; overflow: hidden;
+    display: grid; place-items: center; color: var(--muted); text-align: center;
+  }
+  .cal-libre::before {
+    content: ""; position: absolute; left: 0; right: 0;
+    top: calc(50% - 1616px); height: 3232px; pointer-events: none;
+    background: repeating-linear-gradient(45deg,
+      transparent 0 calc(32px / 1.41421356 - 1.2px),
+      var(--rayure) calc(32px / 1.41421356 - 1.2px) calc(32px / 1.41421356));
+  }
+  .cal-libre p {
+    position: relative; margin: 0; padding: 8px 16px; border-radius: 14px; background: var(--relief-haut);
+  }
+  .cal-libre strong { font-size: 1.05rem; font-weight: 650; letter-spacing: -.01em; }
+
+  /* Événements de cours */
+  .ev {
+    position: absolute; overflow: hidden;
+    left: 1px; right: 2px;
+    display: flex; flex-direction: column; gap: 2px;
+    padding: 7px 10px; border: none; border-radius: 11px; text-align: left; cursor: pointer;
+    font: inherit; transition: transform .16s cubic-bezier(.16,1,.3,1), box-shadow .16s;
+    isolation: isolate;
+  }
+  .ev:hover { z-index: 2; transform: translateY(-1px); box-shadow: 0 12px 26px -14px rgba(15, 20, 40, .5); }
+  .ev .et {
+    font-size: .82rem; font-weight: 650; line-height: 1.25; letter-spacing: -.005em;
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+    flex-shrink: 0;
+  }
+  .ev .es {
+    font-size: .78rem; font-weight: 600; opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    flex-grow: 1; display: grid; align-content: center;
+  }
+  .ev .eb { display: flex; align-items: baseline; gap: 8px; margin-top: auto; }
+  .ev .eb .ep { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: .74rem; opacity: .68; }
+  .ev .eb .eh { flex: none; margin-left: auto; white-space: nowrap; font-size: .72rem; font-weight: 500; opacity: .55; font-variant-numeric: tabular-nums; }
+
+  .ev-rose   { background: #fbebf3; color: #6b1d40; }
+  .ev-menthe { background: #eaf7f2; color: #165b43; }
+  .ev-bleu   { background: #ebf2ff; color: #173b7d; }
+  .ev-jaune  { background: #fdf5df; color: #694a08; }
+  .ev-mauve  { background: #f4ecfc; color: #4b1f79; }
+
+  /* LIGNE SÉPARATRICE ULTRA-ÉPURÉE SANS BOUTON */
+  .cal-splitter-wrap {
+    grid-area: split;
+    position: relative;
+    height: 18px;
+    margin: -3px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: row-resize;
+    z-index: 50;
+    user-select: none;
+  }
+  .cal-splitter-line {
+    position: absolute;
+    left: 8px; right: 8px;
+    height: 1.5px;
+    background: color-mix(in srgb, var(--line) 80%, transparent);
+    border-radius: 999px;
+    transition: all .2s cubic-bezier(.16,1,.3,1);
+  }
+  .cal-splitter-wrap:hover .cal-splitter-line,
+  body.is-resizing .cal-splitter-line {
+    background: var(--accent);
+    height: 3px;
+    box-shadow: 0 0 12px rgba(209, 77, 138, .5);
+  }
+
+  /* CADRE INFÉRIEUR UNIFIÉ */
+  .tasks-card {
+    grid-area: linear;
+    display: flex;
+    flex-direction: column;
+    padding: 12px 18px 12px 0;
+    border-radius: 24px;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    flex: 1;
+    min-height: 180px;
+    isolation: isolate;
+  }
+  .tasks-grid {
+    display: grid;
+    column-gap: 8px;
+    grid-template-columns: 58px repeat(5, minmax(0, 1fr));
+    height: 100%;
+    min-height: 0;
+  }
+
+  .tasks-sidebar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+    padding-top: 4px;
+    border-right: 1px dashed var(--line);
+    margin-right: -4px;
+    padding-right: 4px;
+  }
+  .tasks-badge-logo {
+    width: 36px; height: 36px; border-radius: 11px;
+    background: var(--surface);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), 0 2px 6px rgba(0,0,0,.04);
+    display: grid; place-items: center; color: var(--accent);
+  }
+  .tasks-stat-ring {
+    font-size: .68rem; font-weight: 750; color: var(--muted);
+    font-variant-numeric: tabular-nums; text-align: center;
+  }
+  .btn-reset-board {
+    border: none; background: transparent; color: var(--muted);
+    font-size: .66rem; font-weight: 600; cursor: pointer;
+    padding: 4px 6px; border-radius: 6px; opacity: .7;
+    transition: all .15s;
+    writing-mode: vertical-lr; transform: rotate(180deg);
+  }
+  .btn-reset-board:hover { opacity: 1; color: var(--ink); background: rgba(0,0,0,.04); }
+
+  .day-task-col {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    min-height: 0;
+    padding: 0 4px;
+    position: relative;
+    transition: opacity .2s ease;
+  }
+  .day-task-col.is-past {
+    opacity: .48;
+  }
+  .day-task-col.is-past::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: 12px;
+    background: repeating-linear-gradient(-45deg, transparent, transparent 10px, rgba(109,116,130,.03) 10px, rgba(109,116,130,.03) 20px);
+  }
+
+  /* Un seul trait propre : jauge de progression */
+  .col-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2px 6px 6px;
+    flex-shrink: 0;
+  }
+  .col-header-title {
+    font-size: .78rem; font-weight: 750; letter-spacing: -.01em;
+    color: var(--ink);
+  }
+  .col-header-count {
+    font-size: .7rem; font-weight: 600; color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .col-progress-bar {
+    width: 100%; height: 2.5px;
+    background: color-mix(in srgb, var(--line) 65%, transparent);
+    border-radius: 999px; overflow: hidden; margin-top: -2px; flex-shrink: 0;
+  }
+  .col-progress-fill {
+    height: 100%; background: var(--muted); border-radius: 999px; transition: width .25s ease;
+  }
+  .day-task-col.today .col-progress-fill { background: var(--accent); }
+  .day-task-col.all-done .col-progress-fill { background: var(--free); }
+
+  .tasks-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    overflow-y: auto;
+    flex: 1;
+    padding: 2px 2px 4px;
+  }
+  .tasks-list::-webkit-scrollbar { width: 4px; }
+  .tasks-list::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+
+  .empty-day-state {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 20px 8px; text-align: center; color: var(--muted);
+    gap: 4px; font-size: .75rem; border: 1px dashed color-mix(in srgb, var(--line) 80%, transparent);
+    border-radius: 12px; margin-top: 4px;
+  }
+
+  /* Carte Tâche */
+  .task-item {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 8px 10px;
+    box-shadow: 0 1px 3px rgba(23, 32, 68, .04);
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    transition: transform .12s, box-shadow .12s, border-color .12s;
+    position: relative;
+    user-select: none;
+    cursor: pointer;
+    overflow: hidden;
+    animation: apparait .2s ease both;
+  }
+  .task-item:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px -3px rgba(23, 32, 68, .09);
+    border-color: color-mix(in srgb, var(--ink) 25%, var(--line));
+  }
+  .task-item.is-done {
+    background: transparent;
+    opacity: .52;
+    border-style: dashed;
+  }
+  .task-item.is-done .task-title-txt {
+    text-decoration: line-through;
+  }
+  .task-row-main {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    min-width: 0;
+  }
+  .task-check-circle {
+    width: 17px; height: 17px; border-radius: 5px; flex-shrink: 0;
+    border: 1.5px solid color-mix(in srgb, var(--muted) 45%, var(--line));
+    margin-top: 1px; display: grid; place-items: center; transition: all .15s;
+    background: transparent; cursor: pointer;
+  }
+  .task-item:hover .task-check-circle { border-color: var(--accent); }
+  .task-item.is-done .task-check-circle {
+    background: var(--accent); border-color: var(--accent);
+  }
+  .task-check-circle svg { display: none; stroke: #fff; }
+  .task-item.is-done .task-check-circle svg { display: block; }
+
+  .task-title-txt {
+    font-size: .82rem;
+    font-weight: 650;
+    line-height: 1.25;
+    letter-spacing: -.01em;
+    flex: 1;
+    min-width: 0;
+    color: var(--ink);
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+
+  .task-del-btn {
+    opacity: 0; border: none; background: transparent; padding: 0 2px;
+    color: var(--muted); cursor: pointer; transition: opacity .15s;
+    font-size: .75rem; flex-shrink: 0;
+  }
+  .task-item:hover .task-del-btn { opacity: .7; }
+  .task-del-btn:hover { opacity: 1 !important; color: var(--danger); }
+
+  .task-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding-left: 25px;
+    flex-wrap: wrap;
+  }
+  .task-pill {
+    font-size: .66rem;
+    font-weight: 700;
+    padding: 1.5px 6px;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .p-urgent { background: rgba(209, 77, 138, .15); color: #b82b6c; font-weight: 750; }
+  .p-moyen  { background: rgba(217, 155, 22, .15); color: #945f07; font-weight: 700; }
+  .p-bas    { background: rgba(109, 116, 130, .11); color: var(--muted); }
+
+  .task-tag-course {
+    font-size: .66rem;
+    font-weight: 600;
+    color: var(--muted);
+    background: rgba(0,0,0,.04);
+    padding: 1.5px 6px;
+    border-radius: 4px;
+    max-width: 140px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .task-timer-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: .68rem;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+    padding: 2px 7px;
+    border-radius: 6px;
+    background: var(--relief-bas);
+    border: 1px solid var(--line);
+    color: var(--ink);
+    margin-left: auto;
+    cursor: pointer;
+    transition: all .15s ease;
+  }
+  .task-timer-chip:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-soft);
+  }
+  .task-timer-chip.running {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #ffffff;
+    animation: timerPulse 2s infinite ease-in-out;
+  }
+  .task-timer-chip.running svg { stroke: #ffffff; }
+  .task-timer-chip.paused {
+    background: rgba(217, 155, 22, .15);
+    border-color: #d97706;
+    color: #945f07;
+  }
+
+  @keyframes timerPulse {
+    0% { box-shadow: 0 0 0 0 rgba(209, 77, 138, .4); }
+    70% { box-shadow: 0 0 0 5px rgba(209, 77, 138, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(209, 77, 138, 0); }
+  }
+
+  .btn-add-task {
+    border: 1px dashed var(--line);
+    background: transparent;
+    border-radius: 11px;
+    padding: 7px;
+    font-size: .74rem;
+    font-weight: 650;
+    color: var(--muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all .15s;
+    flex-shrink: 0;
+    margin-top: auto;
+  }
+  .btn-add-task:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-soft);
+  }
+  .past-day-badge {
+    border: 1px dashed var(--line);
+    border-radius: 11px;
+    padding: 6px;
+    font-size: .72rem;
+    font-weight: 600;
+    color: var(--muted);
+    text-align: center;
+    background: rgba(0,0,0,.02);
+    margin-top: auto;
+  }
+  .day-task-col.today .col-header-title {
+    color: var(--accent);
+  }
+
+  /* ========================================================================= */
+  /* MODALE ÉPURÉE & SIMPLIFIÉE : AUCUN SÉLECTEUR DE DATE, JOUR AUTOMATIQUE    */
+  /* ========================================================================= */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 999;
+    background: rgba(15, 20, 30, .45);
+    backdrop-filter: blur(5px);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity .2s ease;
+  }
+  .modal-overlay.open {
+    opacity: 1; pointer-events: auto;
+  }
+
+  .modal-box {
+    width: 680px; max-width: 94vw;
+    background: var(--surface);
+    border-radius: 26px;
+    padding: 34px 38px 30px;
+    box-shadow: 0 32px 80px -18px rgba(0, 0, 0, .35), inset 0 1px 0 var(--reflet);
+    border: 1px solid var(--line);
+    display: flex; flex-direction: column; gap: 22px;
+    transform: translateY(10px) scale(.98);
+    transition: transform .2s cubic-bezier(.16,1,.3,1);
+  }
+  .modal-overlay.open .modal-box {
+    transform: translateY(0) scale(1);
+  }
+
+  .modal-head {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-bottom: 4px;
+  }
+  .modal-title-wrap {
+    display: flex; align-items: center; gap: 14px;
+  }
+  .modal-title {
+    font-size: 1.3rem; font-weight: 800; letter-spacing: -.02em;
+    display: flex; align-items: center; gap: 8px;
+  }
+  /* Badge contextuel indiquant le jour automatique d'office */
+  .modal-day-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: .82rem; font-weight: 700; color: var(--accent);
+    background: var(--accent-soft); padding: 4px 12px; border-radius: 999px;
+  }
+
+  .modal-close {
+    border: none; background: transparent; color: var(--muted);
+    font-size: 1.3rem; cursor: pointer; width: 34px; height: 34px;
+    border-radius: 50%; display: grid; place-items: center;
+  }
+  .modal-close:hover { background: var(--line); color: var(--ink); }
+
+  .modal-form {
+    display: flex; flex-direction: column; gap: 20px;
+  }
+
+  .modal-input-main {
+    width: 100%; border: none; font: inherit; font-size: 1.25rem; font-weight: 650;
+    color: var(--ink); background: transparent; padding: 10px 0 14px; outline: none;
+    border-bottom: 2px solid var(--line); transition: border-color .15s;
+  }
+  .modal-input-main:focus { border-bottom-color: var(--accent); }
+  .modal-input-main::placeholder { color: color-mix(in srgb, var(--muted) 70%, transparent); font-weight: 500; }
+
+  .modal-grid-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 22px;
+  }
+  .field-group { display: flex; flex-direction: column; gap: 8px; }
+  .field-group label {
+    font-size: .78rem; font-weight: 750; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .05em;
+  }
+  .field-select, .field-control {
+    width: 100%; height: 46px; border-radius: 14px; border: 1px solid var(--line);
+    background: var(--relief-bas); font: inherit; font-size: .92rem; font-weight: 600;
+    padding: 0 14px; color: var(--ink); outline: none; transition: border-color .15s;
+  }
+  .field-select:focus, .field-control:focus { border-color: var(--accent); }
+
+  .prio-pills-row {
+    display: flex; gap: 10px; height: 46px;
+  }
+  .prio-pill-btn {
+    flex: 1; border: 1px solid var(--line); border-radius: 14px;
+    background: var(--relief-bas); font: inherit; font-size: .88rem; font-weight: 650;
+    color: var(--muted); cursor: pointer; transition: all .15s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .prio-pill-btn:hover { color: var(--ink); border-color: color-mix(in srgb, var(--ink) 30%, var(--line)); }
+  .prio-pill-btn.active[data-prio="Urgent"] {
+    background: rgba(209, 77, 138, .15); border-color: #d14d8a; color: #b82b6c;
+  }
+  .prio-pill-btn.active[data-prio="Moyen"] {
+    background: rgba(217, 155, 22, .16); border-color: #d97706; color: #945f07;
+  }
+  .prio-pill-btn.active[data-prio="Bas"] {
+    background: var(--line); border-color: var(--muted); color: var(--ink);
+  }
+
+  .time-tabs {
+    display: flex; background: var(--relief-bas); padding: 4px; border-radius: 12px;
+    border: 1px solid var(--line); margin-bottom: 10px; gap: 6px;
+  }
+  .time-tab {
+    flex: 1; border: none; background: transparent; font: inherit; font-size: .82rem;
+    font-weight: 650; padding: 7px 10px; border-radius: 9px; color: var(--muted); cursor: pointer;
+    transition: all .15s;
+  }
+  .time-tab.active {
+    background: var(--surface); color: var(--ink); box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  }
+  /* PRESETS DE DURÉE ET CHAMP MINUTEUR ULTRA-LISSES */
+  .timer-preset-row {
+    display: flex;
+    gap: 10px;
+    height: 46px;
+    width: 100%;
+  }
+  .timer-preset-btn {
+    flex: 1;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--relief-bas);
+    font: inherit;
+    font-size: .88rem;
+    font-weight: 700;
+    color: var(--ink);
+    cursor: pointer;
+    transition: all .15s cubic-bezier(.16,1,.3,1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: inset 0 1px 0 var(--reflet);
+  }
+  .timer-preset-btn:hover {
+    border-color: color-mix(in srgb, var(--accent) 50%, var(--line));
+    color: var(--accent);
+    background: var(--accent-soft);
+    transform: translateY(-1px);
+  }
+  .timer-preset-btn:active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #ffffff;
+    transform: scale(.95);
+    box-shadow: 0 2px 8px rgba(209, 77, 138, .3);
+  }
+  .custom-duration-box.pulse {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+    transform: scale(1.015);
+  }
+  .btn-clear-timer {
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-size: .82rem;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 50%;
+    line-height: 1;
+    transition: all .15s;
+    margin-right: 2px;
+  }
+  .btn-clear-timer:hover {
+    color: var(--danger);
+    background: rgba(212, 42, 60, .1);
+  }
+
+  /* Champ durée libre sans flèches ni spinners natifs */
+  .custom-duration-box {
+    position: relative;
+    width: 100%;
+    height: 44px;
+    background: var(--relief-bas);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,.03);
+    transition: all .15s ease;
+  }
+  .custom-duration-box:focus-within {
+    border-color: var(--accent);
+    background: var(--surface);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  .custom-duration-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font: inherit;
+    font-size: .88rem;
+    font-weight: 600;
+    color: var(--ink);
+    outline: none;
+    -moz-appearance: textfield;
+  }
+  .custom-duration-input::-webkit-outer-spin-button,
+  .custom-duration-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .custom-duration-unit {
+    font-size: .8rem;
+    font-weight: 750;
+    color: var(--muted);
+    padding-left: 8px;
+    user-select: none;
+  }
+
+    /* CUSTOM DROPDOWN STYLISÉ DIRECTEMENT DANS LA DA D'EZHORAIRE */
+  .custom-select-container {
+    position: relative;
+    width: 100%;
+  }
+  .custom-select-trigger {
+    width: 100%;
+    height: 48px;
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    background: var(--relief-bas);
+    font: inherit;
+    font-size: .92rem;
+    font-weight: 600;
+    padding: 0 22px 0 16px; /* Chevron bien espacé du bord droit */
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,.03);
+    transition: all .15s ease;
+  }
+  .custom-select-trigger:hover, .custom-select-trigger.open {
+    border-color: var(--accent);
+    background: var(--surface);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  .custom-select-trigger .selected-val {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .custom-select-trigger .selected-val.placeholder {
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .custom-select-trigger .chevron-icon {
+    flex-shrink: 0;
+    color: var(--muted);
+    margin-left: 12px;
+    transition: transform .2s cubic-bezier(.16,1,.3,1), color .15s;
+  }
+  .custom-select-trigger.open .chevron-icon {
+    transform: rotate(180deg);
+    color: var(--accent);
+  }
+
+  .custom-select-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    max-height: 290px;
+    overflow-y: auto;
+    background: var(--surface);
+    border-radius: 18px;
+    border: 1px solid var(--line);
+    box-shadow: 0 18px 45px -10px rgba(15, 20, 40, .28), 0 4px 14px rgba(15, 20, 40, .06), inset 0 1px 0 var(--reflet);
+    padding: 8px;
+    z-index: 1000;
+    display: none;
+    flex-direction: column;
+    gap: 2px;
+    animation: menuPop .15s cubic-bezier(.16,1,.3,1) both;
+  }
+  .custom-select-menu.open {
+    display: flex;
+  }
+  @keyframes menuPop {
+    from { opacity: 0; transform: translateY(-6px) scale(.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .custom-select-menu::-webkit-scrollbar { width: 4px; }
+  .custom-select-menu::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+
+  .dropdown-category-title {
+    font-size: .72rem;
+    font-weight: 750;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 10px 12px 4px;
+    user-select: none;
+  }
+  .dropdown-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 11px;
+    font-size: .88rem;
+    font-weight: 600;
+    color: var(--ink);
+    cursor: pointer;
+    transition: all .12s ease;
+  }
+  .dropdown-option:hover {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .dropdown-option.selected {
+    background: var(--accent);
+    color: #ffffff;
+  }
+  .dropdown-option.selected .dropdown-opt-prof {
+    opacity: .85;
+    color: #ffffff;
+  }
+  .dropdown-opt-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .dropdown-opt-name {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .dropdown-opt-prof {
+    font-size: .75rem;
+    font-weight: 500;
+    color: var(--muted);
+    opacity: .8;
+  }
+
+  .modal-actions {
+    display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 8px;
+  }
+  .modal-actions-right {
+    display: flex; gap: 14px; margin-left: auto;
+  }
+  .btn-modal-delete {
+    border: none; background: rgba(212, 42, 60, .1); color: var(--danger); font: inherit;
+    font-size: .92rem; font-weight: 650; padding: 12px 20px; border-radius: 999px;
+    cursor: pointer; transition: all .15s;
+  }
+  .btn-modal-delete:hover { background: rgba(212, 42, 60, .2); }
+  .btn-modal-cancel {
+    border: none; background: transparent; color: var(--muted); font: inherit;
+    font-size: .95rem; font-weight: 600; padding: 12px 22px; border-radius: 999px;
+    cursor: pointer;
+  }
+  .btn-modal-cancel:hover { color: var(--ink); }
+  .btn-modal-submit {
+    border: none; background: var(--accent); color: #fff; font: inherit;
+    font-size: .96rem; font-weight: 700; padding: 12px 28px; border-radius: 999px;
+    cursor: pointer; box-shadow: 0 4px 18px rgba(209, 77, 138, .35);
+    transition: transform .12s;
+  }
+  .btn-modal-submit:active { transform: scale(.97); }
+
+  footer {
+    grid-area: foot; margin: 0; padding-top: 8px; text-align: left;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: .82rem; color: var(--muted);
+  }
+  footer a { color: inherit; text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+</style>
+</head>
+<body data-theme="3">
+
+<div class="wrap">
+  <!-- Topbar originale d'EzHoraire -->
+  <div class="topbar">
+    <h1 class="title"><button type="button" id="btn-reload" onclick="allerSemaine(1)" title="Revenir à la semaine actuelle">Ez<span>Horaire</span></button></h1>
+
+    <button class="droite" id="btn-moi" type="button" aria-label="Réglages">
+      <span class="avatar">MB</span>
+    </button>
+  </div>
+
+  <!-- Sélecteur d'horaire (#seg) -->
+  <div class="seg" role="tablist" aria-label="Choisir l'horaire">
+    <span class="pill" aria-hidden="true"></span>
+    <button type="button" role="tab" aria-selected="true">Maxence</button>
+    <button type="button" role="tab" aria-selected="false">Lilian</button>
+    <button type="button" role="tab" aria-selected="false">Anthony</button>
+  </div>
+
+  <!-- Contenu Principal -->
+  <div id="horaire-contenu">
+    <!-- Barre de semaine avec navigation fonctionnelle pour aller 2 semaines plus tard -->
+    <div class="week">
+      <button class="nav halo" id="sem-prec" onclick="changerSemaine(-1)" aria-label="Semaine précédente" title="Semaine précédente (←)">‹</button>
+      <div class="cur">
+        <strong id="sem-titre">Semaine 1</strong>
+        <span id="sem-dates">14 – 18 sept. 2026</span>
+      </div>
+      <button class="nav halo" id="sem-suiv" onclick="changerSemaine(1)" aria-label="Semaine suivante" title="Semaine suivante (→)">›</button>
+    </div>
+
+    <!-- Bouton Cette semaine pour revenir instantanément -->
+    <button class="thisweek halo" id="btn-auj" onclick="allerSemaine(1)">Cette semaine</button>
+
+    <!-- Bouton PDF officiel -->
+    <button class="official halo" id="btn-pdf" type="button" aria-expanded="false">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>
+      <span>PDF officiel<span class="sm"> de la semaine</span></span>
+    </button>
+
+    <!-- Grille Calendrier -->
+    <div class="cal" id="cal">
+      <div class="cal-tete" id="cal-tete">
+        <!-- Rendu dynamique par changerSemaine() -->
+      </div>
+
+      <div class="cal-corps" id="cal-corps">
+        <div class="cal-heures" aria-hidden="true">
+          <span style="top: 0%">8h</span>
+          <span style="top: 20%">10h</span>
+          <span style="top: 40%">12h</span>
+          <span style="top: 50%">13h</span>
+          <span style="top: 70%">15h</span>
+          <span style="top: 90%">17h</span>
+        </div>
+
+        <div class="cal-col" id="col-cal-lun"></div>
+        <div class="cal-col" id="col-cal-mar"></div>
+        <div class="cal-col" id="col-cal-mer"></div>
+        <div class="cal-col" id="col-cal-jeu"></div>
+        <div class="cal-col" id="col-cal-ven"></div>
+      </div>
+    </div>
+
+    <!-- LIGNE SÉPARATRICE ÉPURÉE ATTRAPABLE (SPLITTER) -->
+    <div class="cal-splitter-wrap" id="cal-splitter" title="Glisser pour ajuster la hauteur (Double-cliquer pour réinitialiser)">
+      <div class="cal-splitter-line"></div>
+    </div>
+
+    <!-- CADRE INFÉRIEUR UNIFIÉ DES TÂCHES -->
+    <div class="tasks-card" id="tasks-card">
+      <div class="tasks-grid">
+        <!-- Gouttière gauche 58px -->
+        <div class="tasks-sidebar">
+          <div class="tasks-badge-logo" title="Planificateur Tâches">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="20" x2="18" y2="10"></line>
+              <line x1="12" y1="20" x2="12" y2="4"></line>
+              <line x1="6" y1="20" x2="6" y2="14"></line>
+            </svg>
+          </div>
+          <div class="tasks-stat-ring" id="global-counter">0/0</div>
+          <button class="btn-reset-board" onclick="resetBoard()" title="Effacer / Exemples">RESET</button>
+        </div>
+
+        <!-- 5 Colonnes de jours dynamiques -->
+        <div class="day-task-col" data-day="lun" id="day-col-lun"></div>
+        <div class="day-task-col" data-day="mar" id="day-col-mar"></div>
+        <div class="day-task-col" data-day="mer" id="day-col-mer"></div>
+        <div class="day-task-col" data-day="jeu" id="day-col-jeu"></div>
+        <div class="day-task-col" data-day="ven" id="day-col-ven"></div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+      <p id="maj">Mis à jour le 16 sept. 2026 à 11h45</p>
+      <p><a href="/confidentialite.html">Confidentialité</a></p>
+    </footer>
+  </div>
+</div>
+
+<!-- GRANDE MODALE SPATIEUSE ÉPURÉE (SANS SÉLECTEUR DE DATE) -->
+<div class="modal-overlay" id="modal-task" onclick="if(event.target === this) fermerModal()">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div class="modal-title-wrap">
+        <div class="modal-title">
+          <svg id="modal-icon-add" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          <svg id="modal-icon-edit" style="display:none;" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          <span id="modal-heading-text">Ajouter une tâche</span>
+        </div>
+        <!-- Jour contextuel d'office (fixé selon la colonne cliquée) -->
+        <span class="modal-day-pill" id="modal-day-badge">📅 Mercredi 16 sept.</span>
+      </div>
+      <button class="modal-close" onclick="fermerModal()" title="Fermer (Échap)">✕</button>
+    </div>
+
+    <form class="modal-form" onsubmit="sauvegarderFormTache(event)">
+      <input type="hidden" id="inp-task-id" value="">
+      <input type="hidden" id="inp-task-day" value="">
+      <input type="hidden" id="inp-task-week" value="">
+
+      <!-- Champ Titre (100 car. max) -->
+      <input type="text" class="modal-input-main" id="inp-titre" maxlength="100" placeholder="Intitulé du devoir, projet ou révision (100 car. max)..." required autofocus autocomplete="off">
+      
+      <!-- Rangée 1 : Matière officielle (Custom Dropdown élégant dans la DA) -->
+      <div class="field-group" style="margin-top: 2px;">
+        <label>Matière / Cours officiel</label>
+        <div class="custom-select-container" id="custom-course-select">
+          <input type="hidden" id="inp-matiere" value="">
+          <button type="button" class="custom-select-trigger" id="custom-course-trigger" onclick="toggleCourseDropdown(event)">
+            <span class="selected-val placeholder" id="custom-course-label">Sélectionner un cours...</span>
+            <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+
+          <div class="custom-select-menu" id="custom-course-menu">
+            <div class="dropdown-category-title">Cours du semestre actif</div>
+            
+            <div class="dropdown-option" data-value="Modélisation 3Dconstruction" onclick="selectCourse('Modélisation 3Dconstruction', 'Souris', '#d14d8a')">
+              <span class="dropdown-opt-dot" style="background:#d14d8a;"></span>
+              <span class="dropdown-opt-name">Modélisation 3Dconstruction</span>
+              <span class="dropdown-opt-prof">Souris</span>
+            </div>
+
+            <div class="dropdown-option" data-value="Mathématique appliquée" onclick="selectCourse('Mathématique appliquée', 'Lebailly', '#165b43')">
+              <span class="dropdown-opt-dot" style="background:#165b43;"></span>
+              <span class="dropdown-opt-name">Mathématique appliquée</span>
+              <span class="dropdown-opt-prof">Lebailly</span>
+            </div>
+
+            <div class="dropdown-option" data-value="Traitement du son" onclick="selectCourse('Traitement du son', 'Sottiaux', '#165b43')">
+              <span class="dropdown-opt-dot" style="background:#165b43;"></span>
+              <span class="dropdown-opt-name">Traitement du son</span>
+              <span class="dropdown-opt-prof">Sottiaux</span>
+            </div>
+
+            <div class="dropdown-option" data-value="Anglais" onclick="selectCourse('Anglais', 'Delmotte', '#173b7d')">
+              <span class="dropdown-opt-dot" style="background:#173b7d;"></span>
+              <span class="dropdown-opt-name">Anglais</span>
+              <span class="dropdown-opt-prof">Delmotte</span>
+            </div>
+
+            <div class="dropdown-option" data-value="Colorimétrie" onclick="selectCourse('Colorimétrie', 'Gryspeert', '#945f07')">
+              <span class="dropdown-opt-dot" style="background:#945f07;"></span>
+              <span class="dropdown-opt-name">Colorimétrie</span>
+              <span class="dropdown-opt-prof">Gryspeert</span>
+            </div>
+
+            <div class="dropdown-option" data-value="Création graphique 3D" onclick="selectCourse('Création graphique 3D', 'D'Hondt', '#4b1f79')">
+              <span class="dropdown-opt-dot" style="background:#4b1f79;"></span>
+              <span class="dropdown-opt-name">Création graphique 3D</span>
+              <span class="dropdown-opt-prof">D'Hondt</span>
+            </div>
+
+            <div class="dropdown-category-title" style="margin-top: 6px;">Autres modules de l'étudiant (Semestre & Année)</div>
+
+            <div class="dropdown-option" data-value="Animation 2D & Motion Design" onclick="selectCourse('Animation 2D & Motion Design', '', '#6d7482')">
+              <span class="dropdown-opt-dot" style="background:#6d7482;"></span>
+              <span class="dropdown-opt-name">Animation 2D & Motion Design</span>
+            </div>
+
+            <div class="dropdown-option" data-value="Éclairage et Rendu (Lighting)" onclick="selectCourse('Éclairage et Rendu (Lighting)', '', '#6d7482')">
+              <span class="dropdown-opt-dot" style="background:#6d7482;"></span>
+              <span class="dropdown-opt-name">Éclairage et Rendu (Lighting)</span>
+            </div>
+
+            <div class="dropdown-option" data-value="Histoire de l'art et Esthétique" onclick="selectCourse('Histoire de l'art et Esthétique', '', '#6d7482')">
+              <span class="dropdown-opt-dot" style="background:#6d7482;"></span>
+              <span class="dropdown-opt-name">Histoire de l'art et Esthétique</span>
+            </div>
+
+            <div class="dropdown-option" data-value="Droit des médias & Propriété" onclick="selectCourse('Droit des médias & Propriété', '', '#6d7482')">
+              <span class="dropdown-opt-dot" style="background:#6d7482;"></span>
+              <span class="dropdown-opt-name">Droit des médias & Propriété</span>
+            </div>
+
+            <div class="dropdown-option" data-value="Programmation Web & Scripting" onclick="selectCourse('Programmation Web & Scripting', '', '#6d7482')">
+              <span class="dropdown-opt-dot" style="background:#6d7482;"></span>
+              <span class="dropdown-opt-name">Programmation Web & Scripting</span>
+            </div>
+
+            <div class="dropdown-option" data-value="Montage & Post-production" onclick="selectCourse('Montage & Post-production', '', '#6d7482')">
+              <span class="dropdown-opt-dot" style="background:#6d7482;"></span>
+              <span class="dropdown-opt-name">Montage & Post-production</span>
+            </div>
+
+            <div class="dropdown-option" data-value="Projet de fin d'année / Jury" onclick="selectCourse('Projet de fin d'année / Jury', '', '#6d7482')">
+              <span class="dropdown-opt-dot" style="background:#6d7482;"></span>
+              <span class="dropdown-opt-name">Projet de fin d'année / Jury</span>
+            </div>
+
+            <div class="dropdown-option" data-value="Autre / Projet personnel" onclick="selectCourse('Autre / Projet personnel', '', '#6d7482')">
+              <span class="dropdown-opt-dot" style="background:#6d7482;"></span>
+              <span class="dropdown-opt-name">Autre devoir / Projet personnel</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rangée 2 : Priorité & Minuteur -->
+      <div class="modal-grid-row" style="margin-top: 4px;">
+        <div class="field-group">
+          <label>Priorité</label>
+          <div class="prio-pills-row">
+            <button type="button" class="prio-pill-btn" data-prio="Urgent" onclick="choisirPrio(this)">
+              <span style="width:7px; height:7px; border-radius:50%; background:#d14d8a;"></span> Urgent
+            </button>
+            <button type="button" class="prio-pill-btn active" data-prio="Moyen" onclick="choisirPrio(this)">
+              <span style="width:7px; height:7px; border-radius:50%; background:#d97706;"></span> Moyen
+            </button>
+            <button type="button" class="prio-pill-btn" data-prio="Bas" onclick="choisirPrio(this)">
+              <span style="width:7px; height:7px; border-radius:50%; background:var(--muted);"></span> Bas
+            </button>
+          </div>
+          <input type="hidden" id="inp-prio" value="Moyen">
+        </div>
+
+        <div class="field-group">
+          <label>Temps & Minuteur</label>
+          <div class="time-tabs">
+            <button type="button" class="time-tab active" id="tab-mode-none" onclick="changerModeTemps('none')">Sans chrono</button>
+            <button type="button" class="time-tab" id="tab-mode-timer" onclick="changerModeTemps('timer')">⏱ Minuteur</button>
+            <button type="button" class="time-tab" id="tab-mode-deadline" onclick="changerModeTemps('deadline')">⏰ Échéance</button>
+          </div>
+          
+          <div id="bloc-temps-none" style="display:flex; align-items:center; height:46px; padding:0 16px; background:var(--relief-bas); border-radius:14px; border:1px dashed var(--line); font-size:.84rem; color:var(--muted);">
+            <span>Tâche simple sans décompte temporel.</span>
+          </div>
+
+          <div id="bloc-temps-timer" style="display:none; flex-direction:column; gap:10px;">
+            <!-- 3 Boutons d'addition cumulative (cliquer plusieurs fois additionne le temps) -->
+            <div class="timer-preset-row">
+              <button type="button" class="timer-preset-btn" onclick="ajouterDuree(5)">5 min</button>
+              <button type="button" class="timer-preset-btn" onclick="ajouterDuree(10)">10 min</button>
+              <button type="button" class="timer-preset-btn" onclick="ajouterDuree(30)">30 min</button>
+            </div>
+
+            <!-- Total cumulé et champ de saisie directe -->
+            <div class="custom-duration-box" id="custom-duration-box">
+              <input type="number" id="inp-timer-minutes" class="custom-duration-input" min="1" max="480" placeholder="Entrer une durée ou cliquer au-dessus..." oninput="onTimerInput(this.value)">
+              <button type="button" id="btn-clear-timer" class="btn-clear-timer" onclick="reinitialiserDuree()" title="Effacer la durée" style="display:none;">✕</button>
+              <span class="custom-duration-unit">min</span>
+            </div>
+          </div>
+
+          <div id="bloc-temps-deadline" style="display:none;">
+            <input type="time" id="inp-deadline-heure" class="field-control" value="17:00">
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-modal-delete" id="btn-modal-suppr" style="display:none;" onclick="supprimerTacheDepuisModale()">Supprimer</button>
+        <div class="modal-actions-right">
+          <button type="button" class="btn-modal-cancel" onclick="fermerModal()">Annuler</button>
+          <button type="submit" class="btn-modal-submit" id="btn-modal-submit-label">Créer la tâche</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  let currentWeek = 1; // Semaine visualisée (navigable avec ‹ ›)
+  const baseWeek = 1;  // Semaine courante réelle
+  const simulatedTodayDay = 'mer'; // Mercredi 16 sept. est Aujourd'hui
+
+  // Définition des semaines
+  const WEEKS_DATA = {
+    1: { titre: "Semaine 1", dates: "14 – 18 sept. 2026", days: [
+      { id: 'lun', nom: 'LUN', num: 14, dateStr: 'Lundi 14 sept.', horaires: '8h15 – 16h30' },
+      { id: 'mar', nom: 'MAR', num: 15, dateStr: 'Mardi 15 sept.', horaires: '8h15 – 15h30' },
+      { id: 'mer', nom: 'MER', num: 16, dateStr: 'Mercredi 16 sept.', horaires: '8h15 – 12h30' },
+      { id: 'jeu', nom: 'JEU', num: 17, dateStr: 'Jeudi 17 sept.', horaires: '8h30 – 17h30' },
+      { id: 'ven', nom: 'VEN', num: 18, dateStr: 'Vendredi 18 sept.', libre: true }
+    ]},
+    2: { titre: "Semaine 2", dates: "21 – 25 sept. 2026", days: [
+      { id: 'lun', nom: 'LUN', num: 21, dateStr: 'Lundi 21 sept.', horaires: '8h15 – 16h30' },
+      { id: 'mar', nom: 'MAR', num: 22, dateStr: 'Mardi 22 sept.', horaires: '8h15 – 15h30' },
+      { id: 'mer', nom: 'MER', num: 23, dateStr: 'Mercredi 23 sept.', horaires: '8h15 – 12h30' },
+      { id: 'jeu', nom: 'JEU', num: 24, dateStr: 'Jeudi 24 sept.', horaires: '8h30 – 17h30' },
+      { id: 'ven', nom: 'VEN', num: 25, dateStr: 'Vendredi 25 sept.', horaires: '9h00 – 13h00' }
+    ]},
+    3: { titre: "Semaine 3 (Dans 2 sem.)", dates: "28 sept. – 2 oct. 2026", days: [
+      { id: 'lun', nom: 'LUN', num: 28, dateStr: 'Lundi 28 sept.', horaires: '8h15 – 16h30' },
+      { id: 'mar', nom: 'MAR', num: 29, dateStr: 'Mardi 29 sept.', horaires: '8h15 – 15h30' },
+      { id: 'mer', nom: 'MER', num: 30, dateStr: 'Mercredi 30 sept.', horaires: '8h15 – 12h30' },
+      { id: 'jeu', nom: 'JEU', num: 1, dateStr: 'Jeudi 1 oct.', horaires: '8h30 – 17h30' },
+      { id: 'ven', nom: 'VEN', num: 2, dateStr: 'Vendredi 2 oct.', libre: true }
+    ]}
+  };
+
+  // Base des tâches persistée (avec rattachement strict week + day)
+  let mesTaches = [];
+  let timerInterval = null;
+  let activeTimerTaskId = null;
+
+  try {
+    const sauve = localStorage.getItem('ezh_user_tasks_v5');
+    if (sauve) mesTaches = JSON.parse(sauve);
+  } catch(e) {}
+
+  if (!mesTaches || mesTaches.length === 0) {
+    mesTaches = [
+      // Semaine 1
+      { id: '1', week: 1, day: 'mer', title: 'Export stems Reaper 24-bit', prio: 'Urgent', course: 'Traitement du son', timeType: 'timer', timeValue: '45', remainingSeconds: 2700, timerStatus: 'idle', done: false },
+      { id: '2', week: 1, day: 'mer', title: 'Calcul matrices et géométrie appliquée', prio: 'Moyen', course: 'Mathématique appliquée', timeType: 'timer', timeValue: '25', remainingSeconds: 1500, timerStatus: 'idle', done: false },
+      { id: '3', week: 1, day: 'jeu', title: 'Nuancier Pantone CMJN', prio: 'Urgent', course: 'Colorimétrie', timeType: 'deadline', timeValue: '12:30', done: false },
+      { id: '4', week: 1, day: 'jeu', title: 'Bake textures Substance 3D 4K', prio: 'Urgent', course: 'Création graphique 3D', timeType: 'timer', timeValue: '60', remainingSeconds: 3600, timerStatus: 'idle', done: false },
+      // Semaine 3 (Programmé pour dans 2 semaines !)
+      { id: '5', week: 3, day: 'mer', title: 'Rendu d’étape modélisation personnage', prio: 'Urgent', course: 'Modélisation 3Dconstruction', timeType: 'deadline', timeValue: '10:00', done: false },
+      { id: '6', week: 3, day: 'jeu', title: 'Script Python pour Maya', prio: 'Moyen', course: 'Programmation Web & Scripting', timeType: 'timer', timeValue: '90', remainingSeconds: 5400, timerStatus: 'idle', done: false }
+    ];
+  }
+
+  function sauvegarder() {
+    try { localStorage.setItem('ezh_user_tasks_v5', JSON.stringify(mesTaches)); } catch(e) {}
+    rendreVue();
+  }
+
+  /* NAVIGATION ENTRE SEMAINES */
+  function changerSemaine(delta) {
+    let nextW = currentWeek + delta;
+    if (nextW < 1) nextW = 1;
+    if (nextW > 3) nextW = 3;
+    allerSemaine(nextW);
+  }
+
+  function allerSemaine(w) {
+    currentWeek = w;
+    rendreVue();
+  }
+
+  /* RENDU GLOBAL (CALENDRIER + TÂCHES DE LA SEMAINE EN COURS) */
+  function rendreVue() {
+    const wData = WEEKS_DATA[currentWeek] || WEEKS_DATA[1];
+    document.getElementById('sem-titre').textContent = wData.titre;
+    document.getElementById('sem-dates').textContent = wData.dates;
+    document.getElementById('btn-auj').hidden = (currentWeek === baseWeek);
+
+    // Rendu en-tête calendrier
+    const teteEl = document.getElementById('cal-tete');
+    teteEl.innerHTML = `
+      <div></div>
+      ${wData.days.map(d => {
+        const isToday = (currentWeek === baseWeek && d.id === simulatedTodayDay);
+        return `
+          <div class="cal-jour ${isToday ? 'today' : ''}" title="${d.dateStr}">
+            <span>${d.nom}</span><strong>${d.num}</strong>
+            <small class="${d.libre ? 'libre' : ''}">${d.libre ? 'Libre' : d.horaires}</small>
+          </div>
+        `;
+      }).join('')}
+    `;
+
+    // Colonnes calendrier corps
+    wData.days.forEach(d => {
+      const isToday = (currentWeek === baseWeek && d.id === simulatedTodayDay);
+      const col = document.getElementById('col-cal-' + d.id);
+      col.className = 'cal-col' + (isToday ? ' today' : '');
+
+      if (currentWeek === 1) {
+        if (d.id === 'lun') {
+          col.innerHTML = `
+            <button type="button" class="ev ev-rose" style="top: 2.5%; height: 42.5%;"><span class="et">Modélisation 3Dconstruction</span><span class="es">1/14</span><span class="eb"><span class="ep">Souris</span><span class="eh">8h15 – 12h30</span></span></button>
+            <button type="button" class="ev ev-menthe" style="top: 55%; height: 30%;"><span class="et">Mathématique appliquée</span><span class="es">2/11</span><span class="eb"><span class="ep">Lebailly</span><span class="eh">13h30 – 16h30</span></span></button>
+          `;
+        } else if (d.id === 'mar') {
+          col.innerHTML = `
+            <button type="button" class="ev ev-rose" style="top: 2.5%; height: 42.5%;"><span class="et">Modélisation 3Dconstruction</span><span class="es">1/18</span><span class="eb"><span class="ep">Souris</span><span class="eh">8h15 – 12h30</span></span></button>
+            <button type="button" class="ev ev-bleu" style="top: 55%; height: 20%;"><span class="et">Anglais</span><span class="es">2/17A</span><span class="eb"><span class="ep">Delmotte</span><span class="eh">13h30 – 15h30</span></span></button>
+          `;
+        } else if (d.id === 'mer') {
+          col.innerHTML = `
+            <button type="button" class="ev ev-menthe" style="top: 2.5%; height: 20%;"><span class="et">Traitement du son</span><span class="es">1/32</span><span class="eb"><span class="ep">Sottiaux</span><span class="eh">8h15 – 10h15</span></span></button>
+            <button type="button" class="ev ev-menthe" style="top: 25%; height: 20%;"><span class="et">Mathématique appliquée</span><span class="es">1/36A</span><span class="eb"><span class="ep">Lebailly</span><span class="eh">10h30 – 12h30</span></span></button>
+          `;
+        } else if (d.id === 'jeu') {
+          col.innerHTML = `
+            <button type="button" class="ev ev-jaune" style="top: 5%; height: 40%;"><span class="et">Colorimétrie</span><span class="es">2/10E</span><span class="eb"><span class="ep">Gryspeert</span><span class="eh">8h30 – 12h30</span></span></button>
+            <button type="button" class="ev ev-mauve" style="top: 55%; height: 40%;"><span class="et">Création graphique 3D</span><span class="es">1/16</span><span class="eb"><span class="ep">D'Hondt</span><span class="eh">13h30 – 17h30</span></span></button>
+          `;
+        } else {
+          col.innerHTML = `<div class="cal-libre"><p><strong>Pas de cours</strong></p></div>`;
+        }
+      } else {
+        // Semaines 2 ou 3 : affichage de cours représentatifs
+        if (d.id === 'mer') {
+          col.innerHTML = `
+            <button type="button" class="ev ev-rose" style="top: 10%; height: 35%;"><span class="et">Modélisation 3Dconstruction</span><span class="es">1/14</span><span class="eb"><span class="ep">Souris</span><span class="eh">9h00 – 12h00</span></span></button>
+          `;
+        } else if (d.id === 'jeu') {
+          col.innerHTML = `
+            <button type="button" class="ev ev-bleu" style="top: 15%; height: 35%;"><span class="et">Programmation Scripting</span><span class="es">Lab 2</span><span class="eb"><span class="ep">Atelier</span><span class="eh">10h00 – 13h00</span></span></button>
+          `;
+        } else if (d.libre) {
+          col.innerHTML = `<div class="cal-libre"><p><strong>Pas de cours</strong></p></div>`;
+        } else {
+          col.innerHTML = `
+            <button type="button" class="ev ev-menthe" style="top: 20%; height: 30%;"><span class="et">Atelier & Projets</span><span class="es">Groupe 1</span><span class="eb"><span class="ep">Studio</span><span class="eh">10h – 13h</span></span></button>
+          `;
+        }
+      }
+    });
+
+    // Rendu des 5 colonnes de tâches
+    const totalTachesSem = mesTaches.filter(t => t.week === currentWeek);
+    const totalDoneSem = totalTachesSem.filter(t => t.done).length;
+    document.getElementById('global-counter').textContent = totalDoneSem + '/' + totalTachesSem.length;
+
+    const idxToday = ['lun', 'mar', 'mer', 'jeu', 'ven'].indexOf(simulatedTodayDay);
+
+    wData.days.forEach((d, idx) => {
+      const colEl = document.getElementById('day-col-' + d.id);
+      const isPast = (currentWeek === baseWeek && idx < idxToday);
+      const isToday = (currentWeek === baseWeek && idx === idxToday);
+
+      colEl.className = 'day-task-col' + (isPast ? ' is-past' : '') + (isToday ? ' today' : '');
+
+      const items = mesTaches.filter(t => t.week === currentWeek && t.day === d.id);
+      const total = items.length;
+      const done = items.filter(t => t.done).length;
+      if (total > 0 && done === total) colEl.classList.add('all-done');
+
+      let tasksHtml = '';
+      if (total === 0) {
+        tasksHtml = `
+          <div class="empty-day-state">
+            <span>Aucune tâche</span>
+            <small style="opacity:.7">${isPast ? 'Journée passée' : 'Touche + pour ajouter'}</small>
+          </div>
+        `;
+      } else {
+        tasksHtml = items.map(t => {
+          let prioClass = t.prio === 'Urgent' ? 'p-urgent' : (t.prio === 'Moyen' ? 'p-moyen' : 'p-bas');
+          let isRunning = (activeTimerTaskId === t.id && t.timerStatus === 'running');
+          let isPaused = (t.timerStatus === 'paused');
+
+          let chipTempsHtml = '';
+          if (t.timeType === 'timer') {
+            let remSec = (t.remainingSeconds !== undefined) ? t.remainingSeconds : (parseInt(t.timeValue || '45', 10) * 60);
+            let affichageTemps = formaterChrono(remSec);
+            let statusClass = isRunning ? 'running' : (isPaused ? 'paused' : '');
+            let iconSvg = isRunning 
+              ? '<line x1="6" y1="4" x2="6" y2="20"></line><line x1="18" y1="4" x2="18" y2="20"></line>'
+              : '<polygon points="5 3 19 12 5 21 5 3"/>';
+
+            chipTempsHtml = `
+              <button type="button" class="task-timer-chip ${statusClass}" onclick="gererChronoClic(event, '${t.id}')" title="${isRunning ? 'Mettre en pause' : (isPaused ? 'Reprendre le chrono' : 'Lancer le minuteur')}">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">${iconSvg}</svg>
+                <span>${affichageTemps}</span>
+              </button>
+            `;
+          } else if (t.timeType === 'deadline' && t.timeValue) {
+            chipTempsHtml = `
+              <div class="task-timer-chip" title="Heure limite de rendu">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <span>Avant ${t.timeValue}</span>
+              </div>
+            `;
+          }
+
+          return `
+            <div class="task-item ${t.done ? 'is-done' : ''}" onclick="ouvrirModalEdition('${t.id}')">
+              <div class="task-row-main">
+                <span class="task-check-circle" onclick="toggleDone(event, '${t.id}')" title="Marquer fait / à faire">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </span>
+                <span class="task-title-txt" title="${echappe(t.title)}">${echappe(t.title)}</span>
+                <button class="task-del-btn" onclick="supprimerTache(event, '${t.id}')" title="Supprimer">✕</button>
+              </div>
+              <div class="task-meta-row">
+                <span class="task-pill ${prioClass}">${t.prio}</span>
+                ${t.course ? `<span class="task-tag-course" title="${echappe(t.course)}">${echappe(t.course)}</span>` : ''}
+                ${chipTempsHtml}
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      let btnActionHtml = isPast
+        ? `<div class="past-day-badge">Jour passé</div>`
+        : `<button class="btn-add-task" onclick="ouvrirModalAjout('${d.id}')" style="${isToday ? 'border-color: var(--accent); color: var(--accent);' : ''}">+ Ajouter tâche</button>`;
+
+      colEl.innerHTML = `
+        <div class="col-header">
+          <strong class="col-header-title">${isToday ? 'Aujourd\'hui · ' : ''}${d.dateStr}</strong>
+          <span class="col-header-count" style="${isToday ? 'color: var(--accent);' : ''}">${done}/${total}</span>
+        </div>
+        <div class="col-progress-bar"><div class="col-progress-fill" style="width: ${total > 0 ? (done / total * 100) : 0}%;"></div></div>
+        <div class="tasks-list">${tasksHtml}</div>
+        ${btnActionHtml}
+      `;
+    });
+  }
+
+  function toggleDone(ev, id) {
+    if (ev) ev.stopPropagation();
+    const t = mesTaches.find(x => x.id === id);
+    if (t) {
+      t.done = !t.done;
+      if (t.done && activeTimerTaskId === id) {
+        arreterIntervalle();
+        t.timerStatus = 'paused';
+      }
+      sauvegarder();
+    }
+  }
+
+  function supprimerTache(ev, id) {
+    if (ev) ev.stopPropagation();
+    if (activeTimerTaskId === id) arreterIntervalle();
+    mesTaches = mesTaches.filter(x => x.id !== id);
+    sauvegarder();
+  }
+
+  function supprimerTacheDepuisModale() {
+    const id = document.getElementById('inp-task-id').value;
+    if (id) {
+      supprimerTache(null, id);
+      fermerModal();
+    }
+  }
+
+  /* GESTION DU CHRONO */
+  function gererChronoClic(ev, id) {
+    ev.stopPropagation();
+    const t = mesTaches.find(x => x.id === id);
+    if (!t) return;
+
+    if (t.remainingSeconds === undefined) {
+      t.remainingSeconds = parseInt(t.timeValue || '45', 10) * 60;
+    }
+
+    if (t.timerStatus === 'running') {
+      arreterIntervalle();
+      t.timerStatus = 'paused';
+      activeTimerTaskId = null;
+    } else {
+      arreterIntervalle();
+      mesTaches.forEach(autre => {
+        if (autre.id !== id && autre.timerStatus === 'running') autre.timerStatus = 'paused';
+      });
+
+      t.timerStatus = 'running';
+      activeTimerTaskId = t.id;
+
+      timerInterval = setInterval(() => {
+        if (t.remainingSeconds > 0) {
+          t.remainingSeconds--;
+          rendreVue();
+        } else {
+          arreterIntervalle();
+          t.timerStatus = 'paused';
+          activeTimerTaskId = null;
+          rendreVue();
+          alert("⏱ Session terminée pour : " + t.title);
+        }
+      }, 1000);
+    }
+
+    sauvegarder();
+  }
+
+  function arreterIntervalle() {
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+  }
+
+  function formaterChrono(totalSec) {
+    const m = Math.floor(totalSec / 60);
+    const s = totalSec % 60;
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  }
+
+  /* ========================================================================= */
+    /* GESTION DU CUSTOM DROPDOWN DES COURS */
+  function toggleCourseDropdown(e) {
+    if (e) e.stopPropagation();
+    const trigger = document.getElementById('custom-course-trigger');
+    const menu = document.getElementById('custom-course-menu');
+    const isOpen = menu.classList.contains('open');
+    if (isOpen) {
+      closeCourseDropdown();
+    } else {
+      trigger.classList.add('open');
+      menu.classList.add('open');
+    }
+  }
+
+  function closeCourseDropdown() {
+    const trigger = document.getElementById('custom-course-trigger');
+    const menu = document.getElementById('custom-course-menu');
+    if (trigger) trigger.classList.remove('open');
+    if (menu) menu.classList.remove('open');
+  }
+
+  function selectCourse(val, prof, dotColor) {
+    document.getElementById('inp-matiere').value = val;
+    const labelEl = document.getElementById('custom-course-label');
+    labelEl.classList.remove('placeholder');
+    labelEl.innerHTML = `
+      <span class="dropdown-opt-dot" style="background:${dotColor}; margin-right:4px;"></span>
+      <span>${val}</span>
+      ${prof ? `<span style="font-size:.78rem; font-weight:500; opacity:.75; margin-left:4px;">(${prof})</span>` : ''}
+    `;
+
+    document.querySelectorAll('.dropdown-option').forEach(opt => {
+      opt.classList.toggle('selected', opt.dataset.value === val);
+    });
+
+    closeCourseDropdown();
+  }
+
+  function resetCourseSelect() {
+    document.getElementById('inp-matiere').value = '';
+    const labelEl = document.getElementById('custom-course-label');
+    labelEl.classList.add('placeholder');
+    labelEl.textContent = 'Sélectionner un cours...';
+    document.querySelectorAll('.dropdown-option').forEach(opt => opt.classList.remove('selected'));
+    closeCourseDropdown();
+  }
+
+  // Fermer le dropdown quand on clique en dehors
+  window.addEventListener('click', function(e) {
+    if (!e.target.closest('#custom-course-select')) {
+      closeCourseDropdown();
+    }
+  });
+
+  /* MODALE SIMPLE SANS CHOIX DE DATE : DIRECTEMENT RATTACHÉE AU JOUR CLIQUÉ   */
+  /* ========================================================================= */
+  function ouvrirModalAjout(dayId) {
+    const wData = WEEKS_DATA[currentWeek];
+    const dayObj = wData.days.find(d => d.id === dayId);
+    if (!dayObj) return;
+
+    document.getElementById('inp-task-id').value = '';
+    document.getElementById('inp-task-day').value = dayId;
+    document.getElementById('inp-task-week').value = currentWeek;
+
+    document.getElementById('modal-heading-text').textContent = 'Ajouter une tâche';
+    document.getElementById('modal-day-badge').textContent = `📅 ${dayObj.dateStr} (Semaine ${currentWeek})`;
+    document.getElementById('btn-modal-submit-label').textContent = 'Créer la tâche';
+    document.getElementById('modal-icon-add').style.display = 'block';
+    document.getElementById('modal-icon-edit').style.display = 'none';
+    document.getElementById('btn-modal-suppr').style.display = 'none';
+
+    document.getElementById('inp-titre').value = '';
+    resetCourseSelect();
+    choisirPrio(document.querySelector('.prio-pill-btn[data-prio="Moyen"]'));
+    document.getElementById('inp-timer-minutes').value = '';
+    majBoutonEffacer(0);
+    changerModeTemps('none');
+
+    document.getElementById('modal-task').classList.add('open');
+    setTimeout(() => document.getElementById('inp-titre').focus(), 60);
+  }
+
+  function ouvrirModalEdition(id) {
+    const t = mesTaches.find(x => x.id === id);
+    if (!t) return;
+
+    const wData = WEEKS_DATA[t.week] || WEEKS_DATA[currentWeek];
+    const dayObj = wData.days.find(d => d.id === t.day);
+
+    document.getElementById('inp-task-id').value = t.id;
+    document.getElementById('inp-task-day').value = t.day;
+    document.getElementById('inp-task-week').value = t.week;
+
+    document.getElementById('modal-heading-text').textContent = 'Modifier la tâche';
+    document.getElementById('modal-day-badge').textContent = `📅 ${dayObj ? dayObj.dateStr : t.day} (Semaine ${t.week})`;
+    document.getElementById('btn-modal-submit-label').textContent = 'Enregistrer les modifications';
+    document.getElementById('modal-icon-add').style.display = 'none';
+    document.getElementById('modal-icon-edit').style.display = 'block';
+    document.getElementById('btn-modal-suppr').style.display = 'block';
+
+    document.getElementById('inp-titre').value = t.title || '';
+        if (t.course) {
+      const optEl = document.querySelector(`.dropdown-option[data-value="${t.course}"]`);
+      const prof = optEl && optEl.querySelector('.dropdown-opt-prof') ? optEl.querySelector('.dropdown-opt-prof').textContent : '';
+      const dot = optEl && optEl.querySelector('.dropdown-opt-dot') ? optEl.querySelector('.dropdown-opt-dot').style.background : 'var(--muted)';
+      selectCourse(t.course, prof, dot);
+    } else {
+      resetCourseSelect();
+    }
+
+    const prioBtn = document.querySelector(`.prio-pill-btn[data-prio="${t.prio}"]`) || document.querySelector('.prio-pill-btn[data-prio="Moyen"]');
+    choisirPrio(prioBtn);
+
+    const typeT = t.timeType || 'none';
+    changerModeTemps(typeT);
+    if (typeT === 'timer') {
+      const minVal = parseInt(t.timeValue || '0', 10);
+      document.getElementById('inp-timer-minutes').value = minVal || '';
+      majBoutonEffacer(minVal);
+    } else if (typeT === 'deadline') {
+      document.getElementById('inp-deadline-heure').value = t.timeValue || '17:00';
+    } else {
+      document.getElementById('inp-timer-minutes').value = '';
+      majBoutonEffacer(0);
+    }
+
+    document.getElementById('modal-task').classList.add('open');
+    setTimeout(() => document.getElementById('inp-titre').focus(), 60);
+  }
+
+  function fermerModal() {
+    document.getElementById('modal-task').classList.remove('open');
+    document.getElementById('inp-titre').value = '';
+  }
+
+  function choisirPrio(btn) {
+    document.querySelectorAll('.prio-pill-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('inp-prio').value = btn.dataset.prio;
+  }
+
+  let modeTempsActif = 'none';
+  function changerModeTemps(mode) {
+    modeTempsActif = mode;
+    document.getElementById('tab-mode-none').classList.toggle('active', mode === 'none');
+    document.getElementById('tab-mode-timer').classList.toggle('active', mode === 'timer');
+    document.getElementById('tab-mode-deadline').classList.toggle('active', mode === 'deadline');
+    
+    document.getElementById('bloc-temps-none').style.display = (mode === 'none') ? 'block' : 'none';
+    document.getElementById('bloc-temps-timer').style.display = (mode === 'timer') ? 'flex' : 'none';
+    document.getElementById('bloc-temps-deadline').style.display = (mode === 'deadline') ? 'block' : 'none';
+
+    if (mode === 'timer') {
+      setTimeout(() => document.getElementById('inp-timer-minutes').focus(), 50);
+    }
+  }
+
+  /* BOUTONS D'ADDITION CUMULATIVE DE TEMPS */
+  function ajouterDuree(min) {
+    const inp = document.getElementById('inp-timer-minutes');
+    if (!inp) return;
+    let valCourante = parseInt(inp.value, 10);
+    if (isNaN(valCourante) || valCourante < 0) valCourante = 0;
+    const nouvelleVal = valCourante + min;
+    inp.value = nouvelleVal;
+    majBoutonEffacer(nouvelleVal);
+
+    // Feedback tactile fluide sur la boîte
+    const box = document.getElementById('custom-duration-box');
+    if (box) {
+      box.classList.add('pulse');
+      setTimeout(() => box.classList.remove('pulse'), 180);
+    }
+  }
+
+  function reinitialiserDuree() {
+    const inp = document.getElementById('inp-timer-minutes');
+    if (inp) {
+      inp.value = '';
+      majBoutonEffacer(0);
+      inp.focus();
+    }
+  }
+
+  function majBoutonEffacer(val) {
+    const btn = document.getElementById('btn-clear-timer');
+    if (btn) btn.style.display = (val > 0) ? 'block' : 'none';
+  }
+
+  function onTimerInput(val) {
+    majBoutonEffacer(parseInt(val, 10) || 0);
+  }
+
+  function sauvegarderFormTache(e) {
+    e.preventDefault();
+    const titre = document.getElementById('inp-titre').value.trim();
+    if (!titre) return;
+
+    const editId = document.getElementById('inp-task-id').value;
+    const jour = document.getElementById('inp-task-day').value;
+    const week = parseInt(document.getElementById('inp-task-week').value, 10) || currentWeek;
+
+    const prio = document.getElementById('inp-prio').value;
+    const course = document.getElementById('inp-matiere').value;
+
+    let timeType = modeTempsActif;
+    let timeValue = '';
+    if (modeTempsActif === 'timer') {
+      const minSaisi = parseInt(document.getElementById('inp-timer-minutes').value, 10);
+      if (minSaisi > 0) {
+        timeValue = minSaisi.toString();
+      } else {
+        timeType = 'none';
+      }
+    } else if (modeTempsActif === 'deadline') {
+      timeValue = document.getElementById('inp-deadline-heure').value || '17:00';
+    }
+
+    if (editId) {
+      const t = mesTaches.find(x => x.id === editId);
+      if (t) {
+        t.title = titre;
+        t.prio = prio;
+        t.course = course;
+        t.timeType = timeType;
+        if (t.timeValue !== timeValue) {
+          t.timeValue = timeValue;
+          t.remainingSeconds = parseInt(timeValue || '45', 10) * 60;
+          t.timerStatus = 'idle';
+        }
+      }
+    } else {
+      const nouvelle = {
+        id: 't_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+        week: week,
+        day: jour,
+        title: titre,
+        prio: prio,
+        course: course,
+        timeType: timeType,
+        timeValue: timeValue,
+        remainingSeconds: parseInt(timeValue || '45', 10) * 60,
+        timerStatus: 'idle',
+        done: false
+      };
+      mesTaches.push(nouvelle);
+    }
+
+    sauvegarder();
+    fermerModal();
+  }
+
+  function resetBoard() {
+    arreterIntervalle();
+    activeTimerTaskId = null;
+    mesTaches = [];
+    sauvegarder();
+  }
+
+  function echappe(s) {
+    return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  /* ========================================================================= */
+  /* SPLITTER RESIZE AVEC MÉMOIRE PERSISTANTE (LOCALSTORAGE & RATIO DYNAMIQUE)  */
+  /* ========================================================================= */
+  const splitter = document.getElementById('cal-splitter');
+  const calEl = document.getElementById('cal');
+  const tasksSec = document.getElementById('linear-tasks');
+  let isResizing = false;
+  let startY = 0;
+  let startHeight = 0;
+
+  // Clés de stockage
+  const STORAGE_KEY_HEIGHT = 'ezh_cal_custom_h_v2';
+  const STORAGE_KEY_RATIO = 'ezh_cal_custom_ratio_v2';
+
+  function appliquerTailleMemoire() {
+    try {
+      const savedRatio = parseFloat(localStorage.getItem(STORAGE_KEY_RATIO));
+      const savedH = parseInt(localStorage.getItem(STORAGE_KEY_HEIGHT), 10);
+      
+      const totalDispo = window.innerHeight - 300;
+      if (totalDispo > 450) {
+        if (!isNaN(savedRatio) && savedRatio > 0.15 && savedRatio < 0.85) {
+          const targetH = Math.round(totalDispo * savedRatio);
+          calEl.style.height = targetH + 'px';
+        } else if (!isNaN(savedH) && savedH > 280 && savedH < window.innerHeight - 220) {
+          calEl.style.height = savedH + 'px';
+        }
+      }
+    } catch(e) {
+      console.warn('Erreur chargement mémoire redimensionnement', e);
+    }
+  }
+
+  // Application immédiate à l'ouverture de page
+  appliquerTailleMemoire();
+  window.addEventListener('resize', appliquerTailleMemoire);
+
+  function demarrerResize(clientY) {
+    isResizing = true;
+    startY = clientY;
+    startHeight = calEl.offsetHeight;
+    document.body.classList.add('is-resizing');
+  }
+
+  function traiterResize(clientY) {
+    if (!isResizing) return;
+    const dy = clientY - startY;
+    let newH = startHeight + dy;
+    const minH = 260;
+    const maxH = window.innerHeight - 240;
+    if (newH < minH) newH = minH;
+    if (newH > maxH) newH = maxH;
+    
+    calEl.style.height = newH + 'px';
+
+    // Sauvegarde en mémoire locale (pixels absolus + ratio proportionnel)
+    try {
+      const totalDispo = window.innerHeight - 300;
+      const ratio = Math.max(0.2, Math.min(0.8, newH / totalDispo));
+      localStorage.setItem(STORAGE_KEY_HEIGHT, newH);
+      localStorage.setItem(STORAGE_KEY_RATIO, ratio.toFixed(4));
+    } catch(e) {}
+  }
+
+  function arreterResize() {
+    if (isResizing) {
+      isResizing = false;
+      document.body.classList.remove('is-resizing');
+    }
+  }
+
+  // Événements Souris
+  splitter.addEventListener('mousedown', function(e) {
+    demarrerResize(e.clientY);
+    e.preventDefault();
+  });
+  window.addEventListener('mousemove', function(e) {
+    traiterResize(e.clientY);
+  });
+  window.addEventListener('mouseup', arreterResize);
+
+  // Événements Tactiles / Trackpad
+  splitter.addEventListener('touchstart', function(e) {
+    if (e.touches.length === 1) demarrerResize(e.touches[0].clientY);
+  }, { passive: true });
+  window.addEventListener('touchmove', function(e) {
+    if (e.touches.length === 1) traiterResize(e.touches[0].clientY);
+  }, { passive: true });
+  window.addEventListener('touchend', arreterResize);
+
+  // Double-clic sur la poignée "Ajuster" : réinitialise à la répartition par défaut (50/50 équilibré)
+  splitter.addEventListener('dblclick', function(e) {
+    e.preventDefault();
+    try {
+      localStorage.removeItem(STORAGE_KEY_HEIGHT);
+      localStorage.removeItem(STORAGE_KEY_RATIO);
+    } catch(e) {}
+    calEl.style.height = '';
+    appliquerTailleMemoire();
+  });
+
+  window.addEventListener('keydown', e => {
+    if (e.key === 'Escape') fermerModal();
+    if (e.key === 'ArrowLeft') changerSemaine(-1);
+    if (e.key === 'ArrowRight') changerSemaine(1);
+  });
+
+  // Rendu initial
+  rendreVue();
+</script>
+</body>
+</html>

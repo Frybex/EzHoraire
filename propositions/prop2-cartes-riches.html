@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Proposition 2 : Cartes Riches Proportionnelles</title>
+<style>
+  :root {
+    --accent: #d14d8a;
+    --accent-soft: rgba(209, 77, 138, .12);
+    --wash: rgba(209, 77, 138, .13);
+    --bg: #fdf1f6;
+    --surface: #ffffff;
+    --ink: #17191d;
+    --muted: #6d7482;
+    --line: #ebdce4;
+    --free: #18794e;
+    --seg-track: #f9e0ec;
+    --relief-haut: #ffffff;
+    --relief-bas: #faebf3;
+    --reflet: rgba(255, 255, 255, .9);
+    --ombre-btn: 0 1px 2px rgba(23, 32, 68, .06), 0 2px 8px -4px rgba(23, 32, 68, .08);
+    --shadow: 0 16px 40px -24px rgba(23, 32, 68, .28);
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background-color: var(--bg);
+    color: var(--ink);
+    font-family: var(--font);
+    font-size: 15px;
+    line-height: 1.45;
+    padding: 0 40px 30px;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .prop-banner {
+    background: #17191d; color: #ffffff;
+    margin: 0 -40px 14px; padding: 12px 40px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: .88rem; z-index: 50; flex-shrink: 0;
+  }
+  .prop-banner-title { font-weight: 750; display: flex; align-items: center; gap: 12px; }
+  .prop-badge { background: #d14d8a; color: #fff; padding: 4px 12px; border-radius: 999px; font-size: .75rem; font-weight: 700; }
+  .prop-banner-desc { color: #a1a7b5; font-size: .84rem; }
+
+  .topbar {
+    display: flex; justify-content: space-between; align-items: center;
+    height: 54px; margin-bottom: 8px; flex-shrink: 0;
+  }
+  .title { font-size: 1.25rem; font-weight: 750; letter-spacing: -.02em; }
+  .title span { color: var(--accent); }
+  
+  .seg {
+    display: flex; background: var(--seg-track); padding: 4px; border-radius: 999px;
+    gap: 4px; box-shadow: inset 0 1px 3px rgba(0,0,0,.06);
+  }
+  .seg button {
+    border: none; background: transparent; padding: 7px 22px; border-radius: 999px;
+    font-size: .88rem; font-weight: 600; color: var(--muted); cursor: pointer;
+  }
+  .seg button.active {
+    background: #ffffff; color: var(--ink);
+    box-shadow: 0 2px 8px rgba(0,0,0,.08); font-weight: 700;
+  }
+
+  .user-avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: var(--relief-bas); border: 1px solid var(--line);
+    display: grid; place-items: center; font-weight: 700; font-size: .88rem;
+  }
+
+  .week-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 12px; flex-shrink: 0;
+  }
+  .week-cur { display: flex; align-items: baseline; gap: 14px; }
+  .week-cur strong { font-size: 2.1rem; font-weight: 750; letter-spacing: -.04em; }
+  .week-cur span { color: var(--muted); font-size: 1.05rem; }
+
+  .btn-relief {
+    height: 38px; padding: 0 16px; border-radius: 999px; border: none;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    font-size: .88rem; font-weight: 600; color: var(--ink); cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-relief.icon { width: 38px; padding: 0; justify-content: center; }
+
+  .cal {
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    border-radius: 24px; padding: 16px 20px 18px 0;
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    display: flex; flex-direction: column; isolation: isolate;
+  }
+  .cal-head {
+    display: grid; grid-template-columns: 58px repeat(5, 1fr); column-gap: 10px;
+    padding-bottom: 12px; flex-shrink: 0;
+  }
+  .cal-jour { display: flex; align-items: center; gap: 8px; padding: 0 8px; }
+  .cal-jour span { color: var(--muted); font-size: .78rem; font-weight: 650; }
+  .cal-jour strong {
+    min-width: 34px; height: 34px; border-radius: 999px; display: grid; place-items: center;
+    font-size: 1.3rem; font-weight: 600;
+  }
+  .cal-jour.today span, .cal-jour.today strong { color: var(--accent); }
+  .cal-jour small { margin-left: auto; color: var(--muted); font-size: .78rem; }
+  .cal-jour small.libre { color: var(--free); font-weight: 600; }
+
+  .cal-body {
+    display: grid; grid-template-columns: 58px repeat(5, 1fr); column-gap: 10px;
+    flex: 1; min-height: 0; position: relative;
+  }
+  .cal-hours { position: relative; }
+  .cal-hours span {
+    position: absolute; right: 12px; transform: translateY(-50%);
+    color: var(--muted); font-size: .74rem; font-variant-numeric: tabular-nums;
+  }
+  .cal-col { position: relative; border-radius: 12px; }
+
+  .cal-col.today::before {
+    content: ""; position: absolute; z-index: -1;
+    top: -62px; bottom: -22px; left: -5px; right: -5px; border-radius: 20px;
+    background: var(--surface);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 26%, var(--line)),
+                inset 0 1px 0 var(--reflet),
+                0 20px 48px -20px rgba(15, 20, 40, .3);
+  }
+
+  .cal-libre {
+    position: absolute; inset: 0; border-radius: 12px;
+    background: repeating-linear-gradient(45deg, transparent, transparent 12px, rgba(109,116,130,.06) 12px, rgba(109,116,130,.06) 24px);
+    display: grid; place-items: center; color: var(--muted);
+  }
+  .cal-libre p { background: var(--surface); padding: 8px 16px; border-radius: 12px; font-weight: 650; }
+
+  .ev {
+    position: absolute; border-radius: 11px; padding: 10px 12px;
+    display: flex; flex-direction: column; overflow: hidden;
+    font-size: .8rem; text-align: left; cursor: pointer;
+  }
+  .ev.rose { background: #fbebf3; color: #6b1d40; }
+  .ev.menthe { background: #eaf7f2; color: #165b43; }
+  .ev.bleu { background: #ebf2ff; color: #173b7d; }
+  .ev.jaune { background: #fdf5df; color: #694a08; }
+  .ev.mauve { background: #f4ecfc; color: #4b1f79; }
+
+  .ev .et { font-weight: 700; font-size: .86rem; line-height: 1.25; }
+  .ev .es { font-weight: 600; opacity: .88; font-size: .8rem; }
+  .ev .eb { display: flex; justify-content: space-between; font-size: .74rem; opacity: .75; margin-top: auto; }
+</style>
+</head>
+
+<div class="prop-banner">
+  <div class="prop-banner-title">
+    <span class="prop-badge">Proposition 2</span>
+    <span>Cartes Riches & Typographie Fluide (Plein écran optimisé)</span>
+  </div>
+  <div class="prop-banner-desc">La grille occupe 100% de la hauteur, mais les cartes s'enrichissent au lieu d'avoir un vide béant</div>
+</div>
+
+<div class="topbar">
+  <div class="title">Ez<span>Horaire</span></div>
+  <div class="seg">
+    <button class="active">Maxence</button>
+    <button>Lilian</button>
+    <button>Anthony</button>
+  </div>
+  <div class="user-avatar">MB</div>
+</div>
+
+<div class="week-row">
+  <div class="week-cur">
+    <strong>Semaine 1</strong>
+    <span>14 – 18 sept. 2026</span>
+  </div>
+  <div style="display: flex; gap: 8px;">
+    <button class="btn-relief icon">&lt;</button>
+    <button class="btn-relief icon">&gt;</button>
+    <button class="btn-relief">📄 PDF officiel</button>
+  </div>
+</div>
+
+<!-- Grille pleine hauteur avec enrichissement éditorial des cartes -->
+<div class="cal" style="flex: 1; min-height: 0;">
+  <div class="cal-head">
+    <div></div>
+    <div class="cal-jour"><span>Lun</span><strong>14</strong><small>8h15 – 16h30</small></div>
+    <div class="cal-jour"><span>Mar</span><strong>15</strong><small>8h15 – 15h30</small></div>
+    <div class="cal-jour"><span>Mer</span><strong>16</strong><small>8h15 – 12h30</small></div>
+    <div class="cal-jour today"><span>Jeu</span><strong>17</strong><small>8h30 – 17h30</small></div>
+    <div class="cal-jour"><span>Ven</span><strong>18</strong><small class="libre">Libre</small></div>
+  </div>
+
+  <div class="cal-body">
+    <!-- Lignes de repère douces toutes les heures -->
+    <div style="position: absolute; left: 0; right: 0; top: 10%; height: 1px; background: rgba(0,0,0,.04);"></div>
+    <div style="position: absolute; left: 0; right: 0; top: 20%; height: 1px; background: rgba(0,0,0,.04);"></div>
+    <div style="position: absolute; left: 0; right: 0; top: 30%; height: 1px; background: rgba(0,0,0,.04);"></div>
+    <div style="position: absolute; left: 0; right: 0; top: 40%; height: 1px; background: rgba(0,0,0,.04);"></div>
+    <div style="position: absolute; left: 0; right: 0; top: 50%; height: 1.5px; background: rgba(0,0,0,.08);"></div>
+    <div style="position: absolute; left: 0; right: 0; top: 60%; height: 1px; background: rgba(0,0,0,.04);"></div>
+    <div style="position: absolute; left: 0; right: 0; top: 70%; height: 1px; background: rgba(0,0,0,.04);"></div>
+    <div style="position: absolute; left: 0; right: 0; top: 80%; height: 1px; background: rgba(0,0,0,.04);"></div>
+    <div style="position: absolute; left: 0; right: 0; top: 90%; height: 1px; background: rgba(0,0,0,.04);"></div>
+
+    <div class="cal-hours">
+      <span style="top: 0%">8h</span><span style="top: 10%">9h</span>
+      <span style="top: 20%">10h</span><span style="top: 30%">11h</span>
+      <span style="top: 40%">12h</span><span style="top: 50%">13h</span>
+      <span style="top: 60%">14h</span><span style="top: 70%">15h</span>
+      <span style="top: 80%">16h</span><span style="top: 90%">17h</span>
+      <span style="top: 100%">18h</span>
+    </div>
+
+    <!-- Lundi -->
+    <div class="cal-col">
+      <div class="ev rose" style="top: 2.5%; height: 42.5%; left: 0; right: 0; padding: 14px 14px; gap: 8px;">
+        <div class="et" style="font-size: 1.02rem;">Modélisation 3Dconstruction</div>
+        <div style="display: inline-block; padding: 3px 8px; border-radius: 6px; background: rgba(0,0,0,.06); font-weight: 700; font-size: .78rem; width: fit-content;">Salle 1/14 · Bâtiment 1</div>
+        <div style="display: flex; align-items: center; gap: 6px; font-size: .82rem; font-weight: 600; opacity: .85;">
+          <span style="width: 20px; height: 20px; border-radius: 50%; background: rgba(0,0,0,.1); display: grid; place-items: center; font-size: .7rem;">S</span>
+          Prof. Souris
+        </div>
+        <div style="font-size: .76rem; opacity: .7; margin-top: 4px;">Séance laboratoire · 4h15</div>
+        <div class="eb" style="font-size: .8rem; font-weight: 600;"><span>Matin</span><span>8h15 – 12h30</span></div>
+      </div>
+      <div class="ev menthe" style="top: 55%; height: 30%; left: 0; right: 0; padding: 12px 14px; gap: 6px;">
+        <div class="et" style="font-size: .98rem;">Mathématique appliquée</div>
+        <div style="display: inline-block; padding: 3px 8px; border-radius: 6px; background: rgba(0,0,0,.06); font-weight: 700; font-size: .78rem; width: fit-content;">Salle 2/11</div>
+        <div style="display: flex; align-items: center; gap: 6px; font-size: .8rem; font-weight: 600; opacity: .85;">
+          <span style="width: 18px; height: 18px; border-radius: 50%; background: rgba(0,0,0,.1); display: grid; place-items: center; font-size: .65rem;">L</span>
+          Prof. Lebailly
+        </div>
+        <div class="eb" style="font-size: .78rem;"><span>Après-midi</span><span>13h30 – 16h30</span></div>
+      </div>
+    </div>
+
+    <!-- Mardi -->
+    <div class="cal-col">
+      <div class="ev rose" style="top: 2.5%; height: 42.5%; left: 0; right: 0; padding: 14px 14px; gap: 8px;">
+        <div class="et" style="font-size: 1.02rem;">Modélisation 3Dconstruction</div>
+        <div style="display: inline-block; padding: 3px 8px; border-radius: 6px; background: rgba(0,0,0,.06); font-weight: 700; font-size: .78rem; width: fit-content;">Salle 1/18 · Bâtiment 1</div>
+        <div style="display: flex; align-items: center; gap: 6px; font-size: .82rem; font-weight: 600; opacity: .85;">
+          <span style="width: 20px; height: 20px; border-radius: 50%; background: rgba(0,0,0,.1); display: grid; place-items: center; font-size: .7rem;">S</span>
+          Prof. Souris
+        </div>
+        <div class="eb" style="font-size: .8rem;"><span>Matin</span><span>8h15 – 12h30</span></div>
+      </div>
+      <div class="ev bleu" style="top: 55%; height: 20%; left: 0; right: 0; padding: 12px 14px; gap: 6px;">
+        <div class="et" style="font-size: .95rem;">Anglais</div>
+        <div style="display: inline-block; padding: 2px 7px; border-radius: 6px; background: rgba(0,0,0,.06); font-weight: 700; font-size: .75rem; width: fit-content;">Salle 2/17A</div>
+        <div class="eb"><span>Prof. Delmotte</span><span>13h30 – 15h30</span></div>
+      </div>
+    </div>
+
+    <!-- Mercredi -->
+    <div class="cal-col">
+      <div class="ev menthe" style="top: 2.5%; height: 20%; left: 0; right: 0; padding: 10px 12px;">
+        <div class="et" style="font-size: .92rem;">Traitement du son</div>
+        <div style="display: inline-block; padding: 2px 6px; border-radius: 5px; background: rgba(0,0,0,.06); font-weight: 700; font-size: .72rem; width: fit-content; margin: 2px 0;">Salle 1/32</div>
+        <div class="eb"><span>Sottiaux</span><span>8h15 – 10h15</span></div>
+      </div>
+      <div class="ev menthe" style="top: 25%; height: 20%; left: 0; right: 0; padding: 10px 12px;">
+        <div class="et" style="font-size: .92rem;">Mathématique appliquée</div>
+        <div style="display: inline-block; padding: 2px 6px; border-radius: 5px; background: rgba(0,0,0,.06); font-weight: 700; font-size: .72rem; width: fit-content; margin: 2px 0;">Salle 1/36A</div>
+        <div class="eb"><span>Lebailly</span><span>10h30 – 12h30</span></div>
+      </div>
+    </div>
+
+    <!-- Jeudi (Aujourd'hui) -->
+    <div class="cal-col today">
+      <div class="ev jaune" style="top: 5%; height: 40%; left: 0; right: 0; padding: 16px 16px; gap: 10px;">
+        <div class="et" style="font-size: 1.12rem; line-height: 1.2;">Colorimétrie</div>
+        <div style="display: inline-block; padding: 4px 10px; border-radius: 8px; background: rgba(0,0,0,.08); font-weight: 750; font-size: .82rem; width: fit-content;">Salle 2/10E · Étage 2</div>
+        <div style="display: flex; align-items: center; gap: 8px; font-size: .86rem; font-weight: 650; opacity: .9;">
+          <span style="width: 22px; height: 22px; border-radius: 50%; background: rgba(0,0,0,.15); display: grid; place-items: center; font-size: .72rem; font-weight: 750;">G</span>
+          Mme Gryspeert
+        </div>
+        <div style="font-size: .8rem; color: #694a08; opacity: .85;">Cours Magistral · 4h00</div>
+        <div class="eb" style="font-size: .82rem; font-weight: 700;">
+          <span style="background: rgba(0,0,0,.08); padding: 2px 8px; border-radius: 999px;">Terminé</span>
+          <span>8h30 – 12h30</span>
+        </div>
+      </div>
+      <div class="ev mauve" style="top: 55%; height: 40%; left: 0; right: 0; padding: 16px 16px; gap: 10px;">
+        <div class="et" style="font-size: 1.12rem; line-height: 1.2;">Création graphique 3D</div>
+        <div style="display: inline-block; padding: 4px 10px; border-radius: 8px; background: rgba(0,0,0,.08); font-weight: 750; font-size: .82rem; width: fit-content;">Salle 1/16 · Atelier 3D</div>
+        <div style="display: flex; align-items: center; gap: 8px; font-size: .86rem; font-weight: 650; opacity: .9;">
+          <span style="width: 22px; height: 22px; border-radius: 50%; background: rgba(0,0,0,.15); display: grid; place-items: center; font-size: .72rem; font-weight: 750;">D</span>
+          M. D'Hondt
+        </div>
+        <div style="font-size: .8rem; color: #4b1f79; opacity: .85;">Travaux Pratiques · 4h00</div>
+        <div class="eb" style="font-size: .82rem; font-weight: 700;">
+          <span style="background: rgba(36,86,224,.15); color: #1d4fd7; padding: 2px 8px; border-radius: 999px;">En cours</span>
+          <span>13h30 – 17h30</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vendredi -->
+    <div class="cal-col">
+      <div class="cal-libre"><p style="font-size: 1.05rem;">Pas de cours</p></div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

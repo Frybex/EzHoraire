@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<!-- EzHoraire — page « nouveau mot de passe ».
+     Atterrissage du lien reçu par email (emails/reset-password.html).
+
+     Elle vérifie le jeton, affiche l'adresse du compte concerné, fait
+     choisir le nouveau mot de passe et l'enregistre dans Supabase, puis
+     renvoie sur l'app déjà connectée. Trois formes de retour possibles
+     selon la configuration de Supabase, toutes gérées ici :
+       ?token_hash=…&type=recovery   (modèle d'email : verifyOtp)
+       ?code=…                       (PKCE : exchangeCodeForSession)
+       #access_token=…&refresh_token=…  (implicite : setSession)
+     Page autonome : mêmes jetons visuels que index.html (relief, creux,
+     halo) mais aucun code partagé, pour rester légère à charger. -->
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f4f5f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#101216" media="(prefers-color-scheme: dark)">
+<title>Nouveau mot de passe — EzHoraire</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --ink: #17191d;
+    --muted: #6d7482;
+    --line: #e4e7ec;
+    --accent: #2456e0;
+    --free: #18794e;
+    --warn: #b06a10;
+    --danger: #d42a3c;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #101216;
+      --surface: #171a20;
+      --ink: #f0f3f7;
+      --muted: #98a1b1;
+      --line: #262b34;
+      --accent: #8ba6ff;
+      --free: #5fce96;
+      --warn: #e2a24a;
+      --danger: #ff6b7a;
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    /* Mêmes reliefs que l'app : dégradé vertical + reflet d'1 px en haut ;
+       « creux » pour les surfaces gravées (champs). */
+    --relief-haut: color-mix(in srgb, var(--bg), #fff 78%);
+    --relief-bas: color-mix(in srgb, var(--bg), #fff 44%);
+    --reflet: rgba(255, 255, 255, .9);
+    --ombre-btn: 0 1px 2px rgba(23, 32, 68, .06), 0 2px 8px -4px rgba(23, 32, 68, .08);
+    --creux: color-mix(in srgb, var(--bg), #fff 60%);
+    --creux-ombre: rgba(23, 32, 68, .07);
+    --ombre-carte: 0 40px 90px -50px rgba(23, 32, 68, .55), 0 2px 8px -4px rgba(23, 32, 68, .12);
+    margin: 0; color: var(--ink); background-color: var(--bg);
+    font-family: var(--font); font-size: 17px; line-height: 1.45;
+    -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+  }
+  @media (prefers-color-scheme: dark) {
+    body {
+      --relief-haut: color-mix(in srgb, var(--bg), #fff 7%);
+      --relief-bas: color-mix(in srgb, var(--bg), #fff 2.5%);
+      --reflet: rgba(255, 255, 255, .06);
+      --ombre-btn: 0 1px 2px rgba(0, 0, 0, .4), 0 4px 12px -6px rgba(0, 0, 0, .6);
+      --creux: color-mix(in srgb, var(--bg), #000 26%);
+      --creux-ombre: rgba(0, 0, 0, .4);
+      --ombre-carte: 0 40px 100px -50px rgba(0, 0, 0, .9), 0 2px 10px -4px rgba(0, 0, 0, .5);
+    }
+  }
+  [hidden] { display: none !important; }
+
+  /* Ambiance : deux voiles d'accent très diffus, qui dérivent lentement.
+     Purement décoratif, coupé si l'utilisateur limite les animations. */
+  .aurore { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+  .aurore::before, .aurore::after {
+    content: ""; position: absolute; width: 60vmax; height: 60vmax; border-radius: 50%;
+    filter: blur(80px); opacity: .5;
+  }
+  .aurore::before {
+    top: -26vmax; left: -18vmax;
+    background: radial-gradient(circle, color-mix(in srgb, var(--accent) 26%, transparent), transparent 62%);
+    animation: derive-a 26s ease-in-out infinite alternate;
+  }
+  .aurore::after {
+    bottom: -30vmax; right: -22vmax;
+    background: radial-gradient(circle, color-mix(in srgb, var(--accent) 17%, transparent), transparent 62%);
+    animation: derive-b 34s ease-in-out infinite alternate;
+  }
+  @keyframes derive-a { to { transform: translate3d(9vmax, 6vmax, 0) scale(1.14); } }
+  @keyframes derive-b { to { transform: translate3d(-8vmax, -7vmax, 0) scale(1.1); } }
+
+  .page {
+    position: relative; z-index: 1;
+    min-height: 100%; min-height: 100dvh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 22px;
+    padding: calc(28px + env(safe-area-inset-top)) 16px calc(28px + env(safe-area-inset-bottom));
+  }
+
+  /* Marque : le logo de l'app (trois barres) + le mot-symbole. */
+  .marque {
+    display: flex; align-items: center; gap: 11px;
+    color: inherit; text-decoration: none; font-weight: 700; font-size: 1.05rem; letter-spacing: -.02em;
+  }
+  .marque .ac { color: var(--accent); }
+  .marque svg { flex: none; border-radius: 9px; }
+
+  .carte {
+    width: 100%; max-width: 452px; overflow: hidden;
+    border-radius: 26px; background: var(--surface);
+    box-shadow: inset 0 0 0 1px var(--line), var(--ombre-carte);
+    animation: monte .5s cubic-bezier(.16, 1, .3, 1) both;
+  }
+  @keyframes monte { from { opacity: 0; transform: translateY(14px) scale(.985); } }
+  /* Filet d'accent en haut de la carte : la seule touche de couleur pleine. */
+  .filet {
+    height: 4px;
+    background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 55%, var(--surface)) 60%, color-mix(in srgb, var(--accent) 22%, var(--surface)));
+  }
+  .dedans { padding: 28px 26px 26px; }
+  @media (max-width: 400px) { .dedans { padding: 24px 20px 22px; } }
+
+  /* Halo qui suit le pointeur, comme sur l'écran de connexion de l'app. */
+  :where(.halo) { position: relative; }
+  .halo { isolation: isolate; }
+  .halo::before, .halo::after {
+    content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    opacity: 0; transition: opacity .25s;
+  }
+  .halo::before {
+    z-index: -1;
+    background: radial-gradient(180px circle at var(--mx, 50%) var(--my, 50%),
+      color-mix(in srgb, var(--ink) 7%, transparent), transparent 70%);
+  }
+  .halo::after {
+    z-index: 2; padding: 1px;
+    background: radial-gradient(110px circle at var(--mx, 50%) var(--my, 50%),
+      color-mix(in srgb, var(--ink) 50%, transparent), transparent 75%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .halo:hover::before, .halo:hover::after { opacity: 1; }
+  }
+
+  /* Un seul état visible à la fois ; l'apparition est douce. */
+  .etat { animation: entre .32s ease both; }
+  @keyframes entre { from { opacity: 0; transform: translateY(6px); } }
+
+  .sur-titre {
+    margin: 0 0 10px; color: var(--accent);
+    font-size: .68rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+  }
+  .titre {
+    margin: 0 0 12px; font-size: clamp(1.75rem, 7.6vw, 2.05rem); font-weight: 750;
+    line-height: 1.04; letter-spacing: -.045em; text-wrap: balance;
+  }
+  .sous { margin: 0 0 20px; color: var(--muted); font-size: .95rem; line-height: 1.5; }
+
+  /* Compte concerné : l'adresse qu'on est en train de réinitialiser. */
+  .chip {
+    display: flex; align-items: center; gap: 11px; margin: 0 0 18px;
+    padding: 11px 14px; border-radius: 14px; background: var(--creux);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre);
+  }
+  .chip svg { flex: none; color: var(--muted); }
+  .chip-txt { min-width: 0; }
+  .chip-lib { display: block; color: var(--muted); font-size: .68rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+  .chip-mail { display: block; font-size: .95rem; font-weight: 650; letter-spacing: -.01em; overflow-wrap: anywhere; }
+
+  /* Champs gravés : même bloc unique que la connexion. */
+  .champs {
+    border-radius: 16px; background: var(--creux);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre), 0 1px 0 var(--reflet);
+    transition: box-shadow .25s;
+  }
+  .champs:focus-within {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 30%, transparent),
+      inset 0 1px 3px var(--creux-ombre), 0 0 0 4px color-mix(in srgb, var(--ink) 6%, transparent);
+  }
+  .champ-ligne { position: relative; display: flex; align-items: center; height: 54px; padding-left: 16px; }
+  .champ-ligne + .champ-ligne::before {
+    content: ""; position: absolute; top: 0; left: 16px; right: 16px; height: 1px; background: var(--line);
+  }
+  .champ-ico { flex: none; color: var(--muted); opacity: .75; transition: color .2s, opacity .2s; }
+  .champ-ligne:focus-within .champ-ico { color: var(--ink); opacity: 1; }
+  .champ {
+    flex: 1; min-width: 0; height: 100%; padding: 0 8px 0 12px; border: none; border-radius: 0;
+    background: none; color: var(--ink); outline: none;
+    font: inherit; font-size: 16px; letter-spacing: -.005em; -webkit-appearance: none; appearance: none;
+  }
+  .champ::placeholder { color: var(--muted); opacity: .85; }
+  .champ:-webkit-autofill { -webkit-text-fill-color: var(--ink); transition: background-color 600000s 0s; }
+  .oeil {
+    flex: none; width: 44px; height: 44px; margin-right: 5px;
+    display: grid; place-items: center; border: none; border-radius: 11px;
+    background: none; color: var(--muted); cursor: pointer; transition: color .15s;
+  }
+  .oeil:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .oeil[aria-pressed="true"] { color: var(--ink); }
+  .oeil[aria-pressed="true"] .barre-oeil { display: none; }
+  /* Coche de concordance des deux mots de passe. */
+  .ok-match {
+    flex: none; width: 44px; height: 44px; margin-right: 5px; display: grid; place-items: center;
+    color: var(--free); opacity: 0; transform: scale(.6); transition: opacity .2s, transform .25s cubic-bezier(.16, 1, .3, 1);
+  }
+  .ok-match.vu { opacity: 1; transform: none; }
+
+  /* Robustesse : quatre segments qui se remplissent + une phrase. */
+  .force { display: flex; align-items: center; gap: 10px; margin: 12px 2px 0; min-height: 20px; }
+  .jauge { display: flex; gap: 4px; flex: none; }
+  .jauge i {
+    display: block; width: 26px; height: 4px; border-radius: 999px;
+    background: var(--line); transition: background .3s, transform .3s;
+  }
+  .jauge i.on { background: var(--n-teinte, var(--muted)); }
+  .force-txt { color: var(--muted); font-size: .8rem; font-weight: 600; letter-spacing: -.01em; }
+  .force[data-n="1"] { --n-teinte: var(--danger); }
+  .force[data-n="2"] { --n-teinte: var(--warn); }
+  .force[data-n="3"], .force[data-n="4"] { --n-teinte: var(--free); }
+  .force[data-n="1"] .force-txt { color: var(--danger); }
+  .force[data-n="2"] .force-txt { color: var(--warn); }
+  .force[data-n="3"] .force-txt, .force[data-n="4"] .force-txt { color: var(--free); }
+
+  /* Bouton : relief de l'app ; seul le texte s'allume quand c'est valable. */
+  .btn {
+    overflow: hidden; display: grid; place-items: center;
+    width: 100%; height: 54px; margin-top: 16px; border: none; border-radius: 15px;
+    background-color: var(--relief-haut);
+    background-image: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    color: var(--muted);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    font: inherit; font-size: 1rem; font-weight: 650; letter-spacing: -.01em; cursor: pointer;
+    transition: color .2s, transform .12s, box-shadow .3s;
+  }
+  .btn > * { grid-area: 1 / 1; }
+  .btn:active { transform: scale(.985); }
+  .btn.pret {
+    color: var(--ink);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn),
+      0 0 0 4px color-mix(in srgb, var(--accent) 12%, transparent);
+  }
+  .btn.charge { pointer-events: none; }
+  .btn.charge .lib { visibility: hidden; }
+  .btn.charge .tourne { display: block; }
+  @media (hover: hover) and (pointer: fine) { .btn:hover { color: var(--ink); } }
+  .tourne {
+    display: none; width: 18px; height: 18px; border-radius: 50%;
+    border: 2px solid color-mix(in srgb, currentColor 22%, transparent); border-top-color: currentColor;
+    animation: tourne .7s linear infinite;
+  }
+  @keyframes tourne { to { transform: rotate(360deg); } }
+
+  .statut { margin: 14px 0 0; text-align: center; font-size: .9rem; font-weight: 600; color: var(--muted); }
+  .statut.err { color: var(--danger); }
+  .statut.info { color: var(--free); }
+
+  /* Attente de la vérification du lien. */
+  .attente { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 30px 0 26px; }
+  .attente .tourne { display: block; width: 26px; height: 26px; border-width: 2.5px; color: var(--muted); }
+  .attente p { margin: 0; color: var(--muted); font-size: .95rem; font-weight: 600; }
+
+  /* Pastille d'état (lien mort, mot de passe enregistré). */
+  .pastille {
+    width: 58px; height: 58px; margin: 6px 0 18px; border-radius: 19px; display: grid; place-items: center;
+    background: var(--creux); box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre);
+  }
+  .pastille.bien { color: var(--free); background: color-mix(in srgb, var(--free) 13%, var(--creux)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--free) 30%, transparent); }
+  .pastille.mal { color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, var(--creux)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 28%, transparent); }
+  .pastille svg { display: block; }
+  /* La coche se dessine. */
+  .trace { stroke-dasharray: 34; stroke-dashoffset: 34; animation: trace .5s .12s cubic-bezier(.16, 1, .3, 1) forwards; }
+  @keyframes trace { to { stroke-dashoffset: 0; } }
+  .cercle { stroke-dasharray: 76; stroke-dashoffset: 76; animation: trace .6s cubic-bezier(.16, 1, .3, 1) forwards; }
+
+  /* Barre de retour vers l'app après l'enregistrement. */
+  .repart { height: 3px; margin-top: 22px; border-radius: 999px; background: var(--line); overflow: hidden; }
+  .repart i { display: block; height: 100%; width: 0; border-radius: 999px; background: var(--accent); animation: remplit 1.9s linear forwards; }
+  @keyframes remplit { to { width: 100%; } }
+
+  .lien-txt {
+    display: block; margin: 16px auto 0; border: none; background: none; min-height: 44px; padding: 0 12px;
+    font: inherit; font-size: .9rem; font-weight: 600; color: var(--accent); cursor: pointer; text-decoration: none; text-align: center;
+  }
+  .lien-txt:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
+  .pied { margin: 0; color: var(--muted); font-size: .82rem; text-align: center; }
+  .pied a { color: var(--muted); text-decoration: none; font-weight: 600; }
+  .pied a:hover { color: var(--ink); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .aurore::before, .aurore::after, .carte, .etat, .trace, .cercle { animation: none; }
+    .trace, .cercle { stroke-dashoffset: 0; }
+    .repart i { animation-duration: 1.9s; }
+    .btn, .champs, .halo::before, .halo::after, .jauge i, .ok-match { transition: none; }
+  }
+</style>
+</head>
+<body>
+<div class="aurore" aria-hidden="true"></div>
+
+<main class="page">
+  <a class="marque" href="/">
+    <svg width="30" height="30" viewBox="0 0 100 100" aria-hidden="true">
+      <defs><linearGradient id="lg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#232832"/><stop offset="1" stop-color="#101216"/></linearGradient></defs>
+      <rect width="100" height="100" rx="20" fill="url(#lg)"/>
+      <rect x="21" y="22" width="58" height="15" rx="7.5" fill="#f4f5f7"/>
+      <rect x="21" y="42.5" width="40" height="15" rx="7.5" fill="#5b86ff"/>
+      <rect x="21" y="63" width="58" height="15" rx="7.5" fill="#f4f5f7"/>
+    </svg>
+    <span>Ez<span class="ac">Horaire</span></span>
+  </a>
+
+  <section class="carte halo">
+    <div class="filet" aria-hidden="true"></div>
+    <div class="dedans">
+
+      <!-- 1. Vérification du lien reçu par email -->
+      <div class="etat attente" id="v-charge">
+        <span class="tourne" aria-hidden="true"></span>
+        <p role="status">Vérification du lien…</p>
+      </div>
+
+      <!-- 2. Choix du nouveau mot de passe -->
+      <form class="etat" id="v-form" hidden autocomplete="on">
+        <p class="sur-titre">Réinitialisation</p>
+        <h1 class="titre">Choisis un nouveau mot de passe.</h1>
+
+        <div class="chip">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="5" width="18" height="14" rx="3"/><path d="M4.5 7.5 12 13l7.5-5.5"/>
+          </svg>
+          <span class="chip-txt">
+            <span class="chip-lib">Compte concerné</span>
+            <span class="chip-mail" id="mail-compte">—</span>
+          </span>
+        </div>
+
+        <!-- Champ caché : les gestionnaires de mots de passe ont besoin de
+             l'identifiant pour proposer la mise à jour de la bonne entrée. -->
+        <input type="email" id="mail-cache" autocomplete="username" tabindex="-1" aria-hidden="true"
+               style="position:absolute;opacity:0;pointer-events:none;height:0;width:0;border:0;padding:0">
+
+        <div class="champs halo">
+          <div class="champ-ligne">
+            <svg class="champ-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/>
+            </svg>
+            <input class="champ" id="mdp1" type="password" maxlength="120" placeholder="Nouveau mot de passe"
+                   aria-label="Nouveau mot de passe (6 caractères minimum)" autocomplete="new-password"
+                   autocapitalize="off" autocorrect="off" spellcheck="false">
+            <button type="button" class="oeil" id="voir" aria-label="Afficher les mots de passe" aria-pressed="false">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>
+                <path class="barre-oeil" d="M4 4l16 16"/>
+              </svg>
+            </button>
+          </div>
+          <div class="champ-ligne">
+            <svg class="champ-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/><path d="M12 14.4v2.2"/>
+            </svg>
+            <input class="champ" id="mdp2" type="password" maxlength="120" placeholder="Confirme le mot de passe"
+                   aria-label="Confirmation du nouveau mot de passe" autocomplete="new-password"
+                   autocapitalize="off" autocorrect="off" spellcheck="false">
+            <span class="ok-match" id="match" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+                   stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5 9.5 17.5 19.5 7"/></svg>
+            </span>
+          </div>
+        </div>
+
+        <div class="force" id="force" data-n="0">
+          <span class="jauge" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+          <span class="force-txt" id="force-txt">6 caractères minimum</span>
+        </div>
+
+        <button type="submit" class="btn halo" id="btn-enr">
+          <span class="lib">Enregistrer le mot de passe</span>
+          <span class="tourne" aria-hidden="true"></span>
+        </button>
+
+        <p class="statut" id="statut" role="status" hidden></p>
+      </form>
+
+      <!-- 3. Lien invalide, expiré ou déjà utilisé -->
+      <div class="etat" id="v-lien" hidden>
+        <div class="pastille mal" aria-hidden="true">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 8v5"/><path d="M12 16.5v.01"/><circle cx="12" cy="12" r="9"/>
+          </svg>
+        </div>
+        <h1 class="titre">Ce lien n'est plus valable.</h1>
+        <p class="sous" id="lien-raison">Les liens de réinitialisation expirent après 15 minutes et ne servent qu'une fois. Indique ton adresse : on t'en renvoie un tout de suite.</p>
+
+        <form id="v-renvoi" autocomplete="on">
+          <div class="champs halo">
+            <div class="champ-ligne">
+              <svg class="champ-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="5" width="18" height="14" rx="3"/><path d="M4.5 7.5 12 13l7.5-5.5"/>
+              </svg>
+              <input class="champ" id="mail-renvoi" type="email" maxlength="120" placeholder="Adresse email"
+                     aria-label="Adresse email" autocomplete="email" autocorrect="off" autocapitalize="off" spellcheck="false">
+            </div>
+          </div>
+          <button type="submit" class="btn halo" id="btn-renvoi">
+            <span class="lib">Recevoir un nouveau lien</span>
+            <span class="tourne" aria-hidden="true"></span>
+          </button>
+          <p class="statut" id="statut-renvoi" role="status" hidden></p>
+        </form>
+        <a class="lien-txt" href="/">Retour à EzHoraire</a>
+      </div>
+
+      <!-- 4. C'est enregistré -->
+      <div class="etat" id="v-ok" hidden>
+        <div class="pastille bien" aria-hidden="true">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <circle class="cercle" cx="12" cy="12" r="9"/>
+            <path class="trace" d="M7.5 12.4 10.7 15.6 16.6 9"/>
+          </svg>
+        </div>
+        <h1 class="titre">C'est enregistré.</h1>
+        <p class="sous">Ton mot de passe est à jour. On te ramène à ton horaire.</p>
+        <div class="repart" aria-hidden="true"><i></i></div>
+        <a class="lien-txt" href="/" id="lien-app">Continuer maintenant</a>
+      </div>
+
+    </div>
+  </section>
+
+  <p class="pied"><a href="/">EzHoraire</a> · <a href="/confidentialite.html">Confidentialité</a></p>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0" integrity="sha384-JBR+x8blGwjDRO63aHCGiZMD4VNiTR4ZUGA+N6ZKLf3zNt1fK8IBpcgPaMrxqWBp" crossorigin="anonymous"></script>
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var sb = null;              // client Supabase
+  var session = null;         // session ouverte par le lien de récupération
+  var MIN = 6;                // même minimum que l'app et que Supabase
+
+  /* ---------- Halo qui suit le pointeur (comme l'écran de connexion) ---------- */
+  document.addEventListener("pointermove", function (e) {
+    var el = e.target && e.target.closest ? e.target.closest(".halo") : null;
+    if (!el) return;
+    var r = el.getBoundingClientRect();
+    el.style.setProperty("--mx", (e.clientX - r.left) + "px");
+    el.style.setProperty("--my", (e.clientY - r.top) + "px");
+  }, { passive: true });
+
+  /* ---------- Écrans ---------- */
+  function montrer(id) {
+    ["v-charge", "v-form", "v-lien", "v-ok"].forEach(function (v) {
+      var el = $(v);
+      if (el) el.hidden = (v !== id);
+    });
+  }
+  function statut(el, msg, genre) {
+    if (!el) return;
+    el.hidden = !msg;
+    el.textContent = msg || "";
+    el.className = "statut" + (genre ? " " + genre : "");
+  }
+
+  /* Erreurs Supabase → phrase claire (le code est stable, le texte non). */
+  function codeAuth(err) {
+    if (!err) return "";
+    if (err.name === "AuthRetryableFetchError" || err.status === 0 || err.status >= 500) return "indisponible";
+    if (err.code) return err.code;
+    var m = String(err.message || "");
+    if (/rate limit/i.test(m)) return "over_email_send_rate_limit";
+    if (/expired|invalid/i.test(m)) return "otp_expired";
+    return "";
+  }
+  function messageAuth(err) {
+    switch (codeAuth(err)) {
+      case "otp_expired":
+      case "invalid_token": return "Lien expiré ou déjà utilisé.";
+      case "over_email_send_rate_limit":
+      case "over_request_rate_limit": return "Trop de tentatives : réessaie dans quelques minutes.";
+      case "weak_password": return "Mot de passe trop faible : choisis-en un plus long.";
+      case "same_password": return "C'est déjà ton mot de passe actuel : choisis-en un autre.";
+      case "indisponible": return "Service indisponible : réessaie dans quelques minutes.";
+      default: return "Échec : " + ((err && err.message) || "erreur inconnue") + ".";
+    }
+  }
+
+  function lienMort(raison) {
+    var p = $("lien-raison");
+    if (raison && p) p.textContent = raison;
+    montrer("v-lien");
+    try { $("mail-renvoi").focus(); } catch (e) { /* jetable */ }
+  }
+
+  /* ---------- Robustesse du mot de passe ---------- */
+  var LIBELLES = ["6 caractères minimum", "Faible", "Correct", "Solide", "Excellent"];
+  function force(v) {
+    if (v.length < MIN) return 0;
+    var variete = (/[a-z]/.test(v) ? 1 : 0) + (/[A-Z]/.test(v) ? 1 : 0)
+                + (/[0-9]/.test(v) ? 1 : 0) + (/[^A-Za-z0-9]/.test(v) ? 1 : 0);
+    var n = 1;
+    if (v.length >= 9 || variete >= 3) n = 2;
+    if ((v.length >= 12 && variete >= 2) || (v.length >= 10 && variete >= 4)) n = 3;
+    if (v.length >= 14 && variete >= 3) n = 4;
+    return n;
+  }
+
+  /* ---------- Formulaire ---------- */
+  function majForm() {
+    var v1 = $("mdp1").value, v2 = $("mdp2").value;
+    var n = force(v1);
+    var f = $("force");
+    f.setAttribute("data-n", String(n));
+    $("force-txt").textContent = v1 ? LIBELLES[n] : LIBELLES[0];
+    var barres = f.querySelectorAll(".jauge i");
+    for (var i = 0; i < barres.length; i++) barres[i].classList.toggle("on", i < n);
+    var pareils = v2.length > 0 && v1 === v2;
+    $("match").classList.toggle("vu", pareils);
+    $("btn-enr").classList.toggle("pret", v1.length >= MIN && pareils);
+  }
+
+  function enregistrer() {
+    var btn = $("btn-enr");
+    if (btn.classList.contains("charge")) return;
+    var v1 = $("mdp1").value, v2 = $("mdp2").value;
+    if (v1.length < MIN) {
+      statut($("statut"), "Mot de passe : " + MIN + " caractères minimum.", "err");
+      try { $("mdp1").focus(); } catch (e) { /* jetable */ }
+      return;
+    }
+    if (v1 !== v2) {
+      statut($("statut"), "Les deux mots de passe ne sont pas identiques.", "err");
+      try { $("mdp2").focus(); } catch (e) { /* jetable */ }
+      return;
+    }
+    if (!sb || !session) { lienMort("La session de réinitialisation a expiré. Redemande un lien : il arrive en quelques secondes."); return; }
+    statut($("statut"), "", "");
+    btn.classList.add("charge");
+    btn.setAttribute("aria-busy", "true");
+    var fin = function () { btn.classList.remove("charge"); btn.removeAttribute("aria-busy"); };
+    sb.auth.updateUser({ password: v1 }).then(function (res) {
+      if (res.error) { fin(); statut($("statut"), messageAuth(res.error), "err"); return; }
+      fin();
+      $("mdp1").value = ""; $("mdp2").value = "";
+      montrer("v-ok");
+      // La session reste ouverte : l'app s'ouvre directement sur l'horaire.
+      setTimeout(function () { location.replace("/"); }, 1950);
+    }, function (err) { fin(); statut($("statut"), messageAuth(err), "err"); });
+  }
+
+  $("v-form").addEventListener("submit", function (e) { e.preventDefault(); enregistrer(); });
+  $("mdp1").addEventListener("input", majForm);
+  $("mdp2").addEventListener("input", majForm);
+  $("voir").addEventListener("click", function () {
+    var vu = this.getAttribute("aria-pressed") === "true";
+    this.setAttribute("aria-pressed", vu ? "false" : "true");
+    this.setAttribute("aria-label", vu ? "Afficher les mots de passe" : "Masquer les mots de passe");
+    $("mdp1").type = $("mdp2").type = vu ? "password" : "text";
+  });
+
+  /* ---------- Renvoi d'un lien ---------- */
+  function emailValide(v) { return /^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/.test(v); }
+  $("v-renvoi").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var btn = $("btn-renvoi");
+    if (btn.classList.contains("charge")) return;
+    var em = String($("mail-renvoi").value || "").trim();
+    if (!emailValide(em)) {
+      statut($("statut-renvoi"), "Indique une adresse email valable.", "err");
+      try { $("mail-renvoi").focus(); } catch (e2) { /* jetable */ }
+      return;
+    }
+    if (!sb) { statut($("statut-renvoi"), "Service indisponible : réessaie dans quelques minutes.", "err"); return; }
+    btn.classList.add("charge");
+    btn.setAttribute("aria-busy", "true");
+    var fin = function () { btn.classList.remove("charge"); btn.removeAttribute("aria-busy"); };
+    sb.auth.resetPasswordForEmail(em, { redirectTo: location.origin + "/mot-de-passe.html" }).then(function (res) {
+      fin();
+      if (res.error) { statut($("statut-renvoi"), messageAuth(res.error), "err"); return; }
+      statut($("statut-renvoi"), "Email envoyé : ouvre le lien depuis ta boîte mail.", "info");
+    }, function (err) { fin(); statut($("statut-renvoi"), messageAuth(err), "err"); });
+  });
+  $("mail-renvoi").addEventListener("input", function () { statut($("statut-renvoi"), "", ""); });
+
+  /* ---------- Démarrage : config, jeton, session ---------- */
+  function lireParams() {
+    var q = new URLSearchParams(location.search);
+    var h = new URLSearchParams(String(location.hash || "").replace(/^#/, ""));
+    return function (cle) { return q.get(cle) || h.get(cle) || ""; };
+  }
+
+  function nettoyerURL() {
+    try { history.replaceState(null, "", location.pathname); } catch (e) { /* jetable */ }
+  }
+
+  function ouvrirSession() {
+    var p = lireParams();
+    // Supabase a refusé le lien avant même de nous l'envoyer (expiré, déjà servi).
+    if (p("error") || p("error_code")) {
+      var d = p("error_description");
+      nettoyerURL();
+      return Promise.resolve({ error: { message: d ? decodeURIComponent(d.replace(/\+/g, " ")) : "", code: "otp_expired" } });
+    }
+    // a) Modèle d'email : jeton haché vérifié ici même (les aperçus de lien
+    //    des messageries ne consomment donc pas le lien).
+    var th = p("token_hash") || p("token");
+    if (th) {
+      var type = p("type") || "recovery";
+      return sb.auth.verifyOtp({ token_hash: th, type: type });
+    }
+    // b) Flux PKCE : Supabase nous renvoie un code à échanger.
+    var code = p("code");
+    if (code) return sb.auth.exchangeCodeForSession(code);
+    // c) Flux implicite : les jetons sont directement dans le fragment.
+    var at = p("access_token"), rt = p("refresh_token");
+    if (at && rt) return sb.auth.setSession({ access_token: at, refresh_token: rt });
+    // d) Rien dans l'URL : une session déjà ouverte (lien rouvert, page
+    //    rechargée, ou utilisateur déjà connecté) permet quand même le
+    //    changement de mot de passe.
+    return sb.auth.getSession();
+  }
+
+  function demarrer() {
+    fetch("/api/config", { cache: "no-store" }).then(function (r) { return r.json(); }, function () { return null; })
+      .then(function (rep) {
+        var c = (rep && rep.supabase) || {};
+        if (!c.url || !c.anonKey || !window.supabase || !window.supabase.createClient) {
+          lienMort("Le service de connexion est injoignable pour le moment. Réessaie dans quelques minutes.");
+          $("v-renvoi").hidden = true;
+          return;
+        }
+        sb = window.supabase.createClient(c.url, c.anonKey, {
+          auth: { detectSessionInUrl: false, persistSession: true, autoRefreshToken: true }
+        });
+        return ouvrirSession().then(function (res) {
+          nettoyerURL();
+          if (res && res.error) { lienMort(messageAuth(res.error) + " Indique ton adresse : on t'en renvoie un tout de suite."); return; }
+          session = (res && res.data && res.data.session) || null;
+          var u = (res && res.data && res.data.user) || (session && session.user) || null;
+          if (!session || !u) { lienMort(); return; }
+          var mail = u.email || "";
+          $("mail-compte").textContent = mail || "ton compte";
+          $("mail-cache").value = mail;
+          montrer("v-form");
+          majForm();
+          try { $("mdp1").focus({ preventScroll: true }); } catch (e) { /* jetable */ }
+        });
+      })
+      .catch(function () { lienMort("Quelque chose s'est mal passé. Redemande un lien : il arrive en quelques secondes."); });
+  }
+
+  demarrer();
+})();
+</script>
+</body>
+</html>

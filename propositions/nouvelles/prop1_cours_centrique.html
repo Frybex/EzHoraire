@@ -1,0 +1,1491 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Proposition 1 — Agenda Cours-Centrique & Échéances Liées (iMac 1920x1280)</title>
+<style>
+  :root {
+    --accent: #d14d8a;
+    --accent-hover: #b83d75;
+    --accent-soft: rgba(209, 77, 138, .12);
+    --accent-border: rgba(209, 77, 138, .28);
+    --wash: rgba(209, 77, 138, .13);
+    --bg: #fdf1f6;
+    --surface: #ffffff;
+    --ink: #17191d;
+    --muted: #6d7482;
+    --line: #ebdce4;
+    --free: #18794e;
+    --seg-track: #f9e0ec;
+    --relief-haut: #ffffff;
+    --relief-bas: #faebf3;
+    --reflet: rgba(255, 255, 255, .9);
+    --ombre-btn: 0 1px 2px rgba(23, 32, 68, .06), 0 2px 8px -4px rgba(23, 32, 68, .08);
+    --shadow: 0 16px 40px -24px rgba(23, 32, 68, .28);
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+    /* Couleurs pastel matières */
+    --c-rose-bg: #fbebf3;
+    --c-rose-ink: #6b1d40;
+    --c-rose-accent: #d14d8a;
+
+    --c-menthe-bg: #eaf7f2;
+    --c-menthe-ink: #165b43;
+    --c-menthe-accent: #18794e;
+
+    --c-bleu-bg: #ebf2ff;
+    --c-bleu-ink: #173b7d;
+    --c-bleu-accent: #2563eb;
+
+    --c-jaune-bg: #fdf5df;
+    --c-jaune-ink: #694a08;
+    --c-jaune-accent: #b47908;
+
+    --c-mauve-bg: #f4ecfc;
+    --c-mauve-ink: #4b1f79;
+    --c-mauve-accent: #7c3aed;
+
+    --c-studio-bg: #f1f3f7;
+    --c-studio-ink: #334155;
+    --c-studio-accent: #64748b;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 1920px;
+    height: 1280px;
+    overflow: hidden;
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--ink);
+    font-family: var(--font);
+    font-size: 15px;
+    line-height: 1.45;
+    padding: 0 40px 18px;
+    display: flex;
+    flex-direction: column;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Bannière supérieure de proposition */
+  .prop-banner {
+    background: #17191d;
+    color: #ffffff;
+    margin: 0 -40px 10px;
+    padding: 10px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: .86rem;
+    z-index: 50;
+    flex-shrink: 0;
+    box-shadow: 0 2px 10px rgba(0,0,0,.15);
+  }
+  .prop-banner-title {
+    font-weight: 750;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .prop-badge {
+    background: var(--accent);
+    color: #fff;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: .74rem;
+    font-weight: 800;
+    letter-spacing: .02em;
+  }
+  .prop-banner-desc {
+    color: #a1a7b5;
+    font-size: .82rem;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .prop-banner-desc strong {
+    color: #ffffff;
+    font-weight: 600;
+  }
+
+  /* Topbar principale */
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 50px;
+    margin-bottom: 6px;
+    flex-shrink: 0;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .title {
+    font-size: 1.25rem;
+    font-weight: 750;
+    letter-spacing: -.02em;
+  }
+  .title span { color: var(--accent); }
+  .school-tag {
+    font-size: .72rem;
+    font-weight: 700;
+    background: rgba(209, 77, 138, .1);
+    color: var(--accent);
+    padding: 3px 9px;
+    border-radius: 6px;
+    letter-spacing: .02em;
+  }
+
+  .seg {
+    display: flex;
+    background: var(--seg-track);
+    padding: 3px;
+    border-radius: 999px;
+    gap: 3px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,.06);
+  }
+  .seg button {
+    border: none;
+    background: transparent;
+    padding: 6px 20px;
+    border-radius: 999px;
+    font-size: .86rem;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all .15s ease;
+  }
+  .seg button.active {
+    background: #ffffff;
+    color: var(--ink);
+    box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    font-weight: 700;
+  }
+
+  .topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .user-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--relief-bas);
+    border: 1.5px solid var(--line);
+    display: grid;
+    place-items: center;
+    font-weight: 750;
+    font-size: .84rem;
+    color: var(--accent);
+    box-shadow: var(--ombre-btn);
+  }
+
+  /* Barre de navigation semaine */
+  .week-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    height: 38px;
+    margin-bottom: 8px;
+    flex-shrink: 0;
+  }
+  .week-cur {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+  }
+  .week-cur strong {
+    font-size: 1.95rem;
+    font-weight: 750;
+    letter-spacing: -.04em;
+  }
+  .week-cur span {
+    color: var(--muted);
+    font-size: 1.02rem;
+  }
+  .week-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: .78rem;
+    font-weight: 650;
+    color: var(--free);
+    background: #eaf7f2;
+    padding: 3px 10px;
+    border-radius: 999px;
+    margin-left: 8px;
+  }
+  .week-status::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--free);
+  }
+
+  .week-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-relief {
+    height: 36px;
+    padding: 0 16px;
+    border-radius: 999px;
+    border: none;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    font-size: .85rem;
+    font-weight: 600;
+    color: var(--ink);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: transform .1s ease, box-shadow .15s ease;
+  }
+  .btn-relief:hover {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 30%, var(--line)), inset 0 1px 0 var(--reflet), 0 3px 10px -2px rgba(23, 32, 68, .12);
+  }
+  .btn-relief:active { transform: scale(.98); }
+  .btn-relief.icon { width: 36px; padding: 0; justify-content: center; }
+  .btn-relief.accent {
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  /* ------------------------------------------------------------- */
+  /* GRILLE HORAIRE (CALENDRIER)                                   */
+  /* Structure stricte : padding 14px 18px 14px 0                 */
+  /* Colonnes : 54px repeat(5, 1fr) avec column-gap: 8px          */
+  /* ------------------------------------------------------------- */
+  .cal {
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    border-radius: 22px;
+    padding: 14px 18px 14px 0;
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    display: flex;
+    flex-direction: column;
+    isolation: isolate;
+    height: 524px;
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  .cal-head {
+    display: grid;
+    grid-template-columns: 54px repeat(5, 1fr);
+    column-gap: 8px;
+    padding-bottom: 8px;
+    flex-shrink: 0;
+  }
+  .cal-head-gutter {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 12px;
+    font-size: .70rem;
+    font-weight: 750;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+  .cal-jour {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 8px;
+  }
+  .cal-jour span {
+    color: var(--muted);
+    font-size: .78rem;
+    font-weight: 650;
+  }
+  .cal-jour strong {
+    min-width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
+  .cal-jour.today span,
+  .cal-jour.today strong {
+    color: var(--accent);
+  }
+  .cal-jour small {
+    margin-left: auto;
+    color: var(--muted);
+    font-size: .76rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .cal-jour small.libre {
+    color: var(--free);
+    font-weight: 650;
+  }
+
+  .cal-body {
+    display: grid;
+    grid-template-columns: 54px repeat(5, 1fr);
+    column-gap: 8px;
+    flex: 1;
+    min-height: 0;
+    position: relative;
+  }
+
+  /* Gouttière des heures à gauche (54px) */
+  .cal-hours {
+    position: relative;
+    border-right: 1px dashed rgba(235, 220, 228, 0.7);
+  }
+  .cal-hours span {
+    position: absolute;
+    right: 12px;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: .74rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .cal-col {
+    position: relative;
+    border-radius: 14px;
+  }
+
+  /* Traitement surélevé Aujourd'hui (Jeudi) dans le calendrier */
+  .cal-col.today::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    top: -50px;
+    bottom: -10px;
+    left: 0;
+    right: 0;
+    border-radius: 18px;
+    background: var(--surface);
+    border: 1.5px solid var(--accent);
+    box-shadow: 0 16px 36px -16px rgba(209, 77, 138, .3), inset 0 1px 0 var(--reflet);
+  }
+
+  /* Ligne d'heure actuelle dans la colonne aujourd'hui */
+  .cal-now-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--accent);
+    z-index: 15;
+    pointer-events: none;
+    box-shadow: 0 0 8px rgba(209, 77, 138, .6);
+  }
+  .cal-now-line::before {
+    content: "";
+    position: absolute;
+    left: -4px;
+    top: -3.5px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 6px var(--accent);
+  }
+  .cal-now-badge {
+    position: absolute;
+    right: 8px;
+    top: -10px;
+    background: var(--accent);
+    color: #ffffff;
+    font-size: .66rem;
+    font-weight: 750;
+    padding: 1px 6px;
+    border-radius: 4px;
+    letter-spacing: .02em;
+  }
+
+  /* État libre / pas de cours */
+  .cal-libre {
+    position: absolute;
+    inset: 0;
+    border-radius: 14px;
+    background: repeating-linear-gradient(45deg, transparent, transparent 12px, rgba(109,116,130,.04) 12px, rgba(109,116,130,.04) 24px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    gap: 6px;
+  }
+  .cal-libre-badge {
+    background: var(--surface);
+    padding: 6px 14px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: .84rem;
+    color: var(--free);
+    box-shadow: 0 1px 4px rgba(0,0,0,.04);
+    border: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .cal-libre small {
+    font-size: .74rem;
+    color: var(--muted);
+  }
+
+  /* Cartes d'événements de cours dans l'horaire */
+  .ev {
+    position: absolute;
+    border-radius: 12px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    font-size: .78rem;
+    text-align: left;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(23, 32, 68, .04);
+    transition: transform .12s ease, box-shadow .15s ease;
+    border: 1px solid transparent;
+  }
+  .ev:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px -4px rgba(23, 32, 68, .12);
+  }
+
+  .ev.rose { background: var(--c-rose-bg); color: var(--c-rose-ink); border-color: rgba(209, 77, 138, .2); }
+  .ev.menthe { background: var(--c-menthe-bg); color: var(--c-menthe-ink); border-color: rgba(24, 121, 78, .2); }
+  .ev.bleu { background: var(--c-bleu-bg); color: var(--c-bleu-ink); border-color: rgba(37, 99, 235, .2); }
+  .ev.jaune { background: var(--c-jaune-bg); color: var(--c-jaune-ink); border-color: rgba(180, 121, 8, .2); }
+  .ev.mauve { background: var(--c-mauve-bg); color: var(--c-mauve-ink); border-color: rgba(124, 58, 237, .2); }
+
+  .ev .et {
+    font-weight: 750;
+    font-size: .86rem;
+    line-height: 1.25;
+    letter-spacing: -.01em;
+  }
+  .ev .es {
+    font-weight: 650;
+    opacity: .88;
+    font-size: .78rem;
+    margin-top: 2px;
+  }
+  .ev .eb {
+    display: flex;
+    justify-content: space-between;
+    font-size: .72rem;
+    font-weight: 600;
+    opacity: .82;
+    margin-top: auto;
+    border-top: 1px solid rgba(0,0,0,.06);
+    padding-top: 6px;
+  }
+
+  /* ------------------------------------------------------------- */
+  /* PLANIFICATEUR COURS-CENTRIQUE & ÉCHÉANCES LIÉES (BAS)        */
+  /* ALIGNEMENT STRICT : padding: 0 18px 0 0                      */
+  /* Colonnes : 54px repeat(5, 1fr) avec column-gap: 8px          */
+  /* ------------------------------------------------------------- */
+  .tasks-planner {
+    display: grid;
+    grid-template-columns: 54px repeat(5, 1fr);
+    column-gap: 8px;
+    padding: 0 18px 0 0;
+    flex: 1;
+    min-height: 0;
+    margin-top: 12px;
+  }
+
+  /* Gouttière 54px du bas : icône, étiquette verticale et compteur */
+  .tasks-gutter {
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    border-radius: 18px;
+    padding: 12px 4px;
+    border: 1.5px solid var(--line);
+    box-shadow: inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .gutter-icon-box {
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    display: grid;
+    place-items: center;
+    color: var(--accent);
+    box-shadow: var(--ombre-btn);
+  }
+  .gutter-v-title {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font-size: .69rem;
+    font-weight: 800;
+    letter-spacing: .12em;
+    color: var(--muted);
+    text-transform: uppercase;
+    white-space: nowrap;
+    opacity: .9;
+  }
+  .gutter-stats-badge {
+    text-align: center;
+    padding: 6px 0;
+    border-top: 1px solid var(--line);
+    width: 100%;
+  }
+  .gutter-stats-badge strong {
+    display: block;
+    font-size: .96rem;
+    font-weight: 800;
+    color: var(--ink);
+    line-height: 1;
+  }
+  .gutter-stats-badge small {
+    font-size: .62rem;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+
+  /* Colonne de tâches par jour */
+  .tasks-col {
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    border-radius: 18px;
+    padding: 12px 12px 10px;
+    border: 1.5px solid var(--line);
+    box-shadow: inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Traitement surélevé Aujourd'hui (Jeudi) dans le planificateur */
+  .tasks-col.today {
+    background: #ffffff;
+    border: 1.5px solid var(--accent);
+    box-shadow: 0 16px 36px -16px rgba(209, 77, 138, .3), inset 0 1px 0 var(--reflet);
+  }
+
+  /* En-tête de chaque colonne de tâche */
+  .tasks-col-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--line);
+    flex-shrink: 0;
+  }
+  .tasks-col-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: .78rem;
+    font-weight: 750;
+    color: var(--ink);
+    letter-spacing: -.01em;
+  }
+  .tasks-col.today .tasks-col-title {
+    color: var(--accent);
+  }
+  .tasks-col-badge {
+    font-size: .66rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 6px;
+    background: rgba(109, 116, 130, .08);
+    color: var(--muted);
+  }
+  .tasks-col-badge.done {
+    background: #eaf7f2;
+    color: var(--free);
+  }
+  .tasks-col-badge.urgent {
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 800;
+  }
+  .tasks-col-badge.studio {
+    background: #f1f3f7;
+    color: #475569;
+  }
+
+  /* Conteneur des cartes avec défilement fluide discret si besoin */
+  .tasks-list {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 2px;
+  }
+  .tasks-list::-webkit-scrollbar { width: 3px; }
+  .tasks-list::-webkit-scrollbar-thumb { background: rgba(0,0,0,.1); border-radius: 3px; }
+
+  /* ------------------------------------------------------------- */
+  /* CARTES DEVOIRS / ÉCHÉANCES LIÉES AUX COURS                    */
+  /* ------------------------------------------------------------- */
+  .task-card {
+    background: #ffffff;
+    border-radius: 13px;
+    padding: 10px 11px 9px;
+    border: 1px solid var(--line);
+    box-shadow: 0 1px 3px rgba(23, 32, 68, .04), 0 2px 6px rgba(23, 32, 68, .02);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    position: relative;
+    transition: transform .12s ease, box-shadow .15s ease, border-color .15s ease, opacity .15s ease;
+    cursor: pointer;
+  }
+  .task-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px -4px rgba(23, 32, 68, .09), 0 2px 4px rgba(23, 32, 68, .04);
+    border-color: color-mix(in srgb, var(--accent) 30%, var(--line));
+  }
+
+  /* Filet latéral coloré relié au cours */
+  .task-card.rose { border-left: 3.5px solid var(--c-rose-accent); }
+  .task-card.menthe { border-left: 3.5px solid var(--c-menthe-accent); }
+  .task-card.bleu { border-left: 3.5px solid var(--c-bleu-accent); }
+  .task-card.jaune { border-left: 3.5px solid var(--c-jaune-accent); }
+  .task-card.mauve { border-left: 3.5px solid var(--c-mauve-accent); }
+  .task-card.studio { border-left: 3.5px solid var(--c-studio-accent); }
+
+  /* État complété / coché */
+  .task-card.done {
+    background: rgba(255, 255, 255, 0.55);
+    opacity: 0.72;
+    border-color: var(--line);
+  }
+  .task-card.done .task-name {
+    text-decoration: line-through;
+    color: var(--muted);
+  }
+  .task-card.done .task-sub {
+    opacity: 0.6;
+  }
+
+  /* Ligne supérieure de la carte : Matière & Tag heure limite */
+  .task-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+  }
+  .course-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: .69rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 6px;
+    white-space: nowrap;
+    letter-spacing: -.01em;
+  }
+  .course-chip .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .course-chip.rose { background: var(--c-rose-bg); color: var(--c-rose-ink); }
+  .course-chip.rose .dot { background: var(--c-rose-accent); }
+
+  .course-chip.menthe { background: var(--c-menthe-bg); color: var(--c-menthe-ink); }
+  .course-chip.menthe .dot { background: var(--c-menthe-accent); }
+
+  .course-chip.bleu { background: var(--c-bleu-bg); color: var(--c-bleu-ink); }
+  .course-chip.bleu .dot { background: var(--c-bleu-accent); }
+
+  .course-chip.jaune { background: var(--c-jaune-bg); color: var(--c-jaune-ink); }
+  .course-chip.jaune .dot { background: var(--c-jaune-accent); }
+
+  .course-chip.mauve { background: var(--c-mauve-bg); color: var(--c-mauve-ink); }
+  .course-chip.mauve .dot { background: var(--c-mauve-accent); }
+
+  .course-chip.studio { background: var(--c-studio-bg); color: var(--c-studio-ink); }
+  .course-chip.studio .dot { background: var(--c-studio-accent); }
+
+  /* Tag heure limite */
+  .deadline-pill {
+    font-size: .68rem;
+    font-weight: 650;
+    color: var(--muted);
+    background: var(--relief-bas);
+    padding: 2px 7px;
+    border-radius: 5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    border: 1px solid rgba(0,0,0,.03);
+  }
+  .deadline-pill.urgent {
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 750;
+    border-color: rgba(209, 77, 138, .2);
+  }
+  .deadline-pill.today-warn {
+    background: rgba(180, 121, 8, .12);
+    color: #8c5b05;
+    font-weight: 700;
+  }
+
+  /* Corps de la carte : Titre et toggle relief */
+  .task-main {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 1px;
+  }
+  .task-text {
+    flex: 1;
+    min-width: 0;
+  }
+  .task-name {
+    font-size: .83rem;
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1.28;
+    letter-spacing: -.01em;
+  }
+  .task-sub {
+    font-size: .72rem;
+    color: var(--muted);
+    line-height: 1.25;
+    margin-top: 3px;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+    overflow: hidden;
+  }
+
+  /* Bouton toggle soft-relief élégant */
+  .task-toggle-btn {
+    width: 22px;
+    height: 22px;
+    border-radius: 7px;
+    border: 1.5px solid var(--line);
+    background: linear-gradient(180deg, #ffffff, var(--relief-bas));
+    box-shadow: inset 0 1px 0 #fff, 0 1px 3px rgba(23, 32, 68, .06);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all .15s ease;
+    padding: 0;
+    margin-top: 1px;
+  }
+  .task-toggle-btn:hover {
+    border-color: var(--accent);
+    transform: scale(1.08);
+  }
+  .task-toggle-btn .check-svg {
+    opacity: 0;
+    transform: scale(0.6);
+    transition: all .15s ease;
+    color: #ffffff;
+  }
+  .task-card.done .task-toggle-btn {
+    background: linear-gradient(180deg, var(--accent), var(--accent-hover));
+    border-color: var(--accent);
+    box-shadow: 0 2px 8px rgba(209, 77, 138, .35), inset 0 1px 0 rgba(255,255,255,.3);
+  }
+  .task-card.done .task-toggle-btn .check-svg {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  /* Ligne de pied de carte : Contexte / Lieu / Dépôt */
+  .task-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 6px;
+    border-top: 1px solid rgba(235, 220, 228, 0.55);
+    font-size: .68rem;
+    color: var(--muted);
+  }
+  .task-ctx {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .task-tag-badge {
+    font-size: .64rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: rgba(109, 116, 130, .08);
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+  .task-tag-badge.accent {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+
+  /* Bouton "+ Ajouter un devoir" ultra élégant */
+  .btn-add-task {
+    margin-top: auto;
+    width: 100%;
+    height: 34px;
+    border-radius: 11px;
+    border: 1px dashed var(--line);
+    background: rgba(255, 255, 255, 0.45);
+    color: var(--muted);
+    font-size: .78rem;
+    font-weight: 650;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: all .15s ease;
+    flex-shrink: 0;
+  }
+  .btn-add-task:hover {
+    background: #ffffff;
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: var(--ombre-btn);
+  }
+  .tasks-col.today .btn-add-task {
+    border-color: rgba(209, 77, 138, 0.35);
+    color: var(--accent);
+    background: rgba(209, 77, 138, 0.05);
+  }
+  .tasks-col.today .btn-add-task:hover {
+    background: var(--accent);
+    color: #ffffff;
+    border-color: var(--accent);
+    box-shadow: 0 4px 12px rgba(209, 77, 138, 0.35);
+  }
+
+  /* Indicateur de proposition watermark discret */
+  .meta-tag {
+    position: fixed;
+    bottom: 6px;
+    right: 16px;
+    font-size: .68rem;
+    font-weight: 700;
+    color: var(--muted);
+    opacity: .6;
+    letter-spacing: .04em;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<!-- Bannière supérieure de cadrage design -->
+<div class="prop-banner">
+  <div class="prop-banner-title">
+    <span class="prop-badge">PROPOSITION 1</span>
+    <span>Agenda Cours-Centrique & Échéances Liées</span>
+  </div>
+  <div class="prop-banner-desc">
+    <span>📐 Grille absolue : <strong>54px + 5×1fr (gap 8px)</strong> au pixel près</span>
+    <span>🎨 Tâches typées aux cours du jour (Blender, Math, Colorimétrie, ZBrush)</span>
+    <span>✨ Prolongement surélevé de la colonne <strong>Aujourd'hui</strong></span>
+  </div>
+</div>
+
+<!-- Barre d'application supérieure -->
+<div class="topbar">
+  <div class="brand">
+    <div class="title">Ez<span>Horaire</span></div>
+    <span class="school-tag">HEH · Technique Mons</span>
+  </div>
+  <div class="seg">
+    <button class="active">Maxence Bastin</button>
+    <button>Lilian</button>
+    <button>Anthony</button>
+  </div>
+  <div class="topbar-actions">
+    <button class="btn-relief">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      <span>Stats & Crédits</span>
+    </button>
+    <div class="user-avatar">MB</div>
+  </div>
+</div>
+
+<!-- Navigation semaine -->
+<div class="week-row">
+  <div class="week-cur">
+    <strong>Semaine 1</strong>
+    <span>14 – 18 sept. 2026</span>
+    <div class="week-status">Horaire officiel synchronisé</div>
+  </div>
+  <div class="week-controls">
+    <button class="btn-relief icon" title="Semaine précédente">&lt;</button>
+    <button class="btn-relief icon" title="Semaine suivante">&gt;</button>
+    <button class="btn-relief accent">Aujourd'hui</button>
+    <button class="btn-relief">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <span>PDF officiel</span>
+    </button>
+  </div>
+</div>
+
+<!-- ============================================================= -->
+<!-- CALENDRIER HORAIRE PRINCIPAL (524px de haut)                  -->
+<!-- ============================================================= -->
+<div class="cal">
+  <div class="cal-head">
+    <div class="cal-head-gutter">Heures</div>
+    <div class="cal-jour">
+      <span>Lun</span><strong>14</strong>
+      <small>8h15 – 16h30</small>
+    </div>
+    <div class="cal-jour">
+      <span>Mar</span><strong>15</strong>
+      <small>8h15 – 15h30</small>
+    </div>
+    <div class="cal-jour">
+      <span>Mer</span><strong>16</strong>
+      <small>8h15 – 12h30</small>
+    </div>
+    <div class="cal-jour today">
+      <span>Jeu</span><strong>17</strong>
+      <small>8h30 – 17h30</small>
+    </div>
+    <div class="cal-jour">
+      <span>Ven</span><strong>18</strong>
+      <small class="libre">Libre</small>
+    </div>
+  </div>
+
+  <div class="cal-body">
+    <!-- Gouttière des heures (54px) -->
+    <div class="cal-hours">
+      <span style="top: 0%">8h</span>
+      <span style="top: 20%">10h</span>
+      <span style="top: 40%">12h</span>
+      <span style="top: 50%">13h</span>
+      <span style="top: 70%">15h</span>
+      <span style="top: 90%">17h</span>
+    </div>
+
+    <!-- Lundi 14 -->
+    <div class="cal-col">
+      <div class="ev rose" style="top: 2.5%; height: 42.5%; left: 0; right: 0;">
+        <div class="et">Modélisation 3D</div>
+        <div class="es">1/14 · Groupe A</div>
+        <div class="eb"><span>Souris</span><span>8h15 – 12h30</span></div>
+      </div>
+      <div class="ev menthe" style="top: 55%; height: 30%; left: 0; right: 0;">
+        <div class="et">Mathématique appliquée</div>
+        <div class="es">2/11 · Auditoire B</div>
+        <div class="eb"><span>Lebailly</span><span>13h30 – 16h30</span></div>
+      </div>
+    </div>
+
+    <!-- Mardi 15 -->
+    <div class="cal-col">
+      <div class="ev rose" style="top: 2.5%; height: 42.5%; left: 0; right: 0;">
+        <div class="et">Modélisation 3D</div>
+        <div class="es">1/18 · Groupe A</div>
+        <div class="eb"><span>Souris</span><span>8h15 – 12h30</span></div>
+      </div>
+      <div class="ev bleu" style="top: 55%; height: 20%; left: 0; right: 0;">
+        <div class="et">Anglais technique</div>
+        <div class="es">2/17A · Labo Langues</div>
+        <div class="eb"><span>Delmotte</span><span>13h30 – 15h30</span></div>
+      </div>
+    </div>
+
+    <!-- Mercredi 16 -->
+    <div class="cal-col">
+      <div class="ev menthe" style="top: 2.5%; height: 20%; left: 0; right: 0;">
+        <div class="et">Traitement du son</div>
+        <div class="es">1/32 · Studio Son</div>
+        <div class="eb"><span>Sottiaux</span><span>8h15 – 10h15</span></div>
+      </div>
+      <div class="ev menthe" style="top: 25%; height: 20%; left: 0; right: 0;">
+        <div class="et">Mathématique appliquée</div>
+        <div class="es">1/36A · Informatique</div>
+        <div class="eb"><span>Lebailly</span><span>10h30 – 12h30</span></div>
+      </div>
+    </div>
+
+    <!-- Jeudi 17 (Aujourd'hui - Surélevé) -->
+    <div class="cal-col today">
+      <div class="cal-now-line" style="top: 62%;">
+        <span class="cal-now-badge">14:15 · En cours</span>
+      </div>
+      <div class="ev jaune" style="top: 5%; height: 40%; left: 0; right: 0;">
+        <div class="et">Colorimétrie</div>
+        <div class="es">2/10E · Labo Graphique</div>
+        <div class="eb"><span>Gryspeert</span><span>8h30 – 12h30</span></div>
+      </div>
+      <div class="ev mauve" style="top: 55%; height: 40%; left: 0; right: 0;">
+        <div class="et">Création graphique 3D</div>
+        <div class="es">1/16 · Atelier Synthèse</div>
+        <div class="eb"><span>D'Hondt</span><span>13h30 – 17h30</span></div>
+      </div>
+    </div>
+
+    <!-- Vendredi 18 -->
+    <div class="cal-col">
+      <div class="cal-libre">
+        <div class="cal-libre-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          <span>Pas de cours magistral</span>
+        </div>
+        <small>Ateliers libres & studio disponibles</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================= -->
+<!-- PLANIFICATEUR COURS-CENTRIQUE & ÉCHÉANCES LIÉES               -->
+<!-- Structure de grille STRICTEMENT IDENTIQUE :                  -->
+<!-- grid-template-columns: 54px repeat(5, 1fr); column-gap: 8px; -->
+<!-- padding: 0 18px 0 0 (pour coïncider au pixel avec .cal)       -->
+<!-- ============================================================= -->
+<div class="tasks-planner">
+
+  <!-- Gouttière 54px discrète sous les heures -->
+  <div class="tasks-gutter">
+    <div class="gutter-icon-box" title="Planificateur lié aux matières">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+        <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+        <path d="M9 14l2 2 4-4"/>
+      </svg>
+    </div>
+    <div class="gutter-v-title">
+      ÉCHÉANCES & DEVOIRS
+    </div>
+    <div class="gutter-stats-badge">
+      <strong>8</strong>
+      <small>Actifs</small>
+    </div>
+  </div>
+
+  <!-- COLONNE 1 : Lundi 14 -->
+  <div class="tasks-col">
+    <div class="tasks-col-header">
+      <div class="tasks-col-title">
+        <span>Lundi 14</span>
+      </div>
+      <span class="tasks-col-badge done">2 faits</span>
+    </div>
+
+    <div class="tasks-list">
+      <!-- Tâche 1 Lundi : Modélisation 3D -->
+      <div class="task-card rose done" onclick="toggleCard(this)">
+        <div class="task-header">
+          <span class="course-chip rose">
+            <span class="dot"></span>
+            Modélisation 3D
+          </span>
+          <span class="deadline-pill">Avant 12h30</span>
+        </div>
+        <div class="task-main">
+          <div class="task-text">
+            <div class="task-name">Rendu maillage Blender 4.2</div>
+            <div class="task-sub">Topologie quad propre · Rendu clay sous Cycles</div>
+          </div>
+          <button class="task-toggle-btn" aria-label="Valider tâche">
+            <svg class="check-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
+        </div>
+        <div class="task-footer">
+          <div class="task-ctx">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span>Souris · Local 1/14</span>
+          </div>
+          <span class="task-tag-badge">Évalué</span>
+        </div>
+      </div>
+
+      <!-- Tâche 2 Lundi : Mathématique appliquée -->
+      <div class="task-card menthe done" onclick="toggleCard(this)">
+        <div class="task-header">
+          <span class="course-chip menthe">
+            <span class="dot"></span>
+            Mathématique
+          </span>
+          <span class="deadline-pill">Avant 13h30</span>
+        </div>
+        <div class="task-main">
+          <div class="task-text">
+            <div class="task-name">Exercices séries de Fourier</div>
+            <div class="task-sub">Exercices 12 à 18 sur le syllabus p.64</div>
+          </div>
+          <button class="task-toggle-btn" aria-label="Valider tâche">
+            <svg class="check-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
+        </div>
+        <div class="task-footer">
+          <div class="task-ctx">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            <span>Lebailly · Auditoire B</span>
+          </div>
+          <span class="task-tag-badge">TD</span>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-add-task">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span>Ajouter un devoir</span>
+    </button>
+  </div>
+
+  <!-- COLONNE 2 : Mardi 15 -->
+  <div class="tasks-col">
+    <div class="tasks-col-header">
+      <div class="tasks-col-title">
+        <span>Mardi 15</span>
+      </div>
+      <span class="tasks-col-badge done">2 faits</span>
+    </div>
+
+    <div class="tasks-list">
+      <!-- Tâche 1 Mardi : Modélisation 3D -->
+      <div class="task-card rose done" onclick="toggleCard(this)">
+        <div class="task-header">
+          <span class="course-chip rose">
+            <span class="dot"></span>
+            Modélisation 3D
+          </span>
+          <span class="deadline-pill">Avant 8h15</span>
+        </div>
+        <div class="task-main">
+          <div class="task-text">
+            <div class="task-name">UV Unwrapping & Dépliage</div>
+            <div class="task-sub">Contrôle du texel density sur le robot</div>
+          </div>
+          <button class="task-toggle-btn" aria-label="Valider tâche">
+            <svg class="check-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
+        </div>
+        <div class="task-footer">
+          <div class="task-ctx">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Dépôt Teams</span>
+          </div>
+          <span class="task-tag-badge">Fichier FBX</span>
+        </div>
+      </div>
+
+      <!-- Tâche 2 Mardi : Anglais technique -->
+      <div class="task-card bleu done" onclick="toggleCard(this)">
+        <div class="task-header">
+          <span class="course-chip bleu">
+            <span class="dot"></span>
+            Anglais
+          </span>
+          <span class="deadline-pill">Avant 13h30</span>
+        </div>
+        <div class="task-main">
+          <div class="task-text">
+            <div class="task-name">Glossaire Shaders & Lighting</div>
+            <div class="task-sub">15 termes infographie pour présentation orale</div>
+          </div>
+          <button class="task-toggle-btn" aria-label="Valider tâche">
+            <svg class="check-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
+        </div>
+        <div class="task-footer">
+          <div class="task-ctx">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            <span>Delmotte · Local 2/17A</span>
+          </div>
+          <span class="task-tag-badge">Oral</span>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-add-task">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span>Ajouter un devoir</span>
+    </button>
+  </div>
+
+  <!-- COLONNE 3 : Mercredi 16 -->
+  <div class="tasks-col">
+    <div class="tasks-col-header">
+      <div class="tasks-col-title">
+        <span>Mercredi 16</span>
+      </div>
+      <span class="tasks-col-badge done">2 faits</span>
+    </div>
+
+    <div class="tasks-list">
+      <!-- Tâche 1 Mercredi : Traitement du son -->
+      <div class="task-card menthe done" onclick="toggleCard(this)">
+        <div class="task-header">
+          <span class="course-chip menthe">
+            <span class="dot"></span>
+            Traitement son
+          </span>
+          <span class="deadline-pill">Avant 10h15</span>
+        </div>
+        <div class="task-main">
+          <div class="task-text">
+            <div class="task-name">Mixage multipiste Reaper</div>
+            <div class="task-sub">Export WAV 24-bit 48kHz normalisé à -14 LUFS</div>
+          </div>
+          <button class="task-toggle-btn" aria-label="Valider tâche">
+            <svg class="check-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
+        </div>
+        <div class="task-footer">
+          <div class="task-ctx">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+            <span>Sottiaux · Studio 1/32</span>
+          </div>
+          <span class="task-tag-badge">Audio WAV</span>
+        </div>
+      </div>
+
+      <!-- Tâche 2 Mercredi : Mathématique appliquée -->
+      <div class="task-card menthe done" onclick="toggleCard(this)">
+        <div class="task-header">
+          <span class="course-chip menthe">
+            <span class="dot"></span>
+            Mathématique
+          </span>
+          <span class="deadline-pill">Avant 10h30</span>
+        </div>
+        <div class="task-main">
+          <div class="task-text">
+            <div class="task-name">Interro continue : matrices 3D</div>
+            <div class="task-sub">Calcul matriciel, quaternions et transformations</div>
+          </div>
+          <button class="task-toggle-btn" aria-label="Valider tâche">
+            <svg class="check-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
+        </div>
+        <div class="task-footer">
+          <div class="task-ctx">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
+            <span>Salle 1/36A · Note CC</span>
+          </div>
+          <span class="task-tag-badge">Test 30min</span>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-add-task">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span>Ajouter un devoir</span>
+    </button>
+  </div>
+
+  <!-- COLONNE 4 : Jeudi 17 (AUJOURD'HUI - SURÉLEVÉE & ACTIVE) -->
+  <div class="tasks-col today">
+    <div class="tasks-col-header">
+      <div class="tasks-col-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span>Aujourd'hui · Jeu 17</span>
+      </div>
+      <span class="tasks-col-badge urgent">3 à rendre</span>
+    </div>
+
+    <div class="tasks-list">
+      <!-- Tâche 1 Jeudi : Colorimétrie (URGENT COURS) -->
+      <div class="task-card jaune" onclick="toggleCard(this)">
+        <div class="task-header">
+          <span class="course-chip jaune">
+            <span class="dot"></span>
+            Colorimétrie
+          </span>
+          <span class="deadline-pill urgent">⚡ Avant 12h30 · En salle</span>
+        </div>
+        <div class="task-main">
+          <div class="task-text">
+            <div class="task-name">Nuancier profils ICC & Lab</div>
+            <div class="task-sub">Fichier TIFF AdobeRGB à déposer en séance</div>
+          </div>
+          <button class="task-toggle-btn" aria-label="Valider tâche">
+            <svg class="check-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
+        </div>
+        <div class="task-footer">
+          <div class="task-ctx">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            <span>Gryspeert · Labo 2/10E</span>
+          </div>
+          <span class="task-tag-badge accent">Prioritaire</span>
+        </div>
+      </div>
+
+      <!-- Tâche 2 Jeudi : Création graphique 3D -->
+      <div class="task-card mauve" onclick="toggleCard(this)">
+        <div class="task-header">
+          <span class="course-chip mauve">
+            <span class="dot"></span>
+            Création 3D
+          </span>
+          <span class="deadline-pill today-warn">Avant 17h30</span>
+        </div>
+        <div class="task-main">
+          <div class="task-text">
+            <div class="task-name">Sculpt ZBrush & Bake Normal Map</div>
+            <div class="task-sub">High-poly 12M vers low-poly 15k sous Marmoset</div>
+          </div>
+          <button class="task-toggle-btn" aria-label="Valider tâche">
+            <svg class="check-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
+        </div>
+        <div class="task-footer">
+          <div class="task-ctx">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            <span>D'Hondt · Atelier 1/16</span>
+          </div>
+          <span class="task-tag-badge">Projet Q1</span>
+        </div>
+      </div>
+
+      <!-- Tâche 3 Jeudi : Moodboard direction artistique -->
+      <div class="task-card mauve" onclick="toggleCard(this)">
+        <div class="task-header">
+          <span class="course-chip mauve">
+            <span class="dot"></span>
+            Création 3D
+          </span>
+          <span class="deadline-pill">Ce soir 20h00</span>
+        </div>
+        <div class="task-main">
+          <div class="task-text">
+            <div class="task-name">Moodboard DA & Palette décor</div>
+            <div class="task-sub">Planche PureRef exportée en PDF haute définition</div>
+          </div>
+          <button class="task-toggle-btn" aria-label="Valider tâche">
+            <svg class="check-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
+        </div>
+        <div class="task-footer">
+          <div class="task-ctx">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            <span>Dépôt OneDrive HEH</span>
+          </div>
+          <span class="task-tag-badge">DA & Style</span>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-add-task">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span>+ Ajouter un devoir aujourd'hui</span>
+    </button>
+  </div>
+
+  <!-- COLONNE 5 : Vendredi 18 -->
+  <div class="tasks-col">
+    <div class="tasks-col-header">
+      <div class="tasks-col-title">
+        <span>Vendredi 18</span>
+      </div>
+      <span class="tasks-col-badge studio">Studio libre</span>
+    </div>
+
+    <div class="tasks-list">
+      <!-- Tâche 1 Vendredi : Studio personnel -->
+      <div class="task-card studio" onclick="toggleCard(this)">
+        <div class="task-header">
+          <span class="course-chip studio">
+            <span class="dot"></span>
+            Projet Studio
+          </span>
+          <span class="deadline-pill">Journée off</span>
+        </div>
+        <div class="task-main">
+          <div class="task-text">
+            <div class="task-name">Concept art & Lighting Unreal 5.5</div>
+            <div class="task-sub">Veille ArtStation & blocage volumique du niveau</div>
+          </div>
+          <button class="task-toggle-btn" aria-label="Valider tâche">
+            <svg class="check-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
+        </div>
+        <div class="task-footer">
+          <div class="task-ctx">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <span>Autonomie · Studio HEH</span>
+          </div>
+          <span class="task-tag-badge">Perso</span>
+        </div>
+      </div>
+
+      <!-- Tâche 2 Vendredi : Sauvegardes & Synchro Git -->
+      <div class="task-card bleu" onclick="toggleCard(this)">
+        <div class="task-header">
+          <span class="course-chip bleu">
+            <span class="dot"></span>
+            Sauvegardes
+          </span>
+          <span class="deadline-pill">Avant 18h00</span>
+        </div>
+        <div class="task-main">
+          <div class="task-text">
+            <div class="task-name">Push Git LFS & Synchro NAS</div>
+            <div class="task-sub">Sauvegarde des textures Substance & scènes Maya</div>
+          </div>
+          <button class="task-toggle-btn" aria-label="Valider tâche">
+            <svg class="check-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
+        </div>
+        <div class="task-footer">
+          <div class="task-ctx">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+            <span>Serveur Bloem / NAS</span>
+          </div>
+          <span class="task-tag-badge">Hebdo</span>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-add-task">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span>Ajouter un devoir</span>
+    </button>
+  </div>
+
+</div>
+
+<div class="meta-tag">EzHoraire Design System · Proposition 1 Course-Centric · 1920 × 1280</div>
+
+<script>
+  function toggleCard(card) {
+    card.classList.toggle('done');
+  }
+</script>
+
+</body>
+</html>

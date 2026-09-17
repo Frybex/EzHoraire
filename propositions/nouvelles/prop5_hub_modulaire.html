@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Proposition 5 — Hub Modulaire avec Sélecteur par Onglets [ Devoirs | Examens | Fichiers ]</title>
+<style>
+  :root {
+    --accent: #d14d8a;
+    --accent-hover: #b93c76;
+    --accent-soft: rgba(209, 77, 138, .12);
+    --accent-tint: rgba(209, 77, 138, .07);
+    --wash: rgba(209, 77, 138, .13);
+    --bg: #fdf1f6;
+    --surface: #ffffff;
+    --ink: #17191d;
+    --ink-light: #2c3038;
+    --muted: #6d7482;
+    --muted-light: #8e95a3;
+    --line: #ebdce4;
+    --line-subtle: #f2e7ed;
+    --free: #18794e;
+    --free-soft: rgba(24, 121, 78, .10);
+    --urgent: #c2334d;
+    --urgent-soft: rgba(194, 51, 77, .12);
+    --blue: #1d5ec9;
+    --blue-soft: rgba(29, 94, 201, .10);
+    --seg-track: #f5e0ec;
+    --relief-haut: #ffffff;
+    --relief-bas: #faebf3;
+    --reflet: rgba(255, 255, 255, .95);
+    --ombre-btn: 0 1px 2px rgba(23, 32, 68, .06), 0 2px 8px -4px rgba(23, 32, 68, .08);
+    --shadow-card: 0 4px 14px -2px rgba(23, 32, 68, .05), 0 1px 3px rgba(23, 32, 68, .04);
+    --shadow-elevated: inset 0 0 0 1.5px var(--accent), inset 0 1px 0 #ffffff, 0 16px 36px -10px rgba(209, 77, 138, .26), 0 4px 14px rgba(23, 32, 68, .08);
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background-color: var(--bg);
+    color: var(--ink);
+    font-family: var(--font);
+    font-size: 14px;
+    line-height: 1.45;
+    padding: 0 40px 18px;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Bannière de présentation Solution 5 */
+  .prop-banner {
+    background: #17191d; color: #ffffff;
+    margin: 0 -40px 10px; padding: 9px 40px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: .84rem; z-index: 50; flex-shrink: 0;
+  }
+  .prop-banner-title { font-weight: 750; display: flex; align-items: center; gap: 12px; }
+  .prop-badge { background: var(--accent); color: #fff; padding: 3px 10px; border-radius: 999px; font-size: .72rem; font-weight: 700; letter-spacing: .02em; }
+  .prop-banner-desc { color: #a1a7b5; font-size: .82rem; }
+
+  /* Barre supérieure EzHoraire */
+  .topbar {
+    display: flex; justify-content: space-between; align-items: center;
+    height: 48px; margin-bottom: 6px; flex-shrink: 0;
+  }
+  .title { font-size: 1.28rem; font-weight: 800; letter-spacing: -.025em; }
+  .title span { color: var(--accent); }
+
+  .seg {
+    display: flex; background: var(--seg-track); padding: 3px; border-radius: 999px;
+    gap: 3px; box-shadow: inset 0 1px 3px rgba(0,0,0,.06);
+  }
+  .seg button {
+    border: none; background: transparent; padding: 6px 20px; border-radius: 999px;
+    font-size: .86rem; font-weight: 600; color: var(--muted); cursor: pointer;
+    transition: all .15s ease;
+  }
+  .seg button.active {
+    background: #ffffff; color: var(--ink);
+    box-shadow: 0 2px 8px rgba(0,0,0,.08); font-weight: 700;
+  }
+
+  .user-avatar {
+    width: 38px; height: 38px; border-radius: 50%;
+    background: var(--relief-bas); border: 1px solid var(--line);
+    display: grid; place-items: center; font-weight: 700; font-size: .86rem;
+    box-shadow: inset 0 1px 0 var(--reflet);
+  }
+
+  /* Ligne de navigation de la semaine */
+  .week-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    height: 38px; margin-bottom: 8px; flex-shrink: 0;
+  }
+  .week-cur { display: flex; align-items: baseline; gap: 14px; }
+  .week-cur strong { font-size: 2.05rem; font-weight: 800; letter-spacing: -.04em; }
+  .week-cur span { color: var(--muted); font-size: 1.02rem; font-weight: 500; }
+
+  .btn-relief {
+    height: 36px; padding: 0 16px; border-radius: 999px; border: none;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    font-size: .86rem; font-weight: 600; color: var(--ink); cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: transform .12s, box-shadow .12s;
+  }
+  .btn-relief:hover { transform: translateY(-1px); }
+  .btn-relief.icon { width: 36px; padding: 0; justify-content: center; font-size: .95rem; }
+
+  /* -------------------------------------------------------------
+     CALENDRIER HORAIRE (Partie Haute)
+     Alignement structurel : padding-right: 18px, padding-left: 0
+     Grille : 54px repeat(5, 1fr) avec column-gap: 8px
+  ------------------------------------------------------------- */
+  .cal {
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    border-radius: 20px; padding: 12px 18px 12px 0;
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    display: flex; flex-direction: column; isolation: isolate;
+    height: 480px; flex-shrink: 0; margin-bottom: 10px;
+  }
+  .cal-head {
+    display: grid; grid-template-columns: 54px repeat(5, 1fr); column-gap: 8px;
+    padding-bottom: 8px; flex-shrink: 0; border-bottom: 1px solid rgba(235, 220, 228, .5);
+  }
+  .cal-jour { display: flex; align-items: center; gap: 8px; padding: 0 8px; }
+  .cal-jour span { color: var(--muted); font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
+  .cal-jour strong {
+    min-width: 30px; height: 30px; border-radius: 999px; display: grid; place-items: center;
+    font-size: 1.25rem; font-weight: 750;
+  }
+  .cal-jour.today span, .cal-jour.today strong { color: var(--accent); }
+  .cal-jour small { margin-left: auto; color: var(--muted); font-size: .76rem; font-weight: 550; }
+  .cal-jour small.libre { color: var(--free); font-weight: 700; background: var(--free-soft); padding: 2px 8px; border-radius: 999px; }
+
+  .cal-body {
+    display: grid; grid-template-columns: 54px repeat(5, 1fr); column-gap: 8px;
+    flex: 1; min-height: 0; position: relative; margin-top: 6px;
+  }
+  .cal-hours { position: relative; }
+  .cal-hours span {
+    position: absolute; right: 12px; transform: translateY(-50%);
+    color: var(--muted); font-size: .74rem; font-variant-numeric: tabular-nums; font-weight: 600;
+  }
+  .cal-col { position: relative; border-radius: 12px; }
+
+  /* Colonne Jeudi surélevée dans le calendrier */
+  .cal-col.today::before {
+    content: ""; position: absolute; z-index: -1;
+    top: -50px; bottom: -14px; left: -4px; right: -4px; border-radius: 16px;
+    background: var(--surface);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 30%, var(--line)),
+                inset 0 1px 0 var(--reflet),
+                0 16px 36px -16px rgba(15, 20, 40, .26);
+  }
+
+  .cal-libre {
+    position: absolute; inset: 0; border-radius: 12px;
+    background: repeating-linear-gradient(45deg, transparent, transparent 12px, rgba(109,116,130,.05) 12px, rgba(109,116,130,.05) 24px);
+    display: grid; place-items: center; color: var(--muted);
+  }
+  .cal-libre p {
+    background: var(--surface); padding: 8px 18px; border-radius: 999px;
+    font-weight: 650; font-size: .82rem; border: 1px solid var(--line);
+    box-shadow: var(--ombre-btn);
+  }
+
+  .ev {
+    position: absolute; border-radius: 10px; padding: 7px 10px;
+    display: flex; flex-direction: column; overflow: hidden;
+    font-size: .78rem; text-align: left; cursor: pointer;
+    box-shadow: 0 2px 6px rgba(23,32,68,.05);
+    border: 1px solid transparent;
+    transition: transform .12s ease;
+  }
+  .ev:hover { transform: translateY(-1px); }
+  .ev.rose { background: #fbebf3; color: #6b1d40; border-color: rgba(209,77,138,.2); }
+  .ev.menthe { background: #eaf7f2; color: #165b43; border-color: rgba(24,121,78,.2); }
+  .ev.bleu { background: #ebf2ff; color: #173b7d; border-color: rgba(29,94,201,.2); }
+  .ev.jaune { background: #fdf5df; color: #694a08; border-color: rgba(217,155,22,.25); }
+  .ev.mauve { background: #f4ecfc; color: #4b1f79; border-color: rgba(142,68,173,.2); }
+
+  .ev .et { font-weight: 750; font-size: .83rem; line-height: 1.22; }
+  .ev .es { font-weight: 600; opacity: .86; font-size: .76rem; margin-top: 1px; }
+  .ev .eb { display: flex; justify-content: space-between; font-size: .72rem; opacity: .78; margin-top: auto; font-variant-numeric: tabular-nums; }
+
+  /* -------------------------------------------------------------
+     HUB MODULAIRE PAR ONGLETS (Partie Basse)
+     Structure rigoureusement identique au pixel près :
+     - Conteneur avec padding: 12px 18px 12px 0
+     - Grille : 54px repeat(5, 1fr) avec column-gap: 8px
+  ------------------------------------------------------------- */
+  .hub-container {
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    border-radius: 20px; padding: 12px 18px 12px 0;
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    display: flex; flex-direction: column;
+    flex: 1; min-height: 0; position: relative;
+  }
+
+  .hub-grid {
+    display: grid; grid-template-columns: 54px repeat(5, 1fr); column-gap: 8px;
+    flex: 1; min-height: 0;
+  }
+
+  /* Colonne 1 (54px) : Rail vertical du hub */
+  .hub-rail {
+    display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+    padding: 6px 0; user-select: none;
+  }
+  .hub-rail-tag {
+    font-size: .70rem; font-weight: 800; letter-spacing: .08em;
+    color: var(--accent); background: var(--accent-soft);
+    padding: 3px 6px; border-radius: 6px; text-transform: uppercase;
+  }
+  .hub-rail-icons {
+    display: flex; flex-direction: column; gap: 8px; align-items: center;
+  }
+  .rail-btn {
+    width: 34px; height: 34px; border-radius: 999px; border: 1px solid var(--line);
+    background: var(--surface); display: grid; place-items: center;
+    font-size: .92rem; color: var(--ink); cursor: pointer;
+    box-shadow: var(--ombre-btn); transition: all .15s ease;
+  }
+  .rail-btn:hover { background: var(--relief-bas); transform: scale(1.05); }
+  .rail-btn.active {
+    background: var(--accent); color: #ffffff; border-color: var(--accent);
+    box-shadow: 0 4px 10px rgba(209,77,138,.3);
+  }
+  .hub-rail-sem {
+    font-size: .68rem; font-weight: 750; color: var(--muted);
+    letter-spacing: .05em;
+  }
+
+  /* Colonnes journalières (Lun, Mar, Mer, Jeu, Ven) */
+  .hub-col {
+    background: linear-gradient(180deg, rgba(255,255,255,.85), rgba(250,235,243,.6));
+    border-radius: 16px; padding: 10px 11px;
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--shadow-card);
+    display: flex; flex-direction: column; gap: 8px;
+    min-height: 0; position: relative; transition: all .16s ease;
+  }
+  .hub-col:hover {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 35%, var(--line)), 0 6px 18px -4px rgba(23,32,68,.08);
+  }
+
+  /* Colonne Jeudi (Aujourd'hui) : SURÉLEVÉE ET DISTINCTIVE */
+  .hub-col.today {
+    background: #ffffff;
+    box-shadow: var(--shadow-elevated);
+    transform: translateY(-2px);
+    z-index: 5;
+  }
+  .hub-col.today::after {
+    content: ""; position: absolute; inset: -1px; border-radius: 16px;
+    border: 1.5px solid var(--accent); pointer-events: none;
+  }
+
+  /* Entête de colonne journalière */
+  .hub-col-head {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0 2px 2px; flex-shrink: 0;
+  }
+  .hub-col-title { display: flex; align-items: baseline; gap: 6px; }
+  .hub-col-title strong { font-size: .95rem; font-weight: 800; letter-spacing: -.02em; }
+  .hub-col-title span { font-size: .84rem; color: var(--muted); font-weight: 600; }
+
+  .hub-col-badge {
+    font-size: .70rem; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+    background: var(--relief-bas); color: var(--muted); border: 1px solid var(--line);
+  }
+  .hub-col-badge.today-badge {
+    background: var(--accent); color: #ffffff; border-color: var(--accent);
+    box-shadow: 0 2px 6px rgba(209,77,138,.3);
+  }
+  .hub-col-badge.free-badge {
+    background: var(--free-soft); color: var(--free); border-color: rgba(24,121,78,.25);
+  }
+
+  /* Sélecteur d'onglets modulaire discret par colonne */
+  .hub-tab-bar {
+    display: flex; background: var(--seg-track); padding: 2.5px; border-radius: 10px;
+    gap: 2px; box-shadow: inset 0 1px 2px rgba(0,0,0,.05); flex-shrink: 0;
+  }
+  .hub-tab {
+    flex: 1; border: none; background: transparent; padding: 5px 6px; border-radius: 8px;
+    font-size: .75rem; font-weight: 650; color: var(--muted); cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+    transition: all .15s ease; white-space: nowrap;
+  }
+  .hub-tab:hover { color: var(--ink); }
+  .hub-tab.active {
+    background: #ffffff; color: var(--ink);
+    box-shadow: 0 1.5px 5px rgba(23,32,68,.08); font-weight: 750;
+  }
+  .tab-count {
+    font-size: .66rem; padding: 1px 5px; border-radius: 999px;
+    background: rgba(0,0,0,.06); color: inherit; font-weight: 700;
+  }
+  .hub-tab.active .tab-count {
+    background: var(--accent-soft); color: var(--accent);
+  }
+  .tab-count.today-count {
+    background: var(--accent); color: #fff;
+  }
+
+  /* Corps de la colonne et panneaux d'onglets */
+  .hub-col-body {
+    flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column;
+  }
+  .tab-panel {
+    display: none; flex-direction: column; gap: 6px; flex: 1;
+  }
+  .tab-panel.active { display: flex; }
+
+  /* Carte de tâche / devoir */
+  .hub-task {
+    background: #ffffff; border-radius: 10px; padding: 8px 9px;
+    border: 1px solid var(--line); box-shadow: 0 1px 3px rgba(23,32,68,.03);
+    display: flex; align-items: flex-start; gap: 8px;
+    transition: all .14s ease; cursor: pointer; position: relative;
+  }
+  .hub-task:hover {
+    border-color: color-mix(in srgb, var(--accent) 30%, var(--line));
+    box-shadow: 0 2px 8px rgba(23,32,68,.06);
+  }
+  .hub-task.urgent {
+    border-left: 3.5px solid var(--accent);
+    background: #fffcfd;
+  }
+  .hub-task.done {
+    opacity: .65; background: rgba(255,255,255,.6);
+  }
+  .hub-task.done .task-title {
+    text-decoration: line-through; color: var(--muted);
+  }
+
+  /* Checkbox stylée EzHoraire */
+  .task-cb {
+    margin-top: 2px; width: 16px; height: 16px; border-radius: 5px;
+    border: 1.5px solid #b8bcc6; display: grid; place-items: center;
+    flex-shrink: 0; cursor: pointer; transition: all .12s; background: #fff;
+  }
+  .hub-task:hover .task-cb { border-color: var(--accent); }
+  .hub-task.done .task-cb {
+    background: var(--accent); border-color: var(--accent);
+  }
+  .hub-task.done .task-cb::after {
+    content: "✓"; color: #fff; font-size: .68rem; font-weight: 800;
+  }
+
+  .task-info { flex: 1; min-width: 0; }
+  .task-title {
+    font-size: .80rem; font-weight: 700; color: var(--ink); line-height: 1.25;
+    margin-bottom: 3px; word-break: break-word;
+  }
+  .task-meta { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+
+  /* Tags et badges */
+  .tag {
+    font-size: .66rem; font-weight: 700; padding: 1.5px 6px; border-radius: 4px;
+    letter-spacing: .01em; display: inline-flex; align-items: center; gap: 3px;
+  }
+  .tag-course { background: rgba(0,0,0,.05); color: var(--muted); }
+  .tag-urgent { background: var(--urgent-soft); color: var(--urgent); }
+  .tag-todo { background: var(--accent-soft); color: var(--accent); }
+  .tag-done { background: var(--free-soft); color: var(--free); }
+  .task-time { font-size: .68rem; color: var(--muted); font-variant-numeric: tabular-nums; font-weight: 600; margin-left: auto; }
+
+  /* Carte de Ressource & Fichier */
+  .hub-res {
+    background: #ffffff; border-radius: 10px; padding: 8px 9px;
+    border: 1px solid var(--line); box-shadow: 0 1px 3px rgba(23,32,68,.03);
+    display: flex; align-items: center; gap: 9px;
+    transition: all .14s ease; text-decoration: none; color: inherit; cursor: pointer;
+  }
+  .hub-res:hover {
+    border-color: color-mix(in srgb, var(--accent) 30%, var(--line));
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(23,32,68,.06);
+  }
+  .res-icon {
+    width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center;
+    font-size: .88rem; flex-shrink: 0;
+  }
+  .res-icon.cloud { background: #eaf2ff; color: #1a56db; }
+  .res-icon.pdf { background: #fde8e8; color: #c81e1e; }
+  .res-icon.code { background: #f3f4f6; color: #24292e; }
+  .res-icon.link { background: #fef08a; color: #854d0e; }
+  .res-icon.audio { background: #ecfdf5; color: #047857; }
+
+  .res-info { flex: 1; min-width: 0; }
+  .res-title {
+    font-size: .79rem; font-weight: 750; color: var(--ink); line-height: 1.22;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .res-meta { font-size: .68rem; color: var(--muted); margin-top: 1px; }
+  .res-action {
+    font-size: .75rem; color: var(--muted); font-weight: 700; padding: 3px 6px;
+    border-radius: 6px; background: var(--relief-bas); border: 1px solid var(--line);
+    text-decoration: none;
+  }
+  .hub-res:hover .res-action { color: var(--accent); border-color: var(--accent-soft); }
+
+  /* Bouton d'ajout rapide sous les colonnes */
+  .btn-add-item {
+    margin-top: auto; border: 1px dashed var(--line); border-radius: 8px;
+    background: transparent; padding: 6px; font-size: .72rem; font-weight: 700;
+    color: var(--muted); cursor: pointer; text-align: center;
+    transition: all .12s ease;
+  }
+  .btn-add-item:hover {
+    border-color: var(--accent); color: var(--accent); background: var(--accent-tint);
+  }
+  .btn-add-item.primary {
+    border-style: solid; border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+    background: var(--accent-tint); color: var(--accent);
+  }
+  .btn-add-item.primary:hover {
+    background: var(--accent); color: #fff;
+  }
+
+  /* État vide doux */
+  .empty-state {
+    padding: 18px 8px; text-align: center; color: var(--muted);
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+  }
+  .empty-icon { font-size: 1.3rem; opacity: .8; }
+  .empty-state p { font-size: .75rem; font-weight: 600; max-width: 180px; }
+
+  /* -------------------------------------------------------------
+     PIED DE GRILLE DU HUB : Résumé d'activité global de la semaine
+     Structure rigoureusement alignée : 54px repeat(5, 1fr)
+  ------------------------------------------------------------- */
+  .hub-footer-grid {
+    display: grid; grid-template-columns: 54px repeat(5, 1fr); column-gap: 8px;
+    margin-top: 9px; flex-shrink: 0; align-items: center;
+  }
+  .hub-footer-rail {
+    display: flex; justify-content: center; align-items: center;
+  }
+  .rail-status-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, .2);
+  }
+
+  .hub-footer-content {
+    grid-column: 2 / -1;
+    background: linear-gradient(180deg, #ffffff, #faf0f5);
+    border-radius: 14px; padding: 8px 16px;
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  }
+
+  .summary-group {
+    display: flex; align-items: center; gap: 24px;
+  }
+
+  .summary-stat {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .summary-stat-icon {
+    width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center;
+    background: var(--relief-bas); border: 1px solid var(--line); font-size: .95rem;
+    box-shadow: inset 0 1px 0 var(--reflet);
+  }
+  .summary-stat-text strong {
+    font-size: .83rem; font-weight: 800; color: var(--ink); display: block; line-height: 1.2;
+  }
+  .summary-stat-text span {
+    font-size: .72rem; color: var(--muted); font-weight: 600;
+  }
+
+  .summary-divider {
+    width: 1px; height: 26px; background: var(--line);
+  }
+
+  /* Barre de progression circulaire / linéaire */
+  .progress-capsule {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .progress-track {
+    width: 90px; height: 7px; border-radius: 999px; background: var(--seg-track);
+    overflow: hidden; box-shadow: inset 0 1px 2px rgba(0,0,0,.08);
+  }
+  .progress-fill {
+    width: 57%; height: 100%; border-radius: 999px;
+    background: linear-gradient(90deg, #e879a8, var(--accent));
+  }
+
+  .summary-actions {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .summary-btn {
+    height: 32px; padding: 0 13px; border-radius: 999px; border: 1px solid var(--line);
+    background: var(--surface); font-size: .77rem; font-weight: 700; color: var(--ink);
+    cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+    box-shadow: var(--ombre-btn); transition: all .12s ease;
+  }
+  .summary-btn:hover { background: var(--relief-bas); transform: translateY(-1px); }
+  .summary-btn.primary {
+    background: var(--accent); color: #ffffff; border-color: var(--accent);
+    box-shadow: 0 2px 8px rgba(209,77,138,.35);
+  }
+  .summary-btn.primary:hover { background: var(--accent-hover); }
+</style>
+</head>
+<body>
+
+<!-- Bannière d'en-tête de proposition -->
+<div class="prop-banner">
+  <div class="prop-banner-title">
+    <span class="prop-badge">Solution 5</span>
+    <span>Hub Modulaire avec Sélecteur par Onglets [ Devoirs | Examens | Fichiers ]</span>
+  </div>
+  <div class="prop-banner-desc">Alignement chirurgical sous la grille horaire (54px + 5×1fr) · Navigation contextuelle par jour · Suivi d'échéances & ressources synchronisées</div>
+</div>
+
+<!-- Topbar EzHoraire -->
+<div class="topbar">
+  <div class="title">Ez<span>Horaire</span></div>
+  <div class="seg">
+    <button class="active">Maxence</button>
+    <button>Lilian</button>
+    <button>Anthony</button>
+  </div>
+  <div class="user-avatar">MB</div>
+</div>
+
+<!-- En-tête de semaine -->
+<div class="week-row">
+  <div class="week-cur">
+    <strong>Semaine 1</strong>
+    <span>14 – 18 sept. 2026</span>
+  </div>
+  <div style="display: flex; gap: 8px;">
+    <button class="btn-relief icon" title="Semaine précédente">&lt;</button>
+    <button class="btn-relief" style="font-weight: 700; color: var(--accent);">Aujourd'hui</button>
+    <button class="btn-relief icon" title="Semaine suivante">&gt;</button>
+    <button class="btn-relief">📄 PDF officiel</button>
+  </div>
+</div>
+
+<!-- =============================================================
+     1. CALENDRIER HORAIRE (Partie Haute)
+     Grid : 54px repeat(5, 1fr) / column-gap: 8px / padding-right: 18px
+============================================================= -->
+<div class="cal">
+  <div class="cal-head">
+    <div></div>
+    <div class="cal-jour">
+      <span>Lun</span><strong>14</strong>
+      <small>8h15 – 16h30</small>
+    </div>
+    <div class="cal-jour">
+      <span>Mar</span><strong>15</strong>
+      <small>8h15 – 15h30</small>
+    </div>
+    <div class="cal-jour">
+      <span>Mer</span><strong>16</strong>
+      <small>8h15 – 12h30</small>
+    </div>
+    <div class="cal-jour today">
+      <span>Jeu</span><strong>17</strong>
+      <small>8h30 – 17h30</small>
+    </div>
+    <div class="cal-jour">
+      <span>Ven</span><strong>18</strong>
+      <small class="libre">Libre</small>
+    </div>
+  </div>
+
+  <div class="cal-body">
+    <!-- Rail des heures (54px) -->
+    <div class="cal-hours">
+      <span style="top: 0%">8h</span>
+      <span style="top: 20%">10h</span>
+      <span style="top: 40%">12h</span>
+      <span style="top: 50%">13h</span>
+      <span style="top: 70%">15h</span>
+      <span style="top: 90%">17h</span>
+    </div>
+
+    <!-- Lundi 14 -->
+    <div class="cal-col">
+      <div class="ev rose" style="top: 2.5%; height: 42.5%; left: 0; right: 0;">
+        <div class="et">Modélisation 3D</div>
+        <div class="es">1/14</div>
+        <div class="eb"><span>Souris</span><span>8h15 – 12h30</span></div>
+      </div>
+      <div class="ev menthe" style="top: 55%; height: 30%; left: 0; right: 0;">
+        <div class="et">Mathématique appliquée</div>
+        <div class="es">2/11</div>
+        <div class="eb"><span>Lebailly</span><span>13h30 – 16h30</span></div>
+      </div>
+    </div>
+
+    <!-- Mardi 15 -->
+    <div class="cal-col">
+      <div class="ev rose" style="top: 2.5%; height: 42.5%; left: 0; right: 0;">
+        <div class="et">Modélisation 3D</div>
+        <div class="es">1/18</div>
+        <div class="eb"><span>Souris</span><span>8h15 – 12h30</span></div>
+      </div>
+      <div class="ev bleu" style="top: 55%; height: 20%; left: 0; right: 0;">
+        <div class="et">Anglais</div>
+        <div class="es">2/17A</div>
+        <div class="eb"><span>Delmotte</span><span>13h30 – 15h30</span></div>
+      </div>
+    </div>
+
+    <!-- Mercredi 16 -->
+    <div class="cal-col">
+      <div class="ev menthe" style="top: 2.5%; height: 20%; left: 0; right: 0;">
+        <div class="et">Traitement du son</div>
+        <div class="es">1/32</div>
+        <div class="eb"><span>Sottiaux</span><span>8h15 – 10h15</span></div>
+      </div>
+      <div class="ev menthe" style="top: 25%; height: 20%; left: 0; right: 0;">
+        <div class="et">Mathématique appliquée</div>
+        <div class="es">1/36A</div>
+        <div class="eb"><span>Lebailly</span><span>10h30 – 12h30</span></div>
+      </div>
+    </div>
+
+    <!-- Jeudi 17 (Aujourd'hui, surélevée) -->
+    <div class="cal-col today">
+      <div class="ev jaune" style="top: 5%; height: 40%; left: 0; right: 0;">
+        <div class="et">Colorimétrie</div>
+        <div class="es">2/10E</div>
+        <div class="eb"><span>Gryspeert</span><span>8h30 – 12h30</span></div>
+      </div>
+      <div class="ev mauve" style="top: 55%; height: 40%; left: 0; right: 0;">
+        <div class="et">Création graphique 3D</div>
+        <div class="es">1/16</div>
+        <div class="eb"><span>D'Hondt</span><span>13h30 – 17h30</span></div>
+      </div>
+    </div>
+
+    <!-- Vendredi 18 (Libre) -->
+    <div class="cal-col">
+      <div class="cal-libre">
+        <p>Pas de cours</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =============================================================
+     2. HUB MODULAIRE PAR ONGLETS (Partie Basse)
+     Alignement rigoureux :
+     - Même padding-right: 18px et padding-left: 0
+     - Même grille : 54px repeat(5, 1fr) / column-gap: 8px
+============================================================= -->
+<div class="hub-container">
+  <div class="hub-grid">
+
+    <!-- Colonne 1 (54px) : Rail vertical d'alignement avec les heures -->
+    <div class="hub-rail">
+      <div class="hub-rail-tag">HUB</div>
+      <div class="hub-rail-icons">
+        <button class="rail-btn active" title="Vue Devoirs">📋</button>
+        <button class="rail-btn" title="Vue Ressources & Fichiers">📁</button>
+        <button class="rail-btn" title="Vue Échéances & Examens">🎯</button>
+      </div>
+      <div class="hub-rail-sem">S.01</div>
+    </div>
+
+    <!-- Colonne 2 : Lundi 14 (Vue Devoirs active) -->
+    <div class="hub-col" id="col-lun">
+      <div class="hub-col-head">
+        <div class="hub-col-title">
+          <strong>Lundi</strong><span>14</span>
+        </div>
+        <span class="hub-col-badge">2 tâches</span>
+      </div>
+
+      <!-- Micro-sélecteur par onglets -->
+      <div class="hub-tab-bar">
+        <button class="hub-tab active" onclick="switchTab('col-lun', 'tasks', this)">
+          Devoirs <span class="tab-count">2</span>
+        </button>
+        <button class="hub-tab" onclick="switchTab('col-lun', 'resources', this)">
+          Ressources <span class="tab-count">1</span>
+        </button>
+      </div>
+
+      <div class="hub-col-body">
+        <!-- Onglet Devoirs -->
+        <div class="tab-panel tasks active">
+          <div class="hub-task done">
+            <div class="task-cb"></div>
+            <div class="task-info">
+              <div class="task-title">Rendu maillage 3D (Blender .obj)</div>
+              <div class="task-meta">
+                <span class="tag tag-course">Modélisation 3D</span>
+                <span class="tag tag-done">Terminé</span>
+                <span class="task-time">12:30</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="hub-task">
+            <div class="task-cb"></div>
+            <div class="task-info">
+              <div class="task-title">Exo matrices 3×3 & projections</div>
+              <div class="task-meta">
+                <span class="tag tag-course">Mathématiques</span>
+                <span class="tag tag-todo">Exos 4 à 8</span>
+              </div>
+            </div>
+          </div>
+
+          <button class="btn-add-item">+ Ajouter un devoir</button>
+        </div>
+
+        <!-- Onglet Ressources -->
+        <div class="tab-panel resources">
+          <a class="hub-res" href="#">
+            <div class="res-icon cloud">☁️</div>
+            <div class="res-info">
+              <div class="res-title">Drive Assets 3D Semaine 1</div>
+              <div class="res-meta">Google Drive · 420 Mo</div>
+            </div>
+            <span class="res-action">↗</span>
+          </a>
+          <button class="btn-add-item">+ Lier un document</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Colonne 3 : Mardi 15 (Vue Ressources active pour démontrer la modularité) -->
+    <div class="hub-col" id="col-mar">
+      <div class="hub-col-head">
+        <div class="hub-col-title">
+          <strong>Mardi</strong><span>15</span>
+        </div>
+        <span class="hub-col-badge">2 fichiers</span>
+      </div>
+
+      <!-- Micro-sélecteur par onglets -->
+      <div class="hub-tab-bar">
+        <button class="hub-tab" onclick="switchTab('col-mar', 'tasks', this)">
+          Devoirs <span class="tab-count">1</span>
+        </button>
+        <button class="hub-tab active" onclick="switchTab('col-mar', 'resources', this)">
+          Ressources <span class="tab-count">2</span>
+        </button>
+      </div>
+
+      <div class="hub-col-body">
+        <!-- Onglet Devoirs -->
+        <div class="tab-panel tasks">
+          <div class="hub-task">
+            <div class="task-cb"></div>
+            <div class="task-info">
+              <div class="task-title">Vocabulaire anglais technique U1</div>
+              <div class="task-meta">
+                <span class="tag tag-course">Anglais</span>
+                <span class="task-time">Pour 13:30</span>
+              </div>
+            </div>
+          </div>
+          <button class="btn-add-item">+ Ajouter un devoir</button>
+        </div>
+
+        <!-- Onglet Ressources (Actif) -->
+        <div class="tab-panel resources active">
+          <a class="hub-res" href="#">
+            <div class="res-icon pdf">📄</div>
+            <div class="res-info">
+              <div class="res-title">Unit 1 - CG & Shading Glossary</div>
+              <div class="res-meta">Prof. Delmotte · PDF 1.4 Mo</div>
+            </div>
+            <span class="res-action">↗</span>
+          </a>
+
+          <a class="hub-res" href="#">
+            <div class="res-icon cloud">☁️</div>
+            <div class="res-info">
+              <div class="res-title">Répertoire UV Unwrapping 3D</div>
+              <div class="res-meta">OneDrive · Dossier partagé</div>
+            </div>
+            <span class="res-action">↗</span>
+          </a>
+
+          <button class="btn-add-item">+ Lier un support</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Colonne 4 : Mercredi 16 (Vue Devoirs active) -->
+    <div class="hub-col" id="col-mer">
+      <div class="hub-col-head">
+        <div class="hub-col-title">
+          <strong>Mercredi</strong><span>16</span>
+        </div>
+        <span class="hub-col-badge">2 devoirs</span>
+      </div>
+
+      <!-- Micro-sélecteur par onglets -->
+      <div class="hub-tab-bar">
+        <button class="hub-tab active" onclick="switchTab('col-mer', 'tasks', this)">
+          Devoirs <span class="tab-count">2</span>
+        </button>
+        <button class="hub-tab" onclick="switchTab('col-mer', 'resources', this)">
+          Ressources <span class="tab-count">1</span>
+        </button>
+      </div>
+
+      <div class="hub-col-body">
+        <!-- Onglet Devoirs -->
+        <div class="tab-panel tasks active">
+          <div class="hub-task done">
+            <div class="task-cb"></div>
+            <div class="task-info">
+              <div class="task-title">Export stems audio WAV 24-bit</div>
+              <div class="task-meta">
+                <span class="tag tag-course">Traitement son</span>
+                <span class="tag tag-done">Validé</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="hub-task">
+            <div class="task-cb"></div>
+            <div class="task-info">
+              <div class="task-title">Spectrogramme & fréquences d'échantillonnage</div>
+              <div class="task-meta">
+                <span class="tag tag-course">Mathématiques</span>
+                <span class="tag tag-todo">Relecture TD</span>
+              </div>
+            </div>
+          </div>
+
+          <button class="btn-add-item">+ Ajouter un devoir</button>
+        </div>
+
+        <!-- Onglet Ressources -->
+        <div class="tab-panel resources">
+          <a class="hub-res" href="#">
+            <div class="res-icon audio">🎵</div>
+            <div class="res-info">
+              <div class="res-title">Pack bruitages & ambiances binaurales</div>
+              <div class="res-meta">Labo 1/32 · Archive 85 Mo</div>
+            </div>
+            <span class="res-action">↗</span>
+          </a>
+          <button class="btn-add-item">+ Lier un support</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Colonne 5 : Jeudi 17 (AUJOURD'HUI - CARTE SURÉLEVÉE) -->
+    <div class="hub-col today" id="col-jeu">
+      <div class="hub-col-head">
+        <div class="hub-col-title">
+          <strong style="color: var(--accent);">Jeudi</strong>
+          <span style="color: var(--accent); font-weight: 800;">17</span>
+        </div>
+        <span class="hub-col-badge today-badge">2 urgents</span>
+      </div>
+
+      <!-- Micro-sélecteur par onglets -->
+      <div class="hub-tab-bar">
+        <button class="hub-tab active" onclick="switchTab('col-jeu', 'tasks', this)">
+          Devoirs <span class="tab-count today-count">2</span>
+        </button>
+        <button class="hub-tab" onclick="switchTab('col-jeu', 'resources', this)">
+          Ressources <span class="tab-count">2</span>
+        </button>
+      </div>
+
+      <div class="hub-col-body">
+        <!-- Onglet Devoirs -->
+        <div class="tab-panel tasks active">
+          <div class="hub-task urgent">
+            <div class="task-cb"></div>
+            <div class="task-info">
+              <div class="task-title">Nuancier calibré CMJN & RVB (Adobe 98)</div>
+              <div class="task-meta">
+                <span class="tag tag-urgent">Urgent • 12:30</span>
+                <span class="tag tag-course">Colorimétrie</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="hub-task">
+            <div class="task-cb"></div>
+            <div class="task-info">
+              <div class="task-title">Bake normal map & roughness 2K</div>
+              <div class="task-meta">
+                <span class="tag tag-course">Création 3D</span>
+                <span class="task-time">Pour 17:30</span>
+              </div>
+            </div>
+          </div>
+
+          <button class="btn-add-item primary">+ Ajouter une tâche aujourd'hui</button>
+        </div>
+
+        <!-- Onglet Ressources -->
+        <div class="tab-panel resources">
+          <a class="hub-res" href="#">
+            <div class="res-icon pdf">📄</div>
+            <div class="res-info">
+              <div class="res-title">Profil ICC ColorSync Labo 2/10E</div>
+              <div class="res-meta">Gryspeert · Fichier .icc</div>
+            </div>
+            <span class="res-action">↗</span>
+          </a>
+
+          <a class="hub-res" href="#">
+            <div class="res-icon link">🔗</div>
+            <div class="res-info">
+              <div class="res-title">Moodle : Consignes Projet Semestre 1</div>
+              <div class="res-meta">D'Hondt · Lien direct cours</div>
+            </div>
+            <span class="res-action">↗</span>
+          </a>
+
+          <button class="btn-add-item">+ Lier un support</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Colonne 6 : Vendredi 18 (Libre - Ressources / Auto-formation) -->
+    <div class="hub-col" id="col-ven">
+      <div class="hub-col-head">
+        <div class="hub-col-title">
+          <strong>Vendredi</strong><span>18</span>
+        </div>
+        <span class="hub-col-badge free-badge">Autonomie</span>
+      </div>
+
+      <!-- Micro-sélecteur par onglets -->
+      <div class="hub-tab-bar">
+        <button class="hub-tab" onclick="switchTab('col-ven', 'tasks', this)">
+          Devoirs <span class="tab-count">0</span>
+        </button>
+        <button class="hub-tab active" onclick="switchTab('col-ven', 'resources', this)">
+          Ressources <span class="tab-count">2</span>
+        </button>
+      </div>
+
+      <div class="hub-col-body">
+        <!-- Onglet Devoirs -->
+        <div class="tab-panel tasks">
+          <div class="empty-state">
+            <span class="empty-icon">☕</span>
+            <p>Aucun devoir impératif ce vendredi</p>
+          </div>
+          <button class="btn-add-item">+ Planifier une session d'étude</button>
+        </div>
+
+        <!-- Onglet Ressources (Actif) -->
+        <div class="tab-panel resources active">
+          <a class="hub-res" href="#">
+            <div class="res-icon code">🐙</div>
+            <div class="res-info">
+              <div class="res-title">Dépôt Git du projet collectif 3D</div>
+              <div class="res-meta">GitHub · Bloc 2 Multimédia</div>
+            </div>
+            <span class="res-action">↗</span>
+          </a>
+
+          <a class="hub-res" href="#">
+            <div class="res-icon pdf">📄</div>
+            <div class="res-info">
+              <div class="res-title">Annales d'examens Math 2023–2025</div>
+              <div class="res-meta">Bibliothèque · PDF 4.2 Mo</div>
+            </div>
+            <span class="res-action">↗</span>
+          </a>
+
+          <button class="btn-add-item">+ Lier un support</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- =============================================================
+       3. PIED DE GRILLE DU HUB : Résumé d'activité global de la semaine
+       Aligné sous les colonnes 2 à 6 (Lundi à Vendredi)
+  ============================================================= -->
+  <div class="hub-footer-grid">
+    <div class="hub-footer-rail">
+      <div class="rail-status-dot" title="Données locales synchronisées"></div>
+    </div>
+    <div class="hub-footer-content">
+      <div class="summary-group">
+        <!-- Stat 1 : Tâches terminées -->
+        <div class="summary-stat">
+          <div class="progress-capsule">
+            <div class="progress-track">
+              <div class="progress-fill"></div>
+            </div>
+          </div>
+          <div class="summary-stat-text">
+            <strong>4 tâches terminées sur 7</strong>
+            <span>Progression de la semaine (57%)</span>
+          </div>
+        </div>
+
+        <div class="summary-divider"></div>
+
+        <!-- Stat 2 : Prochain examen -->
+        <div class="summary-stat">
+          <div class="summary-stat-icon">🎯</div>
+          <div class="summary-stat-text">
+            <strong>Prochain examen dans 3 semaines</strong>
+            <span>Mathématique appliquée · Jeudi 08 oct.</span>
+          </div>
+        </div>
+
+        <div class="summary-divider"></div>
+
+        <!-- Stat 3 : Ressources partagées -->
+        <div class="summary-stat">
+          <div class="summary-stat-icon">📁</div>
+          <div class="summary-stat-text">
+            <strong>8 ressources & liens synchronisés</strong>
+            <span>Drives, fiches de cours & dépôts de projet</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="summary-actions">
+        <button class="summary-btn">📅 Calendrier semestriel</button>
+        <button class="summary-btn primary">⚡ Vue synthèse</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function switchTab(colId, targetTab, btnElement) {
+    const col = document.getElementById(colId);
+    if (!col) return;
+
+    // Mise à jour des boutons d'onglets
+    const buttons = col.querySelectorAll('.hub-tab');
+    buttons.forEach(btn => btn.classList.remove('active'));
+    btnElement.classList.add('active');
+
+    // Basculement du panneau de contenu
+    const panels = col.querySelectorAll('.tab-panel');
+    panels.forEach(p => p.classList.remove('active'));
+
+    const activePanel = col.querySelector(`.tab-panel.${targetTab}`);
+    if (activePanel) {
+      activePanel.classList.add('active');
+    }
+  }
+
+  // Permet de cocher/décocher les tâches interactivement
+  document.querySelectorAll('.hub-task').forEach(task => {
+    task.addEventListener('click', (e) => {
+      if (e.target.tagName.toLowerCase() === 'a') return;
+      task.classList.toggle('done');
+    });
+  });
+</script>
+
+</body>
+</html>

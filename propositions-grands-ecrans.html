@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EzHoraire — 5 Propositions pour Grands Écrans</title>
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --ink: #17191d;
+    --muted: #6d7482;
+    --line: #e4e7ec;
+    --accent: #2456e0;
+    --accent-soft: rgba(36, 86, 224, .09);
+    --free: #18794e;
+    --relief-haut: #ffffff;
+    --relief-bas: #eaecf1;
+    --reflet: rgba(255, 255, 255, .9);
+    --ombre-btn: 0 1px 2px rgba(23, 32, 68, .06), 0 2px 8px -4px rgba(23, 32, 68, .08);
+    --shadow: 0 16px 40px -24px rgba(23, 32, 68, .28);
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.45;
+    padding-bottom: 60px;
+  }
+
+  /* Barre de navigation des propositions */
+  .prop-header {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(244, 245, 247, 0.92);
+    -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--line);
+    padding: 12px 28px;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 10px; font-weight: 750; font-size: 1.05rem;
+  }
+  .brand span { color: #d42a3c; }
+  .badge-tag {
+    font-size: .75rem; font-weight: 600; padding: 3px 9px; border-radius: 999px;
+    background: var(--accent-soft); color: var(--accent);
+  }
+  .prop-nav {
+    display: flex; gap: 6px; flex-wrap: wrap;
+  }
+  .prop-nav button {
+    border: none; background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    padding: 7px 14px; border-radius: 999px; font-size: .84rem; font-weight: 600;
+    color: var(--muted); cursor: pointer; transition: all .16s;
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  .prop-nav button:hover { color: var(--ink); transform: translateY(-1px); }
+  .prop-nav button.active {
+    background: var(--ink); color: #fff; box-shadow: 0 4px 12px rgba(0,0,0,.15);
+  }
+
+  .main-container {
+    max-width: 1560px; margin: 0 auto; padding: 24px 28px;
+  }
+
+  /* En-tête de section */
+  .intro-box {
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    border-radius: 20px; padding: 24px 28px; margin-bottom: 28px;
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  .intro-box h1 { font-size: 1.8rem; font-weight: 800; letter-spacing: -.03em; margin-bottom: 8px; }
+  .intro-box p { color: var(--muted); font-size: 1rem; max-width: 980px; }
+
+  /* Section de proposition */
+  .prop-card {
+    background: var(--surface); border-radius: 24px; padding: 28px;
+    box-shadow: inset 0 0 0 1px var(--line), var(--shadow);
+    margin-bottom: 40px; display: none;
+  }
+  .prop-card.active { display: block; }
+
+  .prop-title-row {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--line);
+  }
+  .prop-badge-num {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: .82rem; font-weight: 700; text-transform: uppercase;
+    color: var(--accent); letter-spacing: .05em; margin-bottom: 4px;
+  }
+  .prop-card h2 { font-size: 1.55rem; font-weight: 750; letter-spacing: -.03em; }
+  .prop-card .summary { color: var(--muted); font-size: .95rem; margin-top: 4px; }
+
+  /* Grid 2 colonnes pour la fiche : preview visuelle + explications */
+  .prop-layout {
+    display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 24px;
+  }
+
+  /* Mockup d'écran grand format */
+  .screen-mockup {
+    background: #eaedf2; border-radius: 18px; padding: 16px;
+    border: 1px solid var(--line); box-shadow: inset 0 2px 6px rgba(0,0,0,.03);
+    position: relative; overflow: hidden;
+  }
+  .mockup-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 4px 12px; font-size: .75rem; color: var(--muted); font-weight: 600;
+  }
+  .mockup-dots { display: flex; gap: 6px; }
+  .mockup-dots span { width: 10px; height: 10px; border-radius: 50%; background: #d0d5dd; }
+
+  /* Style du calendrier dans le mockup */
+  .mockup-app {
+    background: var(--bg); border-radius: 14px; padding: 18px;
+    min-height: 640px; display: flex; flex-direction: column; gap: 14px;
+  }
+  .mockup-app-top {
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .mockup-logo { font-size: .95rem; font-weight: 750; }
+  .mockup-logo span { color: #d42a3c; }
+  .mockup-user-pill {
+    padding: 4px 10px; border-radius: 999px; background: #fff;
+    font-size: .76rem; font-weight: 600; border: 1px solid var(--line);
+  }
+
+  .mockup-week-row {
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .mockup-week-title { font-size: 1.4rem; font-weight: 750; letter-spacing: -.03em; }
+  .mockup-week-title small { font-size: .85rem; color: var(--muted); font-weight: 500; margin-left: 8px; }
+  .mockup-btn-group { display: flex; gap: 6px; }
+  .mockup-mini-btn {
+    padding: 5px 12px; border-radius: 999px; background: #fff; border: 1px solid var(--line);
+    font-size: .75rem; font-weight: 600; color: var(--ink);
+  }
+
+  /* Calendrier reproduit fidèlement */
+  .m-cal {
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    border-radius: 18px; padding: 12px 14px 14px 0;
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    display: flex; flex-direction: column;
+  }
+  .m-cal-head {
+    display: grid; grid-template-columns: 46px repeat(5, 1fr); column-gap: 6px;
+    padding-bottom: 10px;
+  }
+  .m-cal-jour {
+    padding: 0 4px; display: flex; align-items: center; gap: 6px;
+  }
+  .m-cal-jour span { color: var(--muted); font-size: .68rem; font-weight: 700; }
+  .m-cal-jour strong {
+    min-width: 26px; height: 26px; border-radius: 999px; display: grid; place-items: center;
+    font-size: 1rem; font-weight: 600;
+  }
+  .m-cal-jour.today span, .m-cal-jour.today strong { color: var(--accent); }
+  .m-cal-jour small { margin-left: auto; color: var(--muted); font-size: .68rem; }
+  .m-cal-jour small.libre { color: var(--free); }
+
+  .m-cal-body {
+    display: grid; grid-template-columns: 46px repeat(5, 1fr); column-gap: 6px;
+    position: relative;
+  }
+  .m-cal-hours {
+    position: relative;
+  }
+  .m-cal-hours span {
+    position: absolute; right: 8px; transform: translateY(-50%);
+    font-size: .66rem; color: var(--muted); font-variant-numeric: tabular-nums;
+  }
+  .m-cal-col {
+    position: relative; border-radius: 10px; min-height: 380px;
+  }
+  .m-cal-col.today::before {
+    content: ""; position: absolute; inset: -40px -4px -10px -4px; z-index: 0;
+    border-radius: 14px; background: #fff;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, var(--line)), 0 12px 30px -12px rgba(15,20,40,.25);
+  }
+  .m-cal-col.today .m-ev { z-index: 1; }
+
+  /* Rayures jour libre */
+  .m-cal-libre {
+    position: absolute; inset: 0; border-radius: 10px;
+    background: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(109,116,130,.07) 10px, rgba(109,116,130,.07) 20px);
+    display: grid; place-items: center; color: var(--muted); font-size: .78rem; font-weight: 600;
+  }
+  .m-cal-libre p { background: #fff; padding: 4px 10px; border-radius: 8px; }
+
+  /* Événements de cours */
+  .m-ev {
+    position: absolute; border-radius: 9px; padding: 7px 9px;
+    display: flex; flex-direction: column; overflow: hidden;
+    font-size: .75rem; line-height: 1.25;
+  }
+  .m-ev-bleu { background: #e9f0ff; color: #1a3375; }
+  .m-ev-rose { background: #ffeef2; color: #781830; }
+  .m-ev-menthe { background: #eaf8f3; color: #165b43; }
+  .m-ev-jaune { background: #fdf5df; color: #694a08; }
+  .m-ev-mauve { background: #f3edff; color: #432279; }
+
+  .m-ev-titre { font-weight: 700; font-size: .77rem; }
+  .m-ev-salle { font-weight: 600; opacity: .85; }
+  .m-ev-bas { display: flex; justify-content: space-between; font-size: .68rem; opacity: .7; margin-top: auto; }
+
+  /* Panneau explicatif à droite */
+  .prop-details {
+    display: flex; flex-direction: column; gap: 18px;
+  }
+  .detail-block {
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    border-radius: 16px; padding: 18px;
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  .detail-block h3 {
+    font-size: .95rem; font-weight: 750; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px; color: var(--ink);
+  }
+  .detail-block p { font-size: .86rem; color: var(--muted); line-height: 1.5; margin-bottom: 10px; }
+  .detail-block ul { padding-left: 18px; font-size: .84rem; color: var(--muted); line-height: 1.5; }
+  .detail-block li { margin-bottom: 5px; }
+
+  .code-snippet {
+    background: #171a21; color: #d6deeb; border-radius: 10px; padding: 12px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: .74rem; line-height: 1.45; overflow-x: auto;
+  }
+  .code-snippet .kw { color: #ff7b72; }
+  .code-snippet .prop { color: #79c0ff; }
+  .code-snippet .val { color: #a5d6ff; }
+  .code-snippet .cmt { color: #8b949e; font-style: italic; }
+
+  .tag-good { color: #18794e; font-weight: 600; }
+  .tag-alert { color: #d42a3c; font-weight: 600; }
+
+  /* SPÉCIFIQUE PROP 1 : WIDGETS BAS */
+  .p1-bottom-dashboard {
+    display: grid; grid-template-columns: 1.2fr 1fr 0.8fr; gap: 12px;
+    margin-top: 14px;
+  }
+  .dash-card {
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    border-radius: 14px; padding: 14px;
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  .dash-card-tag { font-size: .68rem; font-weight: 700; text-transform: uppercase; color: var(--accent); letter-spacing: .04em; }
+  .dash-card-title { font-size: .95rem; font-weight: 700; margin: 4px 0 2px; }
+  .dash-card-desc { font-size: .78rem; color: var(--muted); }
+  .dash-countdown {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 8px;
+    padding: 3px 8px; border-radius: 999px; background: rgba(36,86,224,.1);
+    color: var(--accent); font-size: .72rem; font-weight: 700;
+  }
+
+  /* SPÉCIFIQUE PROP 2 : RICH CARDS */
+  .rich-card-badge {
+    display: inline-block; padding: 2px 6px; border-radius: 6px;
+    background: rgba(0,0,0,.06); font-weight: 700; font-size: .7rem;
+    margin: 4px 0;
+  }
+  .rich-prof-row {
+    display: flex; align-items: center; gap: 6px; margin-top: 4px;
+    font-size: .74rem; font-weight: 600; opacity: .85;
+  }
+  .rich-prof-avatar {
+    width: 18px; height: 18px; border-radius: 50%; background: rgba(0,0,0,.1);
+    display: grid; place-items: center; font-size: .62rem; font-weight: 700;
+  }
+  .subtle-h-line {
+    position: absolute; left: 0; right: 0; height: 1px;
+    background: rgba(0,0,0,.04); pointer-events: none;
+  }
+
+  /* SPÉCIFIQUE PROP 3 : DOUBLE SEMAINE */
+  .double-week-stack {
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .mini-week-divider {
+    display: flex; align-items: center; gap: 10px; font-size: .74rem; font-weight: 700;
+    color: var(--muted); text-transform: uppercase; letter-spacing: .05em;
+  }
+  .mini-week-divider::after {
+    content: ""; flex: 1; height: 1px; background: var(--line);
+  }
+
+  /* SPÉCIFIQUE PROP 4 : SPLIT LATERAL */
+  .split-container {
+    display: grid; grid-template-columns: 1fr 280px; gap: 14px;
+  }
+  .side-hub {
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    border-radius: 18px; padding: 16px;
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    display: flex; flex-direction: column; gap: 12px;
+  }
+
+  /* SPÉCIFIQUE PROP 5 : AGENDA HYBRIDE */
+  .hybrid-top-micro {
+    height: 180px; min-height: 180px;
+  }
+  .hybrid-bottom-focus {
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    border-radius: 16px; padding: 16px;
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .timeline-event-row {
+    display: grid; grid-template-columns: 90px 1fr auto; align-items: center; gap: 14px;
+    padding: 10px 14px; border-radius: 12px; background: #fff;
+    border: 1px solid var(--line);
+  }
+  .timeline-time { font-size: .8rem; font-weight: 700; color: var(--accent); }
+  .timeline-info strong { font-size: .88rem; display: block; }
+  .timeline-info span { font-size: .78rem; color: var(--muted); }
+  .timeline-badge { padding: 4px 9px; border-radius: 999px; background: var(--bg); font-size: .72rem; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<header class="prop-header">
+  <div class="brand">
+    <div>Ez<span>Horaire</span></div>
+    <span class="badge-tag">Design System · Grands Écrans</span>
+  </div>
+  <nav class="prop-nav">
+    <button class="active" onclick="showProp(1, this)">1. Grille Plafonnée + Dashboard</button>
+    <button onclick="showProp(2, this)">2. Cartes Riches Proportionnelles</button>
+    <button onclick="showProp(3, this)">3. Vue Quinzaine (2 Semaines)</button>
+    <button onclick="showProp(4, this)">4. Layout Split Latéral</button>
+    <button onclick="showProp(5, this)">5. Vue Hybride Semaine + Focus</button>
+  </nav>
+</header>
+
+<main class="main-container">
+
+  <div class="intro-box">
+    <h1>Optimisation de l'affichage sur Grands Écrans</h1>
+    <p>
+      Sur les grands écrans (écrans 1440p, 4K ou fenêtres très hautes), la grille actuelle s'étire à <code>calc(100vh - 170px)</code>. 
+      Cet étirement démesuré dilue le contenu : la salle flotte au milieu avec 150px de vide et le professeur est plaqué tout en bas. 
+      Voici <strong>5 propositions de refonte</strong> fidèles à la direction artistique de l'application (moderne, simple, soft neumorphism) 
+      avec la méthode exacte de détection de hauteur.
+    </p>
+  </div>
+
+  <!-- PROPOSITION 1 -->
+  <article class="prop-card active" id="prop-1">
+    <div class="prop-title-row">
+      <div>
+        <div class="prop-badge-num">Proposition 1 · Équilibrée & Pratique (Recommandée)</div>
+        <h2>Grille Plafonnée + Dashboard Inférieur Intelligent</h2>
+        <div class="summary">La grille garde sa taille idéale et compacte ; l'espace inférieur accueille 3 widgets dynamiques très utiles.</div>
+      </div>
+    </div>
+
+    <div class="prop-layout">
+      <!-- Visuel Mockup -->
+      <div class="screen-mockup">
+        <div class="mockup-bar">
+          <div class="mockup-dots"><span></span><span></span><span></span></div>
+          <div>Écran 2560 × 1440 (Grand écran) — Vue Proposition 1</div>
+          <div>EzHoraire v27</div>
+        </div>
+        <div class="mockup-app">
+          <div class="mockup-app-top">
+            <div class="mockup-logo">Ez<span>Horaire</span></div>
+            <div class="mockup-btn-group">
+              <span class="mockup-user-pill" style="background:#fff; font-weight:700;">Maxence</span>
+              <span class="mockup-user-pill">Lilian</span>
+              <span class="mockup-user-pill">Anthony</span>
+            </div>
+            <div class="mockup-mini-btn">MB</div>
+          </div>
+
+          <div class="mockup-week-row">
+            <div class="mockup-week-title">Semaine 1 <small>14 – 18 sept. 2026</small></div>
+            <div class="mockup-btn-group">
+              <button class="mockup-mini-btn">&lt;</button>
+              <button class="mockup-mini-btn">&gt;</button>
+              <button class="mockup-mini-btn">📄 PDF officiel</button>
+            </div>
+          </div>
+
+          <!-- Grille calendrier compacte (hauteur max 390px) -->
+          <div class="m-cal" style="height: 380px;">
+            <div class="m-cal-head">
+              <div></div>
+              <div class="m-cal-jour"><span>Lun</span><strong>14</strong><small>8h15 – 16h30</small></div>
+              <div class="m-cal-jour"><span>Mar</span><strong>15</strong><small>8h15 – 15h30</small></div>
+              <div class="m-cal-jour"><span>Mer</span><strong>16</strong><small>8h15 – 12h30</small></div>
+              <div class="m-cal-jour today"><span>Jeu</span><strong>17</strong><small>8h30 – 17h30</small></div>
+              <div class="m-cal-jour"><span>Ven</span><strong>18</strong><small class="libre">Libre</small></div>
+            </div>
+
+            <div class="m-cal-body" style="height: 310px;">
+              <div class="m-cal-hours">
+                <span style="top: 0%">8h</span>
+                <span style="top: 20%">10h</span>
+                <span style="top: 40%">12h</span>
+                <span style="top: 50%">13h</span>
+                <span style="top: 70%">15h</span>
+                <span style="top: 90%">17h</span>
+              </div>
+
+              <!-- Lundi -->
+              <div class="m-cal-col">
+                <div class="m-ev m-ev-rose" style="top: 2.5%; height: 42.5%; left: 0; right: 0;">
+                  <div class="m-ev-titre">Modélisation 3Dconstruction</div>
+                  <div class="m-ev-salle" style="margin: 4px 0;">1/14</div>
+                  <div class="m-ev-bas"><span>Souris</span><span>8h15 – 12h30</span></div>
+                </div>
+                <div class="m-ev m-ev-menthe" style="top: 55%; height: 30%; left: 0; right: 0;">
+                  <div class="m-ev-titre">Mathématique appliquée</div>
+                  <div class="m-ev-salle" style="margin: 4px 0;">2/11</div>
+                  <div class="m-ev-bas"><span>Lebailly</span><span>13h30 – 16h30</span></div>
+                </div>
+              </div>
+
+              <!-- Mardi -->
+              <div class="m-cal-col">
+                <div class="m-ev m-ev-rose" style="top: 2.5%; height: 42.5%; left: 0; right: 0;">
+                  <div class="m-ev-titre">Modélisation 3Dconstruction</div>
+                  <div class="m-ev-salle" style="margin: 4px 0;">1/18</div>
+                  <div class="m-ev-bas"><span>Souris</span><span>8h15 – 12h30</span></div>
+                </div>
+                <div class="m-ev m-ev-bleu" style="top: 55%; height: 20%; left: 0; right: 0;">
+                  <div class="m-ev-titre">Anglais</div>
+                  <div class="m-ev-salle" style="margin: 4px 0;">2/17A</div>
+                  <div class="m-ev-bas"><span>Delmotte</span><span>13h30 – 15h30</span></div>
+                </div>
+              </div>
+
+              <!-- Mercredi -->
+              <div class="m-cal-col">
+                <div class="m-ev m-ev-menthe" style="top: 2.5%; height: 20%; left: 0; right: 0;">
+                  <div class="m-ev-titre">Traitement du son</div>
+                  <div class="m-ev-salle">1/32</div>
+                  <div class="m-ev-bas"><span>Sottiaux</span><span>8h15 – 10h15</span></div>
+                </div>
+                <div class="m-ev m-ev-menthe" style="top: 25%; height: 20%; left: 0; right: 0;">
+                  <div class="m-ev-titre">Mathématique appliquée</div>
+                  <div class="m-ev-salle">1/36A</div>
+                  <div class="m-ev-bas"><span>Lebailly</span><span>10h30 – 12h30</span></div>
+                </div>
+              </div>
+
+              <!-- Jeudi (Aujourd'hui) -->
+              <div class="m-cal-col today">
+                <div class="m-ev m-ev-jaune" style="top: 5%; height: 40%; left: 0; right: 0;">
+                  <div class="m-ev-titre">Colorimétrie</div>
+                  <div class="m-ev-salle" style="margin: 4px 0;">2/10E</div>
+                  <div class="m-ev-bas"><span>Gryspeert</span><span>8h30 – 12h30</span></div>
+                </div>
+                <div class="m-ev m-ev-mauve" style="top: 55%; height: 40%; left: 0; right: 0;">
+                  <div class="m-ev-titre">Création graphique 3D</div>
+                  <div class="m-ev-salle" style="margin: 4px 0;">1/16</div>
+                  <div class="m-ev-bas"><span>D'Hondt</span><span>13h30 – 17h30</span></div>
+                </div>
+              </div>
+
+              <!-- Vendredi -->
+              <div class="m-cal-col">
+                <div class="m-cal-libre"><p>Pas de cours</p></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- LE DASHBOARD DU BAS QUI COMBLE INTELLIGEMMENT LE GRAND ÉCRAN -->
+          <div class="p1-bottom-dashboard">
+            <div class="dash-card">
+              <div class="dash-card-tag">En ce moment · Jeudi</div>
+              <div class="dash-card-title">Création graphique 3D</div>
+              <div class="dash-card-desc">Salle <strong>1/16</strong> · Prof. D'Hondt · Fin à 17h30</div>
+              <div class="dash-countdown">⏱ Reste 1h45 de cours</div>
+            </div>
+            <div class="dash-card">
+              <div class="dash-card-tag">Synthèse de la semaine</div>
+              <div class="dash-card-title">28 heures de cours</div>
+              <div class="dash-card-desc">Jour le plus dense : <strong>Jeudi (8h)</strong> · Vendredi libéré</div>
+              <div style="margin-top: 8px; font-size: .72rem; color: var(--free); font-weight: 600;">✓ Pause midi de 1h garantie</div>
+            </div>
+            <div class="dash-card">
+              <div class="dash-card-tag">Raccourcis rapides</div>
+              <div class="dash-card-title">Actions du profil</div>
+              <div style="display: flex; gap: 6px; margin-top: 8px;">
+                <button class="mockup-mini-btn" style="padding: 4px 8px;">Télécharger iCal</button>
+                <button class="mockup-mini-btn" style="padding: 4px 8px;">Partager</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Explications -->
+      <div class="prop-details">
+        <div class="detail-block">
+          <h3>Principe UX</h3>
+          <p>
+            On fixe un <strong>plafond de hauteur maximale</strong> (<code>max-height: 540px</code> ou ratio heure ~45px) pour que les cartes conservent leur proportion dorée.
+          </p>
+          <p>
+            L'espace disponible sous la grille (qui serait autrement un trou vide) est investi dans un <strong>Dashboard contextuel</strong> (cours en cours, synthèse hebdomadaire, actions rapides).
+          </p>
+          <ul>
+            <li><span class="tag-good">Avantage :</span> Résout 100% du problème de vide sans étirer les cartes.</li>
+            <li><span class="tag-good">Avantage :</span> Donne une valeur ajoutée forte à l'expérience desktop.</li>
+            <li><span class="tag-alert">Attention :</span> Nécessite de concevoir les 3 widgets du dashboard.</li>
+          </ul>
+        </div>
+
+        <div class="detail-block">
+          <h3>Comment détecter la hauteur ?</h3>
+          <div class="code-snippet">
+<span class="cmt">/* Détecte un grand écran en hauteur */</span>
+<span class="kw">@media</span> (min-width: 1024px) <span class="kw">and</span> (min-height: 850px) {
+  <span class="prop">#horaire-contenu</span> {
+    <span class="prop">grid-template-rows</span>: auto <span class="val">minmax(420px, 58vh)</span> auto;
+    <span class="prop">height</span>: <span class="val">calc(100dvh - 120px)</span>;
+  }
+  <span class="prop">.dashboard-bas</span> {
+    <span class="prop">display</span>: <span class="val">grid</span>; <span class="cmt">/* Activé sur grand écran */</span>
+  }
+}
+          </div>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <!-- PROPOSITION 2 -->
+  <article class="prop-card" id="prop-2">
+    <div class="prop-title-row">
+      <div>
+        <div class="prop-badge-num">Proposition 2 · Haute Densité & Typographie Fluide</div>
+        <h2>Cartes Riches Proportionnelles & Trame Subtile</h2>
+        <div class="summary">On garde le 100% de hauteur, mais on remplit le vide avec du contenu riche, des badges de salle et une trame temporelle.</div>
+      </div>
+    </div>
+
+    <div class="prop-layout">
+      <!-- Visuel Mockup -->
+      <div class="screen-mockup">
+        <div class="mockup-bar">
+          <div class="mockup-dots"><span></span><span></span><span></span></div>
+          <div>Écran 2560 × 1440 (Plein écran étendu) — Vue Proposition 2</div>
+          <div>EzHoraire v27</div>
+        </div>
+        <div class="mockup-app">
+          <div class="mockup-app-top">
+            <div class="mockup-logo">Ez<span>Horaire</span></div>
+            <div class="mockup-btn-group">
+              <span class="mockup-user-pill" style="background:#fff; font-weight:700;">Maxence</span>
+              <span class="mockup-user-pill">Lilian</span>
+              <span class="mockup-user-pill">Anthony</span>
+            </div>
+            <div class="mockup-mini-btn">MB</div>
+          </div>
+
+          <div class="mockup-week-row">
+            <div class="mockup-week-title">Semaine 1 <small>14 – 18 sept. 2026</small></div>
+            <div class="mockup-btn-group">
+              <button class="mockup-mini-btn">&lt;</button>
+              <button class="mockup-mini-btn">&gt;</button>
+              <button class="mockup-mini-btn">📄 PDF officiel</button>
+            </div>
+          </div>
+
+          <!-- Grille pleine hauteur avec cartes enrichies -->
+          <div class="m-cal" style="height: 520px;">
+            <div class="m-cal-head">
+              <div></div>
+              <div class="m-cal-jour"><span>Lun</span><strong>14</strong><small>8h15 – 16h30</small></div>
+              <div class="m-cal-jour"><span>Mar</span><strong>15</strong><small>8h15 – 15h30</small></div>
+              <div class="m-cal-jour"><span>Mer</span><strong>16</strong><small>8h15 – 12h30</small></div>
+              <div class="m-cal-jour today"><span>Jeu</span><strong>17</strong><small>8h30 – 17h30</small></div>
+              <div class="m-cal-jour"><span>Ven</span><strong>18</strong><small class="libre">Libre</small></div>
+            </div>
+
+            <div class="m-cal-body" style="height: 440px;">
+              <!-- Lignes de repères subtiles pour rythmer la hauteur -->
+              <div class="subtle-h-line" style="top: 20%;"></div>
+              <div class="subtle-h-line" style="top: 40%;"></div>
+              <div class="subtle-h-line" style="top: 50%; height: 1.5px; background: rgba(0,0,0,.08);"></div>
+              <div class="subtle-h-line" style="top: 70%;"></div>
+              <div class="subtle-h-line" style="top: 90%;"></div>
+
+              <div class="m-cal-hours">
+                <span style="top: 0%">8h</span>
+                <span style="top: 20%">10h</span>
+                <span style="top: 40%">12h</span>
+                <span style="top: 50%">13h</span>
+                <span style="top: 70%">15h</span>
+                <span style="top: 90%">17h</span>
+              </div>
+
+              <!-- Lundi -->
+              <div class="m-cal-col">
+                <div class="m-ev m-ev-rose" style="top: 2.5%; height: 42.5%; left: 0; right: 0; padding: 12px 10px;">
+                  <div class="m-ev-titre" style="font-size: .88rem;">Modélisation 3Dconstruction</div>
+                  <div class="rich-card-badge">Salle 1/14 · Bât. 1</div>
+                  <div class="rich-prof-row"><span class="rich-prof-avatar">S</span> Prof. Souris</div>
+                  <div class="m-ev-bas" style="font-size: .75rem; font-weight: 600;"><span>Durée : 4h15</span><span>8h15 – 12h30</span></div>
+                </div>
+                <div class="m-ev m-ev-menthe" style="top: 55%; height: 30%; left: 0; right: 0; padding: 10px;">
+                  <div class="m-ev-titre" style="font-size: .84rem;">Mathématique appliquée</div>
+                  <div class="rich-card-badge">Salle 2/11</div>
+                  <div class="rich-prof-row"><span class="rich-prof-avatar">L</span> Prof. Lebailly</div>
+                  <div class="m-ev-bas" style="font-size: .74rem;"><span>13h30 – 16h30</span></div>
+                </div>
+              </div>
+
+              <!-- Mardi -->
+              <div class="m-cal-col">
+                <div class="m-ev m-ev-rose" style="top: 2.5%; height: 42.5%; left: 0; right: 0; padding: 12px 10px;">
+                  <div class="m-ev-titre" style="font-size: .88rem;">Modélisation 3Dconstruction</div>
+                  <div class="rich-card-badge">Salle 1/18 · Bât. 1</div>
+                  <div class="rich-prof-row"><span class="rich-prof-avatar">S</span> Prof. Souris</div>
+                  <div class="m-ev-bas" style="font-size: .75rem;"><span>8h15 – 12h30</span></div>
+                </div>
+                <div class="m-ev m-ev-bleu" style="top: 55%; height: 20%; left: 0; right: 0; padding: 8px;">
+                  <div class="m-ev-titre" style="font-size: .84rem;">Anglais</div>
+                  <div class="rich-card-badge">Salle 2/17A</div>
+                  <div class="m-ev-bas"><span>Delmotte</span><span>13h30 – 15h30</span></div>
+                </div>
+              </div>
+
+              <!-- Mercredi -->
+              <div class="m-cal-col">
+                <div class="m-ev m-ev-menthe" style="top: 2.5%; height: 20%; left: 0; right: 0;">
+                  <div class="m-ev-titre">Traitement du son</div>
+                  <div class="rich-card-badge">Salle 1/32</div>
+                  <div class="m-ev-bas"><span>Sottiaux</span><span>8h15 – 10h15</span></div>
+                </div>
+                <div class="m-ev m-ev-menthe" style="top: 25%; height: 20%; left: 0; right: 0;">
+                  <div class="m-ev-titre">Mathématique appliquée</div>
+                  <div class="rich-card-badge">Salle 1/36A</div>
+                  <div class="m-ev-bas"><span>Lebailly</span><span>10h30 – 12h30</span></div>
+                </div>
+              </div>
+
+              <!-- Jeudi (Aujourd'hui) -->
+              <div class="m-cal-col today">
+                <div class="m-ev m-ev-jaune" style="top: 5%; height: 40%; left: 0; right: 0; padding: 12px 12px;">
+                  <div class="m-ev-titre" style="font-size: .95rem; line-height: 1.2;">Colorimétrie</div>
+                  <div class="rich-card-badge" style="background: rgba(0,0,0,.08); font-size: .74rem;">Salle 2/10E · Étage 2</div>
+                  <div class="rich-prof-row" style="font-size: .8rem;"><span class="rich-prof-avatar" style="background: rgba(0,0,0,.15);">G</span> Mme Gryspeert</div>
+                  <div style="margin-top: 8px; font-size: .72rem; color: #694a08; opacity: .8;">Cours théorique · 4 heures</div>
+                  <div class="m-ev-bas" style="font-size: .76rem; font-weight: 700;"><span>Terminé</span><span>8h30 – 12h30</span></div>
+                </div>
+                <div class="m-ev m-ev-mauve" style="top: 55%; height: 40%; left: 0; right: 0; padding: 12px 12px;">
+                  <div class="m-ev-titre" style="font-size: .95rem; line-height: 1.2;">Création graphique 3D</div>
+                  <div class="rich-card-badge" style="background: rgba(0,0,0,.08); font-size: .74rem;">Salle 1/16 · Atelier 3D</div>
+                  <div class="rich-prof-row" style="font-size: .8rem;"><span class="rich-prof-avatar" style="background: rgba(0,0,0,.15);">D</span> M. D'Hondt</div>
+                  <div style="margin-top: 8px; font-size: .72rem; color: #432279; opacity: .8;">Séance pratique · En cours</div>
+                  <div class="m-ev-bas" style="font-size: .76rem; font-weight: 700;"><span>En cours</span><span>13h30 – 17h30</span></div>
+                </div>
+              </div>
+
+              <!-- Vendredi -->
+              <div class="m-cal-col">
+                <div class="m-cal-libre"><p>Pas de cours</p></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Explications -->
+      <div class="prop-details">
+        <div class="detail-block">
+          <h3>Principe UX</h3>
+          <p>
+            Au lieu d'avoir un <code>flex-grow: 1</code> qui éloigne bêtement la salle du titre, on supprime cet étirement et on profite de l'espace pour <strong>enrichir la carte</strong> :
+          </p>
+          <ul>
+            <li>Badges de salle stylisés avec icône/bâtiment (ex: <code>Salle 2/10E · Étage 2</code>).</li>
+            <li>Micro-avatar et libellé complet du professeur.</li>
+            <li>Indicateur de statut ou durée totale du cours (ex: <code>Séance pratique · 4h</code>).</li>
+            <li>Trame temporelle discrète (repères toutes les heures) pour donner du rythme visuel à la grille.</li>
+          </ul>
+          <ul>
+            <li><span class="tag-good">Avantage :</span> L'aspect "grand écran Pro" est superbe et ne semble jamais vide.</li>
+            <li><span class="tag-good">Avantage :</span> Aucune refonte architecturale : uniquement du CSS et de la mise en page interne.</li>
+          </ul>
+        </div>
+
+        <div class="detail-block">
+          <h3>Comment détecter la hauteur ?</h3>
+          <div class="code-snippet">
+<span class="cmt">/* Détection par Container Queries ou Media Query */</span>
+<span class="kw">@media</span> (min-height: 950px) {
+  <span class="prop">.ev</span> {
+    <span class="prop">gap</span>: <span class="val">8px</span>; <span class="cmt">/* Espace naturel et maîtrisé */</span>
+    <span class="prop">padding</span>: <span class="val">12px 14px</span>;
+  }
+  <span class="prop">.ev .es</span> {
+    <span class="prop">flex-grow</span>: <span class="val">0</span>; <span class="cmt">/* Fini le vide au milieu ! */</span>
+    <span class="prop">background</span>: <span class="val">rgba(0,0,0,.06)</span>;
+    <span class="prop">border-radius</span>: <span class="val">6px</span>;
+  }
+  <span class="prop">.ev .extra-info</span> {
+    <span class="prop">display</span>: <span class="val">flex</span>; <span class="cmt">/* Révélé uniquement si assez haut */</span>
+  }
+}
+          </div>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <!-- PROPOSITION 3 -->
+  <article class="prop-card" id="prop-3">
+    <div class="prop-title-row">
+      <div>
+        <div class="prop-badge-num">Proposition 3 · Vision Long Terme</div>
+        <h2>Vue Quinzaine : Semaine en cours + Semaine suivante</h2>
+        <div class="summary">La hauteur est répartie sur 2 semaines complètes empilées, éliminant tout vide et offrant une anticipation parfaite.</div>
+      </div>
+    </div>
+
+    <div class="prop-layout">
+      <!-- Visuel Mockup -->
+      <div class="screen-mockup">
+        <div class="mockup-bar">
+          <div class="mockup-dots"><span></span><span></span><span></span></div>
+          <div>Écran 2560 × 1440 — Vue Proposition 3 (Quinzaine)</div>
+          <div>EzHoraire v27</div>
+        </div>
+        <div class="mockup-app">
+          <div class="mockup-app-top">
+            <div class="mockup-logo">Ez<span>Horaire</span></div>
+            <div class="mockup-btn-group">
+              <span class="mockup-user-pill" style="background:#fff; font-weight:700;">Maxence</span>
+              <span class="mockup-user-pill">Lilian</span>
+            </div>
+            <div class="mockup-mini-btn">MB</div>
+          </div>
+
+          <div class="double-week-stack">
+            <!-- SEMAINE 1 -->
+            <div>
+              <div class="mockup-week-row" style="margin-bottom: 6px;">
+                <div style="font-size: 1.05rem; font-weight: 750;">Semaine 1 <small style="color:var(--muted); font-size:.8rem;">Cette semaine (14 – 18 sept.)</small></div>
+                <div class="mockup-btn-group">
+                  <span class="badge-tag" style="background: rgba(36,86,224,.1); color: var(--accent);">Semaine en cours</span>
+                </div>
+              </div>
+
+              <div class="m-cal" style="height: 230px;">
+                <div class="m-cal-head" style="padding-bottom: 4px;">
+                  <div></div>
+                  <div class="m-cal-jour"><span>Lun</span><strong>14</strong></div>
+                  <div class="m-cal-jour"><span>Mar</span><strong>15</strong></div>
+                  <div class="m-cal-jour"><span>Mer</span><strong>16</strong></div>
+                  <div class="m-cal-jour today"><span>Jeu</span><strong>17</strong></div>
+                  <div class="m-cal-jour"><span>Ven</span><strong>18</strong></div>
+                </div>
+                <div class="m-cal-body" style="height: 160px;">
+                  <div class="m-cal-hours"><span style="top: 0%">8h</span><span style="top: 50%">13h</span><span style="top: 100%">18h</span></div>
+                  <div class="m-cal-col">
+                    <div class="m-ev m-ev-rose" style="top: 5%; height: 45%; left: 0; right: 0;"><div class="m-ev-titre">Modélisation 3D</div><div class="m-ev-salle">1/14 · Souris</div></div>
+                    <div class="m-ev m-ev-menthe" style="top: 55%; height: 35%; left: 0; right: 0;"><div class="m-ev-titre">Math. appliquée</div><div class="m-ev-salle">2/11 · Lebailly</div></div>
+                  </div>
+                  <div class="m-cal-col">
+                    <div class="m-ev m-ev-rose" style="top: 5%; height: 45%; left: 0; right: 0;"><div class="m-ev-titre">Modélisation 3D</div><div class="m-ev-salle">1/18 · Souris</div></div>
+                    <div class="m-ev m-ev-bleu" style="top: 55%; height: 25%; left: 0; right: 0;"><div class="m-ev-titre">Anglais</div><div class="m-ev-salle">2/17A · Delmotte</div></div>
+                  </div>
+                  <div class="m-cal-col">
+                    <div class="m-ev m-ev-menthe" style="top: 5%; height: 22%; left: 0; right: 0;"><div class="m-ev-titre">Traitement son</div><div class="m-ev-salle">1/32</div></div>
+                    <div class="m-ev m-ev-menthe" style="top: 28%; height: 22%; left: 0; right: 0;"><div class="m-ev-titre">Math. appliquée</div><div class="m-ev-salle">1/36A</div></div>
+                  </div>
+                  <div class="m-cal-col today">
+                    <div class="m-ev m-ev-jaune" style="top: 5%; height: 45%; left: 0; right: 0;"><div class="m-ev-titre">Colorimétrie</div><div class="m-ev-salle">2/10E · Gryspeert</div></div>
+                    <div class="m-ev m-ev-mauve" style="top: 55%; height: 40%; left: 0; right: 0;"><div class="m-ev-titre">Création graph. 3D</div><div class="m-ev-salle">1/16 · D'Hondt</div></div>
+                  </div>
+                  <div class="m-cal-col"><div class="m-cal-libre"><p>Libre</p></div></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- SEMAINE 2 -->
+            <div>
+              <div class="mini-week-divider">
+                <span>Semaine 2 · Semaine prochaine (21 – 25 sept.)</span>
+              </div>
+
+              <div class="m-cal" style="height: 230px; margin-top: 8px; opacity: .95;">
+                <div class="m-cal-head" style="padding-bottom: 4px;">
+                  <div></div>
+                  <div class="m-cal-jour"><span>Lun</span><strong>21</strong></div>
+                  <div class="m-cal-jour"><span>Mar</span><strong>22</strong></div>
+                  <div class="m-cal-jour"><span>Mer</span><strong>23</strong></div>
+                  <div class="m-cal-jour"><span>Jeu</span><strong>24</strong></div>
+                  <div class="m-cal-jour"><span>Ven</span><strong>25</strong></div>
+                </div>
+                <div class="m-cal-body" style="height: 160px;">
+                  <div class="m-cal-hours"><span style="top: 0%">8h</span><span style="top: 50%">13h</span><span style="top: 100%">18h</span></div>
+                  <div class="m-cal-col">
+                    <div class="m-ev m-ev-rose" style="top: 5%; height: 45%; left: 0; right: 0;"><div class="m-ev-titre">Modélisation 3D</div><div class="m-ev-salle">1/14 · Souris</div></div>
+                    <div class="m-ev m-ev-menthe" style="top: 55%; height: 35%; left: 0; right: 0;"><div class="m-ev-titre">Math. appliquée</div><div class="m-ev-salle">2/11 · Lebailly</div></div>
+                  </div>
+                  <div class="m-cal-col">
+                    <div class="m-ev m-ev-jaune" style="top: 5%; height: 45%; left: 0; right: 0;"><div class="m-ev-titre">Colorimétrie TP</div><div class="m-ev-salle">2/10E · Gryspeert</div></div>
+                  </div>
+                  <div class="m-cal-col">
+                    <div class="m-ev m-ev-bleu" style="top: 5%; height: 40%; left: 0; right: 0;"><div class="m-ev-titre">Anglais intensif</div><div class="m-ev-salle">2/17A</div></div>
+                  </div>
+                  <div class="m-cal-col">
+                    <div class="m-ev m-ev-mauve" style="top: 55%; height: 40%; left: 0; right: 0;"><div class="m-ev-titre">Création graph. 3D</div><div class="m-ev-salle">1/16 · D'Hondt</div></div>
+                  </div>
+                  <div class="m-cal-col"><div class="m-cal-libre"><p>Libre</p></div></div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Explications -->
+      <div class="prop-details">
+        <div class="detail-block">
+          <h3>Principe UX</h3>
+          <p>
+            Plutôt que d'étirer artificiellement 5 jours sur 1200px de hauteur, <strong>on empile deux semaines consécutives</strong> (Semaine N + Semaine N+1).
+          </p>
+          <p>
+            Chaque semaine a une hauteur compacte optimale (~240px-280px). L'étudiant voit immédiatement ce qui l'attend la semaine suivante (préparation de rendus, devoirs, examens) sans jamais devoir cliquer sur "Semaine suivante".
+          </p>
+          <ul>
+            <li><span class="tag-good">Avantage :</span> Utilisation exemplaire de la hauteur verticale.</li>
+            <li><span class="tag-good">Avantage :</span> Immense confort de planification pour les étudiants.</li>
+            <li><span class="tag-alert">Attention :</span> Nécessite de charger les cours de 2 semaines en mémoire (déjà supporté par les données d'EzHoraire).</li>
+          </ul>
+        </div>
+
+        <div class="detail-block">
+          <h3>Comment détecter la hauteur ?</h3>
+          <div class="code-snippet">
+<span class="cmt">/* Active la double-semaine si la hauteur est suffisante */</span>
+<span class="kw">@media</span> (min-width: 1024px) <span class="kw">and</span> (min-height: 980px) {
+  <span class="prop">.vue-quinzaine</span> {
+    <span class="prop">display</span>: <span class="val">flex</span>;
+    <span class="prop">flex-direction</span>: <span class="val">column</span>;
+    <span class="prop">gap</span>: <span class="val">18px</span>;
+  }
+}
+          </div>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <!-- PROPOSITION 4 -->
+  <article class="prop-card" id="prop-4">
+    <div class="prop-title-row">
+      <div>
+        <div class="prop-badge-num">Proposition 4 · Station de Travail</div>
+        <h2>Layout Split Latéral : Grille Compacte + Volet Permanent</h2>
+        <div class="summary">La grille adopte une largeur et hauteur idéales, secondée par un volet latéral d'inspection permanent exploitant toute la hauteur.</div>
+      </div>
+    </div>
+
+    <div class="prop-layout">
+      <!-- Visuel Mockup -->
+      <div class="screen-mockup">
+        <div class="mockup-bar">
+          <div class="mockup-dots"><span></span><span></span><span></span></div>
+          <div>Écran Ultrawide / 16:9 — Vue Proposition 4 (Split Latéral)</div>
+          <div>EzHoraire v27</div>
+        </div>
+        <div class="mockup-app">
+          <div class="mockup-app-top">
+            <div class="mockup-logo">Ez<span>Horaire</span></div>
+            <div class="mockup-btn-group">
+              <span class="mockup-user-pill" style="background:#fff; font-weight:700;">Maxence</span>
+              <span class="mockup-user-pill">Lilian</span>
+            </div>
+            <div class="mockup-mini-btn">MB</div>
+          </div>
+
+          <div class="mockup-week-row">
+            <div class="mockup-week-title">Semaine 1 <small>14 – 18 sept. 2026</small></div>
+            <div class="mockup-btn-group">
+              <button class="mockup-mini-btn">&lt;</button>
+              <button class="mockup-mini-btn">&gt;</button>
+              <button class="mockup-mini-btn">Aujourd'hui</button>
+            </div>
+          </div>
+
+          <div class="split-container">
+            <!-- Grille compacte à gauche -->
+            <div class="m-cal" style="height: 440px;">
+              <div class="m-cal-head">
+                <div></div>
+                <div class="m-cal-jour"><span>Lun</span><strong>14</strong></div>
+                <div class="m-cal-jour"><span>Mar</span><strong>15</strong></div>
+                <div class="m-cal-jour"><span>Mer</span><strong>16</strong></div>
+                <div class="m-cal-jour today"><span>Jeu</span><strong>17</strong></div>
+                <div class="m-cal-jour"><span>Ven</span><strong>18</strong></div>
+              </div>
+              <div class="m-cal-body" style="height: 360px;">
+                <div class="m-cal-hours"><span style="top: 0%">8h</span><span style="top: 25%">10h</span><span style="top: 50%">13h</span><span style="top: 75%">16h</span></div>
+                <div class="m-cal-col">
+                  <div class="m-ev m-ev-rose" style="top: 2.5%; height: 42.5%; left: 0; right: 0;"><div class="m-ev-titre">Modélisation 3D</div><div class="m-ev-salle">1/14</div><div class="m-ev-bas"><span>Souris</span></div></div>
+                  <div class="m-ev m-ev-menthe" style="top: 55%; height: 30%; left: 0; right: 0;"><div class="m-ev-titre">Math. appliquée</div><div class="m-ev-salle">2/11</div><div class="m-ev-bas"><span>Lebailly</span></div></div>
+                </div>
+                <div class="m-cal-col">
+                  <div class="m-ev m-ev-rose" style="top: 2.5%; height: 42.5%; left: 0; right: 0;"><div class="m-ev-titre">Modélisation 3D</div><div class="m-ev-salle">1/18</div><div class="m-ev-bas"><span>Souris</span></div></div>
+                  <div class="m-ev m-ev-bleu" style="top: 55%; height: 20%; left: 0; right: 0;"><div class="m-ev-titre">Anglais</div><div class="m-ev-salle">2/17A</div></div>
+                </div>
+                <div class="m-cal-col">
+                  <div class="m-ev m-ev-menthe" style="top: 2.5%; height: 20%; left: 0; right: 0;"><div class="m-ev-titre">Traitement son</div><div class="m-ev-salle">1/32</div></div>
+                  <div class="m-ev m-ev-menthe" style="top: 25%; height: 20%; left: 0; right: 0;"><div class="m-ev-titre">Math. appliquée</div><div class="m-ev-salle">1/36A</div></div>
+                </div>
+                <div class="m-cal-col today">
+                  <div class="m-ev m-ev-jaune" style="top: 5%; height: 40%; left: 0; right: 0; outline: 2px solid var(--accent);"><div class="m-ev-titre">Colorimétrie</div><div class="m-ev-salle">2/10E</div><div class="m-ev-bas"><span>Gryspeert</span></div></div>
+                  <div class="m-ev m-ev-mauve" style="top: 55%; height: 40%; left: 0; right: 0;"><div class="m-ev-titre">Création graph. 3D</div><div class="m-ev-salle">1/16</div><div class="m-ev-bas"><span>D'Hondt</span></div></div>
+                </div>
+                <div class="m-cal-col"><div class="m-cal-libre"><p>Libre</p></div></div>
+              </div>
+            </div>
+
+            <!-- Volet latéral permanent à droite -->
+            <div class="side-hub">
+              <div style="font-size: .72rem; font-weight: 700; text-transform: uppercase; color: var(--accent);">Détail du cours sélectionné</div>
+              <div style="font-size: 1.1rem; font-weight: 750;">Colorimétrie</div>
+              <div style="font-size: .84rem; color: var(--muted); margin-top: -4px;">Jeudi 17 septembre · 8h30 – 12h30</div>
+
+              <div style="background: #fff; border-radius: 12px; padding: 12px; border: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px;">
+                <div style="font-size: .78rem;"><strong>Localisation :</strong> Salle 2/10E (Bâtiment 2, Étage 1)</div>
+                <div style="font-size: .78rem;"><strong>Enseignant :</strong> M. Gryspeert</div>
+                <div style="font-size: .78rem;"><strong>Groupe :</strong> Bloc 1 Informatique Graphique</div>
+              </div>
+
+              <div style="font-size: .72rem; font-weight: 700; text-transform: uppercase; color: var(--muted); margin-top: 6px;">Aperçu PDF officiel</div>
+              <div style="flex: 1; min-height: 140px; background: #fff; border-radius: 12px; border: 1px dashed var(--line); display: grid; place-items: center; font-size: .76rem; color: var(--muted); text-align: center; padding: 12px;">
+                📄 PDF officiel de la semaine 1 synchronisé en continu
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Explications -->
+      <div class="prop-details">
+        <div class="detail-block">
+          <h3>Principe UX</h3>
+          <p>
+            Les grands écrans sont presque toujours <strong>très larges en plus d'être hauts</strong>. 
+            Plutôt que d'occuper 100% de la largeur avec une grille géante qui s'étire dans tous les sens, on utilise un <strong>Split Screen ergonomique</strong> :
+          </p>
+          <ul>
+            <li>La grille horaire reste centrée à gauche dans des proportions idéales.</li>
+            <li>Un volet latéral permanent exploite toute la hauteur pour afficher la fiche complète du cours cliqué et le PDF officiel en direct.</li>
+            <li>Plus de pop-up qui masque la vue ou de panneau PDF qui écrase violemment la semaine au clic !</li>
+          </ul>
+        </div>
+
+        <div class="detail-block">
+          <h3>Comment détecter la hauteur / largeur ?</h3>
+          <div class="code-snippet">
+<span class="kw">@media</span> (min-width: 1400px) <span class="kw">and</span> (min-height: 800px) {
+  <span class="prop">#horaire-contenu</span> {
+    <span class="prop">grid-template-columns</span>: <span class="val">1fr 340px</span>;
+    <span class="prop">grid-template-areas</span>: <span class="val">"week side" "cal side" "foot side"</span>;
+  }
+}
+          </div>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <!-- PROPOSITION 5 -->
+  <article class="prop-card" id="prop-5">
+    <div class="prop-title-row">
+      <div>
+        <div class="prop-badge-num">Proposition 5 · Vue Hybride Macro / Micro</div>
+        <h2>Planning Semaine Minimal + Focus Jour Déroulé</h2>
+        <div class="summary">Le tiers haut offre une vue d'ensemble compacte ; les deux tiers bas offrent un agenda chronologique riche et spacieux du jour.</div>
+      </div>
+    </div>
+
+    <div class="prop-layout">
+      <!-- Visuel Mockup -->
+      <div class="screen-mockup">
+        <div class="mockup-bar">
+          <div class="mockup-dots"><span></span><span></span><span></span></div>
+          <div>Écran 2560 × 1440 — Vue Proposition 5 (Vue Hybride)</div>
+          <div>EzHoraire v27</div>
+        </div>
+        <div class="mockup-app">
+          <div class="mockup-app-top">
+            <div class="mockup-logo">Ez<span>Horaire</span></div>
+            <div class="mockup-btn-group">
+              <span class="mockup-user-pill" style="background:#fff; font-weight:700;">Maxence</span>
+              <span class="mockup-user-pill">Lilian</span>
+            </div>
+            <div class="mockup-mini-btn">MB</div>
+          </div>
+
+          <!-- MINI SEMAINE EN HAUT -->
+          <div>
+            <div class="mockup-week-row" style="margin-bottom: 6px;">
+              <div style="font-size: 1rem; font-weight: 750;">Semaine 1 <small style="color:var(--muted);">14 – 18 sept. (Vue synthétique)</small></div>
+              <div class="mockup-btn-group">
+                <button class="mockup-mini-btn">&lt;</button>
+                <button class="mockup-mini-btn">&gt;</button>
+              </div>
+            </div>
+
+            <div class="m-cal hybrid-top-micro">
+              <div class="m-cal-head" style="padding-bottom: 2px;">
+                <div></div>
+                <div class="m-cal-jour"><span>Lun 14</span></div>
+                <div class="m-cal-jour"><span>Mar 15</span></div>
+                <div class="m-cal-jour"><span>Mer 16</span></div>
+                <div class="m-cal-jour today"><span>Jeu 17 (Sélectionné)</span></div>
+                <div class="m-cal-jour"><span>Ven 18</span></div>
+              </div>
+              <div class="m-cal-body" style="height: 125px;">
+                <div class="m-cal-hours"><span style="top: 0%">8h</span><span style="top: 100%">18h</span></div>
+                <div class="m-cal-col">
+                  <div class="m-ev m-ev-rose" style="top: 5%; height: 45%; left: 0; right: 0; font-size: .66rem;">Modélisation 3D</div>
+                  <div class="m-ev m-ev-menthe" style="top: 55%; height: 35%; left: 0; right: 0; font-size: .66rem;">Math. appliquée</div>
+                </div>
+                <div class="m-cal-col">
+                  <div class="m-ev m-ev-rose" style="top: 5%; height: 45%; left: 0; right: 0; font-size: .66rem;">Modélisation 3D</div>
+                  <div class="m-ev m-ev-bleu" style="top: 55%; height: 25%; left: 0; right: 0; font-size: .66rem;">Anglais</div>
+                </div>
+                <div class="m-cal-col">
+                  <div class="m-ev m-ev-menthe" style="top: 5%; height: 22%; left: 0; right: 0; font-size: .66rem;">Son</div>
+                  <div class="m-ev m-ev-menthe" style="top: 28%; height: 22%; left: 0; right: 0; font-size: .66rem;">Math.</div>
+                </div>
+                <div class="m-cal-col today">
+                  <div class="m-ev m-ev-jaune" style="top: 5%; height: 45%; left: 0; right: 0; font-size: .66rem; font-weight: 700;">Colorimétrie</div>
+                  <div class="m-ev m-ev-mauve" style="top: 55%; height: 40%; left: 0; right: 0; font-size: .66rem; font-weight: 700;">Création 3D</div>
+                </div>
+                <div class="m-cal-col"><div class="m-cal-libre"><p style="font-size: .68rem; padding: 2px 6px;">Libre</p></div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- AGENDA DÉROULÉ EN BAS POUR LE GRAND ÉCRAN -->
+          <div class="hybrid-bottom-focus">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <span style="font-size: .72rem; font-weight: 700; text-transform: uppercase; color: var(--accent);">Focus Journalier</span>
+                <h3 style="font-size: 1.15rem; font-weight: 750;">Jeudi 17 septembre 2026</h3>
+              </div>
+              <div style="display: flex; gap: 6px;">
+                <span class="timeline-badge" style="background: rgba(36,86,224,.1); color: var(--accent);">2 cours · 8h au total</span>
+              </div>
+            </div>
+
+            <!-- Cours 1 -->
+            <div class="timeline-event-row">
+              <div class="timeline-time">08:30 – 12:30</div>
+              <div class="timeline-info">
+                <strong>Colorimétrie</strong>
+                <span>Salle 2/10E · Enseignant : M. Gryspeert · Cours magistral</span>
+              </div>
+              <div><span class="timeline-badge" style="background:#eef2f6;">Terminé</span></div>
+            </div>
+
+            <!-- Pause midi -->
+            <div style="padding: 6px 14px; font-size: .75rem; color: var(--muted); border-left: 2px dashed var(--line); margin-left: 28px;">
+              Pause de midi : 12h30 – 13h30 (1 heure)
+            </div>
+
+            <!-- Cours 2 -->
+            <div class="timeline-event-row" style="border-left: 4px solid var(--accent);">
+              <div class="timeline-time">13:30 – 17:30</div>
+              <div class="timeline-info">
+                <strong>Création graphique 3D</strong>
+                <span>Salle 1/16 · Enseignant : M. D'Hondt · Travaux Pratiques</span>
+              </div>
+              <div><span class="timeline-badge" style="background: rgba(36,86,224,.1); color: var(--accent);">En cours</span></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Explications -->
+      <div class="prop-details">
+        <div class="detail-block">
+          <h3>Principe UX</h3>
+          <p>
+            Cette approche divise la hauteur en deux modes complémentaires :
+          </p>
+          <ul>
+            <li><strong>Le tiers supérieur</strong> donne la vue <em>macro</em> (la semaine condensée en une bande élégante pour voir où sont les trous).</li>
+            <li><strong>Les deux tiers inférieurs</strong> donnent la vue <em>micro</em> (l'agenda déroulé avec chronologie détaillée du jour sélectionné, heure par heure, pause de midi bien visible, statuts clairs).</li>
+          </ul>
+          <p>Cliquer sur un jour dans la barre du haut change instantanément l'agenda du bas.</p>
+        </div>
+
+        <div class="detail-block">
+          <h3>Comment détecter la hauteur ?</h3>
+          <div class="code-snippet">
+<span class="kw">@media</span> (min-width: 1024px) <span class="kw">and</span> (min-height: 900px) {
+  <span class="prop">.vue-hybride</span> {
+    <span class="prop">display</span>: <span class="val">flex</span>;
+    <span class="prop">flex-direction</span>: <span class="val">column</span>;
+    <span class="prop">gap</span>: <span class="val">16px</span>;
+  }
+}
+          </div>
+        </div>
+      </div>
+    </div>
+  </article>
+
+</main>
+
+<script>
+  function showProp(id, btn) {
+    document.querySelectorAll('.prop-card').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('.prop-nav button').forEach(b => b.classList.remove('active'));
+    const target = document.getElementById('prop-' + id);
+    if (target) target.classList.add('active');
+    if (btn) btn.classList.add('active');
+  }
+</script>
+</body>
+</html>

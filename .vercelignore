@@ -4,6 +4,8 @@ README.md
 AGENTS.md
 CLAUDE.md
 supabase/
+# Modèles d'email : à coller dans Supabase, pas à servir sur le site.
+emails/
 .agents/
 skills-lock.json
 __pycache__/
@@ -14,3 +16,8 @@ serve.log
 # Logos de travail uniquement : logos/ecoles/ (affichés par l'app) reste déployé.
 logos/da/
 logos/ez/
+
+# Prototypes & propositions en cours de conception (non publiés sur Vercel)
+propositions/
+propositions-grands-ecrans.html
+capture-*.png

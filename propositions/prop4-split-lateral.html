@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Proposition 4 : Layout Split Latéral</title>
+<style>
+  :root {
+    --accent: #d14d8a;
+    --accent-soft: rgba(209, 77, 138, .12);
+    --wash: rgba(209, 77, 138, .13);
+    --bg: #fdf1f6;
+    --surface: #ffffff;
+    --ink: #17191d;
+    --muted: #6d7482;
+    --line: #ebdce4;
+    --free: #18794e;
+    --seg-track: #f9e0ec;
+    --relief-haut: #ffffff;
+    --relief-bas: #faebf3;
+    --reflet: rgba(255, 255, 255, .9);
+    --ombre-btn: 0 1px 2px rgba(23, 32, 68, .06), 0 2px 8px -4px rgba(23, 32, 68, .08);
+    --shadow: 0 16px 40px -24px rgba(23, 32, 68, .28);
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background-color: var(--bg);
+    color: var(--ink);
+    font-family: var(--font);
+    font-size: 15px;
+    line-height: 1.45;
+    padding: 0 40px 30px;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .prop-banner {
+    background: #17191d; color: #ffffff;
+    margin: 0 -40px 14px; padding: 12px 40px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: .88rem; z-index: 50; flex-shrink: 0;
+  }
+  .prop-banner-title { font-weight: 750; display: flex; align-items: center; gap: 12px; }
+  .prop-badge { background: #d14d8a; color: #fff; padding: 4px 12px; border-radius: 999px; font-size: .75rem; font-weight: 700; }
+  .prop-banner-desc { color: #a1a7b5; font-size: .84rem; }
+
+  .topbar {
+    display: flex; justify-content: space-between; align-items: center;
+    height: 54px; margin-bottom: 8px; flex-shrink: 0;
+  }
+  .title { font-size: 1.25rem; font-weight: 750; letter-spacing: -.02em; }
+  .title span { color: var(--accent); }
+  
+  .seg {
+    display: flex; background: var(--seg-track); padding: 4px; border-radius: 999px;
+    gap: 4px; box-shadow: inset 0 1px 3px rgba(0,0,0,.06);
+  }
+  .seg button {
+    border: none; background: transparent; padding: 7px 22px; border-radius: 999px;
+    font-size: .88rem; font-weight: 600; color: var(--muted); cursor: pointer;
+  }
+  .seg button.active {
+    background: #ffffff; color: var(--ink);
+    box-shadow: 0 2px 8px rgba(0,0,0,.08); font-weight: 700;
+  }
+
+  .user-avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: var(--relief-bas); border: 1px solid var(--line);
+    display: grid; place-items: center; font-weight: 700; font-size: .88rem;
+  }
+
+  .week-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 12px; flex-shrink: 0;
+  }
+  .week-cur { display: flex; align-items: baseline; gap: 14px; }
+  .week-cur strong { font-size: 2.1rem; font-weight: 750; letter-spacing: -.04em; }
+  .week-cur span { color: var(--muted); font-size: 1.05rem; }
+
+  .btn-relief {
+    height: 38px; padding: 0 16px; border-radius: 999px; border: none;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    font-size: .88rem; font-weight: 600; color: var(--ink); cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-relief.icon { width: 38px; padding: 0; justify-content: center; }
+
+  .cal {
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    border-radius: 24px; padding: 16px 20px 18px 0;
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    display: flex; flex-direction: column; isolation: isolate;
+  }
+  .cal-head {
+    display: grid; grid-template-columns: 58px repeat(5, 1fr); column-gap: 10px;
+    padding-bottom: 12px; flex-shrink: 0;
+  }
+  .cal-jour { display: flex; align-items: center; gap: 8px; padding: 0 8px; }
+  .cal-jour span { color: var(--muted); font-size: .78rem; font-weight: 650; }
+  .cal-jour strong {
+    min-width: 34px; height: 34px; border-radius: 999px; display: grid; place-items: center;
+    font-size: 1.3rem; font-weight: 600;
+  }
+  .cal-jour.today span, .cal-jour.today strong { color: var(--accent); }
+  .cal-jour small { margin-left: auto; color: var(--muted); font-size: .78rem; }
+  .cal-jour small.libre { color: var(--free); font-weight: 600; }
+
+  .cal-body {
+    display: grid; grid-template-columns: 58px repeat(5, 1fr); column-gap: 10px;
+    flex: 1; min-height: 0; position: relative;
+  }
+  .cal-hours { position: relative; }
+  .cal-hours span {
+    position: absolute; right: 12px; transform: translateY(-50%);
+    color: var(--muted); font-size: .74rem; font-variant-numeric: tabular-nums;
+  }
+  .cal-col { position: relative; border-radius: 12px; }
+
+  .cal-col.today::before {
+    content: ""; position: absolute; z-index: -1;
+    top: -62px; bottom: -22px; left: -5px; right: -5px; border-radius: 20px;
+    background: var(--surface);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 26%, var(--line)),
+                inset 0 1px 0 var(--reflet),
+                0 20px 48px -20px rgba(15, 20, 40, .3);
+  }
+
+  .cal-libre {
+    position: absolute; inset: 0; border-radius: 12px;
+    background: repeating-linear-gradient(45deg, transparent, transparent 12px, rgba(109,116,130,.06) 12px, rgba(109,116,130,.06) 24px);
+    display: grid; place-items: center; color: var(--muted);
+  }
+  .cal-libre p { background: var(--surface); padding: 8px 16px; border-radius: 12px; font-weight: 650; }
+
+  .ev {
+    position: absolute; border-radius: 11px; padding: 10px 12px;
+    display: flex; flex-direction: column; overflow: hidden;
+    font-size: .8rem; text-align: left; cursor: pointer;
+  }
+  .ev.rose { background: #fbebf3; color: #6b1d40; }
+  .ev.menthe { background: #eaf7f2; color: #165b43; }
+  .ev.bleu { background: #ebf2ff; color: #173b7d; }
+  .ev.jaune { background: #fdf5df; color: #694a08; }
+  .ev.mauve { background: #f4ecfc; color: #4b1f79; }
+
+  .ev .et { font-weight: 700; font-size: .86rem; line-height: 1.25; }
+  .ev .es { font-weight: 600; opacity: .88; font-size: .8rem; }
+  .ev .eb { display: flex; justify-content: space-between; font-size: .74rem; opacity: .75; margin-top: auto; }
+</style>
+</head>
+
+<div class="prop-banner">
+  <div class="prop-banner-title">
+    <span class="prop-badge">Proposition 4</span>
+    <span>Layout Split Latéral (Station de travail Desktop)</span>
+  </div>
+  <div class="prop-banner-desc">La grille reste compacte et centrée · Un volet latéral permanent exploite toute la hauteur de l'écran</div>
+</div>
+
+<div class="topbar">
+  <div class="title">Ez<span>Horaire</span></div>
+  <div class="seg">
+    <button class="active">Maxence</button>
+    <button>Lilian</button>
+    <button>Anthony</button>
+  </div>
+  <div class="user-avatar">MB</div>
+</div>
+
+<div class="week-row">
+  <div class="week-cur">
+    <strong>Semaine 1</strong>
+    <span>14 – 18 sept. 2026</span>
+  </div>
+  <div style="display: flex; gap: 8px;">
+    <button class="btn-relief icon">&lt;</button>
+    <button class="btn-relief icon">&gt;</button>
+    <button class="btn-relief">Aujourd'hui</button>
+  </div>
+</div>
+
+<!-- CONTAINER EN 2 COLONNES -->
+<div style="display: grid; grid-template-columns: 1fr 380px; gap: 24px; flex: 1; min-height: 0;">
+  <!-- Colonne gauche : Grille semaine bien proportionnée -->
+  <div class="cal" style="height: 100%;">
+    <div class="cal-head">
+      <div></div>
+      <div class="cal-jour"><span>Lun</span><strong>14</strong><small>8h15 – 16h30</small></div>
+      <div class="cal-jour"><span>Mar</span><strong>15</strong><small>8h15 – 15h30</small></div>
+      <div class="cal-jour"><span>Mer</span><strong>16</strong><small>8h15 – 12h30</small></div>
+      <div class="cal-jour today"><span>Jeu</span><strong>17</strong><small>8h30 – 17h30</small></div>
+      <div class="cal-jour"><span>Ven</span><strong>18</strong><small class="libre">Libre</small></div>
+    </div>
+
+    <div class="cal-body">
+      <div class="cal-hours">
+        <span style="top: 0%">8h</span><span style="top: 20%">10h</span>
+        <span style="top: 40%">12h</span><span style="top: 50%">13h</span>
+        <span style="top: 70%">15h</span><span style="top: 90%">17h</span>
+      </div>
+
+      <div class="cal-col">
+        <div class="ev rose" style="top: 2.5%; height: 42.5%; left: 0; right: 0;"><div class="et">Modélisation 3D</div><div class="es">1/14</div><div class="eb"><span>Souris</span></div></div>
+        <div class="ev menthe" style="top: 55%; height: 30%; left: 0; right: 0;"><div class="et">Math. appliquée</div><div class="es">2/11</div><div class="eb"><span>Lebailly</span></div></div>
+      </div>
+      <div class="cal-col">
+        <div class="ev rose" style="top: 2.5%; height: 42.5%; left: 0; right: 0;"><div class="et">Modélisation 3D</div><div class="es">1/18</div><div class="eb"><span>Souris</span></div></div>
+        <div class="ev bleu" style="top: 55%; height: 20%; left: 0; right: 0;"><div class="et">Anglais</div><div class="es">2/17A</div></div>
+      </div>
+      <div class="cal-col">
+        <div class="ev menthe" style="top: 2.5%; height: 20%; left: 0; right: 0;"><div class="et">Traitement son</div><div class="es">1/32</div></div>
+        <div class="ev menthe" style="top: 25%; height: 20%; left: 0; right: 0;"><div class="et">Math. appliquée</div><div class="es">1/36A</div></div>
+      </div>
+      <div class="cal-col today">
+        <div class="ev jaune" style="top: 5%; height: 40%; left: 0; right: 0; outline: 2.5px solid var(--accent); box-shadow: 0 8px 24px rgba(209,77,138,.3);">
+          <div class="et">Colorimétrie</div>
+          <div class="es">2/10E</div>
+          <div class="eb"><span>Gryspeert</span><span>✓ Sélectionné</span></div>
+        </div>
+        <div class="ev mauve" style="top: 55%; height: 40%; left: 0; right: 0;">
+          <div class="et">Création graph. 3D</div>
+          <div class="es">1/16</div>
+          <div class="eb"><span>D'Hondt</span></div>
+        </div>
+      </div>
+      <div class="cal-col"><div class="cal-libre"><p>Libre</p></div></div>
+    </div>
+  </div>
+
+  <!-- Colonne droite : Volet latéral permanent pleine hauteur -->
+  <div style="background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas)); border-radius: 24px; padding: 24px; box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn); display: flex; flex-direction: column; gap: 18px;">
+    <div>
+      <span style="font-size: .76rem; font-weight: 750; text-transform: uppercase; color: var(--accent); letter-spacing: .05em;">Détail du cours sélectionné</span>
+      <div style="font-size: 1.5rem; font-weight: 750; letter-spacing: -.03em; margin-top: 4px;">Colorimétrie</div>
+      <div style="font-size: .9rem; color: var(--muted); margin-top: 2px;">Jeudi 17 septembre · 8h30 – 12h30 (4 heures)</div>
+    </div>
+
+    <div style="background: var(--surface); border-radius: 16px; padding: 16px; border: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; font-size: .86rem;">
+      <div style="display: flex; justify-content: space-between;">
+        <span style="color: var(--muted);">Salle :</span>
+        <strong>2/10E (Bâtiment 2, Étage 1)</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between;">
+        <span style="color: var(--muted);">Enseignant :</span>
+        <strong>M. Gryspeert</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between;">
+        <span style="color: var(--muted);">Groupe :</span>
+        <span>Bloc 1 Graphisme</span>
+      </div>
+      <div style="display: flex; justify-content: space-between;">
+        <span style="color: var(--muted);">Statut :</span>
+        <span style="color: var(--free); font-weight: 700;">Terminé</span>
+      </div>
+    </div>
+
+    <!-- Aperçu du PDF officiel en direct -->
+    <div style="flex: 1; background: var(--surface); border-radius: 16px; border: 1px solid var(--line); padding: 16px; display: flex; flex-direction: column;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <span style="font-size: .82rem; font-weight: 700;">📄 PDF officiel synchronisé</span>
+        <button class="btn-relief" style="height: 28px; font-size: .75rem; padding: 0 10px;">Agrandir</button>
+      </div>
+      <div style="flex: 1; background: #f4f5f8; border-radius: 10px; border: 1px dashed var(--line); display: grid; place-items: center; font-size: .82rem; color: var(--muted); text-align: center; padding: 20px;">
+        <div>
+          <div style="font-size: 1.8rem; margin-bottom: 6px;">📑</div>
+          Document officiel HEH / UMONS<br>Toujours sous les yeux sans quitter la grille
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

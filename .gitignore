@@ -50,6 +50,8 @@ venv.bak/
 .agents/
 .gemini/
 .t3/
+AGENTS.md
+CLAUDE.md
 
 # Éditeurs & IDEs
 .vscode/

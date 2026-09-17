@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Proposition 3 — Carnet de Notes & Consignes de Cours (Style Notion / Craft)</title>
+<style>
+  :root {
+    --accent: #d14d8a;
+    --accent-soft: rgba(209, 77, 138, .12);
+    --wash: rgba(209, 77, 138, .13);
+    --bg: #fdf1f6;
+    --surface: #ffffff;
+    --ink: #17191d;
+    --muted: #6d7482;
+    --line: #ebdce4;
+    --free: #18794e;
+    --free-soft: rgba(24, 121, 78, .1);
+    --seg-track: #f9e0ec;
+    --relief-haut: #ffffff;
+    --relief-bas: #faebf3;
+    --reflet: rgba(255, 255, 255, .9);
+    --ombre-btn: 0 1px 2px rgba(23, 32, 68, .06), 0 2px 8px -4px rgba(23, 32, 68, .08);
+    --shadow: 0 16px 40px -24px rgba(23, 32, 68, .28);
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background-color: var(--bg);
+    color: var(--ink);
+    font-family: var(--font);
+    font-size: 15px;
+    line-height: 1.45;
+    padding: 0 40px 24px;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ------------------- BANNIÈRE PROPOSITION ------------------- */
+  .prop-banner {
+    background: #17191d; color: #ffffff;
+    margin: 0 -40px 12px; padding: 11px 40px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: .88rem; z-index: 50; flex-shrink: 0;
+  }
+  .prop-banner-title { font-weight: 750; display: flex; align-items: center; gap: 12px; }
+  .prop-badge { background: #d14d8a; color: #fff; padding: 4px 12px; border-radius: 999px; font-size: .75rem; font-weight: 700; }
+  .prop-banner-desc { color: #a1a7b5; font-size: .84rem; }
+
+  /* ------------------- TOPBAR EZHORAIRE ------------------- */
+  .topbar {
+    display: flex; justify-content: space-between; align-items: center;
+    height: 52px; margin-bottom: 8px; flex-shrink: 0;
+  }
+  .title { font-size: 1.25rem; font-weight: 750; letter-spacing: -.02em; }
+  .title span { color: var(--accent); }
+
+  .seg {
+    display: flex; background: var(--seg-track); padding: 4px; border-radius: 999px;
+    gap: 4px; box-shadow: inset 0 1px 3px rgba(0,0,0,.06);
+  }
+  .seg button {
+    border: none; background: transparent; padding: 7px 22px; border-radius: 999px;
+    font-size: .88rem; font-weight: 600; color: var(--muted); cursor: pointer;
+  }
+  .seg button.active {
+    background: #ffffff; color: var(--ink);
+    box-shadow: 0 2px 8px rgba(0,0,0,.08); font-weight: 700;
+  }
+
+  .user-avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: var(--relief-bas); border: 1px solid var(--line);
+    display: grid; place-items: center; font-weight: 700; font-size: .88rem;
+  }
+
+  /* ------------------- LIGNE SEMAINE ------------------- */
+  .week-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    height: 38px; margin-bottom: 10px; flex-shrink: 0;
+  }
+  .week-cur { display: flex; align-items: baseline; gap: 14px; }
+  .week-cur strong { font-size: 2rem; font-weight: 750; letter-spacing: -.04em; }
+  .week-cur span { color: var(--muted); font-size: 1.05rem; }
+
+  .btn-relief {
+    height: 38px; padding: 0 16px; border-radius: 999px; border: none;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    font-size: .88rem; font-weight: 600; color: var(--ink); cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-relief.icon { width: 38px; padding: 0; justify-content: center; }
+
+  /* ------------------- CALENDRIER HAUT (Grille 54px + 5 cols) ------------------- */
+  .cal {
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    border-radius: 22px; padding: 14px 18px 14px 0;
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    display: flex; flex-direction: column; isolation: isolate;
+  }
+  .cal-head {
+    display: grid; grid-template-columns: 54px repeat(5, 1fr); column-gap: 8px;
+    padding-bottom: 10px; flex-shrink: 0;
+  }
+  .cal-jour { display: flex; align-items: center; gap: 8px; padding: 0 8px; }
+  .cal-jour span { color: var(--muted); font-size: .76rem; font-weight: 650; }
+  .cal-jour strong {
+    min-width: 32px; height: 32px; border-radius: 999px; display: grid; place-items: center;
+    font-size: 1.25rem; font-weight: 600;
+  }
+  .cal-jour.today span, .cal-jour.today strong { color: var(--accent); }
+  .cal-jour small { margin-left: auto; color: var(--muted); font-size: .76rem; }
+  .cal-jour small.libre { color: var(--free); font-weight: 600; }
+
+  .cal-body {
+    display: grid; grid-template-columns: 54px repeat(5, 1fr); column-gap: 8px;
+    flex: 1; min-height: 0; position: relative;
+  }
+  .cal-hours { position: relative; }
+  .cal-hours span {
+    position: absolute; right: 10px; transform: translateY(-50%);
+    color: var(--muted); font-size: .74rem; font-variant-numeric: tabular-nums;
+  }
+  .cal-col { position: relative; border-radius: 12px; }
+
+  /* Surélévation Aujourd'hui (Jeudi) dans le calendrier */
+  .cal-col.today::before {
+    content: ""; position: absolute; z-index: -1;
+    top: -54px; bottom: -18px; left: -4px; right: -4px; border-radius: 18px;
+    background: var(--surface);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 26%, var(--line)),
+                inset 0 1px 0 var(--reflet),
+                0 18px 40px -18px rgba(15, 20, 40, .28);
+  }
+
+  .cal-libre {
+    position: absolute; inset: 0; border-radius: 12px;
+    background: repeating-linear-gradient(45deg, transparent, transparent 12px, rgba(109,116,130,.06) 12px, rgba(109,116,130,.06) 24px);
+    display: grid; place-items: center; color: var(--muted);
+  }
+  .cal-libre p { background: var(--surface); padding: 6px 14px; border-radius: 12px; font-weight: 650; }
+
+  .ev {
+    position: absolute; border-radius: 10px; padding: 8px 10px;
+    display: flex; flex-direction: column; overflow: hidden;
+    font-size: .78rem; text-align: left; cursor: pointer;
+  }
+  .ev.rose { background: #fbebf3; color: #6b1d40; }
+  .ev.menthe { background: #eaf7f2; color: #165b43; }
+  .ev.bleu { background: #ebf2ff; color: #173b7d; }
+  .ev.jaune { background: #fdf5df; color: #694a08; }
+  .ev.mauve { background: #f4ecfc; color: #4b1f79; }
+
+  .ev .et { font-weight: 700; font-size: .83rem; line-height: 1.25; }
+  .ev .es { font-weight: 600; opacity: .88; font-size: .78rem; }
+  .ev .eb { display: flex; justify-content: space-between; font-size: .72rem; opacity: .75; margin-top: auto; }
+
+  /* ------------------- PLANIFICATEUR DU BAS : CARNET DE NOTES (STYLE NOTION / CRAFT) ------------------- */
+  /* ALIGNEMENT STRICT AU PIXEL PRÈS :
+     Même structure de grille : 54px repeat(5, 1fr) avec column-gap: 8px et padding-right: 18px (identique à .cal) */
+  .notes-planner {
+    display: grid;
+    grid-template-columns: 54px repeat(5, 1fr);
+    column-gap: 8px;
+    padding-right: 18px;
+    margin-top: 12px;
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* Colonne 1 (54px) : Sidebar / Titre vertical & méta */
+  .notes-sidebar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 4px;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    border-radius: 20px;
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    color: var(--muted);
+  }
+  .sidebar-icon-wrap {
+    width: 38px; height: 38px; border-radius: 12px;
+    background: var(--surface); border: 1px solid var(--line);
+    display: grid; place-items: center; color: var(--accent);
+    box-shadow: 0 1px 3px rgba(0,0,0,.05);
+  }
+  .sidebar-vtitle {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font-size: .72rem;
+    font-weight: 750;
+    letter-spacing: .14em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .sidebar-badge {
+    font-size: .67rem;
+    font-weight: 700;
+    color: var(--accent);
+    background: var(--wash);
+    padding: 3px 6px;
+    border-radius: 6px;
+    text-align: center;
+  }
+
+  /* Fiches de cours quotidiennes (Colonnes 2 à 6) */
+  .note-sheet {
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    border-radius: 20px;
+    padding: 13px 14px;
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow: hidden;
+    position: relative;
+    transition: transform .2s ease, box-shadow .2s ease;
+  }
+
+  /* CARTE SURÉLEVÉE POUR JEUDI (AUJOURD'HUI) */
+  .note-sheet.today {
+    background: #ffffff;
+    box-shadow: inset 0 0 0 1.5px var(--accent),
+                inset 0 1px 0 #ffffff,
+                0 18px 38px -10px rgba(209, 77, 138, .30),
+                0 4px 14px rgba(23, 32, 68, .07);
+    transform: translateY(-5px);
+    z-index: 2;
+  }
+
+  /* En-tête de la fiche de notes */
+  .sheet-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 7px;
+    border-bottom: 1px solid rgba(235, 220, 228, .7);
+    flex-shrink: 0;
+  }
+  .sheet-head-left {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .sheet-day-title {
+    font-size: .84rem;
+    font-weight: 750;
+    color: var(--ink);
+    letter-spacing: -.01em;
+  }
+  .note-sheet.today .sheet-day-title {
+    color: var(--accent);
+  }
+  .sheet-sub {
+    font-size: .71rem;
+    color: var(--muted);
+    font-weight: 550;
+  }
+  .sheet-pill {
+    font-size: .67rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 6px;
+    background: rgba(109, 116, 130, .08);
+    color: var(--muted);
+  }
+  .sheet-pill.today {
+    background: var(--accent);
+    color: #ffffff;
+    letter-spacing: .02em;
+    box-shadow: 0 1px 4px rgba(209, 77, 138, .3);
+  }
+
+  /* Corps de la fiche avec défilement fluide */
+  .sheet-content {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 1px;
+  }
+  .sheet-content::-webkit-scrollbar { width: 4px; }
+  .sheet-content::-webkit-scrollbar-track { background: transparent; }
+  .sheet-content::-webkit-scrollbar-thumb { background: rgba(0,0,0,.08); border-radius: 4px; }
+
+  /* Badges de catégorie Notion / Craft */
+  .badge-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: .66rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 5px;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    flex-shrink: 0;
+  }
+  .badge-tag.consigne { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+  .badge-tag.materiel { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+  .badge-tag.exercice { background: #fce7f3; color: #9d174d; border: 1px solid #fbcfe8; }
+  .badge-tag.rendu    { background: #ede9fe; color: #6d28d9; border: 1px solid #ddd6fe; }
+  .badge-tag.libre    { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+
+  /* Blocs Notion / Craft : Callout de consigne orale */
+  .craft-callout {
+    background: #fffdfa;
+    border-radius: 11px;
+    border: 1px solid #fed7aa;
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    box-shadow: 0 1px 3px rgba(217, 119, 6, .05);
+  }
+  .craft-callout.highlight {
+    background: #fffafc;
+    border: 1px solid rgba(209, 77, 138, .35);
+    box-shadow: 0 2px 8px rgba(209, 77, 138, .08);
+  }
+  .craft-callout.libre {
+    background: #f7fee7;
+    border: 1px solid #d9f99d;
+    box-shadow: 0 1px 3px rgba(77, 124, 15, .05);
+  }
+
+  .callout-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .callout-source {
+    font-size: .69rem;
+    font-weight: 650;
+    color: var(--muted);
+  }
+  .callout-text {
+    font-size: .77rem;
+    line-height: 1.34;
+    color: #2e3035;
+    font-style: italic;
+  }
+  .craft-callout.highlight .callout-text {
+    color: #17191d;
+    font-style: normal;
+    font-weight: 500;
+  }
+  .craft-callout.highlight strong {
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  /* Blocs de cartes douces : Matériel & Devoirs */
+  .craft-card {
+    background: var(--surface);
+    border-radius: 11px;
+    border: 1px solid var(--line);
+    padding: 7px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    box-shadow: 0 1px 3px rgba(23, 32, 68, .03);
+    transition: border-color .15s ease;
+  }
+  .craft-card:hover {
+    border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
+  }
+  .craft-card.done {
+    opacity: .65;
+    background: #fafafb;
+  }
+
+  .card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .card-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .card-meta {
+    font-size: .68rem;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .card-body {
+    font-size: .77rem;
+    color: var(--ink);
+    line-height: 1.32;
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  /* Checkboxes style Craft / Notion */
+  .craft-check {
+    width: 14px; height: 14px; border-radius: 4px;
+    border: 1.5px solid #a1a7b5; margin-top: 2px; flex-shrink: 0;
+    display: grid; place-items: center; cursor: pointer;
+    background: #fff;
+  }
+  .craft-card.done .craft-check {
+    background: var(--free); border-color: var(--free);
+    color: #fff; font-size: .65rem; font-weight: 800;
+  }
+  .craft-card.done .card-body span {
+    text-decoration: line-through;
+    color: var(--muted);
+  }
+
+  /* Bloc d'ajout en bas de chaque fiche */
+  .sheet-add-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px;
+    border-radius: 9px;
+    border: 1px dashed rgba(209, 77, 138, .3);
+    background: rgba(255, 255, 255, .5);
+    color: var(--muted);
+    font-size: .71rem;
+    font-weight: 650;
+    cursor: pointer;
+    margin-top: auto;
+    flex-shrink: 0;
+    transition: all .16s ease;
+  }
+  .sheet-add-btn:hover {
+    background: #ffffff;
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+  .note-sheet.today .sheet-add-btn {
+    background: var(--wash);
+    color: var(--accent);
+    border-style: solid;
+    border-color: rgba(209, 77, 138, .35);
+  }
+  .note-sheet.today .sheet-add-btn:hover {
+    background: rgba(209, 77, 138, .2);
+  }
+</style>
+</head>
+<body>
+
+<!-- Bannière de proposition -->
+<div class="prop-banner">
+  <div class="prop-banner-title">
+    <span class="prop-badge">Solution 3</span>
+    <span>Carnet de Notes & Consignes de Cours (Style Notion / Craft)</span>
+  </div>
+  <div class="prop-banner-desc">Fiches de cours quotidiennes · Consignes orales des profs, matériel requis et devoirs · Alignement strict sous chaque colonne de l'horaire</div>
+</div>
+
+<!-- En-tête EzHoraire -->
+<div class="topbar">
+  <div class="title">Ez<span>Horaire</span></div>
+  <div class="seg"><button class="active">Maxence</button><button>Lilian</button><button>Anthony</button></div>
+  <div class="user-avatar">MB</div>
+</div>
+
+<!-- Ligne de semaine -->
+<div class="week-row">
+  <div class="week-cur"><strong>Semaine 1</strong><span>14 – 18 sept. 2026</span></div>
+  <div style="display: flex; gap: 8px;">
+    <button class="btn-relief icon">&lt;</button>
+    <button class="btn-relief icon">&gt;</button>
+    <button class="btn-relief">📄 PDF officiel</button>
+  </div>
+</div>
+
+<!-- CALENDRIER HAUT (520px) -->
+<div class="cal" style="height: 520px; flex: none;">
+  <div class="cal-head">
+    <div></div>
+    <div class="cal-jour"><span>Lun</span><strong>14</strong><small>8h15 – 16h30</small></div>
+    <div class="cal-jour"><span>Mar</span><strong>15</strong><small>8h15 – 15h30</small></div>
+    <div class="cal-jour"><span>Mer</span><strong>16</strong><small>8h15 – 12h30</small></div>
+    <div class="cal-jour today"><span>Jeu</span><strong>17</strong><small>8h30 – 17h30</small></div>
+    <div class="cal-jour"><span>Ven</span><strong>18</strong><small class="libre">Libre</small></div>
+  </div>
+  <div class="cal-body">
+    <div class="cal-hours">
+      <span style="top: 0%">8h</span>
+      <span style="top: 20%">10h</span>
+      <span style="top: 40%">12h</span>
+      <span style="top: 50%">13h</span>
+      <span style="top: 70%">15h</span>
+      <span style="top: 90%">17h</span>
+    </div>
+    <!-- Lundi -->
+    <div class="cal-col">
+      <div class="ev rose" style="top: 2.5%; height: 42.5%; left: 0; right: 0;">
+        <div class="et">Modélisation 3D</div>
+        <div class="es">1/14</div>
+        <div class="eb"><span>Souris</span><span>8h15 – 12h30</span></div>
+      </div>
+      <div class="ev menthe" style="top: 55%; height: 30%; left: 0; right: 0;">
+        <div class="et">Mathématique appliquée</div>
+        <div class="es">2/11</div>
+        <div class="eb"><span>Lebailly</span><span>13h30 – 16h30</span></div>
+      </div>
+    </div>
+    <!-- Mardi -->
+    <div class="cal-col">
+      <div class="ev rose" style="top: 2.5%; height: 42.5%; left: 0; right: 0;">
+        <div class="et">Modélisation 3D</div>
+        <div class="es">1/18</div>
+        <div class="eb"><span>Souris</span><span>8h15 – 12h30</span></div>
+      </div>
+      <div class="ev bleu" style="top: 55%; height: 20%; left: 0; right: 0;">
+        <div class="et">Anglais</div>
+        <div class="es">2/17A</div>
+        <div class="eb"><span>Delmotte</span><span>13h30 – 15h30</span></div>
+      </div>
+    </div>
+    <!-- Mercredi -->
+    <div class="cal-col">
+      <div class="ev menthe" style="top: 2.5%; height: 20%; left: 0; right: 0;">
+        <div class="et">Traitement du son</div>
+        <div class="es">1/32</div>
+        <div class="eb"><span>Sottiaux</span><span>8h15 – 10h15</span></div>
+      </div>
+      <div class="ev menthe" style="top: 25%; height: 20%; left: 0; right: 0;">
+        <div class="et">Mathématique appliquée</div>
+        <div class="es">1/36A</div>
+        <div class="eb"><span>Lebailly</span><span>10h30 – 12h30</span></div>
+      </div>
+    </div>
+    <!-- Jeudi (Aujourd'hui) -->
+    <div class="cal-col today">
+      <div class="ev jaune" style="top: 5%; height: 40%; left: 0; right: 0;">
+        <div class="et">Colorimétrie</div>
+        <div class="es">2/10E</div>
+        <div class="eb"><span>Gryspeert</span><span>8h30 – 12h30</span></div>
+      </div>
+      <div class="ev mauve" style="top: 55%; height: 40%; left: 0; right: 0;">
+        <div class="et">Création graphique 3D</div>
+        <div class="es">1/16</div>
+        <div class="eb"><span>D'Hondt</span><span>13h30 – 17h30</span></div>
+      </div>
+    </div>
+    <!-- Vendredi -->
+    <div class="cal-col">
+      <div class="cal-libre"><p>Pas de cours</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================================================================================
+     PLANIFICATEUR DU BAS : CARNET DE NOTES & CONSIGNES (STYLE NOTION / CRAFT)
+     ALIGNEMENT PIXEL-PERFECT SOUS LE CALENDRIER : 54px repeat(5, 1fr) ; gap: 8px ; pad-right: 18px
+     =================================================================================== -->
+<div class="notes-planner">
+
+  <!-- Colonne 1 : 54px (alignée sous la colonne des heures) -->
+  <div class="notes-sidebar">
+    <div class="sidebar-icon-wrap" title="Carnet de cours">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
+        <path d="M8 7h8"/><path d="M8 11h6"/>
+      </svg>
+    </div>
+    <div class="sidebar-vtitle">CARNET DE NOTES</div>
+    <div class="sidebar-badge">5 fiches</div>
+  </div>
+
+  <!-- Colonne 2 : Fiche LUNDI 14 -->
+  <div class="note-sheet">
+    <div class="sheet-head">
+      <div class="sheet-head-left">
+        <div class="sheet-day-title">Lundi 14</div>
+        <div class="sheet-sub">3D & Maths</div>
+      </div>
+      <span class="sheet-pill">2 cours</span>
+    </div>
+    <div class="sheet-content">
+      <!-- Consigne orale -->
+      <div class="craft-callout">
+        <div class="callout-header">
+          <span class="badge-tag consigne">🎙️ Consigne orale</span>
+          <span class="callout-source">M. Souris</span>
+        </div>
+        <div class="callout-text">« Ne pas appliquer les modificateurs Subdivision Surface avant vérification du maillage polygonal TD1. »</div>
+      </div>
+      <!-- Matériel requis -->
+      <div class="craft-card">
+        <div class="card-top">
+          <div class="card-label"><span class="badge-tag materiel">🎒 Matériel</span></div>
+          <span class="card-meta">Salle 1/14</span>
+        </div>
+        <div class="card-body">
+          <span>Souris 3 boutons obligatoire avec molette physique (trackpad interdit pour l'orbite 3D).</span>
+        </div>
+      </div>
+      <!-- Exercice / Devoir -->
+      <div class="craft-card">
+        <div class="card-top">
+          <div class="card-label"><span class="badge-tag exercice">✏️ Exercice</span></div>
+          <span class="card-meta">Maths p. 42</span>
+        </div>
+        <div class="card-body">
+          <div class="craft-check"></div>
+          <span>TD Matrices : rotation 4x4 et produit vectoriel pour shaders.</span>
+        </div>
+      </div>
+      <!-- Validation / Fait -->
+      <div class="craft-card done">
+        <div class="card-top">
+          <div class="card-label"><span class="badge-tag rendu">✓ Validé</span></div>
+          <span class="card-meta">12h15</span>
+        </div>
+        <div class="card-body">
+          <div class="craft-check">✓</div>
+          <span>Maillage lampe basse poly approuvé par le professeur.</span>
+        </div>
+      </div>
+    </div>
+    <div class="sheet-add-btn">+ Ajouter une note...</div>
+  </div>
+
+  <!-- Colonne 3 : Fiche MARDI 15 -->
+  <div class="note-sheet">
+    <div class="sheet-head">
+      <div class="sheet-head-left">
+        <div class="sheet-day-title">Mardi 15</div>
+        <div class="sheet-sub">3D & Anglais</div>
+      </div>
+      <span class="sheet-pill">2 cours</span>
+    </div>
+    <div class="sheet-content">
+      <!-- Consigne orale -->
+      <div class="craft-callout">
+        <div class="callout-header">
+          <span class="badge-tag consigne">🎙️ Consigne orale</span>
+          <span class="callout-source">Mme Delmotte</span>
+        </div>
+        <div class="callout-text">« Préparer un pitch oral de 2 minutes en anglais présentant un studio d'effets visuels de référence. »</div>
+      </div>
+      <!-- Matériel requis -->
+      <div class="craft-card">
+        <div class="card-top">
+          <div class="card-label"><span class="badge-tag materiel">🎧 Matériel</span></div>
+          <span class="card-meta">Labo 2/17A</span>
+        </div>
+        <div class="card-body">
+          <span>Casque audio filaire (jack 3.5mm) nécessaire pour l'enregistrement du labo.</span>
+        </div>
+      </div>
+      <!-- Devoir -->
+      <div class="craft-card">
+        <div class="card-top">
+          <div class="card-label"><span class="badge-tag exercice">✏️ Exercice</span></div>
+          <span class="card-meta">Vocabulaire</span>
+        </div>
+        <div class="card-body">
+          <div class="craft-check"></div>
+          <span>Fiche lexique 3D : 15 termes clés (Edge loop, topology, UV seam, normal maps).</span>
+        </div>
+      </div>
+      <!-- Rendu projet -->
+      <div class="craft-card">
+        <div class="card-top">
+          <div class="card-label"><span class="badge-tag rendu">📦 Rendu</span></div>
+          <span class="card-meta">12h30</span>
+        </div>
+        <div class="card-body">
+          <div class="craft-check"></div>
+          <span>Export .fbx propre et nettoyé pour la session texturing.</span>
+        </div>
+      </div>
+    </div>
+    <div class="sheet-add-btn">+ Ajouter une note...</div>
+  </div>
+
+  <!-- Colonne 4 : Fiche MERCREDI 16 -->
+  <div class="note-sheet">
+    <div class="sheet-head">
+      <div class="sheet-head-left">
+        <div class="sheet-day-title">Mercredi 16</div>
+        <div class="sheet-sub">Son & Maths</div>
+      </div>
+      <span class="sheet-pill">Matinée</span>
+    </div>
+    <div class="sheet-content">
+      <!-- Consigne orale -->
+      <div class="craft-callout">
+        <div class="callout-header">
+          <span class="badge-tag consigne">🎙️ Consigne audio</span>
+          <span class="callout-source">M. Sottiaux</span>
+        </div>
+        <div class="callout-text">« Enregistrer impérativement en 48 kHz / 24-bit WAV ; tout fichier compressé en MP3 sera rejeté. »</div>
+      </div>
+      <!-- Matériel requis -->
+      <div class="craft-card">
+        <div class="card-top">
+          <div class="card-label"><span class="badge-tag materiel">💾 Matériel</span></div>
+          <span class="card-meta">Clé USB 3.0</span>
+        </div>
+        <div class="card-body">
+          <span>Clé USB 16 Go (formatée exFAT) pour copier les banques d'effets sonores de l'école.</span>
+        </div>
+      </div>
+      <!-- Devoir Audacity -->
+      <div class="craft-card done">
+        <div class="card-top">
+          <div class="card-label"><span class="badge-tag exercice">✏️ Exercice</span></div>
+          <span class="card-meta">Audacity</span>
+        </div>
+        <div class="card-body">
+          <div class="craft-check">✓</div>
+          <span>Suppression du souffle et normalisation voix à -3 dB.</span>
+        </div>
+      </div>
+      <!-- Note libre après-midi -->
+      <div class="craft-card" style="background: rgba(24, 121, 78, .04); border-color: rgba(24, 121, 78, .2);">
+        <div class="card-top">
+          <div class="card-label"><span class="badge-tag libre">🌿 Autonomie</span></div>
+          <span class="card-meta" style="color: var(--free);">12h30 → Soir</span>
+        </div>
+        <div class="card-body" style="color: var(--free); font-weight: 550;">
+          <span>☕ Après-midi libre · Travail d'équipe sur le moodboard du court-métrage.</span>
+        </div>
+      </div>
+    </div>
+    <div class="sheet-add-btn">+ Ajouter une note...</div>
+  </div>
+
+  <!-- Colonne 5 : Fiche JEUDI 17 (AUJOURD'HUI · CARTE SURÉLEVÉE) -->
+  <div class="note-sheet today">
+    <div class="sheet-head">
+      <div class="sheet-head-left">
+        <div class="sheet-day-title">Aujourd'hui · Jeudi 17</div>
+        <div class="sheet-sub">Colorimétrie & 3D</div>
+      </div>
+      <span class="sheet-pill today">● EN COURS</span>
+    </div>
+    <div class="sheet-content">
+      <!-- Consigne orale surlignée (Prioritaire) -->
+      <div class="craft-callout highlight">
+        <div class="callout-header">
+          <span class="badge-tag consigne">🎙️ Consigne orale prioritaire</span>
+          <span class="callout-source">Mme Gryspeert</span>
+        </div>
+        <div class="callout-text">« Apporter impérativement le <strong>nuancier Pantone Formula Guide</strong> et 3 échantillons d'impression pour comparer les profils Fogra39 et sRGB. »</div>
+      </div>
+      <!-- Matériel requis -->
+      <div class="craft-card">
+        <div class="card-top">
+          <div class="card-label"><span class="badge-tag materiel">🎒 Matériel requis</span></div>
+          <span class="card-meta">Indispensable</span>
+        </div>
+        <div class="card-body">
+          <span>Tablette graphique Wacom Intuos + câble USB-C + nuancier physique Pantone.</span>
+        </div>
+      </div>
+      <!-- Rendu urgent pour 17h00 -->
+      <div class="craft-card" style="border-left: 3px solid var(--accent); background: #fffcfd;">
+        <div class="card-top">
+          <div class="card-label"><span class="badge-tag rendu">⚡ Rendu 17h00</span></div>
+          <span class="card-meta" style="color: var(--accent); font-weight: 700;">M. D'Hondt</span>
+        </div>
+        <div class="card-body">
+          <div class="craft-check"></div>
+          <span>Exporter les maps PBR (Roughness, Metallic, Normal OpenGL) en 2048x2048 sur Substance.</span>
+        </div>
+      </div>
+      <!-- Exercice Illustrator -->
+      <div class="craft-card">
+        <div class="card-top">
+          <div class="card-label"><span class="badge-tag exercice">🎨 Exercice</span></div>
+          <span class="card-meta">Illustrator</span>
+        </div>
+        <div class="card-body">
+          <div class="craft-check"></div>
+          <span>Générer la roue chromatique tétracyclique et tester la conversion CMJN Fogra39.</span>
+        </div>
+      </div>
+    </div>
+    <div class="sheet-add-btn">+ Ajouter un mémo ou consigne...</div>
+  </div>
+
+  <!-- Colonne 6 : Fiche VENDREDI 18 -->
+  <div class="note-sheet">
+    <div class="sheet-head">
+      <div class="sheet-head-left">
+        <div class="sheet-day-title">Vendredi 18</div>
+        <div class="sheet-sub">Étude & Studio</div>
+      </div>
+      <span class="sheet-pill" style="color: var(--free); font-weight: 700;">Libre</span>
+    </div>
+    <div class="sheet-content">
+      <!-- Callout d'autonomie -->
+      <div class="craft-callout libre">
+        <div class="callout-header">
+          <span class="badge-tag libre">💡 Objectif journée</span>
+          <span class="callout-source">Auto-formation</span>
+        </div>
+        <div class="callout-text">« Séance de travail personnel dédiée à l'éclairage de scène et aux révisions théoriques. »</div>
+      </div>
+      <!-- Matériel -->
+      <div class="craft-card">
+        <div class="card-top">
+          <div class="card-label"><span class="badge-tag materiel">💻 Matériel</span></div>
+          <span class="card-meta">Travail perso</span>
+        </div>
+        <div class="card-body">
+          <span>PC portable chargé avec suite Substance 3D & Unreal Engine 5.4 installés.</span>
+        </div>
+      </div>
+      <!-- Exercice personnel -->
+      <div class="craft-card">
+        <div class="card-top">
+          <div class="card-label"><span class="badge-tag exercice">🎬 Exercice</span></div>
+          <span class="card-meta">UE5</span>
+        </div>
+        <div class="card-body">
+          <div class="craft-check"></div>
+          <span>Tutoriel : Maîtriser le Three-Point Lighting avec Lumen et raytracing hardware.</span>
+        </div>
+      </div>
+      <!-- Rendu / Préparation semaine prochaine -->
+      <div class="craft-card">
+        <div class="card-top">
+          <div class="card-label"><span class="badge-tag rendu">📁 Préparation</span></div>
+          <span class="card-meta">Pour Lun. 21</span>
+        </div>
+        <div class="card-body">
+          <div class="craft-check"></div>
+          <span>Compiler le PDF de présentation du moodboard et des textures pour la revue hebdo.</span>
+        </div>
+      </div>
+    </div>
+    <div class="sheet-add-btn">+ Ajouter un mémo...</div>
+  </div>
+
+</div>
+
+</body>
+</html>
