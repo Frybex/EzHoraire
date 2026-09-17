@@ -1595,14 +1595,22 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
        sous le titre comme avant. */
     .ev .es {
       font-size: .78rem; font-weight: 600; opacity: .85; line-height: 1.25;
-      /* Salles longues : deux lignes au lieu d'une coupure sèche. On borne
-         la hauteur à deux lignes et on laisse la grille centrer le texte
-         dans l'espace libre (pas de -webkit-box, qui casserait le
-         centrage vertical). */
-      white-space: normal; overflow-wrap: anywhere;
-      max-height: 2.5em; overflow: hidden;
-      flex-grow: 1; display: grid; align-content: center;
+      /* La zone de salle garde toute la place libre et reste centrée
+         verticalement (grille + align-content) ; c'est le texte à
+         l'intérieur qui est borné. Un max-height sur la zone
+         l'empêcherait de grandir : la salle remonterait sous le titre au
+         lieu de rester au milieu. La zone est un conteneur de taille :
+         selon la hauteur réellement disponible, le texte passe à deux
+         lignes ou retombe à une ligne avec « … » (jamais de ligne coupée
+         en plein milieu). */
+      flex-grow: 1; display: grid; align-content: center; overflow: hidden;
+      container: salle / size;
     }
+    .ev .es > span {
+      display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+      white-space: normal; overflow-wrap: anywhere; overflow: hidden;
+    }
+    @container salle (max-height: 33px) { .ev .es > span { -webkit-line-clamp: 1; } }
     .ev .ep { font-size: .74rem; opacity: .68; }
     .ev .eh { font-size: .72rem; font-weight: 500; opacity: .55; font-variant-numeric: tabular-nums; }
     /* Bas de case : prof à gauche, horaires calés en bas à droite sur la
@@ -1616,7 +1624,8 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     .ev.court .eb { display: contents; }
     .ev.court { flex-direction: row; align-items: baseline; gap: 8px; padding-top: 4px; }
     .ev.court .et { -webkit-line-clamp: 1; flex: 1; min-width: 0; }
-    .ev.court .es { flex: none; max-width: 36%; min-width: 0; font-size: .74rem; }
+    .ev.court .es { flex: none; max-width: 36%; min-width: 0; font-size: .74rem; display: block; overflow: hidden; }
+    .ev.court .es > span { -webkit-line-clamp: 1; }
     .ev.court .ep { flex: none; max-width: 32%; min-width: 0; }
     /* En ligne courte, les horaires sautent en premier (la position dans
        la grille + la bulle les donnent) ; sans salle ni prof, on garde
@@ -5099,7 +5108,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
           ' style="' + styleCours(c.matiere) + ";--t:" + pc(a) + ";--d:" + (pc(b) - pc(a)) +
           ";--l:" + (x.k / x.n) + ";--w:" + (1 / x.n) + '">' +
           '<span class="et">' + txt(nettoyerMatiere(c.matiere || "Cours")) + "</span>" +
-          (c.salles ? '<span class="es">' + txt(c.salles) + "</span>" : "") +
+          (c.salles ? '<span class="es"><span>' + txt(c.salles) + "</span></span>" : "") +
           '<span class="eb">' +
           (c.profs ? '<span class="ep">' + txt(c.profs) + "</span>" : "") +
           '<span class="eh">' + fmtH(c.debut) + " – " + fmtH(c.fin) + "</span></span></button>";
