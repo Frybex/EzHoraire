@@ -329,6 +329,16 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   #ulb-import > summary::after { content: " ▾"; color: var(--muted); }
   #ulb-import[open] > summary::after { content: " ▴"; }
   #ulb-import[open] > summary { margin-bottom: 10px; }
+  /* Repli du texte lu / collé : discret, mais là pour corriger. */
+  #ulb-texte { margin: 4px 0 0; }
+  #ulb-texte > summary {
+    cursor: pointer; padding: 6px 0; list-style: none;
+    font-size: .84rem; font-weight: 600; color: var(--muted);
+  }
+  #ulb-texte > summary::-webkit-details-marker { display: none; }
+  #ulb-texte > summary::after { content: " ▾"; }
+  #ulb-texte[open] > summary::after { content: " ▴"; }
+  #ulb-texte[open] > summary { margin-bottom: 8px; }
   #ulb-import .import-ligne { display: flex; gap: 10px; align-items: flex-end; }
   #ulb-import textarea {
     flex: 1 1 auto; min-width: 0; min-height: 96px; resize: none;
@@ -2073,13 +2083,16 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
           <input type="file" id="ulb-capture-fichier" accept="image/*" hidden>
           <span class="capture-aide">ou colle une image (⌘V / Ctrl+V)</span>
         </div>
-        <div class="import-ligne">
-          <textarea id="ulb-import-texte" rows="4" spellcheck="false"
-                    placeholder="COMMB300, Droit de l'information et de la communication&#10;LANGB305, Anglais III"></textarea>
-          <button class="primaire halo" id="ulb-import-voir" type="button">Analyser la liste</button>
-        </div>
         <p class="pdf-status" id="ulb-import-status" role="status" hidden></p>
         <div id="ulb-import-doutes" hidden></div>
+        <details id="ulb-texte">
+          <summary>Voir ou coller le texte</summary>
+          <div class="import-ligne">
+            <textarea id="ulb-import-texte" rows="4" spellcheck="false"
+                      placeholder="COMMB300, Droit de l'information et de la communication&#10;LANGB305, Anglais III"></textarea>
+            <button class="primaire halo" id="ulb-import-voir" type="button">Analyser la liste</button>
+          </div>
+        </details>
       </details>
       <div class="chips" id="ulb-cours-chips"></div>
       <p class="aide" id="ulb-cours-vide">Aucun cours choisi. Cherche un code (DROIC2001) ou un intitulé, puis touche le cours pour l'ajouter.</p>
@@ -4109,9 +4122,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       if (!texte) { erreur(statut, "Aucun texte lisible sur cette image."); return; }
       document.getElementById("ulb-import-texte").value = texte;
       ulbAjusterChamp();
-      statut.hidden = false;
-      statut.classList.remove("erreur");
-      statut.textContent = "Texte reconnu sur la capture — vérifie-le, puis « Analyser la liste ».";
+      ulbImporter(true); // on enchaîne tout seuls : l'étudiant voit ses cours, pas le texte
     }, function (e) {
       erreur(statut, "Impossible de lire la capture : " + e.message);
     });
@@ -4173,16 +4184,17 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       }
     }
   });
-  function ulbImporter() {
+  function ulbImporter(depuisCapture) {
     var texte = document.getElementById("ulb-import-texte").value;
     var statut = document.getElementById("ulb-import-status");
     var btn = document.getElementById("ulb-import-voir");
     if (texte.replace(/\s+/g, "").length < 3) {
-      erreur(statut, "Colle d'abord ta liste de cours.");
+      if (depuisCapture) erreur(statut, "Aucun texte lisible sur cette capture.");
+      else erreur(statut, "Colle d'abord ta liste de cours.");
       return;
     }
     btn.disabled = true;
-    attente(statut, "Analyse de la liste…");
+    attente(statut, "Vérification des cours…");
     api("api/importer?ecole=ulb&liste=" + encodeURIComponent(texte), 60000)
       .then(function (rep) {
         btn.disabled = false;
@@ -4211,14 +4223,15 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
         statut.hidden = false;
         statut.classList.remove("erreur");
         statut.textContent = d.cours.length
-          ? "J'ai trouvé " + d.cours.length + " cours — vérifie qu'ils sont tous là, puis « Voir mon horaire »."
-          : "Aucun cours reconnu : vérifie la liste collée.";
+          ? (depuisCapture ? d.cours.length + " cours retrouvés sur ta capture" : "J'ai trouvé " + d.cours.length + " cours") +
+            " — vérifie qu'ils sont tous là, puis « Voir mon horaire »."
+          : (depuisCapture ? "Aucun cours reconnu sur cette capture." : "Aucun cours reconnu : vérifie la liste collée.");
       }, function (e) {
         btn.disabled = false;
         erreur(statut, "Échec : " + e.message);
       });
   }
-  document.getElementById("ulb-import-voir").addEventListener("click", ulbImporter);
+  document.getElementById("ulb-import-voir").addEventListener("click", function () { ulbImporter(false); });
   document.getElementById("ulb-import-doutes").addEventListener("click", function (e) {
     var b = e.target.closest("button[data-cle]");
     if (!b) return;
