@@ -13,6 +13,11 @@
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
+<script>
+/* Apparence (Clair / Sombre / Système) posée avant le premier rendu : pas d'éclair. */
+try { var _a = localStorage.getItem("ezh_apparence"); document.documentElement.setAttribute("data-apparence", (_a === "clair" || _a === "sombre") ? _a : "systeme"); }
+catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); }
+</script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" integrity="sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e" crossorigin="anonymous"></script>
 <style>
   :root {
@@ -316,9 +321,9 @@
     }
   }
 
-  /* Barre de sélection des horaires (reprend Horairelm : Maxence /
-     Lilian / Anthony). N surnoms dynamiques : la pastille glisse
-     sur l'onglet actif. Au-delà de 4, défilement horizontal. */
+  /* Barre de sélection des horaires (un onglet par surnom, façon
+     Horairelm). N surnoms dynamiques : la pastille glisse sur l'onglet
+     actif. Au-delà de 4, défilement horizontal. */
   /* Sélecteur d'horaires : piste en creux, pastille en relief. */
   .seg {
     --n: 1; --idx: 0;
@@ -563,6 +568,14 @@
   .btn-entree.charge .tourne { display: block; }
   /* Seul le texte s'allume quand l'email et le mot de passe sont valables. */
   .btn-entree.pret { color: var(--ink); }
+  /* Mot de passe oublié : simple lien sous Continuer (comptes email). */
+  .oublie {
+    display: block; margin: 14px auto 0; border: none; background: none;
+    font: inherit; font-size: .9rem; font-weight: 600; color: var(--accent); cursor: pointer;
+    min-height: 44px; padding: 0 12px;
+  }
+  .oublie:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  #bloc-reset .champ-titre { text-align: center; margin-bottom: 10px; }
   @media (hover: hover) and (pointer: fine) {
     .btn-entree:hover { color: var(--ink); }
   }
@@ -713,12 +726,13 @@
   .week { display: flex; align-items: center; gap: 10px; padding: 2px 0 6px; }
   .week button.nav {
     flex: none; display: grid; place-items: center; width: 42px; height: 42px;
-    border: none; border-radius: 999px; color: var(--ink);
-    font: inherit; font-size: 1.35rem; line-height: 1; cursor: pointer;
+    border: none; border-radius: 999px; color: var(--ink); padding: 0;
+    font: inherit; cursor: pointer;
     background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
     box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
     transition: opacity .15s, transform .12s;
   }
+  .week button.nav svg { display: block; }
   .week button.nav:disabled { opacity: .3; cursor: default; box-shadow: inset 0 0 0 1px var(--line); }
   .week button.nav:not(:disabled):active { transform: scale(.94); }
   .week .cur { flex: 1; min-width: 0; text-align: center; }
@@ -963,6 +977,7 @@
     font-size: .85rem; color: var(--muted);
   }
   footer { text-align: center; color: var(--muted); font-size: .8rem; margin-top: 18px; }
+  footer a { color: var(--muted); }
 
   /* Réglages sur téléphone : feuille qui monte du bas, fond assombri,
      se ferme en glissant vers le bas (attrapable de n'importe où, le fond
@@ -1252,7 +1267,7 @@
       box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
       transition: color .15s, opacity .15s, transform .12s;
     }
-    .week button.nav { width: 40px; font-size: 1.25rem; }
+    .week button.nav { width: 40px; padding: 0; }
     .week button.nav:not(:disabled):hover, .thisweek:hover, .official:hover { color: var(--ink); transform: translateY(-1px); }
     .week button.nav:disabled { opacity: .3; transform: none; }
     .thisweek {
@@ -1355,19 +1370,19 @@
       display: grid; place-items: center;
       color: var(--muted); text-align: center;
     }
-    /* Rayures : une diagonale par tuile (≈ 23px entre deux traits), calée
-       sur la ligne de 13h. Le calque démarre 1616px (50,5 tuiles) au-dessus
-       de la ligne : elle tombe au milieu d'une tuile, jamais sur la pointe
-       d'une rayure au bord de la colonne. En largeur, « round » ajuste la
-       tuile pour un nombre entier de tuiles : même garantie à droite.
-       « to top right » garde la diagonale d'un coin à l'autre même si la
-       tuile n'est plus carrée. */
+    /* Rayures : un dégradé répété à angle fixe, sans tuiles mises à
+       l'échelle. Chaque trait est la translation exacte du précédent
+       (32 px pile horizontalement, soit un nombre entier de pixels) :
+       tous sont rendus pareil, fins partout — sans l'effet « certains
+       traits plus épais » des tuiles `round` aux largeurs fractionnaires.
+       Le calque reste centré sur la ligne de 13h pour que celle-ci
+       tombe dans un intervalle, jamais sur une pointe de rayure. */
     .cal-libre::before {
       content: ""; position: absolute; left: 0; right: 0;
       top: calc(var(--pause, 50%) - 1616px); height: 3232px; pointer-events: none;
-      background: linear-gradient(to top right, transparent calc(50% - .6px), var(--rayure) calc(50% - .6px),
-                                  var(--rayure) calc(50% + .6px), transparent calc(50% + .6px))
-                  0 0 / 32px 32px round repeat;
+      background: repeating-linear-gradient(45deg,
+        transparent 0 calc(32px / 1.41421356 - 1.2px),
+        var(--rayure) calc(32px / 1.41421356 - 1.2px) calc(32px / 1.41421356));
     }
     .cal-libre p {
       position: relative; margin: 0; padding: 8px 16px; border-radius: 14px; background: var(--relief-haut);
@@ -1568,6 +1583,146 @@
     .pdf-pages canvas { box-shadow: 0 8px 24px -12px rgba(0,0,0,.8); }
   }
 
+  /* ---------- Apparence (feuille) : sous le compte, au-dessus des horaires ---------- */
+  .reg-apparence { position: relative; display: flex; align-items: center; gap: 12px; margin: 14px 0 0; }
+  .ra-label { display: inline-flex; align-items: center; gap: 8px; flex: 1; min-width: 0;
+    color: var(--muted); font-size: .85rem; font-weight: 600; }
+  .ra-label svg { flex: none; }
+  .ra-bouton {
+    display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 8px 0 12px;
+    border: none; border-radius: 999px; cursor: pointer;
+    font: inherit; font-size: .9rem; font-weight: 600; color: var(--ink);
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  .ra-bouton:active { transform: scale(.97); }
+  .ra-bouton:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .ra-bouton .ra-icone { display: inline-flex; color: var(--muted); }
+  .ra-bouton .ra-chev { color: var(--muted); transition: transform .2s; }
+  .ra-bouton[aria-expanded="true"] .ra-chev { transform: rotate(180deg); }
+  .ra-menu { left: 0; right: 0; }
+  .ra-opt[aria-selected="true"] { font-weight: 700; }
+  .ra-opt .ra-check { margin-left: auto; visibility: hidden; flex: none; }
+  .ra-opt[aria-selected="true"] .ra-check { visibility: visible; }
+
+  /* ---------- Apparence forcée : Clair / Sombre (Système = réglage de l'OS) ---------- */
+  html[data-apparence="clair"] { color-scheme: light; }
+  html[data-apparence="sombre"] { color-scheme: dark; }
+  html[data-apparence="clair"] {
+    --bg: #f4f5f7; --surface: #ffffff; --ink: #17191d; --muted: #6d7482;
+    --line: #e4e7ec; --accent: #2456e0; --accent-soft: rgba(36, 86, 224, .09);
+    --wash: rgba(36, 86, 224, 0); --free: #18794e; --seg-track: #e8eaef;
+    --shadow: 0 16px 40px -24px rgba(23, 32, 68, .28); --danger: #d42a3c;
+  }
+  html[data-apparence="sombre"] {
+    --bg: #101216; --surface: #171a20; --ink: #f0f3f7; --muted: #98a1b1;
+    --line: #262b34; --accent: #8ba6ff; --accent-soft: rgba(139, 166, 255, .13);
+    --wash: rgba(139, 166, 255, 0); --free: #5fce96; --seg-track: #20252e;
+    --shadow: 0 18px 44px -20px rgba(0, 0, 0, .75); --danger: #ff6b7a;
+  }
+  html[data-apparence="clair"] body {
+    --relief-haut: color-mix(in srgb, var(--bg), #fff 78%);
+    --relief-bas: color-mix(in srgb, var(--bg), #fff 44%);
+    --reflet: rgba(255, 255, 255, .9);
+    --ombre-btn: 0 1px 2px rgba(23, 32, 68, .06), 0 2px 8px -4px rgba(23, 32, 68, .08);
+    --creux: color-mix(in srgb, var(--bg), #fff 60%);
+    --creux-ombre: rgba(23, 32, 68, .07);
+    --feuille: color-mix(in srgb, var(--bg), #fff 66%);
+  }
+  html[data-apparence="sombre"] body {
+    --relief-haut: color-mix(in srgb, var(--bg), #fff 7%);
+    --relief-bas: color-mix(in srgb, var(--bg), #fff 2.5%);
+    --reflet: rgba(255, 255, 255, .06);
+    --ombre-btn: 0 1px 2px rgba(0, 0, 0, .4), 0 4px 12px -6px rgba(0, 0, 0, .6);
+    --creux: color-mix(in srgb, var(--bg), #000 26%);
+    --creux-ombre: rgba(0, 0, 0, .4);
+    --feuille: color-mix(in srgb, var(--bg), #fff 4%);
+  }
+  html[data-apparence="clair"] body[data-theme="0"],
+  html[data-apparence="clair"] body[data-theme="2"] {
+    --accent: #1d4fd7; --accent-soft: rgba(29, 79, 215, .09); --wash: rgba(29, 79, 215, .09);
+    --bg: #eaf0fa; --seg-track: #dbe4f5;
+  }
+  html[data-apparence="clair"] body[data-theme="1"] {
+    --accent: #0e8655; --accent-soft: rgba(14, 134, 85, .10); --wash: rgba(14, 134, 85, .10);
+    --bg: #ebf2ec; --seg-track: #dce8de;
+  }
+  html[data-apparence="clair"] body[data-theme="3"] {
+    --accent: #d14d8a; --accent-soft: rgba(209, 77, 138, .12); --wash: rgba(209, 77, 138, .13);
+    --bg: #fdf1f6; --seg-track: #f9e0ec;
+  }
+  html[data-apparence="sombre"] body[data-theme="0"],
+  html[data-apparence="sombre"] body[data-theme="2"] {
+    --accent: #8ba6ff; --accent-soft: rgba(139, 166, 255, .14); --wash: rgba(139, 166, 255, .10);
+    --bg: #0d1322; --seg-track: #1c2436;
+  }
+  html[data-apparence="sombre"] body[data-theme="1"] {
+    --accent: #4cc38a; --accent-soft: rgba(76, 195, 138, .14); --wash: rgba(76, 195, 138, .10);
+    --bg: #0c1411; --seg-track: #1a231e;
+  }
+  html[data-apparence="sombre"] body[data-theme="3"] {
+    --accent: #ffa8d0; --accent-soft: rgba(255, 168, 208, .16); --wash: rgba(255, 168, 208, .14);
+    --bg: #24141d; --seg-track: #3a2330;
+  }
+  html[data-apparence="clair"] .sigle.sigle-logo {
+    background: #ffffff;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .08), 0 2px 6px rgba(0, 0, 0, .05);
+  }
+  html[data-apparence="sombre"] .sigle.sigle-logo {
+    background: #ffffff;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .15), 0 2px 8px rgba(0, 0, 0, .35);
+  }
+  html[data-apparence="clair"] #v-compte { --sur-accent: #fff; }
+  html[data-apparence="sombre"] #v-compte { --sur-accent: #0b1020; }
+  html[data-apparence="clair"] .ap-ev {
+    background: hsl(var(--h) 58% 95%); color: hsl(var(--h) 28% 23%);
+  }
+  html[data-apparence="sombre"] .ap-ev {
+    background: hsl(var(--h) 19% 17%); color: #eef2f8;
+  }
+  html[data-apparence="clair"] .ap-col.today::before {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, var(--line)), inset 0 1px 0 var(--reflet),
+      0 18px 40px -18px rgba(15, 20, 40, .35), 0 2px 6px -2px rgba(15, 20, 40, .1);
+  }
+  html[data-apparence="sombre"] .ap-col.today::before {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, var(--line)), inset 0 1px 0 var(--reflet),
+      0 18px 40px -18px rgba(0, 0, 0, .8);
+  }
+  @media (min-width: 1024px) {
+    html[data-apparence="clair"] .ev {
+      background: hsl(var(--h) calc(58% - var(--v) * 15%) calc(95% - var(--v) * 2%));
+      color: hsl(var(--h) 28% 23%);
+    }
+    html[data-apparence="clair"] .ev:hover, html[data-apparence="clair"] .ev.actif {
+      box-shadow: 0 12px 26px -14px rgba(15, 20, 40, .5);
+    }
+    html[data-apparence="clair"] .ev.actif {
+      box-shadow: 0 0 0 1.5px hsl(var(--h) calc(45% - var(--v) * 10%) calc(52% + var(--v) * 6%)),
+        0 12px 26px -14px rgba(15, 20, 40, .5);
+    }
+    html[data-apparence="clair"] .ev .es, html[data-apparence="clair"] .ev .ep,
+    html[data-apparence="clair"] .ev .eh { color: inherit; }
+    html[data-apparence="sombre"] .ev {
+      background: hsl(var(--h) calc(19% + var(--v) * 7%) calc(17% + var(--v) * 2%));
+      color: #eef2f8;
+    }
+    html[data-apparence="sombre"] .ev:hover, html[data-apparence="sombre"] .ev.actif {
+      box-shadow: 0 12px 26px -14px rgba(0, 0, 0, .8);
+    }
+    html[data-apparence="sombre"] .ev.actif {
+      box-shadow: 0 0 0 1.5px hsl(var(--h) calc(45% - var(--v) * 8%) calc(62% + var(--v) * 5%)),
+        0 12px 26px -14px rgba(0, 0, 0, .8);
+    }
+    html[data-apparence="sombre"] .ev .es, html[data-apparence="sombre"] .ev .ep,
+    html[data-apparence="sombre"] .ev .eh { color: #eef2f8; }
+    html[data-apparence="clair"] .pdf-pages canvas {
+      box-shadow: 0 1px 2px rgba(0,0,0,.08), 0 8px 24px -12px rgba(0,0,0,.25);
+    }
+    html[data-apparence="sombre"] .pdf-pages canvas {
+      box-shadow: 0 8px 24px -12px rgba(0,0,0,.8);
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .ev, #pop, .liste button { transition: none; }
     .chev, .minichev, .detail, .csub,
@@ -1622,7 +1777,7 @@
         </button>
       </div>
       <p class="email-sep" aria-hidden="true"><span>ou</span></p>
-      <div class="champs halo">
+      <div class="champs halo" id="champs-login">
         <div class="champ-ligne">
           <svg class="champ-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -1651,6 +1806,24 @@
         <span class="be-lib">Continuer</span>
         <span class="tourne" aria-hidden="true"></span>
       </button>
+      <button type="button" class="oublie" id="mdp-oublie">Mot de passe oublié ?</button>
+      <div id="bloc-reset" hidden>
+        <p class="champ-titre">Choisis un nouveau mot de passe</p>
+        <div class="champs halo">
+          <div class="champ-ligne">
+            <svg class="champ-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/>
+            </svg>
+            <input class="champ" id="mdp-nouveau" type="password" maxlength="120" placeholder="Nouveau mot de passe"
+                   aria-label="Nouveau mot de passe (6 caractères minimum)" autocomplete="new-password">
+          </div>
+        </div>
+        <button type="button" class="btn-entree halo" id="btn-mdp-nouveau">
+          <span class="be-lib">Enregistrer</span>
+          <span class="tourne" aria-hidden="true"></span>
+        </button>
+      </div>
       <p class="pdf-status" id="auth-status" role="status" hidden></p>
     </div>
 
@@ -1828,9 +2001,9 @@
     <p class="pdf-status" id="horaire-status" role="status" hidden></p>
     <div id="horaire-contenu">
       <div class="week">
-        <button class="nav halo" id="sem-prec" aria-label="Semaine précédente" title="Semaine précédente (←)">‹</button>
+        <button class="nav halo" id="sem-prec" aria-label="Semaine précédente" title="Semaine précédente (←)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.25 5.5 8.75 12l6.5 6.5"/></svg></button>
         <div class="cur"><strong id="sem-titre">Semaine 1</strong><span id="sem-dates"></span></div>
-        <button class="nav halo" id="sem-suiv" aria-label="Semaine suivante" title="Semaine suivante (→)">›</button>
+        <button class="nav halo" id="sem-suiv" aria-label="Semaine suivante" title="Semaine suivante (→)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.75 5.5 15.25 12l-6.5 6.5"/></svg></button>
       </div>
       <button class="thisweek halo" id="btn-auj">Cette semaine</button>
 
@@ -1863,7 +2036,7 @@
         <p class="pdf-status" id="pdf-status" role="status"></p>
       </div>
 
-      <footer><p id="maj"></p></footer>
+      <footer><p id="maj"></p><p><a href="/confidentialite.html">Confidentialité</a></p></footer>
     </div>
   </section>
 </div>
@@ -1888,6 +2061,34 @@
       <button class="pop-act danger-txt" id="btn-logout" type="button" role="menuitem">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 16l-4-4 4-4M6 12h10"/></svg>
         Se déconnecter
+      </button>
+    </div>
+  </div>
+  <div class="reg-apparence" id="reg-apparence">
+    <span class="ra-label" id="apparence-label">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      Apparence
+    </span>
+    <button class="ra-bouton halo" id="btn-apparence" type="button" aria-haspopup="listbox" aria-expanded="false" aria-label="Apparence : choisir Clair, Sombre ou Système">
+      <span class="ra-icone" id="apparence-icone" aria-hidden="true"></span>
+      <span id="apparence-lib">Système</span>
+      <svg class="ra-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+    </button>
+    <div class="ppop ra-menu" id="menu-apparence" role="listbox" aria-label="Apparence" hidden>
+      <button class="pop-act ra-opt" type="button" role="option" data-apparence-opt="clair" aria-selected="false">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        Claire
+        <svg class="ra-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg>
+      </button>
+      <button class="pop-act ra-opt" type="button" role="option" data-apparence-opt="sombre" aria-selected="false">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13.5A8 8 0 0 1 10.5 4 8 8 0 1 0 20 13.5z"/></svg>
+        Sombre
+        <svg class="ra-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg>
+      </button>
+      <button class="pop-act ra-opt" type="button" role="option" data-apparence-opt="systeme" aria-selected="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M9 20h6M12 16v4"/></svg>
+        Système
+        <svg class="ra-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg>
       </button>
     </div>
   </div>
@@ -2180,6 +2381,7 @@
   var pousseeMinutee = 0;
   var generationCompte = 0;
   var demarrageFini = false;   // vrai une fois le routeur de démarrage passé
+  var recuperationEnCours = false; // vrai après un clic sur le lien « mot de passe oublié »
   var compte = lire(CLE_COMPTE);
   if (!compte || !compte.fournisseur) compte = null;
   var fournisseurChoisi = compte ? compte.fournisseur : null;
@@ -2289,6 +2491,11 @@
       sessionSupabase = session || null;
       if (session && session.user) AUTH.user = session.user;
       if (evt === "SIGNED_IN" && session && session.user) retourOAuth(session.user);
+      else if (evt === "PASSWORD_RECOVERY") {
+        recuperationEnCours = true;
+        if (!demarrageFini) return;
+        ouvrirResetMdp();
+      }
       else if (evt === "SIGNED_OUT") {
         effacerSession();
         if (demarrageFini) {
@@ -2307,7 +2514,10 @@
           history.replaceState(null, "", location.pathname);
         }
       } catch (e) { /* jetable */ }
-      if (session && session.user) { AUTH.user = session.user; retourOAuth(session.user); }
+      // Lien « mot de passe oublié » (type=recovery dans l'adresse) : on
+      // montre le choix d'un nouveau mot de passe au lieu d'entrer.
+      if (/(^|[&#?])type=recovery/.test(location.search + " " + location.hash)) recuperationEnCours = true;
+      if (session && session.user && !recuperationEnCours) { AUTH.user = session.user; retourOAuth(session.user); }
       return true;
     }, function () { return true; });
   }
@@ -3201,6 +3411,7 @@
   /* ---------- 0. Connexion + identité (avant tout) ---------- */
   function ouvrirCompte() {
     pile = [];
+    fermerResetMdp();
     document.body.removeAttribute("data-theme");
     montrer("compte");
     preparerApercu();
@@ -3325,6 +3536,96 @@
       if (e.key === "Enter") { e.preventDefault(); document.getElementById("btn-email").click(); }
     });
     if (inp) inp.addEventListener("input", majBoutonEmail);
+  });
+  /* Mot de passe oublié (comptes email) : envoie le lien de
+     réinitialisation. Il ouvre /mot-de-passe.html, la page dédiée qui
+     affiche l'adresse concernée et enregistre le nouveau mot de passe.
+     Le bloc ci-dessous reste le filet de secours : si Supabase renvoie
+     quand même sur « / » (URL de redirection non autorisée, vieux modèle
+     d'email), l'app propose le même choix sur place (PASSWORD_RECOVERY). */
+  function ouvrirResetMdp() {
+    var f = document.querySelector("#v-compte .fournisseurs");
+    var sep = document.querySelector("#v-compte .email-sep");
+    if (f) f.hidden = true;
+    if (sep) sep.hidden = true;
+    var cl = document.getElementById("champs-login");
+    var be = document.getElementById("btn-email");
+    var o = document.getElementById("mdp-oublie");
+    if (cl) cl.hidden = true;
+    if (be) be.hidden = true;
+    if (o) o.hidden = true;
+    var br = document.getElementById("bloc-reset");
+    if (br) br.hidden = false;
+    statutAuthEffacer();
+    pile = [];
+    montrer("compte");
+    preparerApercu();
+    try { document.getElementById("mdp-nouveau").focus(); } catch (e) { /* jetable */ }
+  }
+  function fermerResetMdp() {
+    var f = document.querySelector("#v-compte .fournisseurs");
+    var sep = document.querySelector("#v-compte .email-sep");
+    if (f) f.hidden = false;
+    if (sep) sep.hidden = false;
+    var cl = document.getElementById("champs-login");
+    var be = document.getElementById("btn-email");
+    var o = document.getElementById("mdp-oublie");
+    if (cl) cl.hidden = false;
+    if (be) be.hidden = false;
+    if (o) o.hidden = false;
+    var br = document.getElementById("bloc-reset");
+    if (br) br.hidden = true;
+  }
+  document.getElementById("mdp-oublie").addEventListener("click", function () {
+    if (!SUPABASE_OK || !sb) {
+      statutAuthErreur("Service de connexion injoignable : réessaie dans quelques minutes.");
+      return;
+    }
+    var em = String(document.getElementById("email").value || "").trim();
+    if (!emailValide(em)) {
+      try { document.getElementById("email").focus(); } catch (e) { /* jetable */ }
+      statutAuthErreur("Indique ton adresse email ci-dessus, puis retouche « Mot de passe oublié ? ».");
+      return;
+    }
+    statutAuthChargement("Envoi de l'email…");
+    sb.auth.resetPasswordForEmail(em, { redirectTo: location.origin + "/mot-de-passe.html" }).then(function (res) {
+      if (res.error) { statutAuthErreur(messageAuth(res.error)); return; }
+      statutAuthInfo("Email envoyé : clique sur le lien pour choisir un nouveau mot de passe.");
+    }, function (err) { statutAuthErreur(messageAuth(err)); });
+  });
+  document.getElementById("btn-mdp-nouveau").addEventListener("click", function () {
+    var btn = this;
+    if (btn.classList.contains("charge")) return;
+    if (!SUPABASE_OK || !sb || !sessionSupabase || !sessionSupabase.user) {
+      statutAuthErreur("Lien expiré ou déjà utilisé : redemande un email via « Mot de passe oublié ? ».");
+      fermerResetMdp();
+      return;
+    }
+    var mp = document.getElementById("mdp-nouveau").value;
+    if (String(mp).length < 6) {
+      try { document.getElementById("mdp-nouveau").focus(); } catch (e) { /* jetable */ }
+      statutAuthErreur("Mot de passe : 6 caractères minimum.");
+      return;
+    }
+    btn.classList.add("charge");
+    btn.setAttribute("aria-busy", "true");
+    var fin = function () { btn.classList.remove("charge"); btn.removeAttribute("aria-busy"); };
+    sb.auth.updateUser({ password: mp }).then(function (res) {
+      fin();
+      if (res.error) { statutAuthErreur(messageAuth(res.error)); return; }
+      document.getElementById("mdp-nouveau").value = "";
+      recuperationEnCours = false;
+      fermerResetMdp();
+      statutAuthEffacer();
+      var u = (res.data && res.data.user) || sessionSupabase.user;
+      retourOAuth(u);
+    }, function (err) {
+      fin();
+      statutAuthErreur(messageAuth(err));
+    });
+  });
+  document.getElementById("mdp-nouveau").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") { e.preventDefault(); document.getElementById("btn-mdp-nouveau").click(); }
   });
   document.getElementById("btn-identite").addEventListener("click", function () {
     var p = document.getElementById("prenom").value.replace(/\s+/g, " ").trim().slice(0, 30);
@@ -3768,24 +4069,42 @@
         : pastilles;
     });
     if (options.length) {
+      // Les options d'un même cours restent côte à côte, sous le nom du
+      // cours : « ROMAB245 » puis ses trois choix, plutôt qu'un tri par nom
+      // de groupe qui les éparpille.
+      var parCours = {}, ordreCours = [];
+      options.forEach(function (x) {
+        var cle = x.cours || "";
+        if (!parCours[cle]) { parCours[cle] = []; ordreCours.push(cle); }
+        parCours[cle].push(x);
+      });
+      var blocs = ordreCours.map(function (cle) {
+        var lot = parCours[cle];
+        if (lot.length > 1) {
+          return '<div class="section-groupe">' + (cle ? '<p class="section-titre">' + txt(cle) + "</p>" : "") +
+            '<div class="options-liste">' + lot.map(function (x) {
+              return pastilleGroupe(x.groupes[0], "", true, cle);
+            }).join("") + "</div></div>";
+        }
+        var x = lot[0];
+        // Le détail ne répète pas le nom ('Corporate Finance / Corporate Finance').
+        var nom = sansAccents(nomGroupe(x.groupes[0])).replace(/[^a-z0-9]/g, "");
+        var mats = x.matieres.filter(function (m) {
+          var n = sansAccents(m).replace(/[^a-z0-9]/g, "");
+          return n !== nom && nom.indexOf(n) < 0 && n.indexOf(nom) < 0;
+        });
+        return '<div class="options-liste">' + pastilleGroupe(x.groupes[0], mats.join(" · "), true) + "</div>";
+      });
       html += '<div class="section-groupe">' +
         (titres && multi.length ? '<p class="section-titre">Options et cours au choix</p>' : "") +
-        '<div class="options-liste">' + options.map(function (x) {
-          // Le détail ne répète pas le nom ('Corporate Finance / Corporate Finance').
-          var nom = sansAccents(nomGroupe(x.groupes[0])).replace(/[^a-z0-9]/g, "");
-          var mats = x.matieres.filter(function (m) {
-            var n = sansAccents(m).replace(/[^a-z0-9]/g, "");
-            return n !== nom && nom.indexOf(n) < 0 && n.indexOf(nom) < 0;
-          });
-          return pastilleGroupe(x.groupes[0], mats.join(" · "), true);
-        }).join("") + "</div></div>";
+        blocs.join("") + "</div>";
     }
     document.getElementById("chips").innerHTML = html;
     filtrerGroupes();
     majValider();
   }
-  function pastilleGroupe(g, detail, option) {
-    var cherche = sansAccents(nomGroupe(g) + " " + detail);
+  function pastilleGroupe(g, detail, option, cherchePlus) {
+    var cherche = sansAccents(nomGroupe(g) + " " + detail + " " + (cherchePlus || ""));
     return '<button type="button" class="chip' + (option ? " chip-option" : "") + '" data-groupe="' + txt(g) +
       '" data-cherche="' + txt(cherche) + '" aria-pressed="' + (choix.groupes.indexOf(g) >= 0) + '">' +
       '<span class="coche" aria-hidden="true"></span>' +
@@ -3818,6 +4137,7 @@
      semaines (les matières d'un groupe, elles, changent). */
   function racineGroupe(g) {
     return sansAccents(courtGroupe(g))
+      .replace(/\s*\([^)]*\)\s*$/, "") // « Série 3 (Etudiants de R à Z) » -> « Série 3 »
       .replace(/[\s\-_.]*(?:\d+|\b[a-z])\s*$/, "")
       .replace(/[\s\-_.]*\bgr\.?$/, "")
       .replace(/[^a-z0-9]/g, "");
@@ -3845,6 +4165,14 @@
     sections.forEach(function (x) {
       x.matieres = Object.keys(x.vu).sort(function (a, b) { return a.localeCompare(b, "fr"); });
       x.option = x.groupes.length === 1;
+      x.cours = x.matieres[0] || ""; // cours principal de la section
+    });
+    // L'ordre suit le cours (le « sous-titre »), pas le nom du groupe : c'est
+    // lui que l'étudiant cherche, et ses options restent côte à côte.
+    sections.sort(function (a, b) {
+      var x = sansAccents(a.cours), y = sansAccents(b.cours);
+      if (x !== y) return x < y ? -1 : 1;
+      return collateur ? collateur.compare(a.groupes[0], b.groupes[0]) : 0;
     });
     // Une seule espèce de groupe (ex. 'Groupe A'..'X') : pas d'options, une liste.
     if (sections.length === 1) sections[0].option = false;
@@ -4500,17 +4828,23 @@
     var r = pop.getBoundingClientRect();
     if (r.bottom > window.innerHeight - 8) pop.classList.add("haut");
   }
-  /* Ferme les menus ⋮ ouverts (compte et horaires). */
+  /* Ferme les menus ⋮ ouverts (compte, apparence et horaires). */
   function fermerMenus() {
     var m = document.getElementById("menu-compte");
-    if (!m.hidden) {
+    if (m && !m.hidden) {
       m.hidden = true;
       document.getElementById("btn-compte-menu").setAttribute("aria-expanded", "false");
+    }
+    var ma = document.getElementById("menu-apparence");
+    if (ma && !ma.hidden) {
+      ma.hidden = true;
+      document.getElementById("btn-apparence").setAttribute("aria-expanded", "false");
     }
     if (carteOuverte !== null) { carteOuverte = null; rendreListeProfils(); }
   }
   function menusOuverts() {
-    return carteOuverte !== null || !document.getElementById("menu-compte").hidden;
+    return carteOuverte !== null || !document.getElementById("menu-compte").hidden ||
+      !document.getElementById("menu-apparence").hidden;
   }
 
   /* ---------- Fenêtre de modification ----------
@@ -4973,6 +5307,94 @@
       });
   });
 
+  /* ---------- Apparence : Clair / Sombre / Système (mémorisé localement) ---------- */
+  var CLE_APPARENCE = "ezh_apparence";
+  var ICONE_SOLEIL = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+  var ICONE_LUNE = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13.5A8 8 0 0 1 10.5 4 8 8 0 1 0 20 13.5z"/></svg>';
+  var ICONE_SYSTEME = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M9 20h6M12 16v4"/></svg>';
+  function lireApparence() {
+    try {
+      var v = localStorage.getItem(CLE_APPARENCE);
+      return (v === "clair" || v === "sombre" || v === "systeme") ? v : "systeme";
+    } catch (e) { return "systeme"; }
+  }
+  function systemeSombre() {
+    return !!(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  }
+  function rgbVersHex(rgb) {
+    var m = String(rgb || "").match(/(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+    if (!m) return null;
+    function h(n) { n = Math.max(0, Math.min(255, +n || 0)); var s = n.toString(16); return s.length < 2 ? "0" + s : s; }
+    return "#" + h(m[1]) + h(m[2]) + h(m[3]);
+  }
+  /* Barre du navigateur / PWA : suit le fond réel (teinte de l'horaire incluse).
+     En « Système » on laisse les deux metas media faire leur travail. */
+  function majMetaTheme() {
+    var clair = document.querySelector('meta[name="theme-color"][media*="light"]');
+    var sombre = document.querySelector('meta[name="theme-color"][media*="dark"]');
+    var v = lireApparence();
+    if (v === "systeme") {
+      if (clair) clair.setAttribute("media", "(prefers-color-scheme: light)");
+      if (sombre) sombre.setAttribute("media", "(prefers-color-scheme: dark)");
+      return;
+    }
+    var fond = null;
+    try { fond = rgbVersHex(getComputedStyle(document.body).backgroundColor); } catch (e) { fond = null; }
+    if (!fond) fond = (v === "sombre") ? "#101216" : "#f4f5f7";
+    if (clair) { clair.setAttribute("content", fond); clair.setAttribute("media", "all"); }
+    if (sombre) sombre.setAttribute("media", "not all");
+  }
+  function appliquerApparence() {
+    var v = lireApparence();
+    document.documentElement.setAttribute("data-apparence", v);
+    var lib = document.getElementById("apparence-lib");
+    if (lib) lib.textContent = v === "clair" ? "Claire" : v === "sombre" ? "Sombre" : "Système";
+    var ic = document.getElementById("apparence-icone");
+    if (ic) ic.innerHTML = v === "clair" ? ICONE_SOLEIL : v === "sombre" ? ICONE_LUNE : ICONE_SYSTEME;
+    var opts = document.querySelectorAll("#menu-apparence [data-apparence-opt]");
+    for (var i = 0; i < opts.length; i++) {
+      opts[i].setAttribute("aria-selected", opts[i].getAttribute("data-apparence-opt") === v ? "true" : "false");
+    }
+    majMetaTheme();
+  }
+  function choisirApparence(v) {
+    if (v !== "clair" && v !== "sombre" && v !== "systeme") return;
+    try { localStorage.setItem(CLE_APPARENCE, v); } catch (e) { /* navigation privée */ }
+    appliquerApparence();
+  }
+  document.getElementById("btn-apparence").addEventListener("click", function () {
+    var m = document.getElementById("menu-apparence");
+    var mc = document.getElementById("menu-compte");
+    var ouvre = m.hidden;
+    if (mc && !mc.hidden) {
+      mc.hidden = true;
+      document.getElementById("btn-compte-menu").setAttribute("aria-expanded", "false");
+    }
+    if (carteOuverte !== null) { carteOuverte = null; rendreListeProfils(); }
+    appliquerApparence(); // libellé à jour avant d'ouvrir
+    m.hidden = !ouvre;
+    this.setAttribute("aria-expanded", ouvre ? "true" : "false");
+  });
+  document.getElementById("menu-apparence").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-apparence-opt]");
+    if (!b) return;
+    choisirApparence(b.getAttribute("data-apparence-opt"));
+    this.hidden = true;
+    document.getElementById("btn-apparence").setAttribute("aria-expanded", "false");
+  });
+  if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").addEventListener) {
+    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function () {
+      if (lireApparence() === "systeme") majMetaTheme();
+    });
+  }
+  /* Le fond change aussi avec la couleur de l'horaire : on resynchronise
+     la barre du navigateur quand le thème coloré change. */
+  if (window.MutationObserver) {
+    new MutationObserver(function () { majMetaTheme(); })
+      .observe(document.body, { attributes: true, attributeFilter: ["data-theme"] });
+  }
+  appliquerApparence();
+
   /* ---------- Feuille : avatar + nom/prénom, puis mes horaires ---------- */
   var feuille = document.getElementById("feuille");
   var NOMS_FOURNISSEURS = { google: "Compte Google", apple: "Compte Apple", github: "Compte GitHub", email: "Compte email", local: "Compte local" };
@@ -5036,6 +5458,9 @@
     carteOuverte = null;
     document.getElementById("menu-compte").hidden = true;
     document.getElementById("btn-compte-menu").setAttribute("aria-expanded", "false");
+    document.getElementById("menu-apparence").hidden = true;
+    document.getElementById("btn-apparence").setAttribute("aria-expanded", "false");
+    appliquerApparence();
     rendreListeProfils();
     feuille.style.transform = "";
     feuille.classList.add("visible");
@@ -5115,7 +5540,7 @@
     location.href = "dashboard.html";
   });
   feuille.addEventListener("click", function (e) {
-    if (!e.target.closest(".ppop, .dots")) fermerMenus();
+    if (!e.target.closest(".ppop, .dots, .ra-menu, .ra-bouton")) fermerMenus();
   });
   document.getElementById("btn-logout").addEventListener("click", function () {
     fermerMenus();
@@ -5260,7 +5685,10 @@
     return null;
   }).then(function () {
     demarrageFini = true;
-    if (!connecte()) {
+    // Retour du lien « mot de passe oublié » : nouveau mot de passe d'abord.
+    if (recuperationEnCours) {
+      ouvrirResetMdp();
+    } else if (!connecte()) {
       if (compte) ouvrirIdentite();
       else ouvrirCompte();
     } else if (profil) {

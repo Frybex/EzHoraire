@@ -36,6 +36,10 @@ FENETRE_APPELS = 60.0
 RX_UE = re.compile(r"^[A-Z]{2,6}[0-9]{2,4}$")  # DROIC2001, LANGC2001
 RX_GROUPE_ENCODE = re.compile(r"-\d{2}$")      # B-KIRE:2-01
 RX_SOUS_GROUPE = re.compile(r"groupe|gr\.|s[ée]rie|pad\d|option|module|mineure", re.I)
+# Division explicite dans la colonne « Info » : « Groupe 2 », « Série 3
+# (Etudiants de R à Z) »… mais pas « TP Biochimie » ni « Allison ».
+RX_INFO_GROUPE = re.compile(
+    r"^(groupe|grp|gr\.?|s[ée]rie)\s*[- ]?\s*([0-9]{1,2}|[A-Z])\s*(\([^()]*\))?$", re.I)
 
 
 def _date(texte):
@@ -110,9 +114,12 @@ class ClientTimeEdit:
     def _json(self, chemin, params, timeout=None):
         contenu = self._appel(chemin, params, timeout=timeout, flot=True)
         try:
-            return json.loads(contenu.decode("utf-8"))
+            donnees = json.loads(contenu.decode("utf-8"))
         except Exception as e:  # noqa: BLE001 - réponse inattendue
             raise RuntimeError("TimeEdit a renvoyé une réponse illisible.") from e
+        # TimeEdit répond parfois une simple chaîne (« Aucun résultats de
+        # recherche ») : à traiter comme une réponse vide.
+        return donnees if isinstance(donnees, (dict, list)) else {}
 
     # ---------- cache ----------
 
@@ -305,12 +312,14 @@ class ClientTimeEdit:
     def _reservations(self, ids, budget=60):
         """Réservations de la sélection, au-delà du plafond si nécessaire.
 
-        La fenêtre « p=0.m,<fin>.x » part toujours d'aujourd'hui : quand une
-        sélection dépasse le plafond, on découpe la fin de fenêtre en mois et
-        on déduplique par identifiant de séance."""
+        La fenêtre « p=0.w,<fin>.x » part du lundi de la semaine en cours :
+        avec « 0.m » TimeEdit ne renvoyait qu'à partir d'aujourd'hui (les
+        cours du lundi au mercredi de la semaine affichée manquaient).
+        Quand une sélection dépasse le plafond, on découpe la fin de fenêtre
+        en tranches et on déduplique par identifiant de séance."""
         params = {"sid": self.sid_cours, "objects": ",".join(ids), "h": "t",
                   "ox": 0, "types": 0, "fe": 0, "max": PLAFOND_SEANCES}
-        d = self._json("ri.json", dict(params, p=f"0.m,{self.fin_fenetre}.x"),
+        d = self._json("ri.json", dict(params, p=f"0.w,{self.fin_fenetre}.x"),
                        timeout=max(20, min(budget, 60)))
         seances = {r.get("id"): r for r in (d.get("reservations") or [])}
         total = (d.get("info") or {}).get("reservationcount") or 0
@@ -319,7 +328,7 @@ class ClientTimeEdit:
             fin = datetime.strptime(self.fin_fenetre, "%Y%m%d").date()
             tranche = datetime.now().date() + timedelta(days=35)
             while tranche < fin and time.monotonic() - debut < budget:
-                d = self._json("ri.json", dict(params, p=f"0.m,{tranche.strftime('%Y%m%d')}.x"),
+                d = self._json("ri.json", dict(params, p=f"0.w,{tranche.strftime('%Y%m%d')}.x"),
                                timeout=max(20, min(budget, 60)))
                 for r in d.get("reservations") or []:
                     seances.setdefault(r.get("id"), r)
@@ -357,7 +366,13 @@ class ClientTimeEdit:
             matiere = str(cols[0] or "").strip()
             if not matiere:
                 continue
-            groupes = self._groupes(str(cols[i_ens] or ""), sel)
+            groupes = set(self._groupes(str(cols[i_ens] or ""), sel))
+            # Division dite dans la colonne « Info » (« Groupe 2 », « Série 3
+            # (Etudiants de R à Z) ») : c'est aussi un choix à proposer.
+            info_groupe = self._groupe_info(cols[1] if len(cols) > 1 else "")
+            if info_groupe:
+                groupes.add(info_groupe)
+            groupes = sorted(groupes, key=tri_naturel)
             profs = str(cols[3] or "").strip()
             salles = str(cols[i_salle] or "").strip()
             typ = str(cols[2] or "").strip()
@@ -416,6 +431,19 @@ class ClientTimeEdit:
             jours.append(cur)
             cur += timedelta(days=1)
         return jours
+
+    @staticmethod
+    def _groupe_info(texte):
+        """Nom de groupe annoncé dans la colonne « Info », ou ''.
+
+        L'ULB y met parfois la division (« Groupe 2 ») alors que la colonne
+        « Ensemble d'étudiants » ne porte que la cohorte. On ne garde que les
+        libellés qui sont *entièrement* un groupe (pas « TP Biochimie »,
+        « Partim - Kuty » ni « Allison »)."""
+        t = " ".join(str(texte or "").split())
+        if not t or len(t) > 60:
+            return ""
+        return t if RX_INFO_GROUPE.match(t) else ""
 
     def _groupes(self, ensemble, sel):
         """Noms de groupes concernés par une réservation.
