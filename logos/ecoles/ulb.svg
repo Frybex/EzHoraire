@@ -1,11 +1,1 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Wordmark EzHoraire pour l'ULB (pas le logo officiel de l'université). -->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 60" role="img" aria-label="ULB">
-  <g fill="#14458c">
-    <rect x="8" y="12" width="6" height="30" rx="2"/>
-    <rect x="18" y="12" width="6" height="30" rx="2"/>
-    <rect x="8" y="36" width="16" height="6" rx="2"/>
-    <path d="M30 12h6v24h12v6H30z"/>
-    <path d="M54 12h17c6 0 10 3 10 9 0 4-2 7-5 8 4 1 6 4 6 9 0 7-4 10-11 10H54zm6 6v8h10c3 0 5-1 5-4s-2-4-5-4zm0 14v10h11c3 0 5-2 5-5s-2-5-5-5z"/>
-  </g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 75 75"><defs><style>.cls-1{fill:#fff;}.cls-1,.cls-2,.cls-3,.cls-4{fill-rule:evenodd;}.cls-2{fill:#004d95;}.cls-3{fill:#abaecf;}.cls-4{fill:#fffffe;}.cls-5{mask:url(#mask);}.cls-6{mask:url(#mask-2);}</style><mask id="mask" x="10" y="26.69" width="18.24" height="20.31" maskUnits="userSpaceOnUse"><g id="mask-14"><polygon id="path-13" class="cls-1" points="10 26.69 28.24 26.69 28.24 47 10 47 10 26.69"/></g></mask><mask id="mask-2" x="45.9" y="26.64" width="16.82" height="19.72" maskUnits="userSpaceOnUse"><g id="mask-16"><polygon id="path-15" class="cls-1" points="45.9 26.64 62.72 26.64 62.72 46.36 45.9 46.36 45.9 26.64"/></g></mask></defs><title>Fichier 1</title><g id="Calque_2" data-name="Calque 2"><g id="Calque_1-2" data-name="Calque 1"><polygon class="cls-2" points="0 75 75 75 75 0 0 0 0 75"/><polygon class="cls-3" points="39.2 43.29 44.16 43.29 44.16 38.28 39.2 43.29"/><polygon class="cls-4" points="30 26.64 30 29.6 32.35 29.6 32.35 43.4 30 43.4 30 46.36 44.16 46.36 44.16 43.29 37.01 43.29 37.01 29.6 39.61 29.6 39.61 26.64 30 26.64"/><g class="cls-5"><path class="cls-4" d="M23.65,45.6c1.75-1.42,2.13-3,2.13-5.38V29.65h2.47v-3H21v3h1.55V40.72a2.8,2.8,0,0,1-2.79,2.81A2.54,2.54,0,0,1,17,40.72V29.65h1.62l.13-3H10.13l-.13,3h2.3V40c0,2.14,0,3.37,1.16,4.93S16.23,47,19,47a7.13,7.13,0,0,0,4.62-1.4"/></g><g class="cls-6"><path class="cls-4" d="M54.88,43.29c2,0,2.9-1,2.91-2.76a2.86,2.86,0,0,0-2.91-3.05H53v5.81Zm-.24-8.66a2.28,2.28,0,0,0,2.49-2.48,2.38,2.38,0,0,0-2.49-2.56H53v5Zm5.82,1.82a5.34,5.34,0,0,1,2.26,4.41c0,3-2.95,5.5-5.68,5.5H46V43.29h2.24V29.6H45.9v-3H57.06a4.9,4.9,0,0,1,5,4.85A5.15,5.15,0,0,1,60.45,35l-1.32.83Z"/></g></g></g></svg>
