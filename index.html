@@ -261,7 +261,8 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   #ulb-cours-chips .chip-textes small { font-size: .74rem; font-weight: 450; opacity: .75; }
   /* Retrait à confirmer : même relief que les autres pastilles, teinté
      danger (comme la confirmation de l'app), pas d'aplat rouge. */
-  .chip.chip-suppr {
+  .chip.chip-suppr,
+  .chip.chip-suppr:hover { /* le survol desktop ne doit pas repasser le texte en noir */
     color: var(--danger);
     background: linear-gradient(180deg,
       color-mix(in srgb, var(--danger) 7%, var(--relief-haut)),

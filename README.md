@@ -8,8 +8,8 @@ clés `ezh_compte`, `ezh_profils`, `ezh_courant`).
 
 Un seul horaire : affichage classique, sans nom ni sélecteur. Plusieurs
 horaires : chacun a son surnom (ex. Info, Droit, demandé à partir du 2e)
-et sa couleur, avec une barre de sélection en haut façon Horairelm
-(Maxence / Lilian / Anthony). Un profil = un cours / une option complète
+et sa couleur, avec une barre de sélection en haut façon Horairelm.
+Un profil = un cours / une option complète
 (école + formation + groupes), pas juste un groupe. Le bouton en haut à
 droite ouvre les **Réglages** (identité, déconnexion, mes horaires).
 L'horaire se met à jour tout seul à chaque ouverture : recharger la page
@@ -71,6 +71,14 @@ Reste côté consoles (une fois le projet Supabase créé) :
    par défaut de Supabase ne part que vers les membres de l'équipe du
    projet, les autres ne reçoivent jamais le lien. Sans SMTP, désactiver
    « Confirm email » : le compte est créé et connecté tout de suite.
+   Mot de passe oublié : natif aussi. Coller `emails/reset-password.html`
+   dans Authentication → Emails → Reset Password (Message body) ; le lien
+   ouvre `/mot-de-passe.html`, qui vérifie le jeton, affiche l'adresse
+   concernée et enregistre le nouveau mot de passe, puis renvoie sur
+   l'app déjà connectée. Le modèle passe par `{{ .TokenHash }}` plutôt que
+   par `{{ .ConfirmationURL }}` : la vérification se fait alors dans le
+   navigateur, donc les antivirus et aperçus de lien des messageries qui
+   pré-chargent les URL ne consomment plus le lien à usage unique.
 
 En local : `vercel env pull .env.local` une fois (fichier ignoré par git
 et par Vercel), `serve.py` le charge au démarrage. Sans ce fichier, l'app
@@ -186,6 +194,12 @@ les sources. `logos/ecoles/` est déployé, `logos/da/` et `logos/ez/`
 ## Fichiers
 
 - `index.html` — l'app (choix école → formation → groupe(s), puis horaire).
+- `mot-de-passe.html` — page d'atterrissage du lien « mot de passe oublié »
+  (vérification du jeton, adresse du compte, choix et enregistrement du
+  nouveau mot de passe, renvoi d'un lien si celui-ci a expiré).
+- `emails/reset-password.html` — modèle de l'email « mot de passe oublié »
+  (à coller dans Supabase → Authentication → Emails → Reset Password ;
+  dossier non déployé, c'est un modèle, pas une page du site).
 - `api/_hyperplanning.py` — moteur commun pour les écoles sous Hyperplanning (authentification, décodage, requêtes).
 - `api/_heh.py` — configuration et adaptation pour la HEH (Haute École en Hainaut).
 - `api/_umons.py` — configuration et adaptation pour l'UMONS (Université de Mons).
@@ -205,6 +219,13 @@ les sources. `logos/ecoles/` est déployé, `logos/da/` et `logos/ez/`
 pip install -r requirements.txt   # une seule fois
 python3 serve.py
 ```
+
+Pour tester depuis une autre machine du même réseau (téléphone, deuxième
+ordinateur), `python3 serve.py --lan` affiche l'adresse à ouvrir
+(`http://<ip>:8902`) et accepte ces connexions ; sans le drapeau, le
+serveur ne répond qu'à cette machine. La connexion Google/GitHub depuis
+cette adresse demande d'ajouter `http://<ip>:8902/**` aux Redirect URLs
+de Supabase (email + mot de passe marche sans rien changer).
 
 ## En ligne (Vercel)
 

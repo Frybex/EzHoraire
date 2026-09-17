@@ -1,6 +1,8 @@
 """Sert l'app en local, avec la même API qu'en ligne.
 
-Usage :  python3 serve.py
+Usage :  python3 serve.py            (cette machine uniquement)
+         python3 serve.py --lan      (+ les autres machines du réseau local)
+
 App :    http://localhost:8902 (8901 est pris par Horairelm)
 
 GET /api/formations?ecole=heh                      formations de l'école
@@ -26,6 +28,11 @@ import config  # noqa: E402
 import stats  # noqa: E402
 
 PORT = 8902
+# --lan : accepter les autres machines du réseau local (téléphone, 2e PC…).
+# Sans ce drapeau, serve.py refuse tout ce qui ne vient pas de cette machine :
+# c'est un serveur de développement, pas une mise en production.
+ACCEPTER_RESEAU = "--lan" in sys.argv or os.environ.get("EZH_LAN") == "1"
+LOCALES = ("127.0.0.1", "::1", "::ffff:127.0.0.1")
 ROUTES = {"/api/formations": formations.handler,
           "/api/horaires": horaires.handler,
           "/api/recherche": recherche.handler,
@@ -66,12 +73,14 @@ class Serveur(ThreadingHTTPServer):
 
 class Handler(SimpleHTTPRequestHandler):
     def _chemin_autorise(self):
-        """Chemin décodé si la requête vient de la machine locale et ne vise
-        pas un fichier caché, sinon None (une erreur a déjà été envoyée)."""
-        # Sécurité : n'accepter que les connexions provenant de la machine locale
+        """Chemin décodé si la requête est autorisée et ne vise pas un fichier
+        caché, sinon None (une erreur a déjà été envoyée)."""
+        # Sécurité : par défaut, seules les connexions de cette machine.
+        # --lan ouvre explicitement aux autres machines du réseau local.
         ip = self.client_address[0]
-        if ip not in ("127.0.0.1", "::1", "::ffff:127.0.0.1"):
-            self.send_error(403, "Accès interdit : serveur de développement local uniquement")
+        if ip not in LOCALES and not ACCEPTER_RESEAU:
+            self.send_error(403, "Accès interdit : serveur de développement local uniquement "
+                                 "(lance-le avec --lan pour le partager sur le réseau)")
             return None
 
         # Sécurité : décoder AVANT de filtrer, sinon « %2Eenv » passe le test
@@ -110,6 +119,19 @@ class Handler(SimpleHTTPRequestHandler):
         super().end_headers()
 
 
+def adresse_reseau():
+    """IP de cette machine sur le réseau local (pour l'afficher au démarrage)."""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            s.connect(("8.8.8.8", 80))
+            return s.getsockname()[0]
+        finally:
+            s.close()
+    except OSError:
+        return ""
+
+
 def charger_env_local(chemin=".env.local"):
     """Clés Supabase en local : `vercel env pull .env.local` les récupère,
     on les charge ici (sans écraser une variable déjà définie)."""
@@ -134,5 +156,13 @@ if __name__ == "__main__":
                  f"(voir `lsof -i :{PORT}`).")
     with srv:
         print(f"EzHoraire : http://localhost:{PORT}")
+        if ACCEPTER_RESEAU:
+            reseau = adresse_reseau()
+            if reseau:
+                print(f"Réseau local : http://{reseau}:{PORT}")
+                print("(les autres machines du même réseau peuvent ouvrir cette adresse ; "
+                      "le pare-feu macOS peut demander l'autorisation)")
+        else:
+            print("Cette machine uniquement (--lan pour partager sur le réseau local).")
         print("Ctrl+C pour arrêter.")
         srv.serve_forever()
