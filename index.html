@@ -1804,12 +1804,42 @@
   var SUPABASE_OK = false;     // vrai quand le cloud est branché
   var sessionSupabase = null;
   var pousseeMinutee = 0;
+  var generationCompte = 0;
   var demarrageFini = false;   // vrai une fois le routeur de démarrage passé
   var compte = lire(CLE_COMPTE);
   if (!compte || !compte.fournisseur) compte = null;
   var fournisseurChoisi = compte ? compte.fournisseur : null;
   function sauverCompte() { ecrire(CLE_COMPTE, compte); }
   function connecte() { return !!(compte && compte.nom && compte.prenom); }
+  function reinitialiserHoraires() {
+    generationCompte++;
+    clearTimeout(pousseeMinutee);
+    pousseeMinutee = 0;
+    profils = [];
+    profil = null;
+    courantId = null;
+    DATA = null;
+    COURS = [];
+    LUNDI0 = null;
+    SEMAINES = [];
+    choix = { ecole: null, formation: null, data: null, groupes: [], editionId: null, theme: null };
+    themeChoisiIdentite = 2;
+    ecrire(CLE_PROFILS, profils);
+    ecrire(CLE_COURANT, null);
+    ecrire(CLE_PROFIL_LEGACY, null);
+    adminVerifie = false;
+    var boutonAdmin = document.getElementById("btn-admin");
+    if (boutonAdmin) boutonAdmin.hidden = true;
+  }
+  function effacerSession() {
+    reinitialiserHoraires();
+    sessionSupabase = null;
+    AUTH.user = null;
+    compte = null;
+    fournisseurChoisi = null;
+    sauverCompte();
+    rendreAvatar();
+  }
 
   /* Petits messages sous les boutons de connexion. */
   function statutAuthChargement(msg) {
@@ -1885,7 +1915,15 @@
       sessionSupabase = session || null;
       if (session && session.user) AUTH.user = session.user;
       if (evt === "SIGNED_IN" && session && session.user) retourOAuth(session.user);
-      else if (evt === "SIGNED_OUT") { sessionSupabase = null; if (AUTH) AUTH.user = null; }
+      else if (evt === "SIGNED_OUT") {
+        effacerSession();
+        if (demarrageFini) {
+          fermerFeuille();
+          fermerPdf();
+          pile = [];
+          ouvrirCompte();
+        }
+      }
     });
     return sb.auth.getSession().then(function (res) {
       var session = res && res.data && res.data.session;
@@ -1938,15 +1976,8 @@
     var precId = (compte && compte.supabase_id) || null;
     var idn = identiteDepuisUser(user);
     fournisseurChoisi = fournisseurDe(user);
-    if (precId && precId !== user.id) {
-      // Changement de compte : on repart du cloud, pas du cache de l'autre.
-      profils = [];
-      profil = null;
-      ecrire(CLE_PROFILS, profils);
-      ecrire(CLE_COURANT, null);
-      // Nouveau compte : le statut admin sera revérifié à la prochaine ouverture.
-      try { adminVerifie = false; var _ba = document.getElementById("btn-admin"); if (_ba) _ba.hidden = true; } catch (e2) { /* jetable */ }
-    }
+    if (precId !== user.id) reinitialiserHoraires();
+    var generation = generationCompte;
     var ancien = compte && (!compte.supabase_id || compte.supabase_id === user.id) ? compte : null;
     compte = { fournisseur: fournisseurChoisi,
                nom: (ancien && ancien.nom) || idn.nom,
@@ -1958,6 +1989,7 @@
     var p = pullProfils().then(function () { return null; }, function () { return null; });
     if (!demarrageFini) return p;
     return p.then(function () {
+      if (generation !== generationCompte || !compte || compte.supabase_id !== user.id) return;
       pile = [];
       if (compte.nom && compte.prenom) {
         if (profil) demarrerHoraire();
@@ -1972,8 +2004,11 @@
      Fusion par id, le dernier écrit gagne (horodatage maj / updated_at).
      Hors ligne ou sans cloud : le localStorage seul fait foi. */
   function pullProfils() {
-    if (!SUPABASE_OK || !sb || !sessionSupabase) return Promise.resolve(false);
-    return sb.from("profils").select("id,surnom,ecole,formation,groupes,theme,updated_at").then(function (res) {
+    if (!SUPABASE_OK || !sb || !sessionSupabase || !sessionSupabase.user || !compte || compte.supabase_id !== sessionSupabase.user.id) return Promise.resolve(false);
+    var uid = sessionSupabase.user.id;
+    var generation = generationCompte;
+    return sb.from("profils").select("id,surnom,ecole,formation,groupes,theme,updated_at").eq("user_id", uid).then(function (res) {
+      if (generation !== generationCompte || !sessionSupabase || !sessionSupabase.user || sessionSupabase.user.id !== uid || !compte || compte.supabase_id !== uid) return false;
       if (res.error) throw res.error;
       var parId = {};
       profils.forEach(function (p) { parId[p.id] = p; });
@@ -2002,7 +2037,7 @@
     });
   }
   function pushProfils() {
-    if (!SUPABASE_OK || !sb || !sessionSupabase || !sessionSupabase.user) return Promise.resolve(false);
+    if (!SUPABASE_OK || !sb || !sessionSupabase || !sessionSupabase.user || !compte || compte.supabase_id !== sessionSupabase.user.id) return Promise.resolve(false);
     var uid = sessionSupabase.user.id;
     var lignes = profils.filter(profilValide).map(function (p) {
       return { user_id: uid, id: p.id, surnom: p.surnom, ecole: p.ecole,
@@ -2018,7 +2053,9 @@
   function planifierPush() {
     if (!SUPABASE_OK || !sb || !sessionSupabase) return;
     clearTimeout(pousseeMinutee);
+    var generation = generationCompte;
     pousseeMinutee = setTimeout(function () {
+      if (generation !== generationCompte) return;
       pushProfils().then(function () { /* jetable */ }, function () { /* réessaiera au prochain changement */ });
     }, 800);
   }
@@ -2128,14 +2165,10 @@
       });
     },
     logout: function () {
-      this.user = null;
-      var fini = function () {
-        compte = null;
-        try { localStorage.removeItem(CLE_COMPTE); } catch (e) { /* jetable */ }
-        try { adminVerifie = false; var _ba = document.getElementById("btn-admin"); if (_ba) _ba.hidden = true; } catch (e2) { /* jetable */ }
-      };
-      if (SUPABASE_OK && sb) return sb.auth.signOut().then(fini, fini);
-      fini();
+      effacerSession();
+      if (SUPABASE_OK && sb) return sb.auth.signOut().then(function (res) {
+        return !res.error;
+      }, function () { return false; });
       return Promise.resolve(true);
     }
   };
@@ -3788,7 +3821,7 @@
         } catch (e) { /* ouvrier déjà réglé */ }
         blob.arrayBuffer().then(function (buf) {
           if (maDemande !== pdfDemande) return;
-          pdfjsLib.getDocument({ data: buf }).promise.then(function (doc) {
+          pdfjsLib.getDocument({ data: buf, isEvalSupported: false }).promise.then(function (doc) {
             if (maDemande !== pdfDemande) { try { doc.destroy(); } catch (e) { /* jetable */ } return; }
             oublierPdfDoc();
             pdfDoc = doc;
@@ -3913,10 +3946,10 @@
       if (!ok) return;
       fermerFeuille();
       fermerPdf();
-      AUTH.logout();
-      DATA = null;
-      pile = [];
-      ouvrirCompte();
+      AUTH.logout().then(function () {
+        pile = [];
+        ouvrirCompte();
+      });
     });
   });
   /* Mise à jour depuis l'école : automatique à l'ouverture et au retour
