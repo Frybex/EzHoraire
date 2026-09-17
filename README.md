@@ -76,21 +76,30 @@ connexion est refusée avec un message si le cloud est injoignable).
 ## Dashboard admin (comptes → cours → consultations)
 
 `/dashboard.html` : comptes créés, cours suivis (`profils`), consultations
-par jour (`visites`, 1 ligne = 1 ouverture d'horaire). Réservé aux emails
-de `ADMIN_EMAILS`, via `GET /api/stats` (clé service_role côté serveur
-uniquement, jamais dans le navigateur).
+par jour (`visites`, 1 ligne = 1 ouverture d'horaire). Réservé aux admins,
+via `GET /api/stats` (clé service_role côté serveur uniquement, jamais
+dans le navigateur). Un compte est admin si son `user_id` figure dans
+`ADMIN_USER_IDS`, ou si son `app_metadata` contient `"admin": true`, ou
+(Repli) si son email figure dans `ADMIN_EMAILS`. Préfère
+`ADMIN_USER_IDS` : un email n'est pas un identifiant, il ne vaut que
+tant que le compte qui le porte existe déjà.
 
 Mise en route (une fois) :
 
-1. Supabase → SQL Editor : recoller `supabase/schema.sql` (ajoute la table
-   `visites`, rejouable sans rien casser).
+1. Supabase → SQL Editor : recoller `supabase/schema.sql` (table `visites`
+   + plafond et purge, ajoutés depuis ; rejouable sans rien casser).
 2. Supabase → Project Settings → API : copier la clé `service_role`.
-3. Vercel → Settings → Environment Variables (Production + Preview) :
+3. Supabase → Authentication → Users : copier l'UUID du compte admin.
+4. Vercel → Settings → Environment Variables (Production + Preview) :
    `SUPABASE_SERVICE_ROLE_KEY` = la clé service_role,
-   `ADMIN_EMAILS` = `toi@exemple.be` (plusieurs = séparés par des virgules),
+   `ADMIN_USER_IDS` = cet UUID (plusieurs = séparés par des virgules),
    puis redéployer. En local : mêmes clés dans `.env.local`.
-4. Ouvrir `https://www.ezhoraire.be/dashboard.html` avec ton compte admin
+5. Ouvrir `https://www.ezhoraire.be/dashboard.html` avec ton compte admin
    (connecté au préalable sur `/`). Les autres comptes voient « réservé ».
+
+La purge de `visites` (180 jours) est fournie par `purger_visites()` :
+la planifier si l'extension pg_cron est active (voir la fin de
+`schema.sql`), sinon l'appeler de temps en temps dans le SQL Editor.
 
 Requêtes utiles (SQL Editor) sans le dashboard :
 

@@ -30,17 +30,29 @@ BUDGET = 75  # s, sous la limite de durée de la fonction chez l'hébergeur
 CACHE_PARTAGE = "public, max-age=0, s-maxage=900, stale-while-revalidate=1800, stale-if-error=604800"
 # « Actualiser » : assez court pour être utile, assez long pour absorber une rafale.
 CACHE_FRAIS = "public, max-age=0, s-maxage=60, stale-if-error=604800"
+PARAMS = {"ecole", "formation", "frais"}
 
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         q = parse_qs(urlparse(self.path).query)
+        # Paramètres inconnus refusés tout de suite : sans ça, une URL
+        # habillée d'un paramètre au hasard contourne le cache partagé et
+        # atteint la fonction (puis l'école) pour chaque variante.
+        inconnus = set(q) - PARAMS
+        if inconnus:
+            return repondre_json(self, 400, {"ok": False, "erreur":
+                                 "Paramètre inconnu : " + ", ".join(sorted(inconnus)) + "."})
         mod = ecole(q)
         formation = (q.get("formation") or [""])[0]
         if mod is None or not formation:
             return repondre_json(self, 400, {"ok": False, "erreur":
                                  f"Paramètres attendus : ecole={'|'.join(ECOLES)} et formation=<nom>."})
-        frais = "frais" in q
+        if len(formation) > 200:
+            return repondre_json(self, 400, {"ok": False, "erreur": "Nom de formation trop long."})
+        # Seau numérique de l'app uniquement (voir _heh._frais_autorise) :
+        # le rafraîchissement forcé reste borné côté serveur.
+        frais = (q.get("frais") or [""])[0].isdigit()
         try:
             data = mod.horaire(formation, budget=BUDGET, frais=frais)
             repondre_json(self, 200, {"ok": True, "data": data},

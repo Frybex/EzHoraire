@@ -15,11 +15,17 @@ from _ecoles import ECOLES, ecole, repondre_json  # noqa: E402
 
 # La liste bouge rarement : gardée 1 h par un éventuel cache partagé (CDN).
 CACHE_PARTAGE = "public, max-age=0, s-maxage=3600, stale-if-error=604800"
+PARAMS = {"ecole"}
 
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         q = parse_qs(urlparse(self.path).query)
+        # Paramètres inconnus refusés tout de suite (contournement du cache).
+        inconnus = set(q) - PARAMS
+        if inconnus:
+            return repondre_json(self, 400, {"ok": False, "erreur":
+                                 "Paramètre inconnu : " + ", ".join(sorted(inconnus)) + "."})
         mod = ecole(q)
         if mod is None:
             return repondre_json(self, 400, {"ok": False, "erreur": f"École attendue : {'|'.join(ECOLES)}."})

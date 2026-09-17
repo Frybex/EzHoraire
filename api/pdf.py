@@ -22,11 +22,18 @@ from _ecoles import ECOLES, ecole, repondre_texte  # noqa: E402
 BUDGET = 40  # s, sous la limite de durée de la fonction chez l'hébergeur
 CACHE_PARTAGE = ("public, max-age=0, s-maxage=1800, "
                  "stale-while-revalidate=3600, stale-if-error=86400")
+PARAMS = {"ecole", "formation", "groupe", "semaine"}
 
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         q = parse_qs(urlparse(self.path).query)
+        # Paramètres inconnus refusés tout de suite : une URL au paramètre
+        # inédit contourne le cache partagé et atteint l'école à chaque fois.
+        inconnus = set(q) - PARAMS
+        if inconnus:
+            return repondre_texte(self, 400, "Paramètre inconnu : " +
+                                  ", ".join(sorted(inconnus)) + ".")
         mod = ecole(q)
         formation = (q.get("formation") or [""])[0]
         groupe = (q.get("groupe") or [""])[0]
@@ -34,6 +41,10 @@ class handler(BaseHTTPRequestHandler):
         if mod is None or not formation or not semaine.isdigit():
             return repondre_texte(self, 400, f"Paramètres attendus : ecole={'|'.join(ECOLES)}, "
                                              "formation=<nom>, semaine=<numéro> (groupe facultatif).")
+        if len(formation) > 200 or len(groupe) > 120:
+            return repondre_texte(self, 400, "Paramètre trop long.")
+        if not 1 <= int(semaine) <= 60:
+            return repondre_texte(self, 404, f"semaine {semaine} non publiée par l'école")
         try:
             contenu = mod.pdf_semaine(formation, groupe, int(semaine), budget=BUDGET)
         except ValueError as e:

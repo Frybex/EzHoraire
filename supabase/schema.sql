@@ -84,3 +84,63 @@ create policy "visites_insert_propres" on public.visites
 create index if not exists idx_visites_user_date on public.visites (user_id, created_at desc);
 create index if not exists idx_visites_date on public.visites (created_at desc);
 create index if not exists idx_visites_formation on public.visites (ecole, formation);
+
+-- ---------------------------------------------------------------
+-- Garde-fous d'usage sur visites (rejouable).
+-- 1) Plafond : au plus 300 consultations / 24 h / compte. Sans lui, un
+--    compte connecté peut gonfler la table et fausser le dashboard.
+--    La fonction est SECURITY DEFINER : le compte qui insère n'a pas le
+--    droit de lire la table (pas de politique SELECT), le comptage doit
+--    donc se faire avec les droits du propriétaire.
+-- 2) Bornes de taille : l'app envoie ce qu'elle veut, la table n'a pas à
+--    stocker des kilomètres de texte.
+-- 3) Purge : garde 180 jours, à appeler périodiquement (planificateur
+--    Supabase, ou select public.purger_visites(180); à la main).
+-- ---------------------------------------------------------------
+create or replace function public.limiter_visites()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  recentes integer;
+begin
+  new.ecole     := left(new.ecole, 120);
+  new.formation := left(new.formation, 160);
+  new.profil_id := left(new.profil_id, 120);
+
+  select count(*) into recentes
+  from public.visites
+  where user_id = new.user_id
+    and created_at > now() - interval '24 hours';
+
+  if recentes >= 300 then
+    raise exception 'Trop de consultations enregistrées sur 24 h.';
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists trg_visites_limite on public.visites;
+create trigger trg_visites_limite
+  before insert on public.visites
+  for each row execute function public.limiter_visites();
+
+create or replace function public.purger_visites(jours integer default 180)
+returns bigint
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  supprimees bigint;
+begin
+  delete from public.visites
+  where created_at < now() - make_interval(days => greatest(jours, 30));
+  get diagnostics supprimees = row_count;
+  return supprimees;
+end $$;
+
+-- Si l'extension pg_cron est activée, planifier la purge (à décommenter) :
+-- select cron.schedule('ezh-purge-visites', '17 4 * * *',
+--                      'select public.purger_visites(180)');

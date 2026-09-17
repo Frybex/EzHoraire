@@ -357,6 +357,58 @@ def _memo(cle, duree, calcul, frais=False):
     return resultat
 
 
+_FRAIS_MIN = 60  # s, au plus un rafraîchissement forcé par formation
+_FRAIS_DERNIER = {}
+
+
+def _frais_autorise(formation, minimum=None, maintenant=None):
+    """Vrai si un rafraîchissement forcé est permis à cet instant.
+
+    Le numéro de seau de l'app est public : sans ce garde-fou côté serveur,
+    varier l'URL (`&frais=1&x=...`) suffirait à forcer un appel à l'école à
+    chaque requête. Une formation = au plus un rafraîchissement forcé toutes
+    les `minimum` secondes, par instance. Le reste est servi par _memo.
+    """
+    minimum = _FRAIS_MIN if minimum is None else minimum
+    t = time.monotonic() if maintenant is None else maintenant
+    vu = _FRAIS_DERNIER.get(formation)
+    if vu is not None and t - vu < minimum:
+        return False
+    _FRAIS_DERNIER[formation] = t
+    return True
+
+
+def _formation_connue(nom):
+    """True / False si la liste des formations est déjà en mémoire, sinon
+    None (liste pas encore chargée : on laisse l'école trancher)."""
+    vu = _MEMO.get(("formations",))
+    if not vu:
+        return None
+    try:
+        return nom in vu[1]
+    except Exception:  # noqa: BLE001 - forme inattendue : ne pas bloquer
+        return None
+
+
+def _verifier_formation(nom):
+    """Refuse localement une formation déjà connue comme inexistante : sans
+    ça, chaque nom inventé (`?formation=AAAA...`) provoque un appel à l'école."""
+    if _formation_connue(nom) is False:
+        raise ValueError(f"formation introuvable chez l'école : {nom}")
+
+
+def _verifier_groupe(formation, groupe):
+    """Refuse un groupe inconnu quand l'horaire de la formation est en
+    mémoire (cas courant : l'app charge l'horaire avant le bouton PDF)."""
+    if not groupe:
+        return
+    vu = _MEMO.get(("horaire", formation))
+    if not vu:
+        return  # horaire pas en mémoire : l'école tranchera (un appel)
+    if groupe not in (vu[1].get("groupes") or []):
+        raise ValueError(f"groupe introuvable : {groupe}")
+
+
 def formations(budget=20):
     """Noms des formations proposées par l'école (uniques, ordre de l'école)."""
     def calcul():
@@ -371,8 +423,12 @@ def horaire(formation, budget=75, frais=False):
     Un cours identique sur plusieurs semaines n'apparaît qu'une fois, avec la
     liste de ses semaines. `groupes` vide = séance de toute la formation.
     """
+    if frais and not _frais_autorise(formation):
+        frais = False  # trop tôt : l'appel forcé serait du gaspillage
+
     def calcul():
         debut = time.monotonic()
+        _verifier_formation(formation)
         ecole = Ecole(time.monotonic() + budget)
         try:
             return _recuperer(ecole, formation)
@@ -423,13 +479,24 @@ def pdf_semaine(formation, groupe, semaine, budget=40):
     partagé, lui, le garde une demi-heure (voir api/pdf.py) — c'est l'appel le
     plus coûteux pour l'école, et le document est identique pour tous les
     étudiants d'un même groupe.
+
+    La fiche de formation (ressource + semaines publiées) est gardée 5 min :
+    une semaine inventée est refusée localement au lieu de rappeler l'école
+    à chaque URL différente.
     """
+    _verifier_formation(formation)
+    _verifier_groupe(formation, groupe)
+    vu = _MEMO.get(("info", formation))
+    if vu and semaine not in (vu[1].get("semaines") or []):
+        raise ValueError(f"semaine {semaine} non publiée par l'école")
+
     debut = time.monotonic()
     ecole = Ecole(time.monotonic() + budget)
 
     def action(hp):
-        info = hp.formation(formation)
-        if semaine not in info["semaines"]:
+        info = vu[1] if vu else hp.formation(formation)
+        _MEMO[("info", formation)] = (time.monotonic(), info)
+        if semaine not in (info.get("semaines") or []):
             raise ValueError(f"semaine {semaine} non publiée par l'école")
         ress = hp.groupe(formation, groupe) if groupe else info["ressource"]
         return hp.pdf(ress, semaine, format_ensemble(info["semaines"]))

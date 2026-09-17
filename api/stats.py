@@ -13,8 +13,13 @@ Réponse : {"ok": true, "data": {
   "utilisateurs": [...] }}
 
 Env requises : SUPABASE_URL, SUPABASE_ANON_KEY,
-  SUPABASE_SERVICE_ROLE_KEY (alias SERVICE_ROLE acceptés),
-  ADMIN_EMAILS (séparés par des virgules).
+  SUPABASE_SERVICE_ROLE_KEY (alias SERVICE_ROLE acceptés), puis au moins
+  une des deux listes d'admins :
+  - ADMIN_USER_IDS : UUID des comptes admins (recommandé : impossible à
+    réclamer par quelqu'un d'autre, contrairement à une adresse email) ;
+  - ADMIN_EMAILS : emails, séparés par des virgules (repli historique).
+  Un compte est aussi admin si son app_metadata contient "admin": true
+  (app_metadata n'est modifiable qu'avec la clé service_role).
 """
 import json
 import os
@@ -56,6 +61,10 @@ def _iso_date(s):
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         q = parse_qs(urlparse(self.path).query)
+        inconnus = set(q) - {"jours", "check"}
+        if inconnus:
+            return repondre_json(self, 400, {"ok": False, "erreur":
+                                 "Paramètre inconnu : " + ", ".join(sorted(inconnus)) + "."})
         try:
             jours = max(1, min(90, int((q.get("jours") or ["30"])[0])))
         except ValueError:
@@ -66,12 +75,13 @@ class handler(BaseHTTPRequestHandler):
         service = _env("SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_SERVICE_KEY",
                        "SERVICE_ROLE_KEY", "SUPABASE_SECRET_KEY")
         admins = {e.strip().lower() for e in _env("ADMIN_EMAILS").split(",") if e.strip()}
+        admins_ids = {i.strip().lower() for i in _env("ADMIN_USER_IDS").split(",") if i.strip()}
         if not url or not anon or not service:
             return repondre_json(self, 500, {"ok": False,
-                "erreur": "Dashboard non configuré (clés Supabase / ADMIN_EMAILS manquantes)."})
-        if not admins:
+                "erreur": "Dashboard non configuré (clés Supabase manquantes)."})
+        if not admins and not admins_ids:
             return repondre_json(self, 500, {"ok": False,
-                "erreur": "Dashboard non configuré (ADMIN_EMAILS vide)."})
+                "erreur": "Dashboard non configuré (ADMIN_USER_IDS ou ADMIN_EMAILS vide)."})
 
         auth = self.headers.get("Authorization") or ""
         if not auth.lower().startswith("bearer "):
@@ -87,7 +97,16 @@ class handler(BaseHTTPRequestHandler):
         except Exception:
             return repondre_json(self, 401, {"ok": False, "erreur": "Session invalide."})
         email = str((moi or {}).get("email") or "").lower()
-        if not email or email not in admins:
+        uid = str((moi or {}).get("id") or "").lower()
+        meta = (moi or {}).get("app_metadata") or {}
+        # user_id et app_metadata (écriture service_role uniquement) ne
+        # peuvent pas être réclamés par un tiers, contrairement à un email.
+        est_admin = (
+            (bool(uid) and uid in admins_ids)
+            or (meta.get("admin") in (True, "true"))
+            or (bool(email) and email in admins)
+        )
+        if not est_admin:
             return repondre_json(self, 403, {"ok": False, "erreur": "Accès réservé."})
 
         # Sonde légère de l'app (bouton « Tableau admin ») : pas d'agrégation.
