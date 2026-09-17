@@ -5,7 +5,7 @@ App :    http://localhost:8902 (8901 est pris par Horairelm)
 
 GET /api/formations?ecole=heh                      formations de l'école
 GET /api/horaires?ecole=heh&formation=..           horaire complet d'une formation
-GET /api/recherche?ecole=ulb&genre=niveau&q=..     recherche en direct (ULB)
+GET /api/recherche?ecole=ulb&genre=niveau&q=..     recherche en direct (ULB, UCLouvain)
 GET /api/ical?lien=..                              horaire d'un lien d'abonnement
 GET /api/pdf?ecole=heh&formation=..&groupe=..&semaine=..   PDF officiel
 """

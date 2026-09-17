@@ -23,10 +23,11 @@ d'une semaine à l'autre. Rendu volontairement mat : fond très peu
 saturé, rail de couleur à gauche, texte neutre.
 
 Écoles prises en charge : **HEH** (HEH Planning), **UMONS** (UMONS Planning,
-espace invités public) et **ULB** (TimeEdit, vue publique « je n'ai pas
-encore d'ULBID »). Objectif : la plupart des universités et hautes écoles
-belges, puis les applications iOS et Android, et les comptes (Google,
-GitHub, email).
+espace invités public), **UCLouvain** (Mon horaire, la vue publique de
+l'outil officiel) et **ULB** (TimeEdit, vue publique « je n'ai pas encore
+d'ULBID »). Objectif : la plupart des universités et hautes écoles belges,
+puis les applications iOS et Android, et les comptes (Google, GitHub,
+email).
 
 ## Comptes (Supabase Auth, branché)
 
@@ -158,6 +159,20 @@ personnel (`api/ical`), sans que le moindre mot de passe passe par nous, et
 sans PDF (il n'y en a pas pour un lien). La liste des niveaux n'est pas
 téléchargée : le champ de recherche appelle `api/recherche`.
 
+Spécificités UCLouvain : un même « code » désigne un cours
+(`LINFO1101`) ou un programme (`SINF11BA`), et la recherche publique
+(`api/recherche`) répond les deux. Trois entrées, comme pour l'ULB : par
+programme, par codes de cours (« PAR:LINFO1101,LEPL1101 »), ou l'horaire
+personnel via le lien d'abonnement iCal de Mon horaire
+(monhoraire.uclouvain.be → « Exporter » → « Lien d'abonnement », ou le
+lien de partage). Le moteur lit la vue publique de Mon horaire
+(`/calendar/<recherche>`, `/api/events`), sans session ni identifiant ;
+l'année académique est déduite de la date, avec repli sur la précédente
+tant que la nouvelle n'est pas publiée. Les groupes affichés sont les
+codes d'activité de l'UCLouvain (`LINFO1101_Q1.A2`…) : l'étudiant coche
+ses TP, les séances sans choix (accueil, CM d'audience unique) restent
+visibles. Pas de PDF officiel : le bouton est masqué pour cette école.
+
 Spécificités UMONS (382 formations) : chaque groupe est préfixé par sa
 formation (`<.BAB1 - Droit>Dr. rom - Gr 1`), l'API renvoie les noms
 décapés (`Dr. rom - Gr 1`) et accepte les deux formes pour le PDF ; si
@@ -191,7 +206,8 @@ les sources. `logos/ecoles/` est déployé, `logos/da/` et `logos/ez/`
 - `api/_umons.py` — configuration et adaptation pour l'UMONS (Université de Mons).
 - `api/_timeedit.py` — moteur commun TimeEdit (recherche, réservations, PDF, cache).
 - `api/_ulb.py` — configuration et adaptation pour l'ULB (Université libre de Bruxelles).
-- `api/_ical.py` — lecture d'un lien d'abonnement iCal (TimeEdit) → format des écoles.
+- `api/_ucl.py` — lecture des horaires publics UCLouvain (Mon horaire : recherche, événements, cache).
+- `api/_ical.py` — lecture d'un lien d'abonnement iCal (TimeEdit ou Mon horaire UCLouvain) → format des écoles.
 - `api/_ecoles.py` — liste des écoles + aides HTTP. Ajouter une école : un
   module comme `_heh.py` ou `_umons.py` (NOM, formations(), horaire(), pdf_semaine()),
   une ligne dans `ECOLES`, et une entrée dans `ECOLES` de `index.html`.

@@ -236,7 +236,8 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   }
   .chip:active { transform: scale(.97); }
   .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  /* Onglets du choix ULB : par niveau, par codes de cours, lien perso. */
+  /* Onglets des écoles « recherche » (ULB, UCLouvain) : par niveau ou
+     programme, par codes de cours, lien d'abonnement personnel. */
   .modes { display: flex; gap: 6px; margin: 0 0 12px; flex-wrap: wrap; }
   .modes button {
     min-height: 40px; padding: 0 14px; border: none; border-radius: 12px;
@@ -262,9 +263,9 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     content: "\2715"; position: static; border: none; transform: none;
     font-size: .68rem; font-weight: 800; line-height: 1; color: #c33f3f;
   }
-  #ulb-cours { margin: 2px 0 12px; }
-  #ulb-cours .chips { margin: 6px 0 8px; }
-  #ulb-lien .champs { margin-bottom: 12px; }
+  #rech-cours { margin: 2px 0 12px; }
+  #rech-cours .chips { margin: 6px 0 8px; }
+  #rech-lien .champs { margin-bottom: 12px; }
   /* Bouton d'action des étapes : relief, collé en bas tant qu'on défile. */
   .primaire {
     position: sticky; bottom: calc(14px + env(safe-area-inset-bottom)); z-index: 5;
@@ -1920,10 +1921,10 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   <section id="v-formation" hidden>
     <p class="etapes" role="img" aria-label="Étape 2 sur 3"><span class="on"></span><span class="on"></span><span></span></p>
     <h2 class="q" id="formation-titre">Ta formation</h2>
-    <div class="modes" id="ulb-modes" role="tablist" aria-label="Comment trouver tes cours" hidden>
-      <button type="button" role="tab" data-mode="niveau" aria-selected="true">Par niveau d'études</button>
+    <div class="modes" id="rech-modes" role="tablist" aria-label="Comment trouver tes cours" hidden>
+      <button type="button" role="tab" data-mode="niveau" aria-selected="true">Par niveau</button>
       <button type="button" role="tab" data-mode="cours" aria-selected="false">Par codes de cours</button>
-      <button type="button" role="tab" data-mode="lien" aria-selected="false">Mon horaire ULB</button>
+      <button type="button" role="tab" data-mode="lien" aria-selected="false">Lien personnel</button>
     </div>
     <p class="aide" id="formation-aide"></p>
     <div class="champs recherche-bloc halo" id="formation-recherche">
@@ -1933,25 +1934,23 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
                aria-label="Rechercher une formation" autocomplete="off" autocorrect="off" spellcheck="false">
       </div>
     </div>
-    <div id="ulb-cours" hidden>
-      <div class="chips" id="ulb-cours-chips"></div>
-      <p class="aide" id="ulb-cours-avis" hidden></p>
-      <p class="aide" id="ulb-cours-vide">Aucun cours choisi. Cherche un code (DROIC2001) ou un intitulé, puis touche le cours pour l'ajouter.</p>
-      <button class="primaire halo" id="ulb-cours-voir" type="button" disabled>Voir mon horaire</button>
+    <div id="rech-cours" hidden>
+      <div class="chips" id="rech-cours-chips"></div>
+      <p class="aide" id="rech-cours-avis" hidden></p>
+      <p class="aide" id="rech-cours-vide">Aucun cours choisi. Cherche un code ou un intitulé, puis touche le cours pour l'ajouter.</p>
+      <button class="primaire halo" id="rech-cours-voir" type="button" disabled>Voir mon horaire</button>
     </div>
-    <div id="ulb-lien" hidden>
-      <p class="aide">Ton horaire personnel (MonULB) s'abonne dans TimeEdit : ouvre
-        <a href="https://cloud.timeedit.net/be_ulb/web/etudiant/" target="_blank" rel="noopener">Mon horaire</a>
-        avec ton ULBID, choisis « toute la durée affichée » puis « S'abonner », et colle ici le lien obtenu.</p>
+    <div id="rech-lien" hidden>
+      <p class="aide" id="rech-lien-aide"></p>
       <div class="champs halo">
         <div class="champ-ligne">
           <svg class="champ-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M9 15l6-6M8 7h6a5 5 0 0 1 0 10H8a5 5 0 0 1 0-10z"/></svg>
-          <input class="champ" id="ulb-lien-champ" type="url" inputmode="url" autocomplete="off" autocorrect="off" spellcheck="false"
-                 placeholder="https://cloud.timeedit.net/be_ulb/web/…">
+          <input class="champ" id="rech-lien-champ" type="url" inputmode="url" autocomplete="off" autocorrect="off" spellcheck="false"
+                 placeholder="https://…">
         </div>
       </div>
-      <button class="primaire halo" id="ulb-lien-voir" type="button">Vérifier le lien</button>
-      <p class="pdf-status" id="ulb-lien-status" role="status"></p>
+      <button class="primaire halo" id="rech-lien-voir" type="button">Vérifier le lien</button>
+      <p class="pdf-status" id="rech-lien-status" role="status"></p>
     </div>
     <p class="pdf-status" id="formations-status" role="status"></p>
     <ul class="liste" id="liste-formations"></ul>
@@ -2150,12 +2149,46 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   var ECOLES = [
     { id: "heh", nom: "HEH", detail: "Haute École en Hainaut · Mons, Tournai", logo: "logos/ecoles/heh.svg" },
     { id: "umons", nom: "UMONS", detail: "Université de Mons · Mons, Charleroi", logo: "logos/ecoles/umons.svg" },
+    { id: "ucl", nom: "UCLouvain", detail: "Université catholique de Louvain · Louvain-la-Neuve, Bruxelles, Mons…",
+      logo: "logos/ecoles/ucl.svg", recherche: true, pdf: false },
     { id: "ulb", nom: "ULB", detail: "Université libre de Bruxelles · Bruxelles, Charleroi", logo: "logos/ecoles/ulb.svg", recherche: true }
   ];
   function ecoleDe(id) {
     for (var i = 0; i < ECOLES.length; i++) if (ECOLES[i].id === id) return ECOLES[i];
     return null;
   }
+
+  /* Écoles « recherche » : pas de liste complète à télécharger (l'ULB a
+     plus de 2 000 niveaux) — l'app fait une recherche serveur
+     (api/recherche), puis propose trois entrées : par niveau/programme,
+     par codes de cours, ou l'horaire personnel via un lien d'abonnement
+     iCal. Chaque école donne ses libellés : rien n'est deviné. */
+  var RECHERCHE = {
+    ulb: {
+      modes: ["Par niveau d'études", "Par codes de cours", "Mon horaire ULB"],
+      niveau: { titre: "Ton niveau d'études", placeholder: "Recherche, ex. droit bloc 2, polytech…",
+                aide: "Écris au moins 2 lettres : l'ULB publie plus de 2 000 niveaux d'études." },
+      cours: { titre: "Tes cours (UE)", placeholder: "Code ou intitulé, ex. DROIC2001, droit pénal…",
+               aide: "Coche les cours que tu suis, puis « Voir mon horaire »." },
+      lien: { titre: "Ton horaire personnel", placeholder: "https://cloud.timeedit.net/be_ulb/web/…",
+              aide: "Ton horaire personnel (MonULB) s'abonne dans TimeEdit : ouvre " +
+                '<a href="https://cloud.timeedit.net/be_ulb/web/etudiant/" target="_blank" rel="noopener">Mon horaire</a> ' +
+                "avec ton ULBID, choisis « toute la durée affichée » puis « S'abonner », " +
+                "et colle ici le lien obtenu." }
+    },
+    ucl: {
+      modes: ["Par programme", "Par codes de cours", "Mon horaire UCLouvain"],
+      niveau: { titre: "Ton programme", placeholder: "Recherche, ex. ingénieur civil, droit bloc 1…",
+                aide: "Écris au moins 2 lettres : le code du programme (SINF11BA) ou son intitulé." },
+      cours: { titre: "Tes cours", placeholder: "Code du cours, ex. LINFO1101, LDROI1001…",
+               aide: "Cherche par code (le début suffit) et coche les cours que tu suis." },
+      lien: { titre: "Ton horaire personnel", placeholder: "https://monhoraire.uclouvain.be/calendar/…",
+              aide: "Ton horaire personnel s'exporte depuis Mon horaire : ouvre " +
+                '<a href="https://monhoraire.uclouvain.be/" target="_blank" rel="noopener">monhoraire.uclouvain.be</a>, ' +
+                "connecte-toi avec ton identifiant UCLouvain, puis « Exporter » → " +
+                "« Lien d'abonnement » (ou « Lien de partage ») et colle ici le lien obtenu." }
+    }
+  };
 
   /* Mémoire de l'appareil (local, sans compte pour l'instant) :
      - ezh_profils : [{id, surnom, ecole, formation, groupes: [...], theme: 0..5}]
@@ -2249,7 +2282,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   function ecrire(cle, valeur) {
     try { localStorage.setItem(cle, JSON.stringify(valeur)); } catch (e) { /* plein / privé */ }
   }
-  /* Lien d'abonnement personnel (ULB) : la clé de cache ne doit jamais
+  /* Lien d'abonnement personnel (ULB, UCLouvain) : la clé de cache ne doit jamais
      contenir le lien (localStorage partagé, journaux…) — une empreinte
      suffit, et deux liens différents ne se marchent pas dessus. */
   function empreinteLien(lien) {
@@ -2266,7 +2299,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   }
   function profilValide(p) {
     if (!(p && p.id && ecoleDe(p.ecole) && p.formation && Array.isArray(p.groupes))) return false;
-    // Lien d'abonnement (ULB) : chaîne courte uniquement, jamais un objet.
+    // Lien d'abonnement (ULB, UCLouvain) : chaîne courte uniquement, jamais un objet.
     if (p.ical != null && typeof p.ical !== "string") return false;
     return true;
   }
@@ -2923,8 +2956,8 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   }
   // Nom de formation affichable : l'UMONS préfixe d'un point
   // ('.BAB1 - Droit'). La valeur complète reste la clé d'API.
-  // ULB : « PAR:CODE1,CODE2 » (cours choisis) et le libellé du lien perso
-  // sont résumés pour l'affichage.
+  // ULB et UCLouvain : « PAR:CODE1,CODE2 » (cours choisis) et le libellé
+  // du lien perso sont résumés pour l'affichage.
   function joliFormation(f) {
     var s = String(f == null ? "" : f);
     if (s.indexOf("PAR:") === 0) {
@@ -3030,8 +3063,10 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     '<path d="M14 3v5h5M9 13h6M9 17h4"/></svg>';
   function majBoutonPdf() {
     var btn = document.getElementById("btn-pdf");
-    // Horaire importé d'un lien : il n'y a pas de PDF officiel côté école.
-    if (profil && profil.ical) {
+    var ec = profil ? ecoleDe(profil.ecole) : null;
+    // Horaire importé d'un lien, ou école sans PDF officiel (UCLouvain) :
+    // il n'y a rien à télécharger côté école.
+    if (profil && (profil.ical || (ec && ec.pdf === false))) {
       btn.hidden = true;
       document.getElementById("horaire-contenu").classList.remove("pdf-ouvert");
       return;
@@ -3705,11 +3740,11 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     document.getElementById("formation-aide").textContent = ec.nom + " · " + ec.detail;
     var status = document.getElementById("formations-status");
     var champ = document.getElementById("recherche");
-    var estUlb = !!(ec && ec.recherche);
-    document.getElementById("ulb-modes").hidden = !estUlb;
-    if (estUlb) { ulbOuvrir(); return; }
-    document.getElementById("ulb-cours").hidden = true;
-    document.getElementById("ulb-lien").hidden = true;
+    var estRecherche = !!(ec && ec.recherche);
+    document.getElementById("rech-modes").hidden = !estRecherche;
+    if (estRecherche) { rechOuvrir(); return; }
+    document.getElementById("rech-cours").hidden = true;
+    document.getElementById("rech-lien").hidden = true;
     document.getElementById("formation-recherche").hidden = false;
     document.getElementById("liste-formations").hidden = false;
     document.getElementById("formation-titre").textContent = "Ta formation";
@@ -3729,88 +3764,103 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     });
   }
 
-  /* ---------- 2b. ULB : par niveau, par codes de cours, ou lien perso ----------
-     L'ULB publie plus de 2 000 niveaux d'études : pas de liste complète à
-     télécharger, une recherche serveur (api/recherche). Trois entrées :
-     - « Par niveau d'études » : les blocs d'année (« B-DROIB:2 · Bachelier
-       en droit… »), puis l'écran des groupes habituel (groupe 01, PAD6,
-       options…) ;
-     - « Par codes de cours » : on coche des unités d'enseignement (code ou
-       intitulé), la clé de formation devient « PAR:CODE1,CODE2 » ;
-     - « Mon horaire ULB » : l'horaire personnel via le lien d'abonnement
-       iCal de Mon horaire (api/ical) — aucun identifiant ne passe par nous. */
-  var ULB_LIEN_FORMATION = "Mon horaire (lien d'abonnement)";
-  var ulb = { mode: "niveau", cours: [], resultats: [], arme: null, requete: 0, minuteur: 0 };
-  function ulbOuvrir() {
-    ulbAppliquerMode(false);
-    if (window.matchMedia("(hover: hover)").matches && ulb.mode !== "lien") {
+  /* ---------- 2b. Écoles « recherche » : par niveau/programme, par codes
+     de cours, ou lien perso ----------
+     L'ULB publie plus de 2 000 niveaux d'études, l'UCLouvain des milliers
+     de codes (cours et programmes) : pas de liste complète à télécharger,
+     une recherche serveur (api/recherche). Trois entrées :
+     - « Par niveau d'études » (ULB) / « Par programme » (UCLouvain) : les
+       blocs d'année ou les codes programme, puis l'écran des groupes ;
+     - « Par codes de cours » : on coche des cours (code ou intitulé), la
+       clé de formation devient « PAR:CODE1,CODE2 » ;
+     - « Mon horaire … » : l'horaire personnel via le lien d'abonnement
+       iCal de l'école (api/ical) — aucun identifiant ne passe par nous. */
+  var LIEN_FORMATION = "Mon horaire (lien d'abonnement)";
+  var rech = { ecole: null, mode: "niveau", cours: [], resultats: [], arme: null, requete: 0, minuteur: 0 };
+  function rechConfig() { return RECHERCHE[choix.ecole] || RECHERCHE.ulb; }
+  function rechOuvrir() {
+    // Changer d'école repart de zéro : les cours cochés pour l'ULB n'ont
+    // pas de sens pour l'UCLouvain.
+    if (rech.ecole !== choix.ecole) {
+      rech.ecole = choix.ecole;
+      rech.mode = "niveau";
+      rech.cours = [];
+      rech.resultats = [];
+      document.getElementById("recherche").value = "";
+      document.getElementById("rech-lien-champ").value = "";
+    }
+    rechAppliquerMode(false);
+    if (window.matchMedia("(hover: hover)").matches && rech.mode !== "lien") {
       document.getElementById("recherche").focus();
     }
   }
-  function ulbAppliquerMode(relancer) {
+  function rechAppliquerMode(relancer) {
+    var cfg = rechConfig();
     var champ = document.getElementById("recherche");
     var liste = document.getElementById("liste-formations");
     var titre = document.getElementById("formation-titre");
     var aide = document.getElementById("formation-aide");
-    Array.prototype.forEach.call(document.querySelectorAll("#ulb-modes button"), function (b) {
-      b.setAttribute("aria-selected", String(b.getAttribute("data-mode") === ulb.mode));
+    Array.prototype.forEach.call(document.querySelectorAll("#rech-modes button"), function (b, i) {
+      b.textContent = cfg.modes[i] || b.textContent;
+      b.setAttribute("aria-selected", String(b.getAttribute("data-mode") === rech.mode));
     });
     effacer(document.getElementById("formations-status"));
-    ulb.arme = null;
-    ulb.requete++; // invalide une recherche en vol
+    rech.arme = null;
+    rech.requete++; // invalide une recherche en vol
     liste.innerHTML = "";
-    document.getElementById("formation-recherche").hidden = ulb.mode === "lien";
-    document.getElementById("ulb-cours").hidden = ulb.mode !== "cours";
-    document.getElementById("ulb-lien").hidden = ulb.mode !== "lien";
-    if (ulb.mode === "niveau") {
-      titre.textContent = "Ton niveau d'études";
-      champ.placeholder = "Recherche, ex. droit bloc 2, polytech…";
-      champ.setAttribute("aria-label", "Rechercher un niveau d'études");
-      aide.textContent = "Écris au moins 2 lettres : l'ULB publie plus de 2 000 niveaux d'études.";
-    } else if (ulb.mode === "cours") {
-      titre.textContent = "Tes cours (UE)";
-      champ.placeholder = "Code ou intitulé, ex. DROIC2001, droit pénal…";
-      champ.setAttribute("aria-label", "Rechercher un cours");
-      aide.textContent = "Coche les cours que tu suis, puis « Voir mon horaire ».";
-      ulbRendreCours();
+    document.getElementById("formation-recherche").hidden = rech.mode === "lien";
+    document.getElementById("rech-cours").hidden = rech.mode !== "cours";
+    document.getElementById("rech-lien").hidden = rech.mode !== "lien";
+    if (rech.mode === "niveau") {
+      titre.textContent = cfg.niveau.titre;
+      champ.placeholder = cfg.niveau.placeholder;
+      champ.setAttribute("aria-label", cfg.niveau.titre);
+      aide.textContent = cfg.niveau.aide;
+    } else if (rech.mode === "cours") {
+      titre.textContent = cfg.cours.titre;
+      champ.placeholder = cfg.cours.placeholder;
+      champ.setAttribute("aria-label", cfg.cours.titre);
+      aide.textContent = cfg.cours.aide;
+      rechRendreCours();
     } else {
-      titre.textContent = "Ton horaire personnel";
-      aide.textContent = "Le lien d'abonnement de MonULB (TimeEdit). Il donne accès à ton horaire : " +
-        "garde-le pour toi, et supprime-le d'ici si tu le révoques un jour.";
-      var champLien = document.getElementById("ulb-lien-champ");
+      titre.textContent = cfg.lien.titre;
+      document.getElementById("rech-lien-aide").innerHTML = cfg.lien.aide;
+      var champLien = document.getElementById("rech-lien-champ");
+      champLien.placeholder = cfg.lien.placeholder;
       if (choix.ical) champLien.value = choix.ical;
       champLien.focus();
     }
-    if (relancer && ulb.mode !== "lien") ulbChercher();
+    if (relancer && rech.mode !== "lien") rechChercher();
   }
-  function ulbChercher() {
+  function rechChercher() {
     var champ = document.getElementById("recherche");
     var status = document.getElementById("formations-status");
     var texte = champ.value.replace(/\s+/g, " ").trim();
-    var genre = ulb.mode === "cours" ? "ue" : "niveau";
-    var seq = ++ulb.requete;
+    var genre = rech.mode === "cours" ? "ue" : "niveau";
+    var seq = ++rech.requete;
     if (texte.length < 2) { effacer(status); return; }
     attente(status, "Recherche…");
-    api("api/recherche?ecole=ulb&genre=" + genre + "&q=" + encodeURIComponent(texte), 20000)
+    api("api/recherche?ecole=" + encodeURIComponent(choix.ecole) + "&genre=" + genre +
+        "&q=" + encodeURIComponent(texte), 20000)
       .then(function (rep) {
-        if (seq !== ulb.requete || vue !== "formation") return;
+        if (seq !== rech.requete || vue !== "formation") return;
         effacer(status);
-        ulbRendreResultats(rep.resultats || []);
+        rechRendreResultats(rep.resultats || []);
       }, function (e) {
-        if (seq !== ulb.requete || vue !== "formation") return;
+        if (seq !== rech.requete || vue !== "formation") return;
         erreur(status, "Échec : " + e.message + " Vérifie ta connexion et réessaie.");
       });
   }
-  function ulbRendreResultats(resultats) {
+  function rechRendreResultats(resultats) {
     var liste = document.getElementById("liste-formations");
-    if (resultats) ulb.resultats = resultats;
+    if (resultats) rech.resultats = resultats;
     // Un cours déjà choisi quitte la liste : pas de second clic ambigu.
-    // `ulb.resultats` garde la liste brute, pour qu'il revienne quand on
+    // `rech.resultats` garde la liste brute, pour qu'il revienne quand on
     // retire le cours de la sélection.
-    var visibles = ulb.mode === "cours"
-      ? ulb.resultats.filter(function (r) { return ulb.cours.indexOf(r.cle) < 0; })
-      : ulb.resultats;
-    if (ulb.mode === "cours" && ulb.resultats.length && !visibles.length) {
+    var visibles = rech.mode === "cours"
+      ? rech.resultats.filter(function (r) { return rech.cours.indexOf(r.cle) < 0; })
+      : rech.resultats;
+    if (rech.mode === "cours" && rech.resultats.length && !visibles.length) {
       liste.innerHTML = '<li class="empty">Tous ces résultats sont déjà dans ta sélection.</li>';
       return;
     }
@@ -3818,70 +3868,70 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       liste.innerHTML = '<li class="empty">Aucun résultat. Essaie un autre mot ou le code exact.</li>';
       return;
     }
-    var parCours = ulb.mode === "cours";
+    var parCours = rech.mode === "cours";
     liste.innerHTML = visibles.map(function (r) {
       return '<li><button type="button" class="halo" data-formation="' + txt(r.cle) + '"' +
         (parCours ? ' aria-pressed="false"' : "") + '><span class="nom">' +
         txt(joliFormation(r.cle)) + '</span><span class="chev" aria-hidden="true"></span></button></li>';
     }).join("");
   }
-  function ulbAjouterCours(cle) {
-    if (ulb.cours.indexOf(cle) >= 0) return;
-    ulb.cours.push(cle);
-    ulb.arme = null;
-    ulbRendreCours();
-    ulbRendreResultats(ulb.resultats);
+  function rechAjouterCours(cle) {
+    if (rech.cours.indexOf(cle) >= 0) return;
+    rech.cours.push(cle);
+    rech.arme = null;
+    rechRendreCours();
+    rechRendreResultats(rech.resultats);
   }
-  function ulbRetirerCours(cle) {
-    var i = ulb.cours.indexOf(cle);
-    if (i >= 0) ulb.cours.splice(i, 1);
-    ulb.arme = null;
-    ulbRendreCours();
-    ulbRendreResultats(ulb.resultats);
+  function rechRetirerCours(cle) {
+    var i = rech.cours.indexOf(cle);
+    if (i >= 0) rech.cours.splice(i, 1);
+    rech.arme = null;
+    rechRendreCours();
+    rechRendreResultats(rech.resultats);
   }
-  function ulbDesarmer() {
-    if (ulb.arme == null) return;
-    ulb.arme = null;
-    ulbRendreCours();
+  function rechDesarmer() {
+    if (rech.arme == null) return;
+    rech.arme = null;
+    rechRendreCours();
   }
-  function ulbRendreCours() {
-    document.getElementById("ulb-cours-chips").innerHTML = ulb.cours.map(function (cle) {
-      var arme = ulb.arme === cle;
+  function rechRendreCours() {
+    document.getElementById("rech-cours-chips").innerHTML = rech.cours.map(function (cle) {
+      var arme = rech.arme === cle;
       return '<button type="button" class="chip' + (arme ? " chip-suppr" : "") + '" data-cours="' + txt(cle) +
         '" aria-pressed="true">' +
         '<span class="coche" aria-hidden="true"></span>' + txt(joliFormation(cle)) + "</button>";
     }).join("");
-    var btn = document.getElementById("ulb-cours-voir");
-    btn.textContent = ulb.cours.length
-      ? "Voir mon horaire · " + ulb.cours.length + " cours"
+    var btn = document.getElementById("rech-cours-voir");
+    btn.textContent = rech.cours.length
+      ? "Voir mon horaire · " + rech.cours.length + " cours"
       : "Voir mon horaire";
-    btn.disabled = !ulb.cours.length;
-    document.getElementById("ulb-cours-vide").hidden = !!ulb.cours.length;
-    var avis = document.getElementById("ulb-cours-avis");
-    avis.hidden = ulb.arme == null;
-    avis.textContent = ulb.arme == null ? ""
+    btn.disabled = !rech.cours.length;
+    document.getElementById("rech-cours-vide").hidden = !!rech.cours.length;
+    var avis = document.getElementById("rech-cours-avis");
+    avis.hidden = rech.arme == null;
+    avis.textContent = rech.arme == null ? ""
       : "Touche encore le cours rouge pour confirmer qu’il quitte ta sélection.";
   }
-  function ulbVoirCours() {
-    if (!ulb.cours.length) return;
-    choix.formation = "PAR:" + ulb.cours.map(function (c) { return c.split(" · ")[0]; }).join(",");
+  function rechVoirCours() {
+    if (!rech.cours.length) return;
+    choix.formation = "PAR:" + rech.cours.map(function (c) { return c.split(" · ")[0]; }).join(",");
     choix.data = null; choix.groupes = []; choix.ical = null;
     document.getElementById("recherche").blur();
     aller("groupes");
   }
-  function ulbVerifierLien() {
-    var statut = document.getElementById("ulb-lien-status");
-    var btn = document.getElementById("ulb-lien-voir");
+  function rechVerifierLien() {
+    var statut = document.getElementById("rech-lien-status");
+    var btn = document.getElementById("rech-lien-voir");
     // Le copier-coller ajoute parfois des espaces ou coupe un caractère :
     // on colle le lien recollé (sans espaces) tel quel.
-    var lien = document.getElementById("ulb-lien-champ").value.replace(/\s+/g, "");
-    if (!lien) { erreur(statut, "Colle d'abord le lien d'abonnement (« S'abonner » dans Mon horaire)."); return; }
+    var lien = document.getElementById("rech-lien-champ").value.replace(/\s+/g, "");
+    if (!lien) { erreur(statut, "Colle d'abord le lien d'abonnement (« Exporter » dans Mon horaire)."); return; }
     btn.disabled = true;
     attente(statut, "Lecture de ton calendrier…");
     api("api/ical?lien=" + encodeURIComponent(lien), 40000).then(function (rep) {
       btn.disabled = false;
       effacer(statut);
-      choix.formation = ULB_LIEN_FORMATION;
+      choix.formation = LIEN_FORMATION;
       choix.ical = lien;
       choix.data = rep.data;
       choix.groupes = [];
@@ -3891,25 +3941,25 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       erreur(statut, "Échec : " + e.message);
     });
   }
-  document.getElementById("ulb-modes").addEventListener("click", function (e) {
+  document.getElementById("rech-modes").addEventListener("click", function (e) {
     var b = e.target.closest("button[data-mode]");
-    if (!b || b.getAttribute("data-mode") === ulb.mode) return;
-    ulb.mode = b.getAttribute("data-mode");
+    if (!b || b.getAttribute("data-mode") === rech.mode) return;
+    rech.mode = b.getAttribute("data-mode");
     document.getElementById("recherche").value = "";
-    ulbAppliquerMode(true);
+    rechAppliquerMode(true);
   });
-  document.getElementById("ulb-cours-chips").addEventListener("click", function (e) {
+  document.getElementById("rech-cours-chips").addEventListener("click", function (e) {
     var b = e.target.closest("button[data-cours]");
     if (!b) return;
     var cle = b.getAttribute("data-cours");
-    if (ulb.arme === cle) { ulbRetirerCours(cle); return; } // confirmation
-    ulb.arme = cle;                                        // premier appui : rouge
-    ulbRendreCours();
+    if (rech.arme === cle) { rechRetirerCours(cle); return; } // confirmation
+    rech.arme = cle;                                          // premier appui : rouge
+    rechRendreCours();
   });
-  document.getElementById("ulb-cours-voir").addEventListener("click", ulbVoirCours);
-  document.getElementById("ulb-lien-voir").addEventListener("click", ulbVerifierLien);
-  document.getElementById("ulb-lien-champ").addEventListener("keydown", function (e) {
-    if (e.key === "Enter") { e.preventDefault(); ulbVerifierLien(); }
+  document.getElementById("rech-cours-voir").addEventListener("click", rechVoirCours);
+  document.getElementById("rech-lien-voir").addEventListener("click", rechVerifierLien);
+  document.getElementById("rech-lien-champ").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") { e.preventDefault(); rechVerifierLien(); }
   });
   /* Recherche : les écoles abrègent (UMONS : « BAB1 », « MAB2 », « Ir. »,
      « (Ch) »…). Chaque nom reçoit des mots-clés en clair, pour qu'on trouve
@@ -3998,10 +4048,10 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   }
   document.getElementById("recherche").addEventListener("input", function () {
     var ec = ecoleDe(choix.ecole);
-    if (ec && ec.recherche) { // ULB : recherche serveur, avec un petit délai
-      ulbDesarmer();
-      clearTimeout(ulb.minuteur);
-      ulb.minuteur = setTimeout(ulbChercher, 220);
+    if (ec && ec.recherche) { // recherche serveur, avec un petit délai
+      rechDesarmer();
+      clearTimeout(rech.minuteur);
+      rech.minuteur = setTimeout(rechChercher, 220);
       return;
     }
     if (formations.liste) listerFormations();
@@ -4010,8 +4060,8 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     var b = e.target.closest("button[data-formation]");
     if (!b) return;
     var ec = ecoleDe(choix.ecole);
-    if (ec && ec.recherche && ulb.mode === "cours") { // on ajoute le cours
-      ulbAjouterCours(b.getAttribute("data-formation"));
+    if (ec && ec.recherche && rech.mode === "cours") { // on ajoute le cours
+      rechAjouterCours(b.getAttribute("data-formation"));
       return;
     }
     var memeFormation = choix.formation === b.getAttribute("data-formation");

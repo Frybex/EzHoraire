@@ -1,16 +1,18 @@
-"""Lien d'abonnement iCal (TimeEdit) -> même format que les autres écoles.
+"""Lien d'abonnement iCal (TimeEdit ou Mon horaire UCLouvain) -> même format.
 
-L'étudiant colle le lien que TimeEdit lui donne (« S'abonner », dans
-Mon horaire) : il contient sa sélection personnelle et vaut sans mot de
-passe. On ne stocke que le lien (côté compte, jamais dans l'URL publique)
-et on lit le flux à la demande.
+L'étudiant colle le lien que son école lui donne (« S'abonner » dans
+TimeEdit, « Exporter → Lien d'abonnement » dans Mon horaire UCLouvain) :
+il contient sa sélection personnelle et vaut sans mot de passe. On ne
+stocke que le lien (côté compte, jamais dans l'URL publique) et on lit le
+flux à la demande.
 
-Le garde-fou SSRF n'accepte que les hôtes TimeEdit : ce point d'entrée
-fait une requête réseau à partir d'une adresse fournie par l'utilisateur.
+Le garde-fou SSRF n'accepte que les hôtes connus (TimeEdit et Mon
+horaire) : ce point d'entrée fait une requête réseau à partir d'une
+adresse fournie par l'utilisateur.
 """
 import re
 from datetime import datetime, timedelta, timezone
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 import requests
 
@@ -22,6 +24,7 @@ TIMEOUT = 20
 TAILLE_MAX = 2 * 1024 * 1024  # 2 Mo : un quadrimestre entier tient largement
 
 HOTES = (".timeedit.net", ".timeedit.com")
+HOTE_MONHORAIRE = "monhoraire.uclouvain.be"
 RX_UE = re.compile(r"^[A-Z]{2,6}[0-9]{2,4}$")
 RX_GROUPE = re.compile(
     r"^[A-Z][A-Z0-9-]{1,12}\s*[:(-]"                       # B-DROIB:2, M-CRIMS:1 - PAD5
@@ -37,11 +40,12 @@ def _fuseau():
 
 
 def url_autorisee(lien):
-    """https:// (ou webcal://) sur un hôte TimeEdit, terminé par « .ics ».
+    """https:// (ou webcal://) sur un hôte connu, terminé par « .ics ».
 
-    Le copier-coller ajoute parfois des espaces ou perd le « s » final
-    (le serveur répond alors 404) : on recoud la bonne adresse plutôt que
-    d'échouer sur une virgule de trop."""
+    Deux familles : TimeEdit (« S'abonner ») et Mon horaire UCLouvain
+    (« Exporter → Lien d'abonnement »). Le copier-coller ajoute parfois
+    des espaces ou perd le « s » final (le serveur répond alors 404) : on
+    recoud la bonne adresse plutôt que d'échouer sur une virgule de trop."""
     lien = "".join(str(lien or "").split()).strip('"').strip("'").replace("&amp;", "&")
     if lien.startswith("webcal://"):
         lien = "https://" + lien[len("webcal://"):]
@@ -49,14 +53,37 @@ def url_autorisee(lien):
         lien = "https://" + lien[len("webcals://"):]
     u = urlparse(lien)
     hote = (u.hostname or "").lower()
+    if hote == HOTE_MONHORAIRE:
+        return _url_monhoraire(u)
     if u.scheme != "https" or not any(hote.endswith(h) for h in HOTES):
-        raise ValueError("Ce lien n'est pas un lien d'abonnement TimeEdit (ULB). "
-                         "Copie-le depuis « S'abonner » dans Mon horaire.")
+        raise ValueError("Ce lien n'est pas un lien d'abonnement reconnu. "
+                         "Copie-le depuis « S'abonner » (TimeEdit) ou "
+                         "« Exporter → Lien d'abonnement » (Mon horaire UCLouvain).")
     chemin = u.path
     if not chemin.lower().endswith(".ics"):
         chemin = chemin + "s" if chemin.lower().endswith(".ic") else chemin + ".ics"
         u = u._replace(path=chemin)
     return urlunparse(u)
+
+
+def _url_monhoraire(u):
+    """Lien Mon horaire (UCLouvain) -> flux iCal de la sélection.
+
+    Les deux liens de l'export portent le même code : « Lien de partage »
+    (/calendar/share?link=…) ouvre la vue, « Lien d'abonnement »
+    (/calendar/schedule?link=…) rend le .ics — c'est celui-ci qu'on lit,
+    en recollant l'adresse depuis le code reçu."""
+    chemin = u.path.rstrip("/")
+    if chemin not in ("/calendar/schedule", "/calendar/share"):
+        raise ValueError("Ce lien Mon horaire (UCLouvain) n'est pas un lien d'abonnement. "
+                         "Ouvre « Exporter → Lien d'abonnement » sur monhoraire.uclouvain.be "
+                         "et copie le lien en entier.")
+    code = (parse_qs(u.query).get("link") or [""])[0].strip()
+    if not re.fullmatch(r"[A-Za-z0-9_-]{10,200}", code):
+        raise ValueError("Ce lien Mon horaire ne contient pas de code d'abonnement "
+                         "(« link=… »). Recopie-le depuis « Exporter ».")
+    return urlunparse(("https", HOTE_MONHORAIRE, "/calendar/schedule", "",
+                       urlencode({"link": code}), ""))
 
 
 def _deplier(texte):
@@ -219,6 +246,9 @@ def horaire_ical(lien, budget=30):
     for c in liste:
         c["semaines"].sort()
     maj = maintenant()
+    source = ("Lien d'abonnement Mon horaire (UCLouvain)"
+              if urlparse(lien).hostname == HOTE_MONHORAIRE
+              else "Lien d'abonnement TimeEdit (iCal)")
     return {
         "meta": {
             "fetched_at": maj.strftime("%d/%m/%Y à %Hh%M"),
@@ -226,7 +256,7 @@ def horaire_ical(lien, budget=30):
             "premier_lundi": lundi0.isoformat(),
             "periode": format_ensemble(list(range(1, max(semaines) + 1))),
             "feries": format_ensemble(sorted(feries)),
-            "source": "Lien d'abonnement TimeEdit (iCal)",
+            "source": source,
         },
         "formation": "",
         "groupes": sorted({g for c in liste for g in c["groupes"]}, key=tri_naturel),

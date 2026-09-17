@@ -17,11 +17,13 @@ if ICI not in sys.path:
 
 import _heh  # noqa: E402
 import _umons  # noqa: E402
+import _ucl  # noqa: E402
 import _ulb  # noqa: E402
 
 ECOLES = {
     "heh": _heh,
     "umons": _umons,
+    "ucl": _ucl,
     "ulb": _ulb,
 }
 
