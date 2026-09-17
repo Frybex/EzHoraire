@@ -647,9 +647,17 @@ class ClientTimeEdit:
         lundi0 = datetime.strptime(self.premier_lundi_defaut, "%Y-%m-%d").date()
         fin = lundi0 + timedelta(days=semaine * 7 - 1)
         debut = time.monotonic()
+        # Options du PDF TimeEdit (celles du dialogue d'impression) :
+        # ps/page, sp/orientation (ignorée par ce point d'entrée), fs/police,
+        # cl/couleur, shf/en-tête, pl/lignes, wpp/semaines par page,
+        # dpp/colonnes par page, title/titre, rop/lignes du planning.
+        # fs=8 : la police par défaut (11) fait chevaucher les intitulés ;
+        # c'est le seul vrai levier de lisibilité. Le reste reste au défaut
+        # (A4, couleur, en-tête et pied, ligné, une semaine par page).
         contenu = self._appel("ri.pdf", {
             "h": "t", "sid": self.sid_cours, "objects": ",".join(ids),
             "p": f"{semaine - 1}.w,{fin.strftime('%Y%m%d')}.x", "mw": 300,
+            "fs": 8,
         }, timeout=max(20, min(budget, 60)), flot=True)
         if not contenu.startswith(b"%PDF"):
             raise RuntimeError("L'ULB n'a pas renvoyé de PDF pour cette semaine.")
