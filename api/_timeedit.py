@@ -652,12 +652,14 @@ class ClientTimeEdit:
         # cl/couleur, shf/en-tête, pl/lignes, wpp/semaines par page,
         # dpp/colonnes par page, title/titre, rop/lignes du planning.
         # fs=8 : la police par défaut (11) fait chevaucher les intitulés ;
-        # c'est le seul vrai levier de lisibilité. Le reste reste au défaut
-        # (A4, couleur, en-tête et pied, ligné, une semaine par page).
+        # c'est le seul vrai levier de lisibilité.
+        # shf=1 : en-tête seul — la liste « UE / Description » du bas
+        # disparaît (elle alourdit la page), la ligne de titre et la légende
+        # des couleurs restent.
         contenu = self._appel("ri.pdf", {
             "h": "t", "sid": self.sid_cours, "objects": ",".join(ids),
             "p": f"{semaine - 1}.w,{fin.strftime('%Y%m%d')}.x", "mw": 300,
-            "fs": 8,
+            "fs": 8, "shf": 1,
         }, timeout=max(20, min(budget, 60)), flot=True)
         if not contenu.startswith(b"%PDF"):
             raise RuntimeError("L'ULB n'a pas renvoyé de PDF pour cette semaine.")
