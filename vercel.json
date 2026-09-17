@@ -26,6 +26,7 @@
     "api/pdf.py": { "maxDuration": 60 },
     "api/recherche.py": { "maxDuration": 30 },
     "api/ical.py": { "maxDuration": 30 },
+    "api/importer.py": { "maxDuration": 60 },
     "api/stats.py": { "maxDuration": 30 }
   }
 }

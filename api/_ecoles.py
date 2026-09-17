@@ -93,6 +93,7 @@ _DEBIT_MAX = {
     "pdf": (12, 60.0),         # session + génération : 12 / min / IP
     "recherche": (60, 60.0),   # recherche en direct (niveaux, cours) : 60 / min / IP
     "ical": (12, 60.0),        # lien d'abonnement personnel : 12 / min / IP
+    "importer": (12, 60.0),    # import d'une liste de cours : 12 / min / IP
 }
 _DEBIT = {}  # (point d'entrée, ip) -> deque des horodatages (monotonic)
 _DEBIT_VERROU = threading.Lock()

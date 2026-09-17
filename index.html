@@ -290,6 +290,29 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     transform: rotate(45deg);
   }
   #ulb-cours { margin: 2px 0 12px; }
+  /* Import d'une liste de cours : bloc replié, dans le creux des autres. */
+  #ulb-import {
+    margin: 0 0 14px; padding: 0 14px; border-radius: 14px;
+    background: var(--creux); box-shadow: inset 0 0 0 1px var(--line);
+  }
+  #ulb-import > summary {
+    cursor: pointer; padding: 12px 0; list-style: none;
+    font-size: .92rem; font-weight: 600; color: var(--ink);
+  }
+  #ulb-import > summary::-webkit-details-marker { display: none; }
+  #ulb-import > summary::after { content: " ▾"; color: var(--muted); }
+  #ulb-import[open] > summary::after { content: " ▴"; }
+  #ulb-import[open] > summary { border-bottom: 1px solid var(--line); margin-bottom: 10px; }
+  #ulb-import textarea {
+    width: 100%; box-sizing: border-box; min-height: 96px; resize: vertical;
+    border: none; border-radius: 12px; padding: 10px 12px; font: inherit;
+    font-size: .9rem; line-height: 1.45; color: var(--ink); background: var(--surface);
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+  #ulb-import #ulb-import-voir { margin: 10px 0 2px; }
+  #ulb-import-status { margin: 8px 0 10px; }
+  #ulb-import-doutes .doute { margin: 0 0 12px; }
+  #ulb-import-doutes .prop { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 0; }
   #ulb-cours .chips { margin: 6px 0 8px; }
   #ulb-lien .champs { margin-bottom: 12px; }
   /* Bouton d'action des étapes : relief, collé en bas tant qu'on défile. */
@@ -1967,6 +1990,17 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       </div>
     </div>
     <div id="ulb-cours" hidden>
+      <details id="ulb-import">
+        <summary>Importer une liste de cours</summary>
+        <p class="aide">Colle ta liste (MonULB, TimeEdit, ou le texte d'une capture d'écran).
+          Chaque code est vérifié dans le catalogue ULB de l'année ; les codes abîmés sont
+          tranchés par un modèle, et tu valides la liste avant de créer l'horaire.</p>
+        <textarea id="ulb-import-texte" rows="4" spellcheck="false"
+                  placeholder="COMMB300, Droit de l'information et de la communication&#10;LANGB305, Anglais III"></textarea>
+        <button class="primaire halo" id="ulb-import-voir" type="button">Analyser la liste</button>
+        <p class="pdf-status" id="ulb-import-status" role="status" hidden></p>
+        <div id="ulb-import-doutes" hidden></div>
+      </details>
       <div class="chips" id="ulb-cours-chips"></div>
       <p class="aide" id="ulb-cours-vide">Aucun cours choisi. Cherche un code (DROIC2001) ou un intitulé, puis touche le cours pour l'ajouter.</p>
       <button class="primaire halo" id="ulb-cours-voir" type="button" disabled>Voir mon horaire</button>
@@ -3940,6 +3974,69 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     if (ulb.arme === cle) { ulbRetirerCours(cle); return; } // confirmation
     ulb.arme = cle;                                        // premier appui : rouge
     ulbRendreCours();
+  });
+  function ulbImporter() {
+    var texte = document.getElementById("ulb-import-texte").value;
+    var statut = document.getElementById("ulb-import-status");
+    var btn = document.getElementById("ulb-import-voir");
+    if (texte.replace(/\s+/g, "").length < 3) {
+      erreur(statut, "Colle d'abord ta liste de cours.");
+      return;
+    }
+    btn.disabled = true;
+    attente(statut, "Analyse de la liste…");
+    api("api/importer?ecole=ulb&liste=" + encodeURIComponent(texte), 60000)
+      .then(function (rep) {
+        btn.disabled = false;
+        var d = rep.data || {};
+        (d.cours || []).forEach(function (c) {
+          if (c.cle && ulb.cours.indexOf(c.cle) < 0) ulb.cours.push(c.cle);
+        });
+        ulb.arme = null;
+        ulbRendreCours();
+        ulbRendreResultats(ulb.resultats);
+        var doutes = d.a_confirmer || [];
+        var zone = document.getElementById("ulb-import-doutes");
+        zone.hidden = !doutes.length;
+        zone.innerHTML = !doutes.length ? "" :
+          '<p class="aide">À confirmer — plusieurs cours peuvent porter le même intitulé :</p>' +
+          doutes.map(function (x) {
+            var titre = x.choix ? " proposé : " + txt(x.choix) : "";
+            return '<div class="doute"><p class="aide">« ' + txt(x.releve || x.ligne) + " »" +
+              (titre ? " — " + txt(titre.replace(" proposé : ", "")) : "") + "</p>" +
+              (x.propositions.length
+                ? '<div class="prop">' + x.propositions.map(function (p) {
+                    return '<button type="button" class="chip" data-cle="' + txt(p.cle) +
+                      '" aria-pressed="false"><span class="coche" aria-hidden="true"></span>' +
+                      '<span class="chip-textes"><span>' + txt(p.code) + "</span>" +
+                      (p.titre ? "<small>" + txt(p.titre) + "</small>" : "") + "</span></button>";
+                  }).join("") + "</div>"
+                : '<p class="aide">Aucun code ne correspond : ajoute-le à la main.</p>') +
+              "</div>";
+          }).join("");
+        statut.hidden = false;
+        statut.classList.remove("erreur");
+        statut.textContent = d.cours.length
+          ? "J'ai trouvé " + d.cours.length + " cours" +
+            (d.cours.length > 1 ? "" : "") + " — vérifie que tous tes cours sont là, puis « Voir mon horaire »."
+          : "Aucun cours reconnu : vérifie la liste collée.";
+        if (d.inconnus && d.inconnus.length) {
+          statut.textContent += " Illisibles : " + d.inconnus.join(" · ") + ".";
+        }
+      }, function (e) {
+        btn.disabled = false;
+        erreur(statut, "Échec : " + e.message);
+      });
+  }
+  document.getElementById("ulb-import-voir").addEventListener("click", ulbImporter);
+  document.getElementById("ulb-import-doutes").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-cle]");
+    if (!b) return;
+    var cle = b.getAttribute("data-cle");
+    if (ulb.cours.indexOf(cle) < 0) ulb.cours.push(cle);
+    ulb.arme = null;
+    ulbRendreCours();
+    b.closest(".doute").hidden = true;
   });
   document.getElementById("ulb-cours-voir").addEventListener("click", ulbVoirCours);
   document.getElementById("ulb-lien-voir").addEventListener("click", ulbVerifierLien);

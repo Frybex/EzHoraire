@@ -9,6 +9,7 @@ GET /api/formations?ecole=heh                      formations de l'école
 GET /api/horaires?ecole=heh&formation=..           horaire complet d'une formation
 GET /api/recherche?ecole=ulb&genre=niveau&q=..     recherche en direct (ULB)
 GET /api/ical?lien=..                              horaire d'un lien d'abonnement
+GET /api/importer?ecole=ulb&liste=..               liste de cours collée -> cours
 GET /api/pdf?ecole=heh&formation=..&groupe=..&semaine=..   PDF officiel
 """
 import os
@@ -22,6 +23,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "api
 import formations  # noqa: E402
 import horaires  # noqa: E402
 import ical  # noqa: E402
+import importer  # noqa: E402
 import pdf  # noqa: E402
 import recherche  # noqa: E402
 import config  # noqa: E402
@@ -37,6 +39,7 @@ ROUTES = {"/api/formations": formations.handler,
           "/api/horaires": horaires.handler,
           "/api/recherche": recherche.handler,
           "/api/ical": ical.handler,
+          "/api/importer": importer.handler,
           "/api/pdf": pdf.handler,
           "/api/config": config.handler,
           "/api/stats": stats.handler}
