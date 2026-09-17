@@ -56,6 +56,28 @@ create policy "profils_delete_propres" on public.profils
   for delete using (auth.uid() = user_id);
 
 -- ---------------------------------------------------------------
+-- Bornes sur profils : l'app écrit via la clé anon (RLS), un client
+-- trafiqué pourrait y stocker n'importe quoi (volume, dashboard
+-- pollué). Mêmes bornes que l'app : surnom 24, ecole 24, formation
+-- 200, id 120, theme 1/2/3, groupes < 8 ko de JSON.
+-- Rejouable : chaque contrainte n'est ajoutée que si elle manque.
+-- ---------------------------------------------------------------
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'profils_bornes') then
+    alter table public.profils add constraint profils_bornes check (
+      char_length(id) <= 120
+      and char_length(surnom) <= 24
+      and char_length(ecole) <= 24
+      and char_length(formation) <= 200
+      and theme in (1, 2, 3)
+      and octet_length(groupes::text) <= 8000
+    );
+  end if;
+end
+$$;
+
+-- ---------------------------------------------------------------
 -- EzHoraire — suivi d'usage pour le dashboard admin.
 -- Une ligne = une consultation d'horaire (ouverture de l'app ou
 -- changement d'horaire). L'app l'insère seule, en arrière-plan.
@@ -94,8 +116,10 @@ create index if not exists idx_visites_formation on public.visites (ecole, forma
 --    donc se faire avec les droits du propriétaire.
 -- 2) Bornes de taille : l'app envoie ce qu'elle veut, la table n'a pas à
 --    stocker des kilomètres de texte.
--- 3) Purge : garde 180 jours, à appeler périodiquement (planificateur
---    Supabase, ou select public.purger_visites(180); à la main).
+-- 3) Purge : garde 180 jours, à appeler périodiquement. Le dashboard
+--    admin prévient quand la table n'est jamais purgée (données de plus
+--    de 200 jours). Pour automatiser : Supabase → Database → Extensions →
+--    activer pg_cron, puis décommenter la ligne ci-dessous (une fois).
 -- ---------------------------------------------------------------
 create or replace function public.limiter_visites()
 returns trigger

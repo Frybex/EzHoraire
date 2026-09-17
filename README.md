@@ -22,7 +22,7 @@ n'ont jamais la même couleur, et la couleur d'un cours ne change pas
 d'une semaine à l'autre. Rendu volontairement mat : fond très peu
 saturé, rail de couleur à gauche, texte neutre.
 
-Écoles prises en charge : **HEH** (HEH Planning, espace invités public).
+Écoles prises en charge : **HEH** (HEH Planning) et **UMONS** (UMONS Planning, espace invités public).
 Objectif : la plupart des universités et hautes écoles belges, puis les
 applications iOS et Android, et les comptes (Google, GitHub, email).
 
@@ -113,7 +113,8 @@ from visites where created_at > now() - interval '7 days' group by 1 order by 1;
 
 Il n'y a volontairement aucun bouton de connexion ni d'actualisation dans
 les Réglages : on se connecte avant d'entrer, et tout se met à jour
-à l'ouverture.
+à l'ouverture (le cache partagé peut servir une version vieille de 15 min
+au maximum : un changement de salle apparaît au plus tard après ça).
 
 ## Fonctionnement
 
@@ -127,13 +128,47 @@ les Réglages : on se connecte avant d'entrer, et tout se met à jour
 Selon la formation, l'école a un groupe par classe (BA2P Informatique),
 un groupe par cours (BA1 Droit : l'étudiant en choisit plusieurs) ou aucun
 groupe (MA1 Ingénieur industriel) : l'écran de choix gère les trois cas.
+Les pastilles sont rangées par cours (une ligne par matière, déduite des
+cours qui les utilisent) : l'étudiant voit à quoi sert chaque groupe. Une
+formation à groupes de classe (Médecine : `Groupe A`..`X` partout) garde
+une seule liste. Un rappel signale les cours pour lesquels aucun groupe
+n'est coché (cours silencieusement absents de l'horaire autrement).
+Au-delà de 8 groupes, l'app exige au moins une sélection (sans elle,
+l'horaire mélangerait toutes les options).
+
+Spécificités UMONS (382 formations) : chaque groupe est préfixé par sa
+formation (`<.BAB1 - Droit>Dr. rom - Gr 1`), l'API renvoie les noms
+décapés (`Dr. rom - Gr 1`) et accepte les deux formes pour le PDF ; si
+deux groupes produisent le même nom court, ils gardent leur nom complet
+(pas de PDF du mauvais groupe). Un cours tagué avec tous les groupes est
+marqué commun à la formation. Les séances « événement » sans intitulé
+(`_`) prennent le libellé du commentaire (`Test de positionnement en
+langues`). Avec plusieurs groupes, la visionneuse PDF propose de choisir
+le groupe (ou toute la formation).
+
+Protection de l'école : le cache partagé (15 min horaires, 30 min PDF)
+absorbe l'usage normal, une limite par IP en mémoire (`_ecoles.debit` :
+60 formations, 12 horaires, 12 PDF / min) et un fuse (120 sessions
+école / min / instance) coupent les rafales anormales. Ces compteurs sont
+propres à chaque instance serverless. À la
+rentrée, si l'école se plaint ou si le dashboard montre des rafales,
+activer aussi une limite de débit sur `/api/*` dans Vercel → Firewall →
+Rate Limiting.
+
+Les libs chargées depuis les CDN (`supabase-js` 2.116.0, `pdf.js`
+3.11.174) sont épinglées et protégées par `integrity` ; la CSP de
+`vercel.json` (dupliquée dans `serve.py`, à garder synchronisée) limite
+les sources. `logos/ecoles/` est déployé, `logos/da/` et `logos/ez/`
+(scripts) ne le sont pas (`.vercelignore`).
 
 ## Fichiers
 
 - `index.html` — l'app (choix école → formation → groupe(s), puis horaire).
-- `api/_heh.py` — récupération chez HEH Planning.
+- `api/_hyperplanning.py` — moteur commun pour les écoles sous Hyperplanning (authentification, décodage, requêtes).
+- `api/_heh.py` — configuration et adaptation pour la HEH (Haute École en Hainaut).
+- `api/_umons.py` — configuration et adaptation pour l'UMONS (Université de Mons).
 - `api/_ecoles.py` — liste des écoles + aides HTTP. Ajouter une école : un
-  module comme `_heh.py` (NOM, formations(), horaire(), pdf_semaine()),
+  module comme `_heh.py` ou `_umons.py` (NOM, formations(), horaire(), pdf_semaine()),
   une ligne dans `ECOLES`, et une entrée dans `ECOLES` de `index.html`.
 - `api/formations.py`, `api/horaires.py`, `api/pdf.py` — points d'entrée.
 - `serve.py` — serveur local avec la même API (http://localhost:8902).
@@ -154,4 +189,7 @@ imposé par Vercel). Redéployer après des changements :
 vercel --prod --yes
 ```
 
-À la rentrée prochaine : adapter `BASE` (`hehplanning2026`) dans `api/_heh.py`.
+À la rentrée prochaine : adapter `BASE` (`hehplanning2026`) dans
+`api/_heh.py` ET `BASE` (`hplanning2026`) + `PREMIER_LUNDI_DEFAUT` dans
+`api/_umons.py`. Sans ça, l'école concernée répond « L'école ne répond
+pas correctement » partout.

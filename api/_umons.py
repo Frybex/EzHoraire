@@ -1,4 +1,4 @@
-"""Récupère les horaires HEH Planning (Pronote Campus, espace invités).
+"""Récupère les horaires UMONS Planning (Pronote Campus, espace invités).
 
 Utilisé par les points d'entrée de api/ (formations, horaires, pdf) et
 par serve.py sur l'ordinateur.
@@ -12,11 +12,11 @@ if ICI not in sys.path:
 
 from _hyperplanning import ClientHyperplanning  # noqa: E402
 
-BASE = "https://hehplanning2026.umons.ac.be"
-NOM = "HEH — Haute École en Hainaut"
-SOURCE = "hehplanning2026.umons.ac.be (espace invités)"
-PREMIER_LUNDI_DEFAUT = "2026-09-14"  # repli si l'école ne le donne pas
-PLACES_PAR_JOUR = 48  # 48 créneaux de 15 min par jour (08h00 -> 21h00)
+BASE = "https://hplanning2026.umons.ac.be"
+NOM = "UMONS — Université de Mons"
+SOURCE = "hplanning2026.umons.ac.be (espace invités)"
+PREMIER_LUNDI_DEFAUT = "2026-09-07"
+PLACES_PAR_JOUR = 68
 
 CLIENT = ClientHyperplanning(
     base=BASE,
@@ -24,7 +24,7 @@ CLIENT = ClientHyperplanning(
     source=SOURCE,
     premier_lundi_defaut=PREMIER_LUNDI_DEFAUT,
     places_par_jour_defaut=PLACES_PAR_JOUR,
-    code="heh",
+    code="umons",
 )
 
 formations = CLIENT.formations

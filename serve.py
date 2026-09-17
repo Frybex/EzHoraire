@@ -28,6 +28,26 @@ ROUTES = {"/api/formations": formations.handler,
           "/api/config": config.handler,
           "/api/stats": stats.handler}
 
+# En-têtes identiques à vercel.json (garder les deux synchronisés) : le site
+# local doit se comporter comme la production, surtout pour la CSP.
+# 'unsafe-inline' reste nécessaire pour le script et les styles embarqués
+# dans index.html / dashboard.html ; le reste verrouille les sources.
+CSP = ("default-src 'self'; "
+       "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
+       "style-src 'self' 'unsafe-inline'; "
+       "img-src 'self' data: blob:; "
+       "font-src 'self'; "
+       "connect-src 'self' https://*.supabase.co; "
+       "frame-src blob:; "
+       "worker-src blob: https://cdnjs.cloudflare.com; "
+       "object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'")
+ENTETES_SECURITE = {
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "X-Frame-Options": "DENY",
+    "Content-Security-Policy": CSP,
+}
+
 
 class Serveur(ThreadingHTTPServer):
     """Écoute en IPv4 ET IPv6 : « localhost » marche quel que soit le navigateur."""
@@ -77,6 +97,11 @@ class Handler(SimpleHTTPRequestHandler):
 
     def log_message(self, *args):
         pass  # silencieux
+
+    def end_headers(self):
+        for cle, valeur in ENTETES_SECURITE.items():
+            self.send_header(cle, valeur)
+        super().end_headers()
 
 
 def charger_env_local(chemin=".env.local"):

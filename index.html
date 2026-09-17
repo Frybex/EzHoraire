@@ -13,7 +13,7 @@
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" integrity="sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e" crossorigin="anonymous"></script>
 <style>
   :root {
     --bg: #f4f5f7;
@@ -69,6 +69,9 @@
     background-color: var(--bg);
     background-image: radial-gradient(110% 34% at 50% -6%, var(--wash), transparent 70%);
     background-repeat: no-repeat;
+    /* Prévisualisation du thème : quand on touche une couleur, le fond
+       et les accents suivent en douceur pour montrer ce que ça donne. */
+    transition: background-color .25s ease;
     font-family: var(--font); font-size: 17px; line-height: 1.45;
   }
   @media (prefers-color-scheme: dark) {
@@ -151,15 +154,59 @@
   .liste .chev { transform: rotate(-45deg); margin: 0 4px 0 0; opacity: .55; }
   .liste mark { background: none; color: var(--accent); font-weight: 700; }
   .liste li.empty { padding: 28px 10px; }
-  /* Sigle de l'école, dans un carré en creux. */
+  .liste li.liste-titre {
+    margin: 14px 2px 2px; color: var(--muted); font-size: .8rem; font-weight: 650;
+    letter-spacing: .04em; text-transform: uppercase;
+  }
+  .liste li.liste-titre:first-child { margin-top: 0; }
+  /* Sigle / Logo de l'école, dans un carré. */
   .sigle {
-    flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px;
+    flex: none; display: grid; place-items: center; width: 48px; height: 48px; border-radius: 12px;
     background: var(--creux); box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre);
-    font-size: .78rem; font-weight: 750; letter-spacing: .02em;
+    font-size: .8rem; font-weight: 750; letter-spacing: .02em;
+    overflow: hidden; box-sizing: border-box;
+  }
+  .sigle.sigle-logo {
+    background: #ffffff;
+    width: 68px; /* les logos d'école sont des bannières larges (2,5:1) */
+    padding: 6px;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .08), 0 2px 6px rgba(0, 0, 0, .05);
+  }
+  .sigle.sigle-logo img,
+  .sigle.sigle-logo svg {
+    width: 100%; height: 100%; object-fit: contain; display: block;
+  }
+  .sigle.sigle-logo .sigle-txt {
+    display: none;
+  }
+  @media (prefers-color-scheme: dark) {
+    .sigle.sigle-logo {
+      background: #ffffff;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .15), 0 2px 8px rgba(0, 0, 0, .35);
+    }
   }
   .recherche-bloc { margin: 0 0 14px; }
   /* Groupes : pastilles en relief, une coche se remplit quand on choisit. */
   .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 26px; }
+  /* Pastilles rangées par cours (une ligne par cours ou option) : l'étudiant
+     voit tout de suite à quelle matière appartient chaque groupe. */
+  .section-groupe { margin: 0 0 22px; }
+  .section-groupe .chips { margin: 0; }
+  .section-titre {
+    margin: 0 0 8px 2px; color: var(--muted); font-size: .85rem; font-weight: 600;
+  }
+  .chips-avis { margin: -8px 2px 22px; }
+  /* Options : une ligne par option, avec les cours qu'elle contient. */
+  .options-liste { display: grid; gap: 8px; }
+  .chip.chip-option {
+    display: flex; width: 100%; min-height: 52px; padding: 9px 16px 9px 13px;
+    border-radius: 16px; text-align: left;
+  }
+  .chip-textes { display: grid; gap: 2px; min-width: 0; }
+  .chip-textes small {
+    font-size: .78rem; font-weight: 450; line-height: 1.3; opacity: .8;
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+  }
   .chip {
     display: inline-flex; align-items: center; gap: 9px;
     min-height: 44px; padding: 0 16px 0 13px; border: none; border-radius: 999px;
@@ -195,6 +242,7 @@
     transition: transform .12s;
   }
   .primaire:active { transform: scale(.98); }
+  .primaire:disabled { opacity: .45; cursor: not-allowed; box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet); }
 
   /* Horaire : rappel du profil sous le titre */
   .profil-ligne {
@@ -515,40 +563,77 @@
     mask-image: linear-gradient(to bottom, #000 55%, transparent);
     user-select: none; -webkit-user-select: none; pointer-events: none;
   }
-  .ap-tete, .ap-corps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 6px; }
-  .ap-jour:nth-child(n+4), .ap-col:nth-child(n+4) { display: none; }
+  .apercu {
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    padding-left: 0; isolation: isolate;
+  }
+  .ap-tete, .ap-corps { display: grid; grid-template-columns: 34px repeat(3, minmax(0, 1fr)); column-gap: 6px; }
+  .ap-jour:nth-child(n+5), .ap-col:nth-child(n+5) { display: none; }
   .ap-tete { padding: 0 0 10px; }
-  .ap-jour { display: flex; align-items: center; gap: 6px; padding: 0 4px; }
-  .ap-jour span { color: var(--muted); font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+  .ap-jour { display: flex; align-items: center; gap: 6px; padding: 0 4px; min-width: 0; }
+  .ap-jour span { color: var(--muted); font-size: .72rem; font-weight: 650; letter-spacing: .04em; }
   .ap-jour strong {
     display: grid; place-items: center; min-width: 26px; height: 26px; border-radius: 999px;
-    font-size: 1rem; font-weight: 600; letter-spacing: -.03em; font-variant-numeric: tabular-nums;
+    font-size: 1.05rem; font-weight: 600; letter-spacing: -.03em; font-variant-numeric: tabular-nums;
   }
-  .ap-jour.today span { color: var(--accent); }
-  .ap-jour.today strong { background: var(--accent); color: var(--sur-accent); }
+  .ap-jour.today span, .ap-jour.today strong { color: var(--accent); }
   .ap-corps { height: 330px; }
-  .ap-col {
-    position: relative; border-radius: 10px;
-    /* Comme la vraie grille : seule la ligne de 13h (pause de midi). */
-    background: linear-gradient(var(--line), var(--line)) 0 50% / 100% 1px no-repeat;
+  .ap-heures { position: relative; }
+  .ap-heures span {
+    position: absolute; right: 6px; transform: translateY(-50%);
+    color: var(--muted); font-size: .64rem; font-variant-numeric: tabular-nums;
   }
-  .ap-col.today { background-color: color-mix(in srgb, var(--accent) 6%, transparent); }
+  .ap-col { position: relative; border-radius: 10px; }
+  /* Comme la vraie grille : seule la ligne de 13h (pause de midi),
+     raccordée d'un jour à l'autre. */
+  .ap-col::after {
+    content: ""; position: absolute; z-index: -1; left: -3px; right: -3px; top: 50%;
+    height: 1px; background: var(--line);
+  }
+  /* Aujourd'hui : carte surélevée qui englobe l'en-tête et la colonne.
+     42px = date (26) + écart (10) + débord (6). */
+  .ap-col.today::after { left: 3px; right: 3px; background: color-mix(in srgb, var(--accent) 22%, var(--line)); }
+  .ap-col.today::before {
+    content: ""; position: absolute; z-index: -1;
+    top: -42px; bottom: -8px; left: -3px; right: -3px; border-radius: 14px;
+    background: var(--surface);
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, var(--line)),
+      inset 0 1px 0 var(--reflet),
+      0 18px 40px -18px rgba(15, 20, 40, .35),
+      0 2px 6px -2px rgba(15, 20, 40, .1);
+  }
   .ap-ev {
     position: absolute; left: 1px; right: 2px; overflow: hidden;
     top: calc(var(--t) * 1% + 1px); height: calc(var(--d) * 1% - 3px);
-    display: flex; flex-direction: column; gap: 1px; padding: 6px 8px; border-radius: 10px;
-    background: hsl(var(--h) 46% 96%); color: hsl(var(--h) 26% 24%);
+    display: flex; flex-direction: column; gap: 1px; padding: 5px 7px; border-radius: 10px;
+    background: hsl(var(--h) 58% 95%); color: hsl(var(--h) 28% 23%);
     animation: ap-pose .6s cubic-bezier(.16,1,.3,1) both;
     animation-delay: calc(120ms + var(--i, 0) * 45ms);
   }
-  .ap-ev b, .ap-ev i, .ap-ev em { display: block; font-style: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .ap-ev b { font-size: .74rem; font-weight: 650; letter-spacing: -.005em; }
-  .ap-ev i { font-size: .68rem; font-weight: 600; opacity: .9; }
-  .ap-ev em { font-size: .66rem; opacity: .6; font-variant-numeric: tabular-nums; }
+  .ap-ev b, .ap-ev i, .ap-ev u, .ap-ev em { display: block; font-style: normal; text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* Même hiérarchie que .ev : titre > salle (centrée dans l'espace libre)
+     > bas de case (prof à gauche, horaires à droite). */
+  .ap-ev b { font-size: .72rem; font-weight: 650; letter-spacing: -.005em; flex-shrink: 0; }
+  .ap-ev i { font-size: .66rem; font-weight: 600; opacity: .85; flex-grow: 1; display: grid; align-content: center; }
+  .ap-ev .ap-eb { display: flex; align-items: baseline; gap: 6px; margin-top: auto; }
+  .ap-ev u { flex: 1 1 auto; min-width: 0; font-size: .64rem; opacity: .68; }
+  .ap-ev em { flex: none; margin-left: auto; font-size: .62rem; font-weight: 500; opacity: .55; font-variant-numeric: tabular-nums; }
+  /* Colonne étroite : le prof cède la place aux horaires. */
+  .ap-col { container: apcol / inline-size; }
+  .ap-ev u { display: none; }
+  @container apcol (min-width: 160px) { .ap-ev u { display: block; } }
+  /* Jour sans cours : colonne rayée + « Pas de cours ». */
   .ap-libre {
-    position: absolute; left: 0; right: 0; top: 64%; text-align: center;
-    color: var(--muted); font-size: .8rem; font-weight: 500;
+    position: absolute; inset: 0; border-radius: 10px; overflow: hidden;
+    display: grid; place-items: center; color: var(--muted); text-align: center;
+    background: repeating-linear-gradient(-45deg, transparent 0 15px,
+      color-mix(in srgb, var(--muted) 13%, transparent) 15px 16.2px);
   }
+  .ap-libre p { margin: 0; padding: 6px 12px; border-radius: 12px; background: var(--relief-haut); }
+  .today .ap-libre p { background: var(--surface); }
+  .ap-libre strong { font-size: .9rem; font-weight: 650; white-space: nowrap; letter-spacing: -.01em; }
   .ap-now {
     position: absolute; left: -4px; right: 0; height: 2px; z-index: 2;
     background: #e5484d; border-radius: 2px;
@@ -565,7 +650,7 @@
     .ap-ev {
       background: hsl(var(--h) 19% 17%); color: #eef2f8;
     }
-    .ap-ev i, .ap-ev em { opacity: .85; }
+    .ap-col.today::before { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, var(--line)), inset 0 1px 0 var(--reflet), 0 18px 40px -18px rgba(0, 0, 0, .8); }
   }
   /* Petit écran (iPhone SE…) : le formulaire passe avant l'aperçu. */
   @media (max-width: 1023px) and (max-height: 640px) { .apercu { display: none; } }
@@ -707,6 +792,11 @@
     transform: rotate(45deg); transition: transform .25s cubic-bezier(.16,1,.3,1), border-color .25s;
   }
   li.c.open .minichev { transform: rotate(225deg); border-color: var(--ink); }
+  /* Jour à un seul cours (téléphone) : déjà déroulé et non refermable
+     (trop petit à taper sinon) — pas de chevron, curseur neutre. */
+  li.c.seul .cbtn { cursor: default; }
+  li.c.seul .cbtn:disabled { opacity: 1; color: inherit; }
+  li.c.seul .minichev { display: none; }
   /* Sous-détail du cours : prof + salle */
   .csub {
     display: grid; grid-template-rows: 0fr; opacity: 0;
@@ -776,6 +866,22 @@
     font-size: .95rem; font-weight: 600; color: var(--muted);
   }
   .pdf-status.erreur { color: var(--ink); }
+  /* Plusieurs groupes : le PDF officiel est celui d'un groupe (ou de toute
+     la formation, toutes options superposées) : l'étudiant choisit. */
+  .pdf-choix {
+    display: flex; align-items: center; gap: 10px; margin: 0 16px 10px;
+    color: var(--muted); font-size: .9rem; font-weight: 600;
+  }
+  .pdf-choix select {
+    flex: 1; min-width: 0; height: 40px; padding: 0 12px; border: none; border-radius: 12px;
+    font: inherit; font-weight: 550; color: var(--ink);
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet);
+  }
+  /* Plusieurs groupes et « Toute la formation » choisi : le PDF officiel
+     superpose tous les groupes, vite illisible. On le dit une fois, sous
+     la liste, pour inviter à choisir son groupe. */
+  .pdf-choix-avis { margin: 0 16px 10px; color: var(--muted); font-size: .82rem; }
   .pdf-texte { position: relative; display: inline-block; }
   .pdf-reflet, .pdf-reflet > span {
     position: absolute; inset: 0;
@@ -1057,17 +1163,27 @@
       -webkit-mask-image: linear-gradient(to bottom, #000 72%, transparent);
       mask-image: linear-gradient(to bottom, #000 72%, transparent);
     }
-    .ap-tete, .ap-corps { grid-template-columns: repeat(5, minmax(0, 1fr)); column-gap: 8px; }
-    .ap-jour:nth-child(n+4), .ap-col:nth-child(n+4) { display: flex; }
-    .ap-col:nth-child(n+4) { display: block; }
+    .apercu { padding: 16px 18px 0 0; }
+    .ap-tete, .ap-corps { grid-template-columns: 50px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); column-gap: 8px; }
+    .ap-jour:nth-child(n+5) { display: flex; }
+    .ap-col:nth-child(n+5) { display: block; }
     .ap-tete { padding-bottom: 14px; }
     .ap-jour { gap: 8px; padding: 0 8px; }
-    .ap-jour strong { min-width: 32px; height: 32px; font-size: 1.2rem; }
+    .ap-jour span { font-size: .76rem; }
+    .ap-jour strong { min-width: 32px; height: 32px; font-size: 1.25rem; }
     .ap-corps { height: 600px; }
-    .ap-ev { gap: 2px; padding: 8px 10px; border-radius: 10px; }
-    .ap-ev b { font-size: .82rem; }
+    .ap-heures span { right: 10px; font-size: .72rem; }
+    .ap-col::after { left: -4px; right: -4px; }
+    /* 54px = date (32) + écart (14) + débord (8). */
+    .ap-col.today::before { top: -54px; bottom: -12px; left: -4px; right: -4px; border-radius: 18px; }
+    .ap-ev { gap: 2px; padding: 7px 10px; border-radius: 11px; }
+    .ap-ev b { font-size: .82rem; white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
     .ap-ev i { font-size: .76rem; }
-    .ap-ev em { font-size: .72rem; }
+    .ap-ev u { font-size: .72rem; }
+    .ap-ev em { font-size: .7rem; }
+    .ap-libre { border-radius: 12px; }
+    .ap-libre p { padding: 8px 16px; border-radius: 14px; }
+    .ap-libre strong { font-size: 1rem; }
     .etapes { margin: 0 0 22px; }
     .q { font-size: 3.4rem; margin: 0 0 16px; }
     .aide { font-size: 1.05rem; margin: -6px 0 32px; max-width: 60ch; }
@@ -1271,6 +1387,19 @@
     .ev .et {
       font-size: .82rem; font-weight: 650; line-height: 1.25; letter-spacing: -.005em;
       display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden;
+      flex-shrink: 0; /* jamais écrasé : c'est la salle qui cède la place */
+    }
+    /* Nombre de lignes du titre selon la hauteur réelle de la case : le
+       titre, la salle et le bas de case tiennent toujours sans se
+       chevaucher, même quand la journée est longue. */
+    .ev { container: ev / size; }
+    @container ev (max-height: 84px) { .ev .et { -webkit-line-clamp: 2; } }
+    @container ev (max-height: 66px) { .ev .et { -webkit-line-clamp: 1; } }
+    /* Séance qui dépasse la grille (tard le soir) : bord bas pointillé. */
+    .ev.coupe { border-bottom-left-radius: 3px; border-bottom-right-radius: 3px; }
+    .ev.coupe::after {
+      content: ""; position: absolute; left: 8px; right: 8px; bottom: 2px;
+      border-bottom: 2px dotted currentColor; opacity: .3;
     }
     /* Hiérarchie de lecture : titre > salle > bas de case (prof + horaires).
        Les formats s'identifient seuls (code de salle, nom, heures en « h ») :
@@ -1300,15 +1429,17 @@
     .ev.court .ep { flex: none; max-width: 32%; min-width: 0; }
     /* En ligne courte, les horaires sautent en premier (la position dans
        la grille + la bulle les donnent) ; sans salle ni prof, on garde
-       les horaires plutôt qu'un titre seul. */
+       les horaires plutôt qu'un titre seul. Mais sans prof (l'UMONS n'en
+       publie jamais), la salle seule ne doit pas les chasser : les
+       horaires restent dès qu'il n'y a pas de prof à afficher. */
     .ev.court .eh { display: none; }
-    .ev.court:not(:has(.es)):not(:has(.ep)) .eh { display: block; flex: none; }
+    .ev.court:not(:has(.ep)) .eh { display: block; flex: none; }
     /* Colonne étroite (fenêtre ~1024px, semaine de 6 jours…) : la hauteur
        des cases ne change pas, donc on resserre le texte plutôt que de le
        couper — piloté par la largeur réelle de la colonne. En compact,
        titre 3 lignes + salle + prof/heures tiennent dans une case de 2h. */
-    .cal-col { container-type: inline-size; }
-    @container (max-width: 175px) {
+    .cal-col { container: col / inline-size; }
+    @container col (max-width: 175px) {
       .ev { padding: 4px 8px; gap: 1px; }
       .ev .et { font-size: .78rem; line-height: 1.2; }
       .ev .es { font-size: .7rem; }
@@ -1509,6 +1640,7 @@
     <!-- Aperçu décoratif : une semaine type, dans le style de la grille de l'app. -->
     <div class="apercu" aria-hidden="true">
       <div class="ap-tete">
+        <div></div>
         <div class="ap-jour"><span>Lun</span><strong></strong></div>
         <div class="ap-jour"><span>Mar</span><strong></strong></div>
         <div class="ap-jour"><span>Mer</span><strong></strong></div>
@@ -1516,27 +1648,26 @@
         <div class="ap-jour"><span>Ven</span><strong></strong></div>
       </div>
       <div class="ap-corps">
+        <div class="ap-heures"><span style="top:0%">8h</span><span style="top:10%">9h</span><span style="top:20%">10h</span><span style="top:30%">11h</span><span style="top:40%">12h</span><span style="top:50%">13h</span><span style="top:60%">14h</span><span style="top:70%">15h</span><span style="top:80%">16h</span><span style="top:90%">17h</span></div>
         <div class="ap-col">
-          <div class="ap-ev" style="--h:221;--v:0;--t:5;--d:20"><b>Algorithmique</b><i>A.204</i><em>8h30 – 10h30</em></div>
-          <div class="ap-ev" style="--h:18;--v:0;--t:27.5;--d:20"><b>Mathématiques</b><i>B.112</i><em>10h45 – 12h45</em></div>
-          <div class="ap-ev" style="--h:152;--v:0;--t:57.5;--d:30"><b>Labo web</b><i>L3.07</i><em>13h45 – 16h45</em></div>
+          <div class="ap-ev" style="--h:221;--t:5;--d:20"><b>Algorithmique</b><i>A.204</i><span class="ap-eb"><u>M. Dupont</u><em>8h30 – 10h30</em></span></div>
+          <div class="ap-ev" style="--h:18;--t:27.5;--d:20"><b>Analyse</b><i>B.112</i><span class="ap-eb"><u>Mme Leroy</u><em>10h45 – 12h45</em></span></div>
+          <div class="ap-ev" style="--h:152;--t:57.5;--d:30"><b>Labo web</b><i>L3.07</i><span class="ap-eb"><u>M. Martin</u><em>13h45 – 16h45</em></span></div>
         </div>
         <div class="ap-col">
-          <div class="ap-ev" style="--h:262;--v:0;--t:5;--d:30"><b>Réseaux</b><i>A.018</i><em>8h30 – 11h30</em></div>
-          <div class="ap-ev" style="--h:332;--v:0;--t:57.5;--d:15"><b>Anglais</b><i>C.301</i><em>13h45 – 15h15</em></div>
+          <div class="ap-ev" style="--h:262;--t:5;--d:30"><b>Réseaux</b><i>A.018</i><span class="ap-eb"><u>Mme Lambert</u><em>8h30 – 11h30</em></span></div>
+          <div class="ap-ev" style="--h:332;--t:57.5;--d:15"><b>Anglais</b><i>C.301</i><span class="ap-eb"><u>Mme Smith</u><em>13h45 – 15h15</em></span></div>
         </div>
         <div class="ap-col">
-          <div class="ap-ev" style="--h:190;--v:0;--t:10;--d:30"><b>Bases de données</b><i>L2.11</i><em>9h00 – 12h00</em></div>
-          <div class="ap-libre">Libre</div>
+          <div class="ap-ev" style="--h:190;--t:10;--d:30"><b>Bases de données</b><i>L2.11</i><span class="ap-eb"><u>M. Peeters</u><em>9h00 – 12h00</em></span></div>
         </div>
         <div class="ap-col">
-          <div class="ap-ev" style="--h:40;--v:0;--t:5;--d:20"><b>Systèmes</b><i>A.204</i><em>8h30 – 10h30</em></div>
-          <div class="ap-ev" style="--h:221;--v:0;--t:27.5;--d:20"><b>Algorithmique</b><i>A.204</i><em>10h45 – 12h45</em></div>
-          <div class="ap-ev" style="--h:292;--v:0;--t:60;--d:30"><b>Projet</b><i>L1.02</i><em>14h00 – 17h00</em></div>
+          <div class="ap-ev" style="--h:40;--t:5;--d:20"><b>Systèmes</b><i>A.204</i><span class="ap-eb"><u>M. Janssens</u><em>8h30 – 10h30</em></span></div>
+          <div class="ap-ev" style="--h:221;--t:27.5;--d:20"><b>Algorithmique</b><i>A.204</i><span class="ap-eb"><u>M. Dupont</u><em>10h45 – 12h45</em></span></div>
+          <div class="ap-ev" style="--h:292;--t:60;--d:30"><b>Projet</b><i>L1.02</i><span class="ap-eb"><u>Mme Dubois</u><em>14h00 – 17h00</em></span></div>
         </div>
         <div class="ap-col">
-          <div class="ap-ev" style="--h:18;--v:0;--t:5;--d:15"><b>Mathématiques</b><i>B.112</i><em>8h30 – 10h00</em></div>
-          <div class="ap-ev" style="--h:262;--v:0;--t:22.5;--d:20"><b>Réseaux</b><i>A.018</i><em>10h15 – 12h15</em></div>
+          <div class="ap-libre"><p><strong>Pas de cours</strong></p></div>
         </div>
       </div>
     </div>
@@ -1556,8 +1687,8 @@
       </div>
     </div>
     <div class="theme-select-bloc">
-      <p class="theme-select-titre">Couleur</p>
-      <div class="choix-themes" id="identite-themes" role="radiogroup" aria-label="Thème de l'application">
+      <p class="theme-select-titre">Thème de ton horaire</p>
+      <div class="choix-themes" id="identite-themes" role="radiogroup" aria-label="Thème de ton horaire">
         <button type="button" class="theme-opt" data-theme-opt="2" role="radio" aria-checked="true">
           <span class="theme-pastille" style="background:#1d4fd7"></span>
           <span>Bleu</span>
@@ -1571,6 +1702,7 @@
           <span>Rose</span>
         </button>
       </div>
+      <p class="surnom-aide">Il colore toute l'application pour ton horaire — touche une couleur pour voir le résultat.</p>
     </div>
     <button class="primaire halo" id="btn-identite" type="button">Continuer</button>
   </section>
@@ -1590,7 +1722,7 @@
     <div class="champs recherche-bloc halo">
       <div class="champ-ligne">
         <svg class="champ-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg>
-        <input class="champ" id="recherche" type="search" placeholder="Rechercher, ex. BA2 Informatique"
+        <input class="champ" id="recherche" type="search" placeholder="Rechercher, ex. bac 2 informatique"
                aria-label="Rechercher une formation" autocomplete="off" autocorrect="off" spellcheck="false">
       </div>
     </div>
@@ -1604,7 +1736,16 @@
     <h2 class="q">Ton groupe</h2>
     <p class="aide" id="groupes-aide"></p>
     <p class="pdf-status" id="groupes-status" role="status"></p>
+    <div class="champs recherche-bloc halo" id="filtre-groupes" hidden>
+      <div class="champ-ligne">
+        <svg class="champ-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg>
+        <input class="champ" id="filtre-groupes-champ" type="search" placeholder="Filtrer, ex. Finance, Gr 3"
+               aria-label="Filtrer les groupes" autocomplete="off" autocorrect="off" spellcheck="false">
+      </div>
+    </div>
+    <p class="aide" id="filtre-groupes-vide" hidden>Aucun groupe ne correspond.</p>
     <div class="chips" id="chips"></div>
+    <p class="aide chips-avis" id="chips-avis" role="status" hidden></p>
     <div id="bloc-surnom">
       <label class="champ-titre" for="surnom">Nom de cet horaire</label>
       <div class="champs halo">
@@ -1616,8 +1757,8 @@
       <p class="surnom-aide">Affiché dans la barre du haut pour passer d'un cours à l'autre.</p>
     </div>
     <div id="bloc-theme">
-      <p class="theme-select-titre">Couleur</p>
-      <div class="choix-themes" id="groupes-themes" role="radiogroup" aria-label="Couleur de cet horaire">
+      <p class="theme-select-titre">Thème de cet horaire</p>
+      <div class="choix-themes" id="groupes-themes" role="radiogroup" aria-label="Thème de cet horaire">
         <button type="button" class="theme-opt" data-theme-opt="2" role="radio" aria-checked="true">
           <span class="theme-pastille" style="background:#1d4fd7"></span>
           <span>Bleu</span>
@@ -1631,6 +1772,7 @@
           <span>Rose</span>
         </button>
       </div>
+      <p class="surnom-aide">Il colore toute l'application quand tu consultes cet horaire — touche une couleur pour voir le résultat.</p>
     </div>
     <button class="primaire halo" id="btn-valider" type="button" hidden></button>
   </section>
@@ -1672,6 +1814,11 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
           </button>
         </div>
+        <div class="pdf-choix" id="pdf-choix" hidden>
+          <label for="pdf-groupe">PDF de</label>
+          <select id="pdf-groupe"></select>
+        </div>
+        <p class="pdf-choix-avis" id="pdf-choix-avis" hidden></p>
         <p class="pdf-status" id="pdf-status" role="status"></p>
       </div>
 
@@ -1736,7 +1883,7 @@
   </form>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0" integrity="sha384-JBR+x8blGwjDRO63aHCGiZMD4VNiTR4ZUGA+N6ZKLf3zNt1fK8IBpcgPaMrxqWBp" crossorigin="anonymous"></script>
 <script>
 (function () {
   "use strict";
@@ -1746,7 +1893,8 @@
 
   /* Écoles prises en charge (même identifiant que ECOLES dans api/_ecoles.py). */
   var ECOLES = [
-    { id: "heh", nom: "HEH", detail: "Haute École en Hainaut · Mons, Tournai" }
+    { id: "heh", nom: "HEH", detail: "Haute École en Hainaut · Mons, Tournai", logo: "logos/ecoles/heh.svg" },
+    { id: "umons", nom: "UMONS", detail: "Université de Mons · Mons, Charleroi", logo: "logos/ecoles/umons.svg" }
   ];
   function ecoleDe(id) {
     for (var i = 0; i < ECOLES.length; i++) if (ECOLES[i].id === id) return ECOLES[i];
@@ -1855,10 +2003,22 @@
   function nouveauId() {
     return "p" + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36);
   }
-  /* Nom par défaut d'un horaire : le nom complet de l'option, tel quel. */
+  /* Nom par défaut d'un horaire : le nom complet de l'option, tel quel
+     (sans le point initial de l'UMONS : '.BAB1 - Droit' -> 'BAB1 - Droit'). */
+  /* Au-delà de 24 caractères, on coupe au dernier mot entier (avec « … »)
+     plutôt qu'au milieu : '.MAB1 - Sc. de gestion, FS' -> 'MAB1 Sc. de gestion, FS'. */
   function surnomDefaut(formation) {
-    var f = String(formation || "").replace(/\s+/g, " ").trim();
-    return (f || "Mon horaire").slice(0, 24);
+    var f = joliFormation(formation).replace(/^(\S+)\s+-\s+/, "$1 ");
+    if (!f) return "Mon horaire";
+    if (f.length <= 24) return f;
+    var coupe = f.slice(0, 23), espace = coupe.lastIndexOf(" ");
+    if (espace > 10) coupe = coupe.slice(0, espace);
+    return coupe.replace(/[\s,.;:\-–·]+$/, "") + "…";
+  }
+  // Noms par défaut des versions précédentes (réparés comme les autres).
+  function anciensSurnomsAuto(formation) {
+    var brut = String(formation || "").replace(/\s+/g, " ").trim();
+    return [brut.slice(0, 24), joliFormation(formation).slice(0, 24)];
   }
   /* Ancienne version raccourcie (« BA1P Infographie » -> « P Infographie ») :
      sert une fois à repérer et réparer les noms auto-générés moches. */
@@ -1881,9 +2041,24 @@
     profils = profils.filter(profilValide);
     profils.forEach(function (p, i) {
       p.theme = normaliserTheme(p.theme);
+      // Groupes : espaces nettoyés. Le préfixe éventuel ('<…>…', UMONS)
+      // est gardé : c'est la clé de l'école quand le nom court est ambigu
+      // (voir memeGroupe pour les profils des anciennes versions).
+      var nets = (p.groupes || []).map(propre).filter(Boolean);
+      if (nets.join("\x00") !== (p.groupes || []).join("\x00")) {
+        p.groupes = nets;
+        profilsSales = true;
+      }
       if (!p.surnom) p.surnom = surnomDefaut(p.formation);
       // Répare les noms auto-générés par l'ancienne version raccourcie.
       else if (p.surnom !== p.formation && p.surnom === ancienSurnomAuto(p.formation, p.groupes)) {
+        p.surnom = surnomDefaut(p.formation);
+        profilsSales = true;
+      }
+      // Répare les noms auto-générés des versions précédentes (point initial
+      // de l'UMONS, coupure brute à 24 caractères) : seul le nom change.
+      else if (p.surnom !== surnomDefaut(p.formation) &&
+               anciensSurnomsAuto(p.formation).indexOf(p.surnom) >= 0) {
         p.surnom = surnomDefaut(p.formation);
         profilsSales = true;
       }
@@ -2177,9 +2352,15 @@
         var distant = { id: l.id, surnom: String(l.surnom || "Mon horaire").slice(0, 24),
                         ecole: ecoleDe(l.ecole) ? l.ecole : "heh",
                         formation: String(l.formation || ""),
-                        groupes: Array.isArray(l.groupes) ? l.groupes : [],
+                        groupes: Array.isArray(l.groupes) ? l.groupes.map(propre).filter(Boolean) : [],
                         theme: normaliserTheme(l.theme),
                         maj: Date.parse(l.updated_at) || 0 };
+        // Nom auto-généré avec l'ancien format ('.BAB1 - …', point UMONS) :
+        // réparé comme en local (un choix explicite identique y survivrait aussi).
+        if (distant.surnom !== surnomDefaut(l.formation) &&
+            anciensSurnomsAuto(l.formation).indexOf(distant.surnom) >= 0) {
+          distant.surnom = surnomDefaut(l.formation);
+        }
         var local = parId[l.id];
         if (!local || (distant.maj && distant.maj > (local.maj || 0))) parId[l.id] = distant;
       });
@@ -2397,14 +2578,51 @@
   function semaineCourante() {
     if (!SEMAINES.length) return 1;
     var auj = new Date(); auj.setHours(0, 0, 0, 0);
-    var diff = Math.floor((auj - LUNDI0) / 86400000);
+    // arrondi, pas plancher : deux minuits encadrant le changement d'heure
+    // sont séparés de 23 h ou 25 h par jour calendaire, le plancher
+    // reculerait alors d'un jour (donc parfois d'une semaine pile un lundi).
+    var diff = Math.round((auj - LUNDI0) / 86400000);
     var s = Math.floor(diff / 7) + 1;
-    if (s < SEMAINES[0]) return SEMAINES[0];
-    if (s > SEMAINES[SEMAINES.length - 1]) return SEMAINES[SEMAINES.length - 1];
-    return s;
+    if (s <= SEMAINES[0]) return SEMAINES[0];
+    if (s >= SEMAINES[SEMAINES.length - 1]) return SEMAINES[SEMAINES.length - 1];
+    if (SEMAINES.indexOf(s) >= 0) return s;
+    // Semaine « trou » non publiée par l'école (congés…) : la publiée suivante.
+    for (var i = 0; i < SEMAINES.length; i++) if (SEMAINES[i] > s) return SEMAINES[i];
+    return SEMAINES[SEMAINES.length - 1];
   }
-  // L'école double parfois les espaces dans les noms de groupes.
-  function propre(s) { return String(s).replace(/\s+/g, " ").trim(); }
+  // Clé d'un groupe : le nom renvoyé par l'API, espaces nettoyés (l'école
+  // les double parfois).
+  function propre(s) {
+    return String(s).replace(/\s+/g, " ").trim();
+  }
+  // L'API renvoie les groupes UMONS en nom court ('Dr. rom - Gr 1'), sauf
+  // si deux groupes s'afficheraient pareil : ils gardent alors le préfixe
+  // de leur formation ('<.BAB1 - Droit>Dr. rom - Gr 1'), mis entre
+  // parenthèses à l'affichage.
+  function courtGroupe(s) { return propre(String(s).replace(/^\s*<[^>]*>/, "")); }
+  function aPrefixe(s) { return /^\s*</.test(String(s)); }
+  function nomGroupe(s) {
+    var m = /^\s*<([^>]*)>(.*)$/.exec(String(s));
+    return m ? propre(m[2]) + " (" + joliFormation(m[1]) + ")" : propre(s);
+  }
+  // Un groupe enregistré correspond à un groupe de l'école : même nom, ou
+  // même nom court si l'un des deux n'a pas de préfixe (profil d'une
+  // ancienne version, ou groupe devenu ambigu chez l'école).
+  function memeGroupe(a, b) {
+    a = propre(a); b = propre(b);
+    if (a === b) return true;
+    if (aPrefixe(a) && aPrefixe(b)) return false;
+    return courtGroupe(a) === courtGroupe(b);
+  }
+  function groupeDans(liste, g) {
+    for (var i = 0; i < liste.length; i++) if (memeGroupe(liste[i], g)) return true;
+    return false;
+  }
+  // Nom de formation affichable : l'UMONS préfixe d'un point
+  // ('.BAB1 - Droit'). La valeur complète reste la clé d'API.
+  function joliFormation(f) {
+    return String(f == null ? "" : f).replace(/^\s*[.\s]+/, "").replace(/\s+/g, " ").trim();
+  }
   function txt(s) {
     return String(s == null ? "" : s)
       .replace(/&/g, "&amp;")
@@ -2840,14 +3058,12 @@
       return rep;
     });
   }
-  /* « Actualiser » : on envoie un numéro de seau de 60 s, pas l'heure exacte.
-     Deux étudiants qui actualisent dans la même minute demandent la même
-     adresse, donc le cache partagé ne fait travailler l'école qu'une fois. */
-  var SEAU_FRAIS = 60000;
-  function chargerHoraire(ecole, formation, frais) {
+  /* L'horaire se met à jour à l'ouverture : recharger la page suffit.
+     Pas de rafraîchissement forcé (l'API n'en propose pas : elle sert
+     un cache partagé de 15 min pour protéger l'école). */
+  function chargerHoraire(ecole, formation) {
     return api("api/horaires?ecole=" + encodeURIComponent(ecole) +
-               "&formation=" + encodeURIComponent(formation) +
-               (frais ? "&frais=" + Math.floor(Date.now() / SEAU_FRAIS) : ""), 95000)
+               "&formation=" + encodeURIComponent(formation), 95000)
       .then(function (rep) {
         if (!valide(rep.data)) throw new Error("réponse incomplète.");
         ecrire(cleHoraire(ecole, formation), rep.data);
@@ -3028,7 +3244,7 @@
     pile = [];
     if (profil) {
       afficherHoraire();
-      actualiser(false).catch(function () { /* hors ligne */ });
+      actualiser().catch(function () { /* hors ligne */ });
     } else {
       ouvrirEcoles();
     }
@@ -3046,10 +3262,13 @@
   function ouvrirEcoles() {
     montrer("ecole");
     document.getElementById("liste-ecoles").innerHTML = ECOLES.map(function (e) {
-      // Le sigle est déjà dans le carré : le titre donne le nom complet.
+      // Le sigle/logo est dans le carré : le titre donne le nom complet.
       var parts = String(e.detail).split(" · ");
+      var badge = e.logo
+        ? '<span class="sigle sigle-logo" aria-hidden="true"><img src="' + txt(e.logo) + '" alt="" loading="lazy" onerror="this.parentElement.classList.remove(\'sigle-logo\'); this.remove();"><span class="sigle-txt">' + txt(e.nom) + '</span></span>'
+        : '<span class="sigle" aria-hidden="true">' + txt(e.nom) + '</span>';
       return '<li><button type="button" class="halo" data-ecole="' + txt(e.id) + '">' +
-             '<span class="sigle" aria-hidden="true">' + txt(e.nom) + '</span><span class="nom">' + txt(parts[0]) +
+             badge + '<span class="nom">' + txt(parts[0]) +
              "<small>" + txt(parts.slice(1).join(" · ")) + '</small></span><span class="chev" aria-hidden="true"></span></button></li>';
     }).join("");
   }
@@ -3088,16 +3307,88 @@
       if (vue === "formation") erreur(status, "Échec : " + e.message + " Reviens en arrière pour réessayer.");
     });
   }
+  /* Recherche : les écoles abrègent (UMONS : « BAB1 », « MAB2 », « Ir. »,
+     « (Ch) »…). Chaque nom reçoit des mots-clés en clair, pour qu'on trouve
+     « bac 1 droit », « master gestion », « ingénieur civil » ou « charleroi ». */
+  var ALIAS_FORMATION = [
+    [/\bbab?(\d)\b/g, " ba$1 bac$1 bachelier bloc$1 b$1 "],
+    [/\bba(\d)p?\b/g, " bac$1 bachelier bloc$1 b$1 "],
+    [/\bmab?(\d)\b/g, " ma$1 master m$1 "],
+    [/\bma(60|120)\b/g, " master "],
+    [/\bms\b/g, " master de specialisation "],
+    [/\baess\b/g, " agregation enseignement secondaire superieur "],
+    [/\bcapaes\b/g, " certificat aptitude pedagogique "],
+    [/\bciu?\b/g, " certificat universitaire formation continue "],
+    [/\bir\b\.?/g, " ingenieur "],
+    [/\bing\b\.?/g, " ingenieur "],
+    [/\bsc\b\.?/g, " sciences "],
+    [/\bpsycho\b\.?/g, " psychologie "],
+    [/\beduc\b\.?/g, " education "],
+    [/\bor\b\.?/g, " orientation "],
+    [/\beco\b\.?/g, " economie economiques "],
+    [/\binfo\b/g, " informatique "],
+    [/\(ch\)/g, " charleroi "],
+    [/\bfs\b/g, " finalite specialisee "],
+    [/\bfd\b/g, " finalite didactique "],
+    [/\bfa\b/g, " finalite approfondie "]
+  ];
+  function motsFormation(f) {
+    var n = sansAccents(joliFormation(f)), plus = "";
+    ALIAS_FORMATION.forEach(function (a) {
+      n.replace(a[0], function () {
+        var args = arguments;
+        plus += a[1].replace(/\$(\d)/g, function (_, k) { return args[+k] || ""; });
+        return "";
+      });
+    });
+    return n + " " + plus;
+  }
+  /* Ordre de lecture : bacheliers, masters, compléments, certificats, puis
+     les formations d'autres établissements hébergées par l'école (UMONS :
+     formation des enseignants co-organisée avec les hautes écoles). Dans
+     chaque rubrique : année puis nom. */
+  var RUBRIQUES = [
+    [/^ba(b)?\d/, "Bacheliers"],
+    [/^ma(b)?\d|^ma60|^ma120|^m\d/, "Masters"],
+    [/^bloc compl|^ms\b|^ms /, "Compléments et masters de spécialisation"],
+    [/^aess|^capaes/, "Agrégations"],
+    [/^cu\b|^ciu\b|^cu-|^ciu-|^ifa\b|^mobilite/, "Certificats et formations continues"],
+    [/^(heh|hephc|namur|tournai|marcinelle|morlanwelz)\b/, "Formation des enseignants (hautes écoles partenaires)"]
+  ];
+  function rubrique(f) {
+    var n = sansAccents(joliFormation(f));
+    for (var i = 0; i < RUBRIQUES.length; i++) if (RUBRIQUES[i][0].test(n)) return i;
+    return RUBRIQUES.length;
+  }
+  var collateur = typeof Intl !== "undefined" && Intl.Collator
+    ? new Intl.Collator("fr", { numeric: true, sensitivity: "base" }) : null;
   function listerFormations() {
     var mots = sansAccents(document.getElementById("recherche").value).split(/\s+/).filter(Boolean);
+    var avecRubriques = formations.liste.length > 40;
     var trouvees = formations.liste.filter(function (f) {
-      var n = sansAccents(f);
+      var n = motsFormation(f);
       return mots.every(function (m) { return n.indexOf(m) >= 0; });
     });
+    if (avecRubriques) {
+      trouvees = trouvees.map(function (f, i) { return { f: f, r: rubrique(f), i: i }; })
+        .sort(function (a, b) {
+          if (a.r !== b.r) return a.r - b.r;
+          var c = collateur ? collateur.compare(joliFormation(a.f), joliFormation(b.f)) : 0;
+          return c || a.i - b.i;
+        });
+    } else {
+      trouvees = trouvees.map(function (f) { return { f: f, r: -1 }; });
+    }
+    var derniere = null;
     document.getElementById("liste-formations").innerHTML = trouvees.length
-      ? trouvees.map(function (f) {
-          return '<li><button type="button" class="halo" data-formation="' + txt(f) + '"><span class="nom">' + txt(f) +
-                 '</span><span class="chev" aria-hidden="true"></span></button></li>';
+      ? trouvees.map(function (x) {
+          var titre = "";
+          if (avecRubriques && x.r !== derniere) {
+            derniere = x.r;
+            titre = '<li class="liste-titre">' + txt(x.r < RUBRIQUES.length ? RUBRIQUES[x.r][1] : "Autres") + "</li>";
+          }
+          return titre + '<li><button type="button" class="halo" data-formation="' + txt(x.f) + '"><span class="nom">' +
+                 txt(joliFormation(x.f)) + '</span><span class="chev" aria-hidden="true"></span></button></li>';
         }).join("")
       : '<li class="empty">Aucune formation ne correspond.</li>';
   }
@@ -3129,8 +3420,12 @@
     var chips = document.getElementById("chips");
     var btn = document.getElementById("btn-valider");
     var champSurnom = document.getElementById("surnom");
-    aide.textContent = choix.formation;
+    aide.textContent = joliFormation(choix.formation);
     chips.innerHTML = ""; btn.hidden = true;
+    document.getElementById("filtre-groupes").hidden = true;
+    document.getElementById("filtre-groupes-champ").value = "";
+    document.getElementById("chips-avis").textContent = "";
+    document.getElementById("chips-avis").hidden = true;
     var edite = null;
     if (choix.editionId) {
       for (var k = 0; k < profils.length; k++) if (profils[k].id === choix.editionId) edite = profils[k];
@@ -3149,9 +3444,9 @@
     majThemeSelection("groupes-themes", choix.theme);
     document.body.setAttribute("data-theme", String(choix.theme));
     if (choix.data) { effacer(status); listerGroupes(); return; }
-    attente(status, "Recherche des groupes de " + choix.formation + "…");
+    attente(status, "Recherche des groupes de " + joliFormation(choix.formation) + "…");
     var demande = choix.formation;
-    chargerHoraire(choix.ecole, demande, false).then(function (data) {
+    chargerHoraire(choix.ecole, demande).then(function (data) {
       if (choix.formation !== demande) return;
       choix.data = data;
       if (vue !== "groupes") return;
@@ -3163,30 +3458,201 @@
     });
   }
   function listerGroupes() {
-    var groupes = choix.data.groupes;
+    var groupes = choix.data.groupes || [];
     var aide = document.getElementById("groupes-aide");
     var btn = document.getElementById("btn-valider");
+    var filtre = document.getElementById("filtre-groupes");
     if (!groupes.length) {
-      aide.textContent = choix.formation + " n'a pas de groupes : tout le monde a le même horaire.";
+      aide.textContent = joliFormation(choix.formation) + " n'a pas de groupes : tout le monde a le même horaire.";
       document.getElementById("chips").innerHTML = "";
-      btn.hidden = false; btn.textContent = "Voir mon horaire";
+      filtre.hidden = true;
+      majAvisGroupes([]);
+      btn.hidden = false; btn.disabled = false; btn.textContent = "Voir mon horaire";
       return;
     }
-    aide.textContent = groupes.length > 8
-      ? "Ta formation a des groupes par cours : sélectionne tous les tiens."
-      : "Sélectionne ton groupe (plusieurs si besoin).";
-    // Groupes disparus de l'horaire : oubliés.
-    choix.groupes = choix.groupes.filter(function (g) { return groupes.indexOf(g) >= 0; });
-    document.getElementById("chips").innerHTML = groupes.map(function (g) {
-      return '<button type="button" class="chip" data-groupe="' + txt(g) + '" aria-pressed="' +
-             (choix.groupes.indexOf(g) >= 0) + '"><span class="coche" aria-hidden="true"></span>' + txt(propre(g)) + "</button>";
-    }).join("");
+    // Groupes disparus de l'horaire : oubliés. Les autres reprennent le nom
+    // exact de l'école (un nom enregistré sans préfixe retrouve le sien).
+    choix.groupes = groupes.filter(function (g) { return groupeDans(choix.groupes, g); });
+    var sections = sectionsGroupes();
+    var multi = sections.filter(function (x) { return !x.option; });
+    var options = sections.filter(function (x) { return x.option; });
+    aide.textContent = options.length && multi.length > 1
+      ? "Choisis ton groupe dans chaque cours, puis coche les options que tu suis."
+      : options.length && multi.length
+        ? "Choisis ton groupe, puis coche les options que tu suis."
+        : options.length
+          ? "Coche les cours et options que tu suis."
+          : multi.length > 1
+            ? "Ta formation a des groupes par cours : choisis ton groupe dans chaque cours."
+            : "Sélectionne ton groupe (plusieurs si besoin).";
+    // Longue liste : un filtre évite de faire défiler des écrans de pastilles.
+    filtre.hidden = groupes.length <= 20;
+    var champ = document.getElementById("filtre-groupes-champ");
+    if (filtre.hidden) champ.value = "";
+    var html = "";
+    var titres = sections.length > 1;
+    multi.forEach(function (x) {
+      var pastilles = x.groupes.map(function (g) { return pastilleGroupe(g, ""); }).join("");
+      html += titres
+        ? '<div class="section-groupe"><p class="section-titre"' +
+          (x.matieres.length > 1 ? ' title="' + txt(x.matieres.join(", ")) + '"' : "") + ">" +
+          txt(libelleSection(x)) + '</p><div class="chips">' + pastilles + "</div></div>"
+        : pastilles;
+    });
+    if (options.length) {
+      html += '<div class="section-groupe">' +
+        (titres && multi.length ? '<p class="section-titre">Options et cours au choix</p>' : "") +
+        '<div class="options-liste">' + options.map(function (x) {
+          // Le détail ne répète pas le nom ('Corporate Finance / Corporate Finance').
+          var nom = sansAccents(nomGroupe(x.groupes[0])).replace(/[^a-z0-9]/g, "");
+          var mats = x.matieres.filter(function (m) {
+            var n = sansAccents(m).replace(/[^a-z0-9]/g, "");
+            return n !== nom && nom.indexOf(n) < 0 && n.indexOf(nom) < 0;
+          });
+          return pastilleGroupe(x.groupes[0], mats.join(" · "), true);
+        }).join("") + "</div></div>";
+    }
+    document.getElementById("chips").innerHTML = html;
+    filtrerGroupes();
     majValider();
+  }
+  function pastilleGroupe(g, detail, option) {
+    var cherche = sansAccents(nomGroupe(g) + " " + detail);
+    return '<button type="button" class="chip' + (option ? " chip-option" : "") + '" data-groupe="' + txt(g) +
+      '" data-cherche="' + txt(cherche) + '" aria-pressed="' + (choix.groupes.indexOf(g) >= 0) + '">' +
+      '<span class="coche" aria-hidden="true"></span>' +
+      (option
+        ? '<span class="chip-textes"><span>' + txt(nomGroupe(g)) + "</span>" + (detail ? "<small>" + txt(detail) + "</small>" : "") + "</span>"
+        : txt(nomGroupe(g))) +
+      "</button>";
+  }
+  function filtrerGroupes() {
+    var champ = document.getElementById("filtre-groupes-champ");
+    var mots = sansAccents(champ.value).split(/\s+/).filter(Boolean);
+    var zone = document.getElementById("chips");
+    Array.prototype.forEach.call(zone.querySelectorAll(".chip"), function (b) {
+      var t = b.getAttribute("data-cherche") || "";
+      b.hidden = !mots.every(function (m) { return t.indexOf(m) >= 0; });
+    });
+    Array.prototype.forEach.call(zone.querySelectorAll(".section-groupe"), function (sec) {
+      sec.hidden = !sec.querySelector(".chip:not([hidden])");
+    });
+    var vide = document.getElementById("filtre-groupes-vide");
+    vide.hidden = !mots.length || !!zone.querySelector(".chip:not([hidden])");
+  }
+  document.getElementById("filtre-groupes-champ").addEventListener("input", filtrerGroupes);
+  /* Sections de pastilles. Les groupes d'un même cours portent le même nom
+     à un numéro/une lettre près ('Dr. rom - Gr 1'..'Gr 16', 'Groupe A'..'X') :
+     ils forment une section « choisis ton groupe ». Un groupe seul de son
+     espèce ('Finance', 'Luxury Marketing') est une option : il rejoint la
+     liste des options, où l'on coche seulement celles qu'on suit. Le
+     regroupement par nom reste stable quand l'école publie de nouvelles
+     semaines (les matières d'un groupe, elles, changent). */
+  function racineGroupe(g) {
+    return sansAccents(courtGroupe(g))
+      .replace(/[\s\-_.]*(?:\d+|\b[a-z])\s*$/, "")
+      .replace(/[\s\-_.]*\bgr\.?$/, "")
+      .replace(/[^a-z0-9]/g, "");
+  }
+  function baseGroupe(g) {
+    return courtGroupe(g)
+      .replace(/[\s\-_.]*(?:\d+|\b[A-Za-z])\s*$/, "")
+      .replace(/[\s\-_.]*\bgr\.?$/i, "").trim();
+  }
+  function sectionsGroupes() {
+    var parGroupe = {};
+    (choix.data.cours || []).forEach(function (c) {
+      (c.groupes || []).forEach(function (g) {
+        (parGroupe[g] || (parGroupe[g] = {}))[nettoyerMatiere(c.matiere || "Cours")] = true;
+      });
+    });
+    var sections = [], parCle = {};
+    (choix.data.groupes || []).forEach(function (g) {
+      var cle = "r:" + racineGroupe(g);
+      var x = parCle[cle];
+      if (!x) { x = parCle[cle] = { groupes: [], vu: {} }; sections.push(x); }
+      x.groupes.push(g);
+      Object.keys(parGroupe[g] || {}).forEach(function (m) { x.vu[m] = true; });
+    });
+    sections.forEach(function (x) {
+      x.matieres = Object.keys(x.vu).sort(function (a, b) { return a.localeCompare(b, "fr"); });
+      x.option = x.groupes.length === 1;
+    });
+    // Une seule espèce de groupe (ex. 'Groupe A'..'X') : pas d'options, une liste.
+    if (sections.length === 1) sections[0].option = false;
+    // Presque que des groupes isolés (petite formation) : liste simple.
+    var options = sections.filter(function (x) { return x.option; }).length;
+    if (options && options === sections.length && (choix.data.groupes || []).length <= 4) {
+      return [{ groupes: choix.data.groupes.slice(), matieres: [], option: false }];
+    }
+    return sections;
+  }
+  // 'D-SCJU-136 - Droit romain - partie 2' -> 'Droit romain - partie 2' ;
+  // 'Corporate Finance - AAEP' -> 'Corporate Finance'.
+  var RX_CODE_MATIERE = /^([A-Z]{1,4}(?:-[A-Z0-9]{2,8}){1,3})\s*-\s+/;
+  function nettoyerMatiere(m) {
+    var brut = String(m == null ? "" : m);
+    return brut.replace(RX_CODE_MATIERE, "").replace(/\s*-?\s*AAEP\s*$/, "")
+               .replace(/\s+/g, " ").trim() || brut;
+  }
+  function codeMatiere(m) {
+    var r = RX_CODE_MATIERE.exec(String(m == null ? "" : m));
+    return r ? r[1] : "";
+  }
+  function libelleSection(x) {
+    var noms = x.matieres;
+    if (!noms.length) return baseGroupe(x.groupes[0]) || "Autres groupes";
+    var joint = noms.join(" · ");
+    if (noms.length <= 2 && joint.length <= 64) return joint;
+    return (baseGroupe(x.groupes[0]) || "Groupes") + " · " + noms.length + " cours";
+  }
+  /* Rappel : un cours à plusieurs groupes sans aucune pastille cochée =
+     des séances qui n'apparaîtront pas dans l'horaire. Les options non
+     cochées sont normales (on ne les suit pas toutes) : pas de rappel. */
+  function majAvisGroupes(sections) {
+    var avis = document.getElementById("chips-avis");
+    if (!avis) return;
+    sections = sections || (choix.data && choix.data.groupes && choix.data.groupes.length ? sectionsGroupes() : []);
+    var multi = sections.filter(function (x) { return !x.option; });
+    var noms = [];
+    if (choix.groupes.length && multi.length > 1) {
+      noms = multi.filter(function (x) {
+        return !x.groupes.some(function (g) { return choix.groupes.indexOf(g) >= 0; });
+      }).map(libelleSection);
+    }
+    avis.hidden = !noms.length;
+    if (!noms.length) { avis.textContent = ""; return; }
+    var montre = noms.slice(0, 3).join(", ");
+    avis.textContent = "Aucun groupe choisi pour : " + montre +
+      (noms.length > 3 ? " et " + (noms.length - 3) + " autre" + (noms.length > 4 ? "s" : "") : "") +
+      ". Vérifie que ce n'est pas un oubli.";
+  }
+  /* Groupes par cours (options, langues…) : sans sélection, l'horaire
+     mélangerait toutes les options, illisible et trompeur. On exige au
+     moins un groupe au-delà de 8. */
+  function groupeObligatoire() {
+    return !!(choix.data && choix.data.groupes && choix.data.groupes.length > 8);
   }
   function majValider() {
     var btn = document.getElementById("btn-valider");
     btn.hidden = false;
-    btn.textContent = choix.groupes.length ? "Voir mon horaire" : "Tout afficher, sans filtre";
+    btn.disabled = false;
+    var n = choix.groupes.length;
+    // Sans sélection, « tout afficher » superpose aussi les options entre
+    // elles (créneaux incompatibles) : on le dit quand il y en a.
+    var aOptions = false;
+    try {
+      aOptions = sectionsGroupes().some(function (x) { return x.option; });
+    } catch (e) { aOptions = false; }
+    if (groupeObligatoire() && !n) {
+      btn.disabled = true;
+      btn.textContent = "Sélectionne au moins un groupe";
+    } else {
+      btn.textContent = !n ? (aOptions ? "Tout afficher (options superposées)"
+                                       : "Tout afficher, sans filtre")
+        : n === 1 ? "Voir mon horaire" : "Voir mon horaire · " + n + " groupes";
+    }
+    majAvisGroupes();
   }
   document.getElementById("chips").addEventListener("click", function (e) {
     var b = e.target.closest(".chip");
@@ -3209,7 +3675,9 @@
   }
   document.getElementById("btn-valider").addEventListener("click", function () {
     var groupes = choix.data.groupes;
-    var sel = groupes.filter(function (g) { return choix.groupes.indexOf(g) >= 0; }); // ordre de l'école
+    var sel = groupes.filter(function (g) { return choix.groupes.indexOf(g) >= 0; }) // ordre de l'école
+                     .map(propre).filter(Boolean);
+    if (groupeObligatoire() && !sel.length) return; // garde-fou (le bouton est déjà grisé)
     var surnom = document.getElementById("surnom").value.replace(/\s+/g, " ").trim() ||
                  surnomDefaut(choix.formation, sel);
     surnom = surnom.slice(0, 24);
@@ -3245,7 +3713,7 @@
     sem = semaineCourante();
     resetDepliage(); deplierAujourdhui();
     afficherHoraire();
-    actualiser(false).catch(function () { /* garde le cache local */ });
+    actualiser().catch(function () { /* garde le cache local */ });
     if (premierHoraire) setTimeout(proposerEcranAccueil, 700);
   });
 
@@ -3267,7 +3735,7 @@
     sem = semaineCourante();
     resetDepliage(); deplierAujourdhui();
     afficherHoraire();
-    actualiser(false).catch(function () { /* hors ligne : garde le cache */ });
+    actualiser().catch(function () { /* hors ligne : garde le cache */ });
     tracerVisite();
   }
   function rendreSeg() {
@@ -3285,10 +3753,23 @@
     var html = '<span class="pill" aria-hidden="true"></span>';
     profils.forEach(function (p) {
       html += '<button type="button" role="tab" data-profil="' + txt(p.id) + '" aria-selected="' +
-              (p.id === profil.id) + '" title="' + txt(p.formation) + '">' + txt(p.surnom) + "</button>";
+              (p.id === profil.id) + '" title="' + txt(joliFormation(p.formation)) + '">' + txt(p.surnom) + "</button>";
     });
     seg.innerHTML = html;
+    ajusterSeg();
   }
+  // Noms longs (formations UMONS) : si un onglet coupe son nom, la barre
+  // passe en mode défilant, où chaque onglet prend la largeur de son nom.
+  function ajusterSeg() {
+    var seg = document.getElementById("seg");
+    if (seg.hidden || !profils || profils.length >= 4) return;
+    seg.classList.remove("defile");
+    var coupe = Array.prototype.some.call(seg.querySelectorAll("button"), function (b) {
+      return b.scrollWidth > b.clientWidth + 1;
+    });
+    seg.classList.toggle("defile", coupe);
+  }
+  window.addEventListener("resize", ajusterSeg);
   document.getElementById("seg").addEventListener("click", function (e) {
     var b = e.target.closest("button[data-profil]");
     if (b) choisirProfil(b.getAttribute("data-profil"));
@@ -3300,17 +3781,59 @@
     SEMAINES = parseEns(DATA.meta.periode).sort(function (a, b) { return a - b; });
     FERIES = {};
     parseEns(DATA.meta.feries || "[]").forEach(function (n) { FERIES[n] = true; });
+    // Groupe enregistré sous une autre forme (préfixé ou non) que celle de
+    // l'école : on reprend la forme de l'école s'il n'y a qu'un candidat.
+    var repris = false;
+    profil.groupes = profil.groupes.map(function (g) {
+      if (DATA.groupes.indexOf(g) >= 0) return g;
+      var memes = DATA.groupes.filter(function (d) { return memeGroupe(g, d); });
+      if (memes.length !== 1) return g;
+      repris = true;
+      return propre(memes[0]);
+    });
+    if (repris) { profil.maj = Date.now(); sauverProfils(); }
     var sel = profil.groupes;
     COURS = DATA.cours.filter(function (c) {
       if (!sel.length || !c.groupes.length) return true; // séance de toute la formation
-      return c.groupes.some(function (g) { return sel.indexOf(g) >= 0; });
+      return c.groupes.some(function (g) { return groupeDans(sel, g); });
     });
     if (SEMAINES.indexOf(sem) < 0) sem = semaineCourante();
   }
+  /* PDF du groupe s'il n'y en a qu'un. Plusieurs groupes : celui choisi
+     dans la liste de la visionneuse (par défaut, toute la formation). */
+  var pdfGroupe = { id: null, g: "" };
   function groupePdf() {
-    // PDF du groupe s'il n'y en a qu'un ; sinon celui de toute la formation.
-    return profil.groupes.length === 1 ? profil.groupes[0] : "";
+    if (profil.groupes.length === 1) return profil.groupes[0];
+    if (pdfGroupe.id === profil.id && profil.groupes.indexOf(pdfGroupe.g) >= 0) return pdfGroupe.g;
+    return "";
   }
+  function majChoixPdf() {
+    var bloc = document.getElementById("pdf-choix");
+    var avisChoix = document.getElementById("pdf-choix-avis");
+    var multi = !!(profil && profil.groupes.length > 1);
+    bloc.hidden = !multi;
+    if (!multi) { if (avisChoix) avisChoix.hidden = true; return; }
+    var choisi = groupePdf();
+    var sel = document.getElementById("pdf-groupe");
+    sel.innerHTML = '<option value="">Toute la formation</option>' + profil.groupes.map(function (g) {
+      return '<option value="' + txt(g) + '">' + txt(nomGroupe(g)) + "</option>";
+    }).join("");
+    sel.value = choisi;
+    // « Toute la formation » superpose tous les groupes dans le PDF
+    // officiel : on prévient, pour inviter à choisir son groupe.
+    if (avisChoix) {
+      avisChoix.hidden = !!choisi;
+      if (!choisi) {
+        avisChoix.textContent = "Toute la formation superpose les " + profil.groupes.length +
+          " groupes : choisis ton groupe ci-dessus pour un PDF lisible.";
+      }
+    }
+  }
+  document.getElementById("pdf-groupe").addEventListener("change", function () {
+    pdfGroupe = { id: profil.id, g: this.value };
+    fermerPdf();
+    document.getElementById("btn-pdf").click();
+  });
   function afficherHoraire() {
     montrer("horaire");
     if (!profil) { aller("ecole"); return; }
@@ -3318,8 +3841,8 @@
     rendreSeg();
     rendreAvatar();
     var multi = profils.length > 1;
-    var ligne = (multi ? profil.surnom + " · " : "") + profil.formation + (profil.groupes.length
-      ? " · " + (profil.groupes.length === 1 ? propre(profil.groupes[0]) : profil.groupes.length + " groupes")
+    var ligne = (multi ? profil.surnom + " · " : "") + joliFormation(profil.formation) + (profil.groupes.length
+      ? " · " + (profil.groupes.length === 1 ? nomGroupe(profil.groupes[0]) : profil.groupes.length + " groupes")
       : "");
     var pl = document.getElementById("profil-ligne");
     pl.hidden = multi; // plusieurs : la barre du haut dit déjà où on est
@@ -3347,33 +3870,36 @@
   }
   function mins(h) { return (+h.slice(0, 2)) * 60 + (+h.slice(3, 5)); }
 
+  // Toujours les vraies heures : chaque école a ses propres créneaux.
   function pauseEntre(finPrec, debutSuiv) {
-    if (mins(debutSuiv) <= mins(finPrec)) return null;
-    if (mins(finPrec) <= mins("12h30") && mins(debutSuiv) >= mins("13h30"))
-      return "Pause midi · 12h30 – 13h30";
-    if (finPrec === "10h15" && debutSuiv === "10h30")
-      return "Pause · 10h15 – 10h30";
-    return "Pause · " + fmtH(finPrec) + " – " + fmtH(debutSuiv);
+    var a = mins(finPrec), b = mins(debutSuiv);
+    if (b <= a) return null;
+    var midi = a <= 13 * 60 && b >= 12 * 60 + 30 && b - a <= 180;
+    return (midi ? "Pause midi · " : "Pause · ") + fmtH(finPrec) + " – " + fmtH(debutSuiv);
   }
 
   function detailJour(cours, jour) {
     var html = '<div><div class="box"><ol>';
+    // Un seul cours dans le jour (téléphone) : déroulé d'office et non
+    // refermable, sinon la ligne est trop petite à taper.
+    var seul = cours.length === 1;
     for (var i = 0; i < cours.length; i++) {
       var c = cours[i];
       var cle = jour + ":" + i;
-      var estOuvert = !!coursOuverts[cle];
-      html += '<li class="c' + (estOuvert ? " open" : "") + '">';
-      html += '<button class="cbtn" data-cle="' + cle + '" aria-expanded="' + estOuvert + '">' +
+      var estOuvert = seul || !!coursOuverts[cle];
+      html += '<li class="c' + (estOuvert ? " open" : "") + (seul ? " seul" : "") + '">';
+      html += '<button class="cbtn" data-cle="' + cle + '" aria-expanded="' + estOuvert + '"' + (seul ? " disabled" : "") + ">" +
               '<span class="h">' + txt(fmtH(c.debut)) + " – " + txt(fmtH(c.fin)) + "</span>" +
               '<span class="cpoint" style="' + styleCours(c.matiere) + '" aria-hidden="true"></span>' +
-              '<span class="m">' + txt(c.matiere || "Cours") + "</span>" +
-              '<span class="minichev" aria-hidden="true"></span></button>';
+              '<span class="m">' + txt(nettoyerMatiere(c.matiere || "Cours")) + "</span>" +
+              (seul ? "" : '<span class="minichev" aria-hidden="true"></span>') + "</button>";
       var sub = "";
+      if (codeMatiere(c.matiere)) sub += '<div><span class="k">Code : </span>' + txt(codeMatiere(c.matiere)) + "</div>";
       if (c.profs) sub += '<div><span class="k">Prof : </span>' + txt(c.profs) + "</div>";
       sub += '<div><span class="k">Salle : </span>' +
              (c.salles ? txt(c.salles.replace(/, ([^,]*)$/, " et $1")) : '<span class="nc">non communiquée</span>') + "</div>";
       if (c.groupes.length && profil.groupes.length !== 1) {
-        sub += '<div><span class="k">Groupe : </span>' + txt(c.groupes.map(propre).join(", ")) + "</div>";
+        sub += '<div><span class="k">Groupe : </span>' + txt(c.groupes.map(nomGroupe).join(", ")) + "</div>";
       }
       html += '<div class="csub"><div><div class="csub-in">' + sub + "</div></div></div>";
       html += "</li>";
@@ -3393,14 +3919,14 @@
       return;
     }
     // Groupes choisis qui n'existent plus chez l'école : on prévient.
-    var perdus = profil.groupes.filter(function (g) { return DATA.groupes.indexOf(g) < 0; });
+    var perdus = profil.groupes.filter(function (g) { return !groupeDans(DATA.groupes, g); });
     var avis = document.getElementById("avis");
     avis.hidden = !perdus.length;
     if (perdus.length) {
       avis.innerHTML = (perdus.length === profil.groupes.length
         ? "Tes groupes n'apparaissent plus dans l'horaire de l'école."
         : "Certains de tes groupes n'apparaissent plus dans l'horaire de l'école (" +
-          txt(perdus.map(propre).join(", ")) + ").") +
+          txt(perdus.map(nomGroupe).join(", ")) + ").") +
         ' <button type="button" id="btn-avis">Rechoisir</button>';
       document.getElementById("btn-avis").addEventListener("click", changerGroupe);
     }
@@ -3421,11 +3947,11 @@
 
     var auj = new Date();
     var html = "", vide = true, conge = true;
-    for (var j = 0; j < 6; j++) {
+    for (var j = 0; j < 7; j++) {
       var liste = coursDe(sem, j);
       if (liste.length) vide = false;
       if (j < 5 && !estFerie(sem, j)) conge = false;
-      if (j === 5 && !liste.length) continue;
+      if (j >= 5 && !liste.length) continue; // samedi/dimanche : seulement s'il y a cours
       var date = dateSemJour(sem, j);
       var estAuj = memeJour(date, auj);
       var resume = liste.length
@@ -3443,7 +3969,9 @@
         "</div></li>";
     }
     document.getElementById("jours").innerHTML = vide
-      ? '<div class="empty">' + (conge ? "Semaine de congé." : "Aucun cours cette semaine.") + "</div>"
+      ? '<div class="empty">' + (SEMAINES.indexOf(sem) < 0
+          ? "Semaine non publiée par l'école (congés ?)."
+          : (conge ? "Semaine de congé." : "Aucun cours cette semaine.")) + "</div>"
       : html;
     rendreCal();
     rendreInfos();
@@ -3505,11 +4033,19 @@
   function rendreCal() {
     fermerPop();
     var jours = [], debut = 8 * 60, fin = 18 * 60;
-    for (var j = 0; j < 6; j++) {
+    // Une longue séance du soir (UMONS : « événement » jusqu'à 22h15)
+    // étirerait la grille et écraserait toutes les cases de la semaine :
+    // au-delà de 20h, seule l'heure qui suit son début compte ; la case est
+    // alors coupée en bas (heures réelles écrites dedans).
+    var PLAFOND = 20 * 60;
+    for (var j = 0; j < 7; j++) {
       var l = coursDe(sem, j);
-      if (j === 5 && !l.length) continue;
+      if (j >= 5 && !l.length) continue; // samedi/dimanche : seulement s'il y a cours
       jours.push({ j: j, cours: l });
-      l.forEach(function (c) { debut = Math.min(debut, mins(c.debut)); fin = Math.max(fin, mins(c.fin)); });
+      l.forEach(function (c) {
+        debut = Math.min(debut, mins(c.debut));
+        fin = Math.max(fin, Math.min(mins(c.fin), Math.max(mins(c.debut) + 60, PLAFOND)));
+      });
     }
     debut = Math.floor(debut / 60) * 60;
     fin = Math.ceil(fin / 60) * 60;
@@ -3535,12 +4071,13 @@
           : '<div class="cal-libre"><p><strong>Pas de cours</strong></p></div>';
       }
       couloirs(d.cours).forEach(function (x) {
-        var c = x.c, a = mins(c.debut), b = mins(c.fin);
+        var c = x.c, a = mins(c.debut), b = Math.min(mins(c.fin), fin);
         var i = evCal.push(c) - 1;
-        corps += '<button type="button" class="ev' + (b - a < 75 ? " court" : "") + '" data-ev="' + i + '"' +
+        corps += '<button type="button" class="ev' + (b - a < 75 ? " court" : "") +
+          (mins(c.fin) > fin ? " coupe" : "") + '" data-ev="' + i + '"' +
           ' style="' + styleCours(c.matiere) + ";--t:" + pc(a) + ";--d:" + (pc(b) - pc(a)) +
           ";--l:" + (x.k / x.n) + ";--w:" + (1 / x.n) + '">' +
-          '<span class="et">' + txt(c.matiere || "Cours") + "</span>" +
+          '<span class="et">' + txt(nettoyerMatiere(c.matiere || "Cours")) + "</span>" +
           (c.salles ? '<span class="es">' + txt(c.salles) + "</span>" : "") +
           '<span class="eb">' +
           (c.profs ? '<span class="ep">' + txt(c.profs) + "</span>" : "") +
@@ -3571,12 +4108,13 @@
     var d = "";
     d += "<dt>Salle</dt><dd>" + (c.salles ? txt(c.salles.replace(/, ([^,]*)$/, " et $1")) : '<span class="nc">non communiquée</span>') + "</dd>";
     if (c.profs) d += "<dt>Prof</dt><dd>" + txt(c.profs) + "</dd>";
-    if (c.groupes.length && profil.groupes.length !== 1) d += "<dt>Groupe</dt><dd>" + txt(c.groupes.map(propre).join(", ")) + "</dd>";
+    if (c.groupes.length && profil.groupes.length !== 1) d += "<dt>Groupe</dt><dd>" + txt(c.groupes.map(nomGroupe).join(", ")) + "</dd>";
     var date = dateSemJour(sem, c.jour);
     var tc = couleurCours(c.matiere);
     pop.style.setProperty("--h", tc.h);
     pop.style.setProperty("--v", tc.v);
-    pop.innerHTML = '<p class="pt">' + txt(c.matiere || "Cours") + "</p>" +
+    if (codeMatiere(c.matiere)) d += "<dt>Code</dt><dd>" + txt(codeMatiere(c.matiere)) + "</dd>";
+    pop.innerHTML = '<p class="pt">' + txt(nettoyerMatiere(c.matiere || "Cours")) + "</p>" +
       '<p class="ph">' + JOURS[c.jour] + " " + fmtDate(date) + " · " + fmtH(c.debut) + " – " + fmtH(c.fin) + "</p>" +
       "<dl>" + d + "</dl>";
     var r = btn.getBoundingClientRect(), w = pop.offsetWidth, hp = pop.offsetHeight;
@@ -3616,10 +4154,12 @@
   });
   /* Version visible en pied de page : permet de vérifier que le
      téléphone affiche bien la dernière version (raccourci iOS). */
-  var VERSION_APP = "24";
+  var VERSION_APP = "27";
   function rendreInfos() {
     if (!DATA || !profil) return;
-    document.getElementById("maj").textContent = "Mis à jour le " + DATA.meta.fetched_at + " · v" + VERSION_APP;
+    var sansProfs = DATA.cours.length && !DATA.cours.some(function (c) { return c.profs; });
+    document.getElementById("maj").textContent = "Mis à jour le " + DATA.meta.fetched_at + " · v" + VERSION_APP +
+      (sansProfs ? " · Noms des profs non publiés par l'école" : "");
     rendreListeProfils();
   }
   var COULEURS_POINTS = ["#1d4fd7", "#0e8655", "#1d4fd7", "#d14d8a"];
@@ -3635,7 +4175,7 @@
   }
   function texteGroupe(p) {
     if (!p.groupes.length) return "Tous les cours";
-    if (p.groupes.length === 1) return propre(p.groupes[0]);
+    if (p.groupes.length === 1) return nomGroupe(p.groupes[0]);
     return p.groupes.length + " groupes";
   }
   var carteOuverte = null; // id de l'horaire dont le menu ⋮ est ouvert
@@ -3651,7 +4191,7 @@
     var zone = document.getElementById("liste-profils");
     if (!zone) return;
     zone.innerHTML = profils.map(function (p) {
-      var nom = estRenomme(p) ? p.surnom : p.formation;
+      var nom = estRenomme(p) ? p.surnom : joliFormation(p.formation);
       var grp = texteGroupe(p);
       if (grp === nom) grp = ecoleDe(p.ecole).nom; // jamais deux fois la même ligne
       var ouvert = carteOuverte === p.id;
@@ -3708,7 +4248,7 @@
   function editionOuverte() { return !!edition; }
   function htmlChoixThemes(t) {
     var actuel = normaliserTheme(t);
-    return '<div class="choix-themes" id="edition-themes" role="radiogroup" aria-label="Couleur">' +
+    return '<div class="choix-themes" id="edition-themes" role="radiogroup" aria-label="Thème de l\'horaire">' +
       THEMES.map(function (th) {
         return '<button type="button" class="theme-opt" data-theme-opt="' + th.id + '" role="radio" aria-checked="' +
           (actuel === th.id) + '"><span class="theme-pastille" style="background:' + th.couleur + '"></span>' +
@@ -3727,11 +4267,19 @@
     voile.classList.remove("sortie");
     voile.hidden = false;
     document.body.classList.add("confirm-ouverte");
+    // Prévisualisation du thème modifié : la fenêtre et le fond suivent
+    // la couleur touchée ; fermerEdition restaure le thème en cours.
+    if (opts && typeof opts.theme !== "undefined") {
+      document.body.setAttribute("data-theme", String(normaliserTheme(opts.theme)));
+    }
     var premier = corps.querySelector("input");
     if (premier) setTimeout(function () { try { premier.focus(); premier.select(); } catch (e) { /* jetable */ } }, 60);
   }
   function fermerEdition() {
     if (!edition) return;
+    // Annulation : on avait prévisualisé un autre thème, on revient à
+    // celui de l'horaire affiché. Après un enregistrement c'est le même.
+    var restaurer = edition && typeof edition.theme !== "undefined";
     edition = null;
     var jeton = ++editionJeton;
     var voile = document.getElementById("voile-edition");
@@ -3741,6 +4289,7 @@
       voile.classList.remove("sortie");
     };
     document.body.classList.remove("confirm-ouverte");
+    if (restaurer) appliquerTheme();
     if (sansAnim) fin(); else { voile.classList.add("sortie"); setTimeout(fin, 180); }
     if (editionDernierFocus && editionDernierFocus.focus && document.contains(editionDernierFocus)) {
       try { editionDernierFocus.focus({ preventScroll: true }); } catch (e) { /* jetable */ }
@@ -3764,6 +4313,8 @@
     if (!b || !edition) return;
     edition.theme = +b.getAttribute("data-theme-opt");
     majThemeSelection("edition-themes", edition.theme);
+    // Prévisualisation immédiate : toute l'interface suit la couleur touchée.
+    document.body.setAttribute("data-theme", String(normaliserTheme(edition.theme)));
   });
   document.getElementById("edition-corps").addEventListener("input", function (e) {
     var bloc = e.target.closest(".champs");
@@ -3776,7 +4327,7 @@
   function modifierProfil(id) {
     var p = profilParId(id);
     if (!p) return;
-    var groupes = texteGroupe(p) + (p.groupes.length > 1 ? " (" + p.groupes.map(propre).join(", ") + ")" : "");
+    var groupes = texteGroupe(p) + (p.groupes.length > 1 ? " (" + p.groupes.map(nomGroupe).join(", ") + ")" : "");
     ouvrirEdition({
       titre: "Modifier l'horaire",
       theme: normaliserTheme(p.theme),
@@ -3785,9 +4336,10 @@
         '<div class="champs halo"><div class="champ-ligne">' +
         '<input class="champ" id="edit-surnom" type="text" maxlength="24" autocomplete="off" spellcheck="false" ' +
         'placeholder="ex. Info, Droit" value="' + txt(p.surnom) + '"></div></div>' +
-        '<p class="champ-titre">Couleur</p>' + htmlChoixThemes(p.theme) +
+        '<p class="champ-titre">Thème de l\'horaire</p>' + htmlChoixThemes(p.theme) +
+        '<p class="surnom-aide">Il colore toute l\'application pour cet horaire — touche une couleur pour voir le résultat.</p>' +
         '<dl class="edition-details">' +
-        "<div><dt>Formation</dt><dd>" + txt(p.formation) + "</dd></div>" +
+        "<div><dt>Formation</dt><dd>" + txt(joliFormation(p.formation)) + "</dd></div>" +
         "<div><dt>Groupe</dt><dd>" + txt(groupes) + "</dd></div>" +
         "<div><dt>École</dt><dd>" + txt(ecoleDe(p.ecole).nom) + "</dd></div></dl>",
       enregistrer: function (corps) {
@@ -3831,7 +4383,7 @@
   function supprimerProfil(id) {
     var p = profilParId(id);
     if (!p) return;
-    var nom = estRenomme(p) ? p.surnom : p.formation;
+    var nom = estRenomme(p) ? p.surnom : joliFormation(p.formation);
     demanderConfirmation({
       titre: "Supprimer cet horaire ?",
       message: "Supprimer l'horaire <strong>« " + txt(nom) + " »</strong> de cet appareil" +
@@ -3856,7 +4408,7 @@
         sem = semaineCourante();
         resetDepliage(); deplierAujourdhui();
         afficherHoraire();
-        actualiser(false).catch(function () { /* hors ligne */ });
+        actualiser().catch(function () { /* hors ligne */ });
       } else {
         pile = [];
         ouvrirEcoles();
@@ -3985,6 +4537,8 @@
   document.getElementById("jours").addEventListener("click", function (e) {
     var c = e.target.closest(".cbtn");
     if (c) {
+      // Jour à un seul cours : déjà déroulé et non refermable.
+      if (c.disabled || (c.closest && c.closest("li.c.seul"))) return;
       var cle = c.getAttribute("data-cle");
       var ouvreCours = !coursOuverts[cle];
       if (ouvreCours) { coursOuverts[cle] = true; } else { delete coursOuverts[cle]; }
@@ -4021,7 +4575,7 @@
   // Auto-déplier aujourd'hui s'il est affiché et qu'il y a cours.
   function deplierAujourdhui() {
     var auj = new Date();
-    for (var j = 0; j < 6; j++) {
+    for (var j = 0; j < 7; j++) {
       if (memeJour(dateSemJour(sem, j), auj) && coursDe(sem, j).length) { joursOuverts[j] = true; break; }
     }
   }
@@ -4047,6 +4601,7 @@
     btn.disabled = true;
     majBoutonPdf();
     zone.hidden = false;
+    majChoixPdf();
     zone.classList.add("attente"); // réserve la place du futur PDF
     var reservePdf = hauteurPdfMemorisee(); // vraie hauteur du PDF précédent, si connue
     if (reservePdf) zone.style.minHeight = reservePdf + "px";
@@ -4316,11 +4871,11 @@
     return JSON.stringify([d.cours, d.groupes, d.meta.periode, d.meta.premier_lundi, d.meta.feries]);
   }
   var derniereMaj = 0;
-  function actualiser(frais) {
+  function actualiser() {
     if (!profil) return Promise.resolve(false);
     derniereMaj = Date.now();
     var p = profil;
-    return chargerHoraire(p.ecole, p.formation, frais).then(function (data) {
+    return chargerHoraire(p.ecole, p.formation).then(function (data) {
       if (profil !== p) return false; // profil changé entre-temps
       if (DATA && DATA.formation === data.formation && data.meta.ts < DATA.meta.ts) return false;
       var premier = !DATA;
@@ -4335,7 +4890,7 @@
   }
   document.addEventListener("visibilitychange", function () {
     if (profil && document.visibilityState === "visible" && Date.now() - derniereMaj > 600000) {
-      actualiser(false).catch(function () { /* on garde ce qui est affiché */ });
+      actualiser().catch(function () { /* on garde ce qui est affiché */ });
     }
   });
 
@@ -4413,7 +4968,7 @@
       deplierAujourdhui();
     }
     afficherHoraire();
-    actualiser(false).catch(function (e) {
+    actualiser().catch(function (e) {
       if (!DATA && vue === "horaire") {
         erreur(document.getElementById("horaire-status"),
                "Impossible de charger ton horaire : " + e.message + " Recharge la page pour réessayer.");

@@ -10,7 +10,9 @@ agrège avec la clé service_role (jamais exposée au navigateur) :
 
 Réponse : {"ok": true, "data": {
   "totaux": {...}, "par_jour": [...], "par_formation": [...],
-  "utilisateurs": [...] }}
+  "utilisateurs": [...],
+  "limites": {"comptes": bool, "profils": bool, "visites": bool},
+  "plus_ancienne_visite": "...", "plus_ancienne_absolue": "..." }}
 
 Env requises : SUPABASE_URL, SUPABASE_ANON_KEY,
   SUPABASE_SERVICE_ROLE_KEY (alias SERVICE_ROLE acceptés), puis au moins
@@ -49,6 +51,23 @@ def _get_json(url, entetes, timeout=20):
     req = Request(url, headers=entetes, method="GET")
     with urlopen(req, timeout=timeout) as r:
         return json.loads(r.read().decode("utf-8") or "null")
+
+
+def _get_pagine(base, chemin, entetes, maximum, pas=1000, timeout=20):
+    """Toutes les lignes, page par page (PostgREST plafonne à 1000 par défaut).
+
+    Sans ça, le dashboard s'arrêterait silencieusement à la 1000e ligne."""
+    lignes, depart = [], 0
+    while depart < maximum:
+        bloc = _get_json(f"{base}{chemin}&limit={pas}&offset={depart}",
+                         entetes, timeout)
+        if not isinstance(bloc, list) or not bloc:
+            break
+        lignes.extend(bloc)
+        if len(bloc) < pas:
+            break
+        depart += pas
+    return lignes[:maximum]
 
 
 def _identite(compte):
@@ -141,9 +160,11 @@ class handler(BaseHTTPRequestHandler):
         h_svc = {"apikey": service, "Authorization": "Bearer " + service,
                  "Accept": "application/json"}
         try:
-            # Comptes (pagination, 200 / page, plafond 4000).
+            # Comptes (pagination, 200 / page, plafond 4000 : au-delà, le
+            # dashboard le signale au lieu de tronquer en silence).
             comptes = []
             page = 1
+            comptes_tronques = False
             while page <= 20:
                 rep = _get_json(
                     base + "/auth/v1/admin/users?page=%d&per_page=200" % page, h_svc, timeout=20)
@@ -154,19 +175,34 @@ class handler(BaseHTTPRequestHandler):
                 if len(batch) < 200:
                     break
                 page += 1
+            comptes_tronques = page > 20
 
             # Cours suivis.
-            profils = _get_json(
-                base + "/rest/v1/profils?select=user_id,id,surnom,ecole,formation,groupes,updated_at&limit=10000",
-                dict(h_svc, Accept="application/json"), timeout=20) or []
+            profils = _get_pagine(
+                base, "/rest/v1/profils?select=user_id,id,surnom,ecole,formation,groupes,updated_at",
+                h_svc, 10000) or []
+            profils_tronques = len(profils) >= 10000
 
             # Consultations sur la période.
             limite = (datetime.now(timezone.utc) - timedelta(days=jours)).isoformat()
-            visites = _get_json(
-                base + "/rest/v1/visites?select=user_id,profil_id,ecole,formation,created_at"
+            visites = _get_pagine(
+                base, "/rest/v1/visites?select=user_id,profil_id,ecole,formation,created_at"
                 "&created_at=gte." + limite.replace("+", "%2B") +
-                "&order=created_at.desc&limit=20000",
-                dict(h_svc, Accept="application/json"), timeout=20) or []
+                "&order=created_at.desc",
+                dict(h_svc, Accept="application/json"), 20000) or []
+            visites_tronquees = len(visites) >= 20000
+
+            # La plus vieille consultation tout court (1 ligne) : si elle
+            # dépasse 200 jours, la purge (purger_visites, voir schema.sql)
+            # ne tourne pas — le dashboard le signale.
+            try:
+                vieille = _get_json(
+                    base + "/rest/v1/visites?select=created_at"
+                    "&order=created_at.asc&limit=1", h_svc, timeout=20)
+                ancienne_absolue = (vieille[0].get("created_at")
+                                    if isinstance(vieille, list) and vieille else "") or ""
+            except Exception:  # noqa: BLE001 - indicateur seul, jamais bloquant
+                ancienne_absolue = ""
         except HTTPError as e:  # noqa: BLE001 - clé invalide, table manquante…
             if e.code == 401:
                 return repondre_json(self, 502, {"ok": False, "erreur":
@@ -186,8 +222,11 @@ class handler(BaseHTTPRequestHandler):
         par_jour = {j: {"jour": j, "visites": 0, "visiteurs": set()} for j in jours_cles}
         par_formation = {}
         visites_par_user = {}
+        plus_ancienne = None  # pour voir d'un coup d'œil si la purge tourne
         for v in visites:
             d = _iso_date(v.get("created_at"))
+            if d and (plus_ancienne is None or d < plus_ancienne):
+                plus_ancienne = d
             if d and d.date().isoformat() in par_jour:
                 par_jour[d.date().isoformat()]["visites"] += 1
                 if v.get("user_id"):
@@ -262,6 +301,13 @@ class handler(BaseHTTPRequestHandler):
                 "aujourdhui": par_jour[auj.isoformat()]["visites"] if auj.isoformat() in par_jour else 0,
                 "jours": jours,
             },
+            "limites": {  # un plafond atteint = chiffres tronqués, à signaler
+                "comptes": comptes_tronques,
+                "profils": profils_tronques,
+                "visites": visites_tronquees,
+            },
+            "plus_ancienne_visite": plus_ancienne.isoformat() if plus_ancienne else "",
+            "plus_ancienne_absolue": ancienne_absolue,
             "par_jour": [{
                 "jour": j, "visites": par_jour[j]["visites"],
                 "visiteurs": len(par_jour[j]["visiteurs"])} for j in jours_cles],

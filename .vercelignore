@@ -10,4 +10,7 @@ __pycache__/
 *.pyc
 .DS_Store
 .env*
-logos/
+serve.log
+# Logos de travail uniquement : logos/ecoles/ (affichés par l'app) reste déployé.
+logos/da/
+logos/ez/

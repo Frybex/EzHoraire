@@ -68,3 +68,6 @@ venv.bak/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Journal du serveur local
+serve.log
