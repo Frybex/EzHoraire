@@ -304,12 +304,29 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   #ulb-import[open] > summary::after { content: " ▴"; }
   #ulb-import[open] > summary { border-bottom: 1px solid var(--line); margin-bottom: 10px; }
   #ulb-import textarea {
-    width: 100%; box-sizing: border-box; min-height: 96px; resize: vertical;
+    width: 100%; box-sizing: border-box; min-height: 96px; resize: none;
+    overflow-y: hidden; /* agrandi par le script ; style de repli discret ci-dessous */
+    scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--muted) 42%, transparent) transparent;
     border: none; border-radius: 12px; padding: 10px 12px; font: inherit;
     font-size: .9rem; line-height: 1.45; color: var(--ink); background: var(--surface);
     box-shadow: inset 0 0 0 1px var(--line);
   }
-  #ulb-import #ulb-import-voir { margin: 10px 0 2px; }
+  #ulb-import #ulb-import-voir { margin: 12px 0 14px; }
+  #ulb-import textarea::-webkit-scrollbar { width: 8px; }
+  #ulb-import textarea::-webkit-scrollbar-track { background: transparent; }
+  #ulb-import textarea::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--muted) 40%, transparent); border-radius: 999px;
+  }
+  #ulb-import .capture { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 10px; }
+  #ulb-import .capture-bouton {
+    display: inline-flex; align-items: center; gap: 8px;
+    min-height: 40px; padding: 0 14px; border-radius: 12px;
+    font-size: .9rem; font-weight: 600; color: var(--ink); cursor: pointer;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  #ulb-import .capture-bouton:active { transform: scale(.98); }
+  #ulb-import .capture-aide { font-size: .82rem; color: var(--muted); }
   #ulb-import-status { margin: 8px 0 10px; }
   #ulb-import-doutes .doute { margin: 0 0 12px; }
   #ulb-import-doutes .prop { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 0; }
@@ -2000,9 +2017,18 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     <div id="ulb-cours" hidden>
       <details id="ulb-import">
         <summary>Importer une liste de cours</summary>
-        <p class="aide">Colle ta liste (MonULB, TimeEdit, ou le texte d'une capture d'écran).
-          Chaque code est vérifié dans le catalogue ULB de l'année ; les codes abîmés sont
-          tranchés par un modèle, et tu valides la liste avant de créer l'horaire.</p>
+        <p class="aide">Donne ta liste : une capture d'écran (lue sur ton appareil, rien n'est
+          envoyé) ou son texte collé. Chaque code est vérifié dans le catalogue ULB de l'année ;
+          les codes abîmés sont tranchés par un modèle, et tu valides la liste avant de créer
+          l'horaire.</p>
+        <div class="capture">
+          <label class="capture-bouton halo" for="ulb-capture-fichier">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="3"/><circle cx="12" cy="13" r="3.4"/><path d="M8.5 6 10 3.5h4L15.5 6"/></svg>
+            Choisir une capture
+          </label>
+          <input type="file" id="ulb-capture-fichier" accept="image/*" hidden>
+          <span class="capture-aide">ou colle une image (⌘V / Ctrl+V)</span>
+        </div>
         <textarea id="ulb-import-texte" rows="4" spellcheck="false"
                   placeholder="COMMB300, Droit de l'information et de la communication&#10;LANGB305, Anglais III"></textarea>
         <button class="primaire halo" id="ulb-import-voir" type="button">Analyser la liste</button>
@@ -3823,7 +3849,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
      - « Mon horaire ULB » : l'horaire personnel via le lien d'abonnement
        iCal de Mon horaire (api/ical) — aucun identifiant ne passe par nous. */
   var ULB_LIEN_FORMATION = "Mon horaire (lien d'abonnement)";
-  var ulb = { mode: "niveau", cours: [], resultats: [], arme: null, requete: 0, minuteur: 0 };
+  var ulb = { mode: "niveau", cours: [], resultats: [], arme: null, requete: 0, minuteur: 0, ocr: null };
   function ulbOuvrir() {
     ulbAppliquerMode(false);
     if (window.matchMedia("(hover: hover)").matches && ulb.mode !== "lien") {
@@ -3856,6 +3882,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       champ.setAttribute("aria-label", "Rechercher un cours");
       aide.textContent = "Coche les cours que tu suis, puis « Voir mon horaire ».";
       ulbRendreCours();
+      setTimeout(ulbAjusterChamp, 0);
     } else {
       titre.textContent = "Ton horaire personnel";
       aide.textContent = "Le lien d'abonnement de MonULB (TimeEdit). Il donne accès à ton horaire : " +
@@ -3988,6 +4015,80 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     ulb.arme = cle;                                        // premier appui : rouge
     ulbRendreCours();
   });
+  var OCR_LIB = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";
+  var OCR_INTEGRITE = "sha384-GJqSu7vueQ9qN0E9yLPb3Wtpd7OrgK8KmYzC8T1IysG1bcvxvIO4qtYR/D3A991F";
+  var OCR_LANGUES = "https://cdn.jsdelivr.net/gh/naptha/tessdata@gh-pages/4.0.0_fast";
+  function ulbAjusterChamp() {
+    var zone = document.getElementById("ulb-import-texte");
+    if (!zone || vue !== "formation") return;
+    var max = Math.round(window.innerHeight * 0.42);
+    zone.style.height = "auto";
+    var voulu = Math.min(zone.scrollHeight + 2, max);
+    zone.style.height = voulu + "px";
+    zone.style.overflowY = zone.scrollHeight > max ? "auto" : "hidden";
+  }
+  function ulbChargerOCR() {
+    if (window.Tesseract) return Promise.resolve(window.Tesseract);
+    if (!ulb.ocr) {
+      ulb.ocr = new Promise(function (ok, ko) {
+        var s = document.createElement("script");
+        s.src = OCR_LIB; s.integrity = OCR_INTEGRITE; s.crossOrigin = "anonymous";
+        s.onload = function () { ok(window.Tesseract); };
+        s.onerror = function () { ko(new Error("lecteur d'image indisponible (hors ligne ?)")); };
+        document.head.appendChild(s);
+      });
+    }
+    return ulb.ocr;
+  }
+  function ulbLireCapture(fichier) {
+    var statut = document.getElementById("ulb-import-status");
+    if (!fichier || !/^image\//.test(fichier.type || "")) return;
+    attente(statut, "Ouverture de la capture…");
+    ulbChargerOCR().then(function (T) {
+      return T.recognize(fichier, "fra", {
+        langPath: OCR_LANGUES,
+        logger: function (m) {
+          if (m && m.status === "recognizing text") {
+            attente(statut, "Lecture de la capture… " + Math.round((m.progress || 0) * 100) + " %");
+          }
+        }
+      });
+    }).then(function (r) {
+      var texte = ((r && r.data && r.data.text) || "").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+      if (!texte) { erreur(statut, "Aucun texte lisible sur cette image."); return; }
+      document.getElementById("ulb-import-texte").value = texte;
+      ulbAjusterChamp();
+      statut.hidden = false;
+      statut.classList.remove("erreur");
+      statut.textContent = "Texte reconnu sur la capture — vérifie-le, puis « Analyser la liste ».";
+    }, function (e) {
+      erreur(statut, "Impossible de lire la capture : " + e.message);
+    });
+  }
+  document.getElementById("ulb-import").addEventListener("toggle", function () {
+    if (this.open) ulbAjusterChamp();
+  });
+  document.getElementById("ulb-import-texte").addEventListener("input", ulbAjusterChamp);
+  document.getElementById("ulb-import-texte").addEventListener("paste", function () {
+    setTimeout(ulbAjusterChamp, 0);
+  });
+  window.addEventListener("resize", ulbAjusterChamp);
+  document.getElementById("ulb-capture-fichier").addEventListener("change", function () {
+    if (this.files && this.files[0]) ulbLireCapture(this.files[0]);
+    this.value = "";
+  });
+  // Coller une image (⌘V / Ctrl+V) quand le bloc d'import est ouvert.
+  document.addEventListener("paste", function (e) {
+    var bloc = document.getElementById("ulb-import");
+    if (!bloc || !bloc.open || vue !== "formation") return;
+    var items = (e.clipboardData && e.clipboardData.items) || [];
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].type && items[i].type.indexOf("image/") === 0) {
+        var f = items[i].getAsFile();
+        if (f) { e.preventDefault(); ulbLireCapture(f); return; }
+      }
+    }
+  });
   function ulbImporter() {
     var texte = document.getElementById("ulb-import-texte").value;
     var statut = document.getElementById("ulb-import-status");
@@ -4008,34 +4109,26 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
         ulb.arme = null;
         ulbRendreCours();
         ulbRendreResultats(ulb.resultats);
-        var doutes = d.a_confirmer || [];
+        // Rien à raconter : seules les lignes VRAIMENT ambivalentes (des
+        // candidats crédibles, plusieurs cours du même intitulé) proposent un
+        // choix ; les lignes illisibles sont simplement ignorées.
+        var doutes = (d.a_confirmer || []).filter(function (x) { return x.propositions.length; });
         var zone = document.getElementById("ulb-import-doutes");
         zone.hidden = !doutes.length;
         zone.innerHTML = !doutes.length ? "" :
-          '<p class="aide">À confirmer — plusieurs cours peuvent porter le même intitulé :</p>' +
-          doutes.map(function (x) {
-            var titre = x.choix ? " proposé : " + txt(x.choix) : "";
-            return '<div class="doute"><p class="aide">« ' + txt(x.releve || x.ligne) + " »" +
-              (titre ? " — " + txt(titre.replace(" proposé : ", "")) : "") + "</p>" +
-              (x.propositions.length
-                ? '<div class="prop">' + x.propositions.map(function (p) {
-                    return '<button type="button" class="chip" data-cle="' + txt(p.cle) +
-                      '" aria-pressed="false"><span class="coche" aria-hidden="true"></span>' +
-                      '<span class="chip-textes"><span>' + txt(p.code) + "</span>" +
-                      (p.titre ? "<small>" + txt(p.titre) + "</small>" : "") + "</span></button>";
-                  }).join("") + "</div>"
-                : '<p class="aide">Aucun code ne correspond : ajoute-le à la main.</p>') +
-              "</div>";
-          }).join("");
+          '<div class="prop">' + doutes.map(function (x) {
+            return x.propositions.map(function (p) {
+              return '<button type="button" class="chip" data-cle="' + txt(p.cle) +
+                '" aria-pressed="false"><span class="coche" aria-hidden="true"></span>' +
+                '<span class="chip-textes"><span>' + txt(p.code) + "</span>" +
+                (p.titre ? "<small>" + txt(p.titre) + "</small>" : "") + "</span></button>";
+            }).join("");
+          }).join("") + "</div>";
         statut.hidden = false;
         statut.classList.remove("erreur");
         statut.textContent = d.cours.length
-          ? "J'ai trouvé " + d.cours.length + " cours" +
-            (d.cours.length > 1 ? "" : "") + " — vérifie que tous tes cours sont là, puis « Voir mon horaire »."
+          ? "J'ai trouvé " + d.cours.length + " cours — vérifie qu'ils sont tous là, puis « Voir mon horaire »."
           : "Aucun cours reconnu : vérifie la liste collée.";
-        if (d.inconnus && d.inconnus.length) {
-          statut.textContent += " Illisibles : " + d.inconnus.join(" · ") + ".";
-        }
       }, function (e) {
         btn.disabled = false;
         erreur(statut, "Échec : " + e.message);

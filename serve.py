@@ -49,13 +49,13 @@ ROUTES = {"/api/formations": formations.handler,
 # 'unsafe-inline' reste nécessaire pour le script et les styles embarqués
 # dans index.html / dashboard.html ; le reste verrouille les sources.
 CSP = ("default-src 'self'; "
-       "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
+       "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
        "style-src 'self' 'unsafe-inline'; "
        "img-src 'self' data: blob:; "
        "font-src 'self'; "
-       "connect-src 'self' https://*.supabase.co; "
+       "connect-src 'self' https://*.supabase.co https://cdn.jsdelivr.net; "
        "frame-src blob:; "
-       "worker-src blob: https://cdnjs.cloudflare.com; "
+       "worker-src blob: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; "
        "object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'")
 ENTETES_SECURITE = {
     "X-Content-Type-Options": "nosniff",
