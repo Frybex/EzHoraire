@@ -13,6 +13,10 @@ __pycache__/
 .DS_Store
 .env*
 serve.log
+# Notes internes (plans, sécurité) : jamais servies en ligne.
+dashboard.md
+# Caches du build local : le CLI les exclut déjà, ceinture-bretelles.
+.vercel/
 # Ateliers de logos : seul logos/ecoles/ est affiché par l'app. Les essais
 # et les scripts de génération n'ont rien à faire en ligne. Chaque dossier
 # est listé un par un : « logos/* » + « !logos/ecoles/ » emporterait tout
@@ -20,6 +24,8 @@ serve.log
 logos/da/
 logos/ez/
 logos/og/
+logos/monolithe/
+logos/propositions/
 logos/*.svg
 logos/*.py
 logos/preview.html
@@ -31,4 +37,11 @@ qr/
 # Prototypes & propositions en cours de conception (non publiés sur Vercel)
 propositions/
 propositions-grands-ecrans.html
+test-bug.html
 capture-*.png
+
+# Brouillons de calcul des logos (scripts Python à la racine)
+/test_*.py
+
+# Démo locale : pose des horaires de test puis ouvre ?essai=1 (localhost only)
+demo.html

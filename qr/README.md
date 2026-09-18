@@ -11,7 +11,7 @@ Générateur et collection de QR Codes vectoriels sur-mesure pour [EzHoraire](ht
 2. **Repères de visée personnalisés (Finders)** :
    - Anneaux extérieurs aux coins arrondis et pupilles internes bleu cobalt (`#5b86ff` / `#2456e0`), garantissant une détection optique instantanée.
 3. **Badge Central Officiel intégré** :
-   - Incrustation des **3 barres d'agenda EzHoraire** (l'icône officielle de l'application) au cœur du QR Code.
+   - Incrustation du **logo EzHoraire** (le Monolithe E + Z, icône officielle de l'application) au cœur du QR Code.
    - Entouré d'une bordure de protection subtile avec micro-relief.
 4. **Scannabilité Certifiée 100% (Correction d'erreur Niveau H)** :
    - Tolérance de 30% aux erreurs et occultations : scannable sous tous les angles, même avec reflets ou faible luminosité.

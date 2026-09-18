@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Test — Signaler un bug (sans connexion)</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<script>
+/* Apparence (Clair / Sombre / Système) posée avant le premier rendu : pas d'éclair. */
+try { var _a = localStorage.getItem("ezh_apparence"); document.documentElement.setAttribute("data-apparence", (_a === "clair" || _a === "sombre") ? _a : "systeme"); }
+catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); }
+</script>
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --ink: #17191d;
+    --muted: #626977;
+    --line: #e4e7ec;
+    --accent: #2456e0;
+    --accent-soft: rgba(36, 86, 224, .09);
+    --wash: rgba(36, 86, 224, 0);
+    --free: #18794e;
+    --danger: #d42a3c;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #101216;
+      --surface: #171a20;
+      --ink: #f0f3f7;
+      --muted: #98a1b1;
+      --line: #262b34;
+      --accent: #8ba6ff;
+      --accent-soft: rgba(139, 166, 255, .13);
+      --wash: rgba(139, 166, 255, 0);
+      --free: #5fce96;
+      --danger: #ff6b7a;
+    }
+  }
+  html[data-apparence="clair"] {
+    --bg: #f4f5f7; --surface: #ffffff; --ink: #17191d; --muted: #626977;
+    --line: #e4e7ec; --accent: #2456e0; --accent-soft: rgba(36, 86, 224, .09);
+    --wash: rgba(36, 86, 224, 0); --free: #18794e; --danger: #d42a3c;
+  }
+  html[data-apparence="sombre"] {
+    --bg: #101216; --surface: #171a20; --ink: #f0f3f7; --muted: #98a1b1;
+    --line: #262b34; --accent: #8ba6ff; --accent-soft: rgba(139, 166, 255, .13);
+    --wash: rgba(139, 166, 255, 0); --free: #5fce96; --danger: #ff6b7a;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { touch-action: pan-x pan-y; }
+  button, a { touch-action: manipulation; }
+  body {
+    --relief-haut: color-mix(in srgb, var(--bg), #fff 78%);
+    --relief-bas: color-mix(in srgb, var(--bg), #fff 44%);
+    --reflet: rgba(255, 255, 255, .9);
+    --ombre-btn: 0 1px 2px rgba(23, 32, 68, .06), 0 2px 8px -4px rgba(23, 32, 68, .08);
+    --creux: color-mix(in srgb, var(--bg), #fff 60%);
+    --creux-ombre: rgba(23, 32, 68, .07);
+    margin: 0; color: var(--ink);
+    background-color: var(--bg);
+    background-image: radial-gradient(110% 34% at 50% -6%, var(--wash), transparent 70%);
+    background-repeat: no-repeat;
+    font-family: var(--font); font-size: 17px; line-height: 1.45;
+  }
+  @media (prefers-color-scheme: dark) {
+    body {
+      --relief-haut: color-mix(in srgb, var(--bg), #fff 7%);
+      --relief-bas: color-mix(in srgb, var(--bg), #fff 2.5%);
+      --reflet: rgba(255, 255, 255, .06);
+      --ombre-btn: 0 1px 2px rgba(0, 0, 0, .4), 0 4px 12px -6px rgba(0, 0, 0, .6);
+      --creux: color-mix(in srgb, var(--bg), #000 26%);
+      --creux-ombre: rgba(0, 0, 0, .4);
+    }
+  }
+  html[data-apparence="clair"] body {
+    --relief-haut: color-mix(in srgb, var(--bg), #fff 78%);
+    --relief-bas: color-mix(in srgb, var(--bg), #fff 44%);
+    --reflet: rgba(255, 255, 255, .9);
+    --ombre-btn: 0 1px 2px rgba(23, 32, 68, .06), 0 2px 8px -4px rgba(23, 32, 68, .08);
+    --creux: color-mix(in srgb, var(--bg), #fff 60%);
+    --creux-ombre: rgba(23, 32, 68, .07);
+  }
+  html[data-apparence="sombre"] body {
+    --relief-haut: color-mix(in srgb, var(--bg), #fff 7%);
+    --relief-bas: color-mix(in srgb, var(--bg), #fff 2.5%);
+    --reflet: rgba(255, 255, 255, .06);
+    --ombre-btn: 0 1px 2px rgba(0, 0, 0, .4), 0 4px 12px -6px rgba(0, 0, 0, .6);
+    --creux: color-mix(in srgb, var(--bg), #000 26%);
+    --creux-ombre: rgba(0, 0, 0, .4);
+  }
+  .wrap { max-width: 620px; margin: 0 auto; padding: 20px 16px 48px; }
+  [hidden] { display: none !important; }
+
+  /* Barre du haut : titre centré, comme dans l'app. */
+  .topbar {
+    position: relative; display: flex; align-items: center; justify-content: center;
+    min-height: 44px; margin: 2px 0 14px;
+  }
+  .title {
+    font-size: 1.05rem; font-weight: 700; letter-spacing: -.01em;
+    text-align: center; margin: 0; user-select: none;
+  }
+  .title span { color: var(--accent); }
+  .title a { color: inherit; text-decoration: none; }
+
+  /* Titre fort + aide, comme les écrans de choix. */
+  .q {
+    margin: 10px 0 22px; font-size: clamp(2rem, 8.6vw, 2.4rem); font-weight: 750;
+    line-height: 1.04; letter-spacing: -.045em; text-wrap: balance;
+  }
+  .aide { color: var(--muted); margin: -10px 0 22px; font-size: .95rem; }
+  .aide a { color: var(--accent); }
+  .aide code { font-size: .85em; }
+  label.t { display: block; font-weight: 650; letter-spacing: -.01em; margin: 0 2px 8px; }
+
+  /* Halo qui suit le pointeur, comme dans l'app. */
+  :where(.halo) { position: relative; }
+  .halo { isolation: isolate; }
+  .halo::before, .halo::after {
+    content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    opacity: 0; transition: opacity .25s;
+  }
+  .halo::before {
+    z-index: -1;
+    background: radial-gradient(180px circle at var(--mx, 50%) var(--my, 50%),
+      color-mix(in srgb, var(--ink) 7%, transparent), transparent 70%);
+  }
+  .halo::after {
+    z-index: 2; padding: 1px;
+    background: radial-gradient(110px circle at var(--mx, 50%) var(--my, 50%),
+      color-mix(in srgb, var(--ink) 50%, transparent), transparent 75%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .halo:hover::before, .halo:hover::after { opacity: 1; }
+  }
+
+  /* Bloc gravé (en creux) : le sélecteur d'étape. */
+  .champs {
+    border-radius: 16px; background: var(--creux);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre), 0 1px 0 var(--reflet);
+    transition: box-shadow .25s;
+  }
+  .champs:focus-within {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 30%, transparent),
+      inset 0 1px 3px var(--creux-ombre), 0 0 0 4px color-mix(in srgb, var(--ink) 6%, transparent);
+  }
+  .champ {
+    width: 100%; height: 54px; padding: 0 16px; border: none; border-radius: 16px;
+    background: none; color: var(--ink); outline: none;
+    font: inherit; font-size: 16px; letter-spacing: -.005em;
+  }
+  /* Grande zone de texte : creux, taille fixe (pas de poignée). */
+  #message {
+    width: 100%; min-height: 130px; resize: none;
+    border: none; border-radius: 16px; padding: 14px 16px;
+    font: inherit; font-size: 16px; line-height: 1.5; color: var(--ink);
+    background: var(--creux);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre), 0 1px 0 var(--reflet);
+  }
+  #message:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  #message::placeholder { color: var(--muted); opacity: .85; }
+  .bloc { margin: 0 0 22px; }
+
+  .ligne { display: flex; align-items: center; gap: 10px; margin-top: 2px; }
+  .trombone {
+    overflow: hidden;
+    display: inline-flex; align-items: center; gap: 8px;
+    min-height: 44px; padding: 0 16px; border: none; border-radius: 999px;
+    font: inherit; font-size: .88rem; font-weight: 600; color: var(--ink); cursor: pointer;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  .trombone:active { transform: scale(.96); }
+  .compte { font-size: .82rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  #apercus { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  #apercus:empty { display: none; }
+  .ap {
+    position: relative; width: 76px; height: 76px; border-radius: 12px; overflow: hidden;
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+  .ap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .ap button {
+    position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; padding: 0;
+    border: none; border-radius: 50%; cursor: pointer;
+    background: rgba(6, 8, 12, .65); color: #fff;
+    display: grid; place-items: center; font-size: 11px;
+  }
+  .piege { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+
+  /* Bouton d'action : relief, comme .primaire dans l'app. */
+  #envoyer {
+    overflow: hidden; display: block; width: 100%; height: 54px; margin-top: 22px;
+    border: none; border-radius: 16px;
+    font: inherit; font-size: 1rem; font-weight: 650; letter-spacing: -.01em;
+    color: var(--ink); cursor: pointer;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn),
+      0 14px 34px -14px rgba(0, 0, 0, .45);
+    transition: transform .12s;
+  }
+  #envoyer:active { transform: scale(.98); }
+  #envoyer[disabled] { opacity: .45; cursor: default; box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet); }
+  #status { margin: 12px 2px 0; font-size: .9rem; min-height: 1.4em; }
+  #status.erreur { color: var(--danger); }
+  #status.ok { color: var(--free); }
+  #reponse {
+    margin: 10px 0 0; padding: 12px 14px; border-radius: 14px;
+    font-size: .78rem; overflow-x: auto; white-space: pre-wrap; overflow-wrap: anywhere;
+    color: var(--muted); background: var(--creux);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre);
+  }
+  .retour { margin: 18px 2px 0; font-size: .9rem; }
+  .retour a { color: var(--muted); }
+  @media (prefers-reduced-motion: reduce) {
+    .halo::before, .halo::after { transition: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <h1 class="title"><a href="/" title="Retour à l'app">Ez<span>Horaire</span></a></h1>
+  </div>
+
+  <h2 class="q">Tester un signalement.</h2>
+  <p class="aide">Page de test, sans connexion : le report part en <strong>anonyme</strong>
+    vers <code>/api/bugs</code>, comme depuis les étapes de création de compte.
+    Vérifie ensuite dans le <a href="/dashboard.html">dashboard</a> (carte Bugs & demandes).</p>
+
+  <div class="bloc">
+    <label class="t" for="etape">Étape simulée</label>
+    <div class="champs">
+      <select class="champ" id="etape">
+        <option value="v-compte">Connexion</option>
+        <option value="v-identite">Identité (prénom / nom)</option>
+        <option value="v-ecole">École</option>
+        <option value="v-formation" selected>Formation</option>
+        <option value="v-groupes">Groupes</option>
+        <option value="v-horaire">Horaire</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="bloc">
+    <label class="t" for="message">Que se passe-t-il ?</label>
+    <textarea id="message" rows="5" maxlength="5000" placeholder="ex. Test depuis la page de test : …">Test depuis la page de test : </textarea>
+  </div>
+
+  <div class="ligne">
+    <label class="trombone halo" for="fichiers">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.4 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+      Ajouter des images
+    </label>
+    <input type="file" id="fichiers" accept="image/*" multiple hidden>
+    <span class="compte" id="compte">0 / 3</span>
+  </div>
+  <div id="apercus"></div>
+
+  <div class="piege" aria-hidden="true">
+    <label for="site-web">Ne pas remplir</label>
+    <input id="site-web" type="text" tabindex="-1" autocomplete="off">
+  </div>
+
+  <button id="envoyer" class="halo" type="button">Envoyer le report</button>
+  <p id="status" role="status"></p>
+  <pre id="reponse" hidden></pre>
+  <p class="retour"><a href="/">Retour à l'app</a></p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0" integrity="sha384-JBR+x8blGwjDRO63aHCGiZMD4VNiTR4ZUGA+N6ZKLf3zNt1fK8IBpcgPaMrxqWBp" crossorigin="anonymous"></script>
+<script>
+(function () {
+  "use strict";
+  var MAX = 3;
+  var images = []; // {blob, url}
+  var sb = null, CLE_ANON_OK = false;
+  function $(id) { return document.getElementById(id); }
+  /* Halo qui suit le pointeur (voir .halo::before/::after), comme dans l'app. */
+  document.addEventListener("pointermove", function (e) {
+    var h = e.target && e.target.closest ? e.target.closest(".halo") : null;
+    if (!h) return;
+    var r = h.getBoundingClientRect();
+    h.style.setProperty("--mx", ((e.clientX - r.left) + "px"));
+    h.style.setProperty("--my", ((e.clientY - r.top) + "px"));
+  }, { passive: true });
+  function statut(msg, erreur) {
+    var el = $("status");
+    el.textContent = msg || "";
+    el.className = !msg ? "" : (erreur ? "erreur" : "ok");
+  }
+  // Config + client anonyme (téléversement direct vers bug-images).
+  fetch("api/config", { cache: "no-store" }).then(function (r) { return r.json(); })
+    .then(function (rep) {
+      var s = (rep && rep.supabase) || {};
+      if (s.url && s.anonKey && window.supabase) {
+        sb = window.supabase.createClient(s.url, s.anonKey);
+        CLE_ANON_OK = true;
+      } else {
+        statut("Supabase non configuré : l'envoi d'images sera refusé.", true);
+      }
+    }).catch(function () {
+      statut("Config injoignable : l'envoi d'images sera refusé.", true);
+    });
+
+  function rendre() {
+    var zone = $("apercus");
+    zone.innerHTML = "";
+    images.forEach(function (img, i) {
+      var fig = document.createElement("div");
+      fig.className = "ap";
+      var im = document.createElement("img");
+      im.src = img.url;
+      im.alt = "Capture " + (i + 1);
+      fig.appendChild(im);
+      var x = document.createElement("button");
+      x.type = "button";
+      x.setAttribute("aria-label", "Retirer l'image " + (i + 1));
+      x.textContent = "✕";
+      x.addEventListener("click", function () {
+        try { URL.revokeObjectURL(images[i].url); } catch (e) {}
+        images.splice(i, 1);
+        rendre();
+      });
+      fig.appendChild(x);
+      zone.appendChild(fig);
+    });
+    $("compte").textContent = images.length + " / " + MAX;
+  }
+  function compresser(fichier) {
+    return new Promise(function (ok, ko) {
+      var url = URL.createObjectURL(fichier);
+      var img = new Image();
+      img.onload = function () {
+        try { URL.revokeObjectURL(url); } catch (e) {}
+        var l = img.naturalWidth || 0, h = img.naturalHeight || 0;
+        if (!l || !h) return ko(new Error("image illisible"));
+        var k = Math.min(1, 1280 / Math.max(l, h));
+        var c = document.createElement("canvas");
+        c.width = Math.max(1, Math.round(l * k));
+        c.height = Math.max(1, Math.round(h * k));
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        if (c.toBlob) c.toBlob(function (b) {
+          if (b) ok(b); else ko(new Error("image illisible"));
+        }, "image/jpeg", 0.82);
+        else ko(new Error("image illisible"));
+      };
+      img.onerror = function () { try { URL.revokeObjectURL(url); } catch (e) {} ko(new Error("image illisible")); };
+      img.src = url;
+    });
+  }
+  $("fichiers").addEventListener("change", function (e) {
+    var fichiers = Array.prototype.slice.call(e.target.files || []);
+    e.target.value = "";
+    var reste = MAX - images.length;
+    if (fichiers.length > reste) {
+      statut("3 images maximum.", true);
+      fichiers = fichiers.slice(0, Math.max(0, reste));
+    } else {
+      statut("", false);
+    }
+    (function suivante(i) {
+      if (i >= fichiers.length) { rendre(); return; }
+      compresser(fichiers[i]).then(function (blob) {
+        images.push({ blob: blob, url: URL.createObjectURL(blob) });
+        suivante(i + 1);
+      }, function () {
+        statut("Une image est illisible, elle a été ignorée.", true);
+        suivante(i + 1);
+      });
+    })(0);
+  });
+  function uuid() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+      var r = Math.random() * 16 | 0;
+      return (c === "x" ? r : (r & 0x3 | 0x8)).toString(16);
+    });
+  }
+  $("envoyer").addEventListener("click", function () {
+    var message = $("message").value.replace(/\s+/g, " ").trim();
+    if (message.length < 3) { statut("Décris le bug en quelques mots.", true); return; }
+    var btn = $("envoyer");
+    btn.disabled = true;
+    statut("Envoi en cours…", false);
+    $("reponse").hidden = true;
+    (function televerser(i, chemins) {
+      if (i >= images.length) return Promise.resolve(chemins);
+      if (!CLE_ANON_OK || !sb) return Promise.reject(new Error("téléversement impossible (Supabase non configuré)."));
+      var chemin = uuid() + ".jpg";
+      return sb.storage.from("bug-images").upload(chemin, images[i].blob, {
+        contentType: "image/jpeg", upsert: false
+      }).then(function (res) {
+        if (res.error) throw new Error("images refusées par le serveur.");
+        chemins.push(chemin);
+        return televerser(i + 1, chemins);
+      });
+    })(0, []).then(function (chemins) {
+      return fetch("api/bugs", {
+        method: "POST", cache: "no-store",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: message,
+          etape: $("etape").value,
+          email: "",
+          contexte: { test: true, ua: String(navigator.userAgent || "").slice(0, 200) },
+          image_urls: chemins,
+          site_web: $("site-web").value || ""
+        })
+      }).then(function (r) {
+        return r.json().catch(function () { throw new Error("réponse illisible (" + r.status + ")."); });
+      }).then(function (rep) {
+        if (!rep.ok) throw new Error(rep.erreur || "réponse incomplète.");
+        return rep;
+      });
+    }).then(function (rep) {
+      statut("Envoyé. Vérifie la carte Bugs du dashboard.", false);
+      var pre = $("reponse");
+      pre.hidden = false;
+      pre.textContent = JSON.stringify(rep, null, 2);
+    }).catch(function (err) {
+      statut("Échec : " + (err && err.message ? err.message : "réessaie."), true);
+    }).then(function () { btn.disabled = false; });
+  });
+})();
+</script>
+</body>
+</html>

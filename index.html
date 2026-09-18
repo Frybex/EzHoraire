@@ -8,28 +8,34 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="EzHoraire">
-<title>EzHoraire — Ton horaire de cours, enfin lisible</title>
-<meta name="description" content="Ton horaire de cours HEH, UMONS ou ULB, clair et lisible sur téléphone. Choisis ton école, ta formation et tes groupes : ta semaine s'ouvre directement, à jour à chaque visite.">
+<title>EzHoraire — Horaire étudiant HEH, UMONS, ULB, UCLouvain</title>
+<meta name="description" content="Horaire de cours étudiant en Belgique : HEH, UMONS, ULB et UCLouvain, lisible sur téléphone et à jour à chaque visite. Gratuit, sans pub.">
 <link rel="canonical" href="https://www.ezhoraire.be/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="EzHoraire">
 <meta property="og:locale" content="fr_BE">
 <meta property="og:url" content="https://www.ezhoraire.be/">
-<meta property="og:title" content="EzHoraire — Ton horaire de cours, enfin lisible">
-<meta property="og:description" content="Ton horaire HEH, UMONS ou ULB, clair sur téléphone et à jour à chaque ouverture.">
+<meta property="og:title" content="EzHoraire — Horaire étudiant HEH, UMONS, ULB, UCLouvain">
+<meta property="og:description" content="Ton horaire de cours en Belgique, clair sur téléphone et à jour à chaque visite. HEH, UMONS, ULB, UCLouvain. Gratuit, sans pub.">
 <meta property="og:image" content="https://www.ezhoraire.be/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="EzHoraire : une semaine de cours affichée en cases de couleur, avec le slogan « Enfin des horaires pratiques et lisibles. »">
+<meta property="og:image:alt" content="EzHoraire : une semaine de cours affichée en cases de couleur.">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="EzHoraire — Ton horaire de cours, enfin lisible">
-<meta name="twitter:description" content="Ton horaire HEH, UMONS ou ULB, clair sur téléphone et à jour à chaque ouverture.">
+<meta name="twitter:title" content="EzHoraire — Horaire étudiant HEH, UMONS, ULB, UCLouvain">
+<meta name="twitter:description" content="Ton horaire de cours en Belgique, clair sur téléphone et à jour à chaque visite. Gratuit, sans pub.">
 <meta name="twitter:image" content="https://www.ezhoraire.be/og-image.png">
 <meta name="twitter:image:alt" content="EzHoraire : une semaine de cours affichée en cases de couleur.">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+{"@type":"Organization","@id":"https://www.ezhoraire.be/#org","name":"EzHoraire","url":"https://www.ezhoraire.be/","logo":"https://www.ezhoraire.be/icon-512.png","email":"contact@ezhoraire.be","areaServed":"BE"},
+{"@type":"WebSite","@id":"https://www.ezhoraire.be/#site","url":"https://www.ezhoraire.be/","name":"EzHoraire","inLanguage":"fr-BE","publisher":{"@id":"https://www.ezhoraire.be/#org"}}
+]}
+</script>
 <script>
 /* Apparence (Clair / Sombre / Système) posée avant le premier rendu : pas d'éclair. */
 try { var _a = localStorage.getItem("ezh_apparence"); document.documentElement.setAttribute("data-apparence", (_a === "clair" || _a === "sombre") ? _a : "systeme"); }
@@ -575,6 +581,21 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   }
   .dots:hover, .dots[aria-expanded="true"] { color: var(--ink); background: color-mix(in srgb, var(--ink) 8%, transparent); }
   .dots:focus-visible { outline: 2px solid var(--accent); outline-offset: 0; }
+  /* Déplacer un horaire : on attrape la carte n'importe où (sauf le ⋮) et
+     on la fait glisser. Sur téléphone, il faut un appui long pour que le
+     geste démarre : un simple défilement ne bouge rien. */
+  #liste-profils.plusieurs .pcard { cursor: grab; }
+  .pcard.drag {
+    z-index: 25; cursor: grabbing; transition: none !important;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 22%, transparent),
+      0 18px 36px -14px rgba(0, 0, 0, .45), var(--ombre-btn);
+  }
+  #liste-profils.geste .pcard:not(.drag) { transition: transform .18s cubic-bezier(.16,1,.3,1); }
+  body.drag-carte { user-select: none; -webkit-user-select: none; }
+  /* Monter / Descendre : aussi dans le menu ⋮, pour le clavier et les
+     lecteurs d'écran (le glisser n'est pas accessible autrement). */
+  .pop-act:disabled { opacity: .45; cursor: default; }
+  .pop-act:disabled:hover { background: none; }
   /* Popover : naît du ⋮ (origine en haut à droite), vers le haut s'il
      n'a pas la place en dessous. */
   .ppop {
@@ -629,6 +650,13 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     font-size: clamp(2.1rem, 9.4vw, 2.6rem); font-weight: 750; line-height: 1.02; letter-spacing: -.045em;
     text-wrap: balance;
   }
+  /* 2ᵉ ligne du titre (« pratiques et lisibles. ») : reste d'un seul
+     tenant sur ordinateur, retour à la ligne normal sur téléphone.
+     « lisibles. » reprend le bleu du site. */
+  .entree-titre em { font-style: normal; color: var(--accent); }
+  @media (min-width: 1024px) {
+    .entree-titre .nobr { white-space: nowrap; }
+  }
   .entree > :not(.entree-titre) { order: 2; }
   /* Même langage pour tout le formulaire : surfaces en léger relief
      (tokens --relief-* définis dans :root) et halo qui suit le pointeur
@@ -680,6 +708,8 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   }
   @keyframes tourne { to { transform: rotate(360deg); } }
   .email-sep { text-align: center; color: var(--muted); font-size: .85rem; margin: 20px 0; }
+  /* Choix email : se connecter ou créer un compte (même rail que l'app). */
+  #seg-auth { margin: 0 0 12px; }
 
   /* Email + mot de passe dans un seul bloc gravé (légèrement en creux),
      séparés par un filet. Le bloc s'éclaire quand on y écrit. */
@@ -698,6 +728,9 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   }
   .champ-ico { flex: none; color: var(--muted); opacity: .75; transition: color .2s, opacity .2s; }
   .champ-ligne:focus-within .champ-ico { color: var(--ink); opacity: 1; }
+  /* Échec de connexion : les icônes du bloc passent en rouge avec lui
+     (le contour rouge vient de .champs.erreur, comme dans l'édition). */
+  #champs-login.erreur .champ-ico { color: var(--danger); opacity: 1; }
   .champ {
     flex: 1; min-width: 0; height: 100%; padding: 0 16px 0 0; border: none; border-radius: 0;
     background: none; color: var(--ink); outline: none;
@@ -736,23 +769,25 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   .btn-entree.charge .tourne { display: block; }
   /* Seul le texte s'allume quand l'email et le mot de passe sont valables. */
   .btn-entree.pret { color: var(--ink); }
-  /* Mot de passe oublié : simple lien sous Continuer (comptes email). */
+  /* Mot de passe oublié : simple lien grisé sous Continuer (comptes
+     email), caché jusqu'au premier échec de connexion. */
   .oublie {
     display: block; margin: 14px auto 0; border: none; background: none;
-    font: inherit; font-size: .9rem; font-weight: 600; color: var(--accent); cursor: pointer;
+    font: inherit; font-size: .9rem; font-weight: 600; color: var(--muted); cursor: pointer;
     min-height: 44px; padding: 0 12px;
   }
+  .oublie[hidden] { display: none; }
   .oublie:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .piege { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
-  .mention-legale { margin: 18px auto 0; max-width: 34ch; text-align: center; font-size: .78rem; line-height: 1.45; color: var(--muted); }
-  .mention-legale a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
-  .mention-legale a:hover { color: var(--ink); }
   #identite-status { padding: 10px 10px 0; }
   #bloc-reset .champ-titre { text-align: center; margin-bottom: 10px; }
   @media (hover: hover) and (pointer: fine) {
     .btn-entree:hover { color: var(--ink); }
+    .oublie:hover { color: var(--ink); }
   }
   #auth-status { margin-top: 4px; padding: 12px 6px 0; font-size: .9rem; }
+  /* Erreur de connexion : message en rouge, comme les champs. */
+  #auth-status.erreur { color: var(--danger); }
   #v-compte .surnom-aide { text-align: center; }
   #v-identite .recherche { margin-bottom: 10px; }
 
@@ -827,24 +862,18 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   .ap-col { container: apcol / inline-size; }
   .ap-ev u { display: none; }
   @container apcol (min-width: 160px) { .ap-ev u { display: block; } }
-  /* Jour sans cours : colonne rayée + « Pas de cours ». */
+  /* Jour sans cours : colonne rayée + « Pas de cours ». Le texte passe à
+     la ligne et la pastille ne dépasse jamais la colonne, pour rester
+     centrée même sur les colonnes les plus étroites. */
   .ap-libre {
     position: absolute; inset: 0; border-radius: 10px; overflow: hidden;
-    display: grid; place-items: center; color: var(--muted); text-align: center;
+    display: grid; place-items: center; padding: 6px; color: var(--muted); text-align: center;
     background: repeating-linear-gradient(-45deg, transparent 0 15px,
       color-mix(in srgb, var(--muted) 13%, transparent) 15px 16.2px);
   }
-  .ap-libre p { margin: 0; padding: 6px 12px; border-radius: 12px; background: var(--relief-haut); }
+  .ap-libre p { margin: 0; max-width: 100%; padding: 6px 10px; border-radius: 12px; background: var(--relief-haut); }
   .today .ap-libre p { background: var(--surface); }
-  .ap-libre strong { font-size: .9rem; font-weight: 650; white-space: nowrap; letter-spacing: -.01em; }
-  .ap-now {
-    position: absolute; left: -4px; right: 0; height: 2px; z-index: 2;
-    background: #e5484d; border-radius: 2px;
-  }
-  .ap-now::before {
-    content: ""; position: absolute; left: 0; top: -3px;
-    width: 8px; height: 8px; border-radius: 50%; background: #e5484d;
-  }
+  .ap-libre strong { font-size: .9rem; font-weight: 650; letter-spacing: -.01em; text-wrap: balance; }
   @keyframes ap-pose {
     from { opacity: 0; transform: translateY(8px) scale(.97); }
     to { opacity: 1; transform: none; }
@@ -894,9 +923,14 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     text-underline-offset: 3px;
   }
 
-  /* Semaine : flèches en relief, titre au centre. Le retour à la semaine
-     en cours garde sa place quand il est caché : rien ne se décale. */
-  .week { display: flex; align-items: center; gap: 10px; padding: 2px 0 6px; }
+  /* Semaine : flèches de chaque côté du titre, bouton « Cette semaine »
+     centré juste en dessous. Il garde sa place quand il est caché (classe
+     .cache) : rien ne se décale. */
+  .week { display: flex; flex-wrap: wrap; align-items: center; column-gap: 10px; row-gap: 0; padding: 2px 0 6px; }
+  /* Saut de ligne invisible : « Cette semaine » passe seul sur sa
+     propre ligne, sous le titre. Hauteur nulle et aucun espacement
+     vertical ajouté : les marges existantes sont inchangées. */
+  .week::after { content: ""; flex-basis: 100%; height: 0; order: 3; }
   .week button.nav {
     flex: none; display: grid; place-items: center; width: 42px; height: 42px;
     border: none; border-radius: 999px; color: var(--ink); padding: 0;
@@ -912,6 +946,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   .week .cur strong { display: block; font-size: 1.05rem; font-weight: 700; letter-spacing: -.02em; }
   .week .cur span { font-size: .86rem; color: var(--muted); }
   .thisweek {
+    order: 4;
     display: block; margin: 0 auto 10px; height: 36px; padding: 0 16px;
     border: none; border-radius: 999px; color: var(--ink);
     font: inherit; font-size: .88rem; font-weight: 600; cursor: pointer;
@@ -1213,6 +1248,76 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   .btn-ajout svg { color: var(--muted); }
   .btn-ajout:active { transform: scale(.98); }
 
+  /* Signaler (bug ou demande) : coccinelle discrète dans l'en-tête de la
+     feuille, à côté du ⋮ du compte (#btn-bug-compte) ; lien du pied de page et
+     petits liens de chaque étape, à côté du reste. */
+  .lien-pied {
+    border: none; background: none; padding: 0; font: inherit; font-size: inherit;
+    color: var(--muted); text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
+  }
+  /* Parcours de création : petit lien discret sous chaque étape, pour les
+     comptes pas encore créés (anonymes : pas d'email demandé). */
+  .bug-aide { margin: 14px 0 0; text-align: center; }
+  .lien-bug {
+    border: none; background: none; padding: 8px 12px; font: inherit;
+    font-size: .85rem; color: var(--muted); text-decoration: underline;
+    text-underline-offset: 3px; cursor: pointer;
+  }
+
+  /* Fenêtre de signalement : rail Bug / Demande (même .seg que les
+     horaires : piste en creux, pastille en relief), email (lecture seule),
+     grande zone de texte, trombone pour les captures, aperçu des images. */
+  #boite-bug { text-align: left; }
+  #boite-bug h3 { margin-bottom: 4px; }
+  #bug-rail { margin: 0 0 14px; }
+  #bug-rail button {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 44px; font-size: .95rem;
+  }
+  #bug-rail button svg { flex: none; }
+  .bug-email {
+    margin: 0 0 12px; font-size: .85rem; color: var(--muted);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .bug-email strong { color: var(--ink); font-weight: 650; }
+  #bug-message {
+    width: 100%; min-height: 130px; resize: none;
+    border: none; border-radius: 13px; padding: 12px 14px;
+    font: inherit; font-size: .95rem; line-height: 1.5; color: var(--ink);
+    background: var(--creux);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre);
+  }
+  #bug-message:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .bug-ligne {
+    display: flex; align-items: center; gap: 10px; margin-top: 10px;
+  }
+  .bug-trombone {
+    flex: none; display: inline-flex; align-items: center; gap: 8px;
+    min-height: 44px; padding: 0 16px; border-radius: 999px;
+    font: inherit; font-size: .88rem; font-weight: 600; color: var(--ink); cursor: pointer;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  .bug-trombone:active { transform: scale(.96); }
+  .bug-compte { font-size: .82rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  #bug-apercus { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  #bug-apercus:empty { display: none; }
+  .bug-apercu {
+    position: relative; width: 76px; height: 76px; border-radius: 12px; overflow: hidden;
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+  .bug-apercu img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .bug-apercu button {
+    position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; padding: 0;
+    border: none; border-radius: 50%; cursor: pointer;
+    background: rgba(6, 8, 12, .65); color: #fff;
+    display: grid; place-items: center;
+  }
+  #bug-status { margin: 10px 0 0; font-size: .88rem; min-height: 1.3em; }
+  #bug-status.erreur { color: var(--danger); }
+  #bug-status.ok { color: var(--free); }
+  #bug-envoyer[disabled] { opacity: .55; cursor: default; }
+
   /* Fenêtres (confirmation, modification) : voile flouté + carte en
      relief, même langage que le reste. Elles apparaissent en montant
      légèrement et repartent en fondu. */
@@ -1372,12 +1477,12 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
        centré dans la hauteur de la fenêtre. */
     #v-compte {
       display: grid; align-items: center; column-gap: clamp(48px, 6vw, 96px);
-      grid-template-columns: minmax(360px, 420px) minmax(0, 1fr);
+      grid-template-columns: minmax(360px, 460px) minmax(0, 1fr);
       max-width: 1200px; padding: 24px 0 48px;
       min-height: calc(100vh - 96px); min-height: calc(100dvh - 96px);
     }
     .entree { display: block; }
-    .entree-titre { margin: 0 0 36px; font-size: 3.4rem; }
+    .entree-titre { margin: 0 0 36px; font-size: 3.1rem; }
     .apercu {
       margin: 0; height: min(560px, calc(100dvh - 180px)); padding: 18px 18px 0;
       border-radius: 28px; box-shadow: inset 0 0 0 1px var(--line), var(--shadow);
@@ -1403,8 +1508,15 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     .ap-ev u { font-size: .72rem; }
     .ap-ev em { font-size: .7rem; }
     .ap-libre { border-radius: 12px; }
-    .ap-libre p { padding: 8px 16px; border-radius: 14px; }
-    .ap-libre strong { font-size: 1rem; }
+    .ap-libre p { padding: 7px 10px; border-radius: 14px; }
+    .ap-libre strong { font-size: .95rem; }
+    /* Colonnes très étroites (fenêtre juste au-dessus de 1024 px) : on
+       réduit pour garder « Pas de cours » sur deux lignes centrées. */
+    @container apcol (max-width: 96px) {
+      .ap-libre { padding: 4px; }
+      .ap-libre p { padding: 5px 8px; }
+      .ap-libre strong { font-size: .72rem; }
+    }
     .etapes { margin: 0 0 22px; }
     .q { font-size: 3.4rem; margin: 0 0 16px; }
     .aide { font-size: 1.05rem; margin: -6px 0 32px; max-width: 60ch; }
@@ -1426,9 +1538,9 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     #v-horaire .seg { max-width: 560px; }
     #horaire-contenu {
       display: grid; column-gap: 10px; row-gap: 18px;
-      grid-template-columns: minmax(0, 1fr) auto auto;
+      grid-template-columns: minmax(0, 1fr) auto;
       grid-template-rows: auto minmax(0, 1fr) auto;
-      grid-template-areas: "week auj pdfbtn" "cal cal cal" "foot foot foot";
+      grid-template-areas: "week pdfbtn" "cal cal" "foot foot";
       /* 170px = barre du haut (72) + sélecteur d'horaire (~54 + 16 de marge)
          + marge basse de page (~24) : sans ça le bas de la grille dépasse
          de la fenêtre et le pied de page (« Mis à jour… ») est coupé. */
@@ -1437,17 +1549,24 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       min-height: 480px; padding-top: 8px;
     }
     #horaire-contenu.pdf-ouvert {
-      grid-template-columns: minmax(0, 1fr) auto auto minmax(400px, 46%);
-      grid-template-areas: "week auj pdfbtn pdf" "cal cal cal pdf" "foot foot foot pdf";
+      grid-template-columns: minmax(0, 1fr) auto minmax(400px, 46%);
+      grid-template-areas: "week pdfbtn pdf" "cal cal pdf" "foot foot pdf";
     }
     .pdf-ouvert .cal-jour small { display: none; }
     .pdf-ouvert .week .cur span { display: none; }
     #horaire-contenu.pdf-ouvert #pdf-zone { margin-left: 14px; }
-    .week { grid-area: week; justify-content: flex-start; gap: 6px; padding: 0; }
+    /* Barre d'outils : titre + « Cette semaine » à gauche, flèches à
+       droite collées au bouton PDF. Quand « Cette semaine » est caché
+       (sur la bonne semaine), il garde sa place à gauche : les flèches
+       et le PDF ne bougent pas, aucun trou au milieu. */
+    .week { grid-area: week; flex-wrap: nowrap; justify-content: flex-start; gap: 6px; padding: 0; }
+    .week::after { display: none; }
     .week .cur {
-      order: -1; margin-right: auto; text-align: left;
+      order: -1; text-align: left;
       display: flex; align-items: baseline; gap: 14px; min-width: 0;
     }
+    .week #sem-prec { order: 1; margin-left: auto; }
+    .week #sem-suiv { order: 2; }
     .week .cur strong { display: inline; font-size: 2.1rem; font-weight: 700; letter-spacing: -.045em; }
     .week .cur span { font-size: 1rem; white-space: nowrap; }
     .week button.nav, .thisweek, .official {
@@ -1460,7 +1579,8 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     .week button.nav:not(:disabled):hover, .thisweek:hover, .official:hover { color: var(--ink); transform: translateY(-1px); }
     .week button.nav:disabled { opacity: .3; transform: none; }
     .thisweek {
-      grid-area: auj; align-self: center; margin: 0; padding: 0 18px; font-size: .9rem;
+      order: 0; align-self: center;
+      margin: 0 0 0 10px; padding: 0 18px; font-size: .9rem;
     }
     .thisweek.cache { opacity: 0; transform: scale(.96); pointer-events: none; }
     .official {
@@ -1970,7 +2090,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   <!-- 0. Connexion (écran d'entrée : on se connecte avant tout) -->
   <section id="v-compte" hidden>
     <div class="entree">
-      <h2 class="entree-titre">Enfin des horaires pratiques et lisibles.</h2>
+      <h2 class="entree-titre">Enfin des horaires<br><span class="nobr">pratiques et <em>lisibles.</em></span></h2>
       <div class="fournisseurs">
         <button type="button" class="halo" data-auth="google" aria-label="Continuer avec Google">
           <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
@@ -1991,6 +2111,15 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
         </button>
       </div>
       <p class="email-sep" aria-hidden="true"><span>ou</span></p>
+      <!-- Email : deux chemins distincts, choisis ici. Se connecter ne
+           crée jamais de compte (une adresse inconnue reste une erreur,
+           pas un compte fantôme) ; créer un compte refuse une adresse
+           déjà inscrite. Google / GitHub, au-dessus, font les deux. -->
+      <div class="seg" id="seg-auth" role="tablist" aria-label="Se connecter ou créer un compte" style="--n:2;--idx:0">
+        <span class="pill" aria-hidden="true"></span>
+        <button type="button" role="tab" data-mode="login" aria-selected="true">Se connecter</button>
+        <button type="button" role="tab" data-mode="signup" aria-selected="false">Créer un compte</button>
+      </div>
       <div class="champs halo" id="champs-login">
         <div class="champ-ligne">
           <svg class="champ-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -2023,10 +2152,10 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
         <input id="site-web" type="text" tabindex="-1" autocomplete="off">
       </div>
       <button type="button" class="btn-entree halo" id="btn-email">
-        <span class="be-lib">Continuer</span>
+        <span class="be-lib">Se connecter</span>
         <span class="tourne" aria-hidden="true"></span>
       </button>
-      <button type="button" class="oublie" id="mdp-oublie">Mot de passe oublié ?</button>
+      <button type="button" class="oublie" id="mdp-oublie" hidden>Mot de passe oublié ?</button>
       <div id="bloc-reset" hidden>
         <p class="champ-titre">Choisis un nouveau mot de passe</p>
         <div class="champs halo">
@@ -2045,7 +2174,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
         </button>
       </div>
       <p class="pdf-status" id="auth-status" role="status" hidden></p>
-      <p class="mention-legale">En continuant, tu acceptes les <a href="/cgu.html">conditions d'utilisation</a> et la <a href="/confidentialite.html">politique de confidentialité</a>.</p>
+      <p class="bug-aide"><button type="button" class="lien-bug" data-bug>Un problème, une idée ? Signale-le</button></p>
     </div>
 
     <!-- Aperçu décoratif : une semaine type, dans le style de la grille de l'app. -->
@@ -2117,6 +2246,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     </div>
     <p class="pdf-status erreur" id="identite-status" role="status" hidden></p>
     <button class="primaire halo" id="btn-identite" type="button">Continuer</button>
+    <p class="bug-aide"><button type="button" class="lien-bug" data-bug>Un souci, une idée ? Signaler</button></p>
   </section>
 
   <!-- 1. École -->
@@ -2124,6 +2254,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     <p class="etapes" role="img" aria-label="Étape 1 sur 3"><span class="on"></span><span></span><span></span></p>
     <h2 class="q">Ton école</h2>
     <ul class="liste" id="liste-ecoles"></ul>
+    <p class="bug-aide"><button type="button" class="lien-bug" data-bug>Un souci, une idée ? Signaler</button></p>
   </section>
 
   <!-- 2. Formation -->
@@ -2131,9 +2262,9 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     <p class="etapes" role="img" aria-label="Étape 2 sur 3"><span class="on"></span><span class="on"></span><span></span></p>
     <h2 class="q" id="formation-titre">Ta formation</h2>
     <div class="modes" id="rech-modes" role="tablist" aria-label="Comment trouver tes cours" hidden>
-      <button type="button" role="tab" data-mode="cours" aria-selected="true"><span class="mode-nom">Par codes de cours</span><span class="mode-tag">Recommandé</span></button>
-      <button type="button" role="tab" data-mode="niveau" aria-selected="false"><span class="mode-nom">Par niveau d'études</span></button>
-      <button type="button" role="tab" data-mode="lien" aria-selected="false"><span class="mode-nom">Mon horaire ULB</span></button>
+      <button type="button" role="tab" data-mode="cours" aria-selected="true"><span class="mode-nom">Par codes de cours</span></button>
+      <button type="button" role="tab" data-mode="niveau" aria-selected="false"><span class="mode-nom">Par niveau</span></button>
+      <button type="button" role="tab" data-mode="lien" aria-selected="false"><span class="mode-nom">Lien personnel</span></button>
     </div>
     <p class="aide" id="formation-aide"></p>
     <div class="champs recherche-bloc halo" id="formation-recherche">
@@ -2160,7 +2291,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
           <summary>Voir ou coller le texte</summary>
           <div class="import-ligne">
             <textarea id="rech-import-texte" rows="4" spellcheck="false"
-                      placeholder="COMMB300, Droit de l'information et de la communication&#10;LANGB305, Anglais III"></textarea>
+                      placeholder=""></textarea>
             <button class="primaire halo" id="rech-import-voir" type="button">Analyser la liste</button>
           </div>
         </details>
@@ -2183,6 +2314,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     </div>
     <p class="pdf-status" id="formations-status" role="status"></p>
     <ul class="liste" id="liste-formations"></ul>
+    <p class="bug-aide"><button type="button" class="lien-bug" data-bug>Aucun résultat, un souci, une idée ? Signaler</button></p>
   </section>
 
   <!-- 3. Groupe(s) -->
@@ -2230,6 +2362,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       <p class="surnom-aide">Il colore toute l'application quand tu consultes cet horaire — touche une couleur pour voir le résultat.</p>
     </div>
     <button class="primaire halo" id="btn-valider" type="button" hidden></button>
+    <p class="bug-aide"><button type="button" class="lien-bug" data-bug>Un souci, une idée ? Signaler</button></p>
   </section>
 
   <!-- 4. Horaire -->
@@ -2245,8 +2378,8 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
         <button class="nav halo" id="sem-prec" aria-label="Semaine précédente" title="Semaine précédente (←)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.25 5.5 8.75 12l6.5 6.5"/></svg></button>
         <div class="cur"><strong id="sem-titre">Semaine 1</strong><span id="sem-dates"></span></div>
         <button class="nav halo" id="sem-suiv" aria-label="Semaine suivante" title="Semaine suivante (→)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.75 5.5 15.25 12l-6.5 6.5"/></svg></button>
+        <button class="thisweek halo" id="btn-auj">Cette semaine</button>
       </div>
-      <button class="thisweek halo" id="btn-auj">Cette semaine</button>
 
       <ul class="days" id="jours"></ul>
       <div class="cal" id="cal"></div>
@@ -2280,7 +2413,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       <footer>
         <p id="maj"></p>
         <span class="sep" aria-hidden="true">·</span>
-        <p><a href="/confidentialite.html">Confidentialité</a> · <a href="/cgu.html">Conditions d'utilisation</a></p>
+        <p><a href="/aide/">Aide</a> · <a href="/confidentialite.html">Confidentialité</a> · <a href="/cgu.html">Conditions d'utilisation</a> · <button type="button" class="lien-pied" id="lien-bug-footer">Bug ou idée ? Signaler</button></p>
       </footer>
     </div>
   </section>
@@ -2293,6 +2426,10 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   <div class="reg-compte" id="reg-compte">
     <span class="avatar grand" id="reg-avatar">?</span>
     <div class="reg-qui"><strong id="reg-nom"></strong><span id="reg-fournisseur"></span></div>
+    <!-- Signaler : coccinelle discrète à côté du ⋮ du compte (bug ou demande). -->
+    <button class="dots" id="btn-bug-compte" type="button" aria-label="Signaler un bug ou faire une demande" title="Signaler un bug ou faire une demande">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="14" r="6"/><path d="M12 8V5M9 5.5 12 8l3-2.5M5.5 10 3 8.5M18.5 10 21 8.5M4.5 16 2 17M19.5 16l2.5 1"/></svg>
+    </button>
     <button class="dots" id="btn-compte-menu" type="button" aria-label="Options du compte" aria-haspopup="menu" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5.5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="18.5" r="1.7"/></svg></button>
     <div class="ppop" id="menu-compte" role="menu" hidden>
       <button class="pop-act" id="btn-modifier-identite" type="button" role="menuitem">
@@ -2370,10 +2507,57 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   </form>
 </div>
 
+<!-- Report de bug ou demande : rail Bug / Demande en haut, email du
+     compte (lecture seule), grande zone de texte, trombone pour 1 à 3
+     captures. Ouvert depuis la feuille, le pied de page ou chaque étape
+     de création (anonyme : pas d'email demandé). -->
+<div class="voile" id="voile-bug" hidden>
+  <form class="boite" id="boite-bug" role="dialog" aria-modal="true" aria-labelledby="bug-titre" novalidate>
+    <div class="seg" id="bug-rail" role="tablist" aria-label="Type de signalement" style="--n:2;--idx:0">
+      <span class="pill" aria-hidden="true"></span>
+      <button type="button" role="tab" data-bug-type="bug" aria-selected="true">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="14" r="6"/><path d="M12 8V5M9 5.5 12 8l3-2.5M5.5 10 3 8.5M18.5 10 21 8.5M4.5 16 2 17M19.5 16l2.5 1"/></svg>
+        Bug
+      </button>
+      <button type="button" role="tab" data-bug-type="demande" aria-selected="false">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4.5 12.3c.8.7 1.5 1.6 1.5 2.7h6c0-1.1.7-2 1.5-2.7A7 7 0 0 0 12 2z"/></svg>
+        Demande
+      </button>
+    </div>
+    <h3 id="bug-titre">Signaler un bug</h3>
+    <p class="bug-email" id="bug-email-ligne" hidden></p>
+    <label class="champ-titre" for="bug-message" id="bug-message-label">Que se passe-t-il ?</label>
+    <textarea id="bug-message" rows="5" maxlength="5000" spellcheck="true"
+              placeholder="ex. Mon horaire de bac 2 info affiche les cours de l'an dernier depuis lundi…"></textarea>
+    <div class="bug-ligne">
+      <label class="bug-trombone halo" for="bug-fichiers">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.4 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+        Ajouter des images
+      </label>
+      <input type="file" id="bug-fichiers" accept="image/*" multiple hidden>
+      <span class="bug-compte" id="bug-compte">0 / 3</span>
+    </div>
+    <div id="bug-apercus"></div>
+    <div class="piege" aria-hidden="true">
+      <label for="bug-site-web">Ne pas remplir</label>
+      <input id="bug-site-web" type="text" tabindex="-1" autocomplete="off">
+    </div>
+    <p id="bug-status" role="status"></p>
+    <div class="boite-actions">
+      <button type="button" class="btn-sec" id="bug-annuler">Annuler</button>
+      <button type="submit" class="btn-prim halo" id="bug-envoyer">Envoyer</button>
+    </div>
+  </form>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0" integrity="sha384-JBR+x8blGwjDRO63aHCGiZMD4VNiTR4ZUGA+N6ZKLf3zNt1fK8IBpcgPaMrxqWBp" crossorigin="anonymous"></script>
+<script src="/suivi.js"></script>
 <script>
 (function () {
   "use strict";
+  /* Version du parcours, jointe aux étapes anonymes : à incrémenter à
+     chaque correctif, pour comparer « avant / après » dans le dashboard. */
+  window.EZH_VERSION = "2";
   var JOURS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
   var MOIS = ["janv.", "févr.", "mars", "avr.", "mai", "juin",
               "juil.", "août", "sept.", "oct.", "nov.", "déc."];
@@ -2384,7 +2568,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     { id: "umons", nom: "UMONS", detail: "Université de Mons · Mons, Charleroi", logo: "logos/ecoles/umons.svg", beta: true },
     { id: "ulb", nom: "ULB", detail: "Université libre de Bruxelles · Bruxelles, Charleroi", logo: "logos/ecoles/ulb.svg", recherche: true, beta: true },
     { id: "ucl", nom: "UCLouvain", detail: "Université catholique de Louvain · Louvain-la-Neuve, Bruxelles, Mons…",
-      logo: "logos/ecoles/ucl.svg", recherche: true, pdf: false }
+      logo: "logos/ecoles/ucl.svg", recherche: true, pdf: false, beta: true }
   ];
   function ecoleDe(id) {
     for (var i = 0; i < ECOLES.length; i++) if (ECOLES[i].id === id) return ECOLES[i];
@@ -2402,6 +2586,10 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
      siens — rien n'est deviné à partir de l'autre. */
   var RECHERCHE = {
     ulb: {
+      // L'ULB compose par cours (UE) : l'import et « Par codes de cours »
+      // d'abord, puis le niveau d'études ; le lien perso en dernier.
+      ordre: ["cours", "niveau", "lien"],
+      recommande: "cours",
       modes: { cours: "Par codes de cours", niveau: "Par niveau d'études", lien: "Mon horaire ULB" },
       niveau: { titre: "Ton niveau d'études", placeholder: "Recherche, ex. droit bloc 2, polytech…",
                 aide: "Écris au moins 2 lettres : l'ULB publie plus de 2 000 niveaux d'études." },
@@ -2413,12 +2601,19 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
               mode: "Ton horaire personnel (MonULB) s'abonne dans TimeEdit : ouvre " +
                 '<a href="https://cloud.timeedit.net/be_ulb/web/etudiant/" target="_blank" rel="noopener">Mon horaire</a> ' +
                 "avec ton ULBID, choisis « toute la durée affichée » puis « S'abonner », " +
-                "et colle ici le lien obtenu." }
+                "et colle ici le lien obtenu." },
+      import_texte: "COMMB300, Droit de l'information et de la communication\nLANGB305, Anglais III"
     },
     ucl: {
+      // Un code UCLouvain suffit : le programme (SINF11BA) donne toutes les
+      // séances de l'année — c'est le chemin recommandé. Les codes de cours
+      // et l'import restent là pour les programmes à la carte et les cours
+      // isolés ; le lien perso en dernier.
+      ordre: ["niveau", "cours", "lien"],
+      recommande: "niveau",
       modes: { cours: "Par codes de cours", niveau: "Par programme", lien: "Mon horaire UCLouvain" },
       niveau: { titre: "Ton programme", placeholder: "Recherche, ex. ingénieur civil, droit bloc 1…",
-                aide: "Écris au moins 2 lettres : le code du programme (SINF11BA) ou son intitulé." },
+                aide: "Un code suffit : le programme (SINF11BA, DROI11BA…) donne tout ton horaire." },
       cours: { titre: "Tes cours", placeholder: "Code du cours, ex. LINFO1101, LDROI1001…",
                aide: "Cherche par code (le début suffit) et coche les cours que tu suis." },
       lien: { titre: "Ton horaire personnel", placeholder: "https://monhoraire.uclouvain.be/…",
@@ -2427,7 +2622,8 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
               mode: "Ton horaire personnel s'exporte depuis Mon horaire : ouvre " +
                 '<a href="https://monhoraire.uclouvain.be/" target="_blank" rel="noopener">monhoraire.uclouvain.be</a>, ' +
                 "connecte-toi avec ton identifiant UCLouvain, puis « Exporter » → " +
-                "« Lien d'abonnement » et colle ici le lien obtenu." }
+                "« Lien d'abonnement » et colle ici le lien obtenu." },
+      import_texte: "LINFO1101, Introduction à la programmation\nLDROI1001, Droit constitutionnel"
     }
   };
 
@@ -2442,6 +2638,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   var CLE_COURANT = "ezh_courant";
   var CLE_PROFIL_LEGACY = "ezh_profil";
   var CLE_PWA_PROPOSE = "ezh_pwa_propose";
+  var CLE_BROUILLON = "ezh_brouillon";
 
   /* Ajout à l'écran d'accueil : proposé une seule fois, juste après la
      création du tout premier horaire, uniquement sur mobile. Android
@@ -2689,6 +2886,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     themeChoisiIdentite = 2;
     ecrire(CLE_PROFILS, profils);
     ecrire(CLE_COURANT, null);
+    effacerBrouillon();
     try { localStorage.removeItem(CLE_PROFIL_LEGACY); } catch (e) { /* jetable */ }
     adminVerifie = false;
     var boutonAdmin = document.getElementById("btn-admin");
@@ -2704,14 +2902,83 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     rendreAvatar();
   }
 
+  /* Connexion email : deux modes, choisis sur le rail #seg-auth.
+     « login » ne fait que signInWithPassword — une adresse inconnue
+     reste une erreur, pas un compte fantôme créé par une faute de
+     frappe. « signup » ne fait que signUp — une adresse déjà inscrite
+     est refusée. Google / GitHub ne sont pas concernés : c'est le
+     fournisseur qui décide.
+     « Mot de passe oublié ? » : caché au départ, révélé au premier
+     échec de connexion, et jamais en mode création. Pendant le choix
+     du nouveau mot de passe, il reste masqué et ne réapparaît qu'en
+     refermant ce bloc. */
+  var oublieMontre = false;
+  var modeAuth = "login";
+  function majOublie() {
+    var o = document.getElementById("mdp-oublie");
+    if (!o) return;
+    var br = document.getElementById("bloc-reset");
+    o.hidden = !(oublieMontre && modeAuth === "login") || !!(br && !br.hidden);
+  }
+  function montrerOublie() {
+    oublieMontre = true;
+    majOublie();
+  }
+  function majModeAuth() {
+    var rail = document.getElementById("seg-auth");
+    if (rail) {
+      rail.style.setProperty("--idx", modeAuth === "signup" ? "1" : "0");
+      Array.prototype.forEach.call(rail.querySelectorAll("[data-mode]"), function (b) {
+        b.setAttribute("aria-selected", b.getAttribute("data-mode") === modeAuth ? "true" : "false");
+      });
+    }
+    var lib = document.querySelector("#btn-email .be-lib");
+    if (lib) lib.textContent = modeAuth === "signup" ? "Créer un compte" : "Se connecter";
+    var mdp = document.getElementById("mdp");
+    if (mdp) mdp.setAttribute("autocomplete", modeAuth === "signup" ? "new-password" : "current-password");
+    majOublie();
+  }
+  function definirModeAuth(m) {
+    modeAuth = m === "signup" ? "signup" : "login";
+    majModeAuth();
+    effacerErreurLogin(); // le message d'erreur de l'autre mode ne suit pas
+  }
+  /* Échec de connexion par email : le bloc email / mot de passe passe en
+     rouge (contour + icônes, comme .champs.erreur ailleurs) et tout
+     s'efface dès qu'on y retouche. */
+  function marquerChampsErreur() {
+    var cl = document.getElementById("champs-login");
+    if (cl) cl.classList.add("erreur");
+    Array.prototype.forEach.call(["email", "mdp"], function (id) {
+      var inp = document.getElementById(id);
+      if (inp) inp.setAttribute("aria-invalid", "true");
+    });
+  }
+  function effacerErreurLogin() {
+    var cl = document.getElementById("champs-login");
+    if (cl) cl.classList.remove("erreur");
+    Array.prototype.forEach.call(["email", "mdp"], function (id) {
+      var inp = document.getElementById(id);
+      if (inp) inp.removeAttribute("aria-invalid");
+    });
+    statutAuthEffacer();
+  }
   /* Petits messages sous les boutons de connexion. */
   function statutAuthChargement(msg) {
     var el = document.getElementById("auth-status");
     if (el) attente(el, msg);
   }
-  function statutAuthErreur(msg) {
+  function statutAuthErreur(msg, code) {
     var el = document.getElementById("auth-status");
     if (el) erreur(el, msg);
+    // Premier échec sur l'écran de connexion : on révèle
+    // « Mot de passe oublié ? », caché jusque-là (mode connexion seul :
+    // en création de compte, il n'a rien à faire là).
+    var vc = document.getElementById("v-compte");
+    if (vc && !vc.hidden && modeAuth === "login") montrerOublie();
+    if (code && window.EZH_SUIVI) {
+      EZH_SUIVI.envoyer("connexion_erreur", { erreur: code, fournisseur: fournisseurChoisi || "" });
+    }
   }
   function statutAuthInfo(msg) {
     var el = document.getElementById("auth-status");
@@ -2747,6 +3014,9 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     switch (codeAuth(err)) {
       case "invalid_credentials": return "Email ou mot de passe incorrect.";
       case "email_not_confirmed": return "Adresse pas encore confirmée : clique sur le lien reçu par email.";
+      case "user_already_exists":
+      case "email_exists":
+      case "email_existe": return "Cette adresse email a déjà un compte : connecte-toi.";
       case "over_email_send_rate_limit":
       case "over_request_rate_limit": return "Trop de tentatives : réessaie dans quelques minutes.";
       case "weak_password": return "Mot de passe trop faible : choisis-en un plus long.";
@@ -2868,6 +3138,17 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     sb.auth.updateUser({ data: { prenom: compte.prenom || "", nom: compte.nom || "" } })
       .then(function () { /* jetable */ }, function () { /* jetable */ });
   }
+  /* Compte créé (ou retrouvé) pendant cette visite : compté une seule
+     fois, et seulement si un clic de connexion a eu lieu ici — sinon
+     c'est une session restaurée au rechargement, déjà connue. Un compte
+     est « neuf » s'il est né pendant la visite (retour Google/GitHub). */
+  function suiviCompte(user) {
+    if (!window.EZH_SUIVI || !EZH_SUIVI.aClique() || EZH_SUIVI.deja("compte")) return;
+    EZH_SUIVI.marquer("compte");
+    var creation = Date.parse((user && user.created_at) || "") || 0;
+    var nouveau = creation > 0 && creation >= EZH_SUIVI.debut() - 5 * 60000;
+    EZH_SUIVI.envoyer(nouveau ? "compte_cree" : "connexion_ok", { fournisseur: fournisseurDe(user) });
+  }
 
   /* Arrivée d'une session (retour OAuth ou mot de passe) :
      on prépare le compte + on tire le cloud. La navigation n'a lieu que si
@@ -2887,6 +3168,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     sauverCompte();
     rendreAvatar();
     statutAuthEffacer();
+    suiviCompte(user);
     var p = pullProfils().then(function () { return null; }, function () { return null; });
     if (!demarrageFini) return p;
     return p.then(function () {
@@ -3037,9 +3319,13 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     // clairement au lieu de faire semblant de connecter.
     login: function (fournisseur) {
       fournisseurChoisi = fournisseur;
+      if (window.EZH_SUIVI) {
+        EZH_SUIVI.envoyer("clic_connexion", { fournisseur: fournisseur });
+        EZH_SUIVI.marquer("clic");
+      }
       if (!SUPABASE_OK || !sb) {
         if (!EN_LOCAL) {
-          statutAuthErreur("Service de connexion injoignable : réessaie dans quelques minutes.");
+          statutAuthErreur("Service de connexion injoignable : réessaie dans quelques minutes.", "connexion_injoignable");
           return Promise.resolve(false);
         }
         compte = { fournisseur: fournisseur, nom: "", prenom: "" };
@@ -3057,38 +3343,55 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
         provider: fournisseur,
         options: options
       }).then(function (res) {
-        if (res.error) statutAuthErreur("Échec : " + res.error.message);
+        if (res.error) statutAuthErreur("Échec : " + res.error.message, codeAuth(res.error) || "connexion_echouee");
         return !res.error; // vrai = redirection en cours
       });
     },
-    // Email + mot de passe : connecte, et crée le compte si l'adresse est
-    // inconnue. Dans cet ordre-là : un signUp sur une adresse déjà inscrite
-    // renvoie un faux « compte créé » (sans session ni erreur, pour ne pas
-    // révéler qui est inscrit), l'ancien ordre bloquait donc les habitués.
-    loginEmail: function (email, mdp) {
+    // Email + mot de passe, selon le mode choisi sur le rail :
+    //   « login »  : signInWithPassword seul. Une adresse inconnue
+    //                garde l'erreur « Email ou mot de passe incorrect »
+    //                d'avant (le signUp de secours créait un compte
+    //                fantôme sur une simple faute de frappe).
+    //   « signup » : signUp seul. Une adresse déjà inscrite est refusée
+    //                (Supabase renvoie alors un utilisateur sans
+    //                identité, sans erreur, pour ne pas révéler qui est
+    //                inscrit : on le transforme en message clair).
+    loginEmail: function (email, mdp, mode) {
       if (!SUPABASE_OK || !sb) {
-        statutAuthErreur("Service de connexion injoignable : réessaie dans quelques minutes.");
+        statutAuthErreur("Service de connexion injoignable : réessaie dans quelques minutes.", "connexion_injoignable");
         return Promise.resolve(false);
       }
       email = String(email || "").trim();
-      statutAuthChargement("Connexion en cours…");
+      var creation = mode === "signup";
+      statutAuthChargement(creation ? "Création du compte…" : "Connexion en cours…");
       var self = this;
-      return sb.auth.signInWithPassword({ email: email, password: mdp }).then(function (res) {
-        if (!res.error || codeAuth(res.error) !== "invalid_credentials") return res;
-        return sb.auth.signUp({
+      var demande;
+      if (creation) {
+        demande = sb.auth.signUp({
           email: email, password: mdp,
           options: { emailRedirectTo: location.origin + location.pathname }
         }).then(function (ins) {
           if (ins.error || (ins.data && ins.data.session)) return ins;
-          // Adresse déjà inscrite (aucune identité renvoyée) : mauvais mot de passe.
           var u = ins.data && ins.data.user;
-          if (u && u.identities && u.identities.length === 0) return { error: { code: "invalid_credentials" } };
-          statutAuthInfo("Compte créé : clique sur le lien reçu par email pour l'activer, puis reviens ici.");
+          // Adresse déjà inscrite (aucune identité renvoyée).
+          if (u && u.identities && u.identities.length === 0) return { error: { code: "email_existe" } };
+          if (window.EZH_SUIVI) {
+            EZH_SUIVI.marquer("compte");
+            EZH_SUIVI.envoyer("compte_cree", { fournisseur: "email", details: { activation: "email" } });
+          }
+          statutAuthInfo("Compte créé : clique sur le lien reçu par email pour l'activer, puis reviens te connecter.");
           return null;
         });
-      }).then(function (res) {
+      } else {
+        demande = sb.auth.signInWithPassword({ email: email, password: mdp });
+      }
+      return demande.then(function (res) {
         if (!res) return false;
-        if (res.error) { statutAuthErreur(messageAuth(res.error)); return false; }
+        if (res.error) {
+          statutAuthErreur(messageAuth(res.error), codeAuth(res.error) || "connexion_echouee");
+          marquerChampsErreur();
+          return false;
+        }
         if (res.data && res.data.session && res.data.session.user) {
           self.user = res.data.session.user;
           sessionSupabase = res.data.session;
@@ -3692,6 +3995,16 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     }).then(function (rep) {
       if (!rep.ok) throw new Error(rep.erreur || "réponse incomplète.");
       return rep;
+    }).catch(function (e) {
+      // Friction comptée une fois par visite et par code (voir suivi.js) :
+      // distingue l'école trop lente du hors ligne et de la vraie erreur.
+      var msg = String((e && e.message) || "");
+      if (window.EZH_SUIVI) {
+        EZH_SUIVI.friction(/trop de temps/.test(msg) ? "api_lente"
+          : /connexion|internet/i.test(msg) ? "api_hors_ligne"
+          : "api_erreur");
+      }
+      throw e;
     });
   }
   /* L'horaire se met à jour à l'ouverture : recharger la page suffit.
@@ -3716,11 +4029,15 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   var vue = null, pile = []; // pile : écrans précédents (bouton Retour)
   function montrer(v) {
     vue = v;
+    if (window.EZH_SUIVI) EZH_SUIVI.ecran(v);
     VUES.forEach(function (n) { document.getElementById("v-" + n).hidden = n !== v; });
     document.getElementById("btn-retour").hidden = !pile.length;
     var moi = document.getElementById("btn-moi");
     moi.hidden = v !== "horaire" || !profil;
     window.scrollTo(0, 0);
+    // L'écran affiché fait foi : création en cours = brouillon gardé,
+    // retour à l'horaire (ou connexion) = brouillon abandonné.
+    if (VUES_BROUILLON.indexOf(v) >= 0) sauverBrouillon(); else effacerBrouillon();
   }
   function aller(v) {
     if (vue && vue !== v) pile.push(vue);
@@ -3739,10 +4056,117 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     horaire: afficherHoraire
   };
 
+  /* ---------- Brouillon d'ajout : reprendre où on s'était arrêté ----------
+     Quitter l'app en pleine création (vérifier un mail, prendre une capture
+     d'écran…) peut recharger la page : sans mémoire, l'école, la formation,
+     les cours cochés et les groupes étaient perdus. On garde le parcours en
+     cours dans localStorage et on le rouvre au démarrage. Un brouillon ne
+     vit pas plus d'un jour et n'est jamais écrit depuis l'horaire. */
+  var VUES_BROUILLON = ["ecole", "formation", "groupes"];
+  var BROUILLON_MAX_MS = 24 * 3600 * 1000;
+  function sauverBrouillon() {
+    if (VUES_BROUILLON.indexOf(vue) < 0) return;
+    var champRech = document.getElementById("recherche");
+    var champLien = document.getElementById("rech-lien-champ");
+    var champSurnom = document.getElementById("surnom");
+    var champTexte = document.getElementById("rech-import-texte");
+    ecrire(CLE_BROUILLON, {
+      v: 1,
+      ts: Date.now(),
+      vue: vue,
+      pile: pile.slice(0, 8),
+      ecole: choix.ecole,
+      formation: choix.formation,
+      groupes: choix.groupes.slice(),
+      ical: choix.ical,
+      editionId: choix.editionId,
+      theme: choix.theme,
+      rech: {
+        mode: rech.mode,
+        cours: rech.cours.slice(),
+        q: champRech ? champRech.value : "",
+        lien: champLien ? champLien.value : ""
+      },
+      surnom: champSurnom ? champSurnom.value : "",
+      importTexte: champTexte ? champTexte.value : ""
+    });
+  }
+  function effacerBrouillon() {
+    try { localStorage.removeItem(CLE_BROUILLON); } catch (e) { /* navigation privée */ }
+  }
+  function reprendreBrouillon() {
+    var d = lire(CLE_BROUILLON);
+    if (!d || d.v !== 1 || typeof d.ts !== "number" ||
+        Date.now() - d.ts > BROUILLON_MAX_MS ||
+        VUES_BROUILLON.indexOf(d.vue) < 0 ||
+        !d.ecole || !ecoleDe(d.ecole) || !ecoleActive(d.ecole)) {
+      effacerBrouillon();
+      return false;
+    }
+    // Un brouillon d'édition n'a de sens que si l'horaire modifié existe encore.
+    var edite = null;
+    if (d.editionId) {
+      for (var i = 0; i < profils.length; i++) if (profils[i].id === d.editionId) edite = d.editionId;
+    }
+    var vueVoulue = d.vue;
+    if (vueVoulue === "groupes" && !d.formation) vueVoulue = "formation";
+    choix = {
+      ecole: d.ecole,
+      formation: d.formation || null,
+      data: null,
+      groupes: Array.isArray(d.groupes) ? d.groupes.slice() : [],
+      ical: typeof d.ical === "string" && d.ical ? d.ical : null,
+      editionId: edite,
+      theme: d.theme == null ? null : normaliserTheme(d.theme)
+    };
+    if (vueVoulue === "groupes") {
+      // L'horaire déjà téléchargé ressort du cache : l'écran s'ouvre même hors ligne.
+      var memo = lire(cleHoraire(choix.ecole, choix.formation, choix.ical));
+      if (valide(memo)) choix.data = memo;
+    }
+    rech.ecole = choix.ecole;
+    rech.arme = null;
+    rech.resultats = [];
+    rech.cours = d.rech && Array.isArray(d.rech.cours) ? d.rech.cours.slice() : [];
+    var mode = d.rech && d.rech.mode;
+    rech.mode = mode === "niveau" || mode === "lien" ? mode : "cours";
+    pile = Array.isArray(d.pile)
+      ? d.pile.filter(function (n) { return VUES_BROUILLON.indexOf(n) >= 0 || n === "horaire"; })
+      : [];
+    var champRech = document.getElementById("recherche");
+    var champLien = document.getElementById("rech-lien-champ");
+    var champSurnom = document.getElementById("surnom");
+    var champTexte = document.getElementById("rech-import-texte");
+    if (champRech) champRech.value = (d.rech && d.rech.q) || "";
+    if (champLien) champLien.value = (d.rech && d.rech.lien) || choix.ical || "";
+    if (champSurnom) champSurnom.value = d.surnom || "";
+    if (champTexte) champTexte.value = d.importTexte || "";
+    if (choix.theme != null) document.body.setAttribute("data-theme", String(choix.theme));
+    if (vueVoulue === "ecole") {
+      ouvrirEcoles();
+    } else if (vueVoulue === "formation") {
+      ouvrirFormations();
+      var ec = ecoleDe(choix.ecole);
+      if (ec && ec.recherche && rech.mode !== "lien" &&
+          champRech.value.replace(/\s+/g, " ").trim().length >= 2) {
+        rechChercher();
+      }
+    } else {
+      ouvrirGroupes(choix.groupes);
+    }
+    // Le champ de recherche est souvent remis au focus par l'écran :
+    // au retour, pas de clavier qui s'ouvre tout seul.
+    try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch (e) { /* jetable */ }
+    return true;
+  }
+
   /* ---------- 0. Connexion + identité (avant tout) ---------- */
   function ouvrirCompte() {
     pile = [];
+    oublieMontre = false; // écran frais : le lien reste caché jusqu'au premier échec
+    modeAuth = "login";   // et on revient au mode « Se connecter »
     fermerResetMdp();
+    majModeAuth();
     document.body.removeAttribute("data-theme");
     montrer("compte");
     preparerApercu();
@@ -3752,8 +4176,8 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
         "Connexion factice en local, connexion refusée en ligne.");
     }
   }
-  /* Aperçu de l'écran de connexion : dates de la semaine en cours, jour
-     actuel en couleur et trait rouge à l'heure qu'il est (8 h – 18 h). */
+  /* Aperçu de l'écran de connexion : dates de la semaine en cours et jour
+     actuel en couleur. */
   function preparerApercu() {
     var ap = document.querySelector("#v-compte .apercu");
     if (!ap) return;
@@ -3761,8 +4185,6 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     var lundi = new Date(auj);
     lundi.setDate(auj.getDate() - ((auj.getDay() + 6) % 7));
     var jours = ap.querySelectorAll(".ap-jour"), cols = ap.querySelectorAll(".ap-col");
-    var ancien = ap.querySelector(".ap-now");
-    if (ancien) ancien.parentNode.removeChild(ancien);
     Array.prototype.forEach.call(jours, function (j, i) {
       var d = new Date(lundi);
       d.setDate(lundi.getDate() + i);
@@ -3770,13 +4192,6 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       j.querySelector("strong").textContent = d.getDate();
       j.classList.toggle("today", estAuj);
       cols[i].classList.toggle("today", estAuj);
-      var h = auj.getHours() + auj.getMinutes() / 60;
-      if (estAuj && h >= 8 && h <= 18) {
-        var trait = document.createElement("div");
-        trait.className = "ap-now";
-        trait.style.top = ((h - 8) * 10) + "%";
-        cols[i].appendChild(trait);
-      }
     });
     // Les cours se posent en cascade, colonne par colonne.
     Array.prototype.forEach.call(ap.querySelectorAll(".ap-ev"), function (ev, i) {
@@ -3848,27 +4263,37 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     var em = document.getElementById("email").value;
     var mp = document.getElementById("mdp").value;
     var piege = document.getElementById("site-web");
-    if (piege && piege.value) { statutAuthErreur("Connexion impossible pour le moment."); return; }
+    if (piege && piege.value) { statutAuthErreur("Connexion impossible pour le moment.", "interdit"); return; }
     if (!emailValide(em)) {
       try { document.getElementById("email").focus(); } catch (e) { /* jetable */ }
-      statutAuthErreur("Indique une adresse email valide.");
+      statutAuthErreur("Indique une adresse email valide.", "email_invalide");
+      marquerChampsErreur();
       return;
     }
     if (String(mp).length < 6) {
       try { document.getElementById("mdp").focus(); } catch (e) { /* jetable */ }
-      statutAuthErreur("Mot de passe : 6 caractères minimum.");
+      statutAuthErreur("Mot de passe : 6 caractères minimum.", "mot_de_passe_court");
+      marquerChampsErreur();
       return;
+    }
+    if (window.EZH_SUIVI) {
+      EZH_SUIVI.envoyer("clic_connexion", { fournisseur: "email", details: { mode: modeAuth } });
+      EZH_SUIVI.marquer("clic");
     }
     btn.classList.add("charge");
     btn.setAttribute("aria-busy", "true");
     var fin = function () { btn.classList.remove("charge"); btn.removeAttribute("aria-busy"); };
-    AUTH.loginEmail(em, mp).then(fin, fin);
+    AUTH.loginEmail(em, mp, modeAuth).then(fin, fin);
+  });
+  Array.prototype.forEach.call(document.querySelectorAll("#seg-auth [data-mode]"), function (b) {
+    b.addEventListener("click", function () { definirModeAuth(b.getAttribute("data-mode")); });
   });
   Array.prototype.forEach.call([document.getElementById("email"), document.getElementById("mdp")], function (inp) {
     if (inp) inp.addEventListener("keydown", function (e) {
       if (e.key === "Enter") { e.preventDefault(); document.getElementById("btn-email").click(); }
     });
     if (inp) inp.addEventListener("input", majBoutonEmail);
+    if (inp) inp.addEventListener("input", effacerErreurLogin);
   });
   /* Mot de passe oublié (comptes email) : envoie le lien de
      réinitialisation. Il ouvre /mot-de-passe.html, la page dédiée qui
@@ -3884,9 +4309,11 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     var cl = document.getElementById("champs-login");
     var be = document.getElementById("btn-email");
     var o = document.getElementById("mdp-oublie");
+    var sg = document.getElementById("seg-auth");
     if (cl) cl.hidden = true;
     if (be) be.hidden = true;
     if (o) o.hidden = true;
+    if (sg) sg.hidden = true;
     var br = document.getElementById("bloc-reset");
     if (br) br.hidden = false;
     statutAuthEffacer();
@@ -3902,12 +4329,13 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     if (sep) sep.hidden = false;
     var cl = document.getElementById("champs-login");
     var be = document.getElementById("btn-email");
-    var o = document.getElementById("mdp-oublie");
+    var sg = document.getElementById("seg-auth");
     if (cl) cl.hidden = false;
     if (be) be.hidden = false;
-    if (o) o.hidden = false;
+    if (sg) sg.hidden = false;
     var br = document.getElementById("bloc-reset");
     if (br) br.hidden = true;
+    majOublie();
   }
   document.getElementById("mdp-oublie").addEventListener("click", function () {
     if (!SUPABASE_OK || !sb) {
@@ -3930,7 +4358,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     var btn = this;
     if (btn.classList.contains("charge")) return;
     if (!SUPABASE_OK || !sb || !sessionSupabase || !sessionSupabase.user) {
-      statutAuthErreur("Lien expiré ou déjà utilisé : redemande un email via « Mot de passe oublié ? ».");
+      statutAuthErreur("Lien expiré ou déjà utilisé : redemande un email via « Mot de passe oublié ? ».", "lien_expire");
       fermerResetMdp();
       return;
     }
@@ -3981,6 +4409,10 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     sauverCompte();
     pousserIdentite();
     rendreAvatar();
+    if (window.EZH_SUIVI && !EZH_SUIVI.deja("identite")) {
+      EZH_SUIVI.marquer("identite");
+      EZH_SUIVI.envoyer("identite_ok");
+    }
     choix.theme = themeChoisiIdentite;
     document.body.setAttribute("data-theme", String(themeChoisiIdentite));
     pile = [];
@@ -3997,7 +4429,19 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   var choix = { ecole: null, formation: null, data: null, groupes: [], ical: null, editionId: null, theme: null };
   function demarrerAjout() {
     choix = { ecole: profil ? profil.ecole : "heh", formation: null, data: null, groupes: [], ical: null, editionId: null, theme: suggereThemeSuivant() };
+    // Un nouvel horaire repart d'un formulaire vierge : rien ne doit rester
+    // d'un ajout précédent (recherche, cours cochés, liste collée).
     document.getElementById("surnom").value = "";
+    document.getElementById("recherche").value = "";
+    document.getElementById("rech-lien-champ").value = "";
+    document.getElementById("rech-import-texte").value = "";
+    document.getElementById("rech-import-doutes").innerHTML = "";
+    document.getElementById("rech-import-doutes").hidden = true;
+    document.getElementById("rech-import-status").hidden = true;
+    rech.ecole = null;
+    rech.mode = "cours";
+    rech.cours = [];
+    rech.resultats = [];
     pile = ["horaire"];
     ouvrirEcoles();
   }
@@ -4082,14 +4526,16 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   function rechConfig() { return RECHERCHE[choix.ecole] || RECHERCHE.ulb; }
   function rechOuvrir() {
     // Changer d'école repart de zéro : les cours cochés pour l'ULB n'ont
-    // pas de sens pour l'UCLouvain.
+    // pas de sens pour l'UCLouvain. On ouvre sur le mode conseillé par
+    // l'école (ULB : codes de cours ; UCLouvain : le programme, un code).
     if (rech.ecole !== choix.ecole) {
       rech.ecole = choix.ecole;
-      rech.mode = "cours";
+      rech.mode = rechConfig().recommande || "cours";
       rech.cours = [];
       rech.resultats = [];
       document.getElementById("recherche").value = "";
       document.getElementById("rech-lien-champ").value = "";
+      sauverBrouillon();
     }
     rechAppliquerMode(false);
     if (window.matchMedia("(hover: hover)").matches && rech.mode !== "lien") {
@@ -4102,12 +4548,28 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     var liste = document.getElementById("liste-formations");
     var titre = document.getElementById("formation-titre");
     var aide = document.getElementById("formation-aide");
-    Array.prototype.forEach.call(document.querySelectorAll("#rech-modes button"), function (b) {
+    // Les onglets suivent l'ordre de l'école et « Recommandé » va sur son
+    // mode conseillé (ULB : codes de cours ; UCLouvain : le programme).
+    var modesEl = document.getElementById("rech-modes");
+    (cfg.ordre || ["cours", "niveau", "lien"]).forEach(function (id) {
+      var b = modesEl.querySelector('button[data-mode="' + id + '"]');
+      if (b) modesEl.appendChild(b); // déplace le bouton existant
+    });
+    Array.prototype.forEach.call(modesEl.querySelectorAll("button"), function (b) {
       var mode = b.getAttribute("data-mode");
       var etiquette = b.querySelector(".mode-nom");
       if (etiquette && cfg.modes[mode]) etiquette.textContent = cfg.modes[mode];
       b.setAttribute("aria-selected", String(mode === rech.mode));
+      var doit = mode === (cfg.recommande || "cours");
+      var tag = b.querySelector(".mode-tag");
+      if (doit && !tag) {
+        tag = document.createElement("span");
+        tag.className = "mode-tag";
+        b.appendChild(tag);
+      }
+      if (tag) { tag.textContent = "Recommandé"; tag.hidden = !doit; }
     });
+    document.getElementById("rech-import-texte").placeholder = cfg.import_texte || "";
     effacer(document.getElementById("formations-status"));
     rech.arme = null;
     rech.requete++; // invalide une recherche en vol
@@ -4150,7 +4612,11 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       .then(function (rep) {
         if (seq !== rech.requete || vue !== "formation") return;
         effacer(status);
-        rechRendreResultats(rep.resultats || []);
+        var resultats = rep.resultats || [];
+        if (!resultats.length && window.EZH_SUIVI) {
+          EZH_SUIVI.friction("recherche_0", { genre: genre, taille: texte.length });
+        }
+        rechRendreResultats(resultats);
       }, function (e) {
         if (seq !== rech.requete || vue !== "formation") return;
         erreur(status, "Échec : " + e.message + " Vérifie ta connexion et réessaie.");
@@ -4186,6 +4652,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     rech.arme = null;
     rechRendreCours();
     rechRendreResultats(rech.resultats);
+    sauverBrouillon();
   }
   function rechRetirerCours(cle) {
     var i = rech.cours.indexOf(cle);
@@ -4193,6 +4660,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     rech.arme = null;
     rechRendreCours();
     rechRendreResultats(rech.resultats);
+    sauverBrouillon();
   }
   function rechDesarmer() {
     if (rech.arme == null) return;
@@ -4250,6 +4718,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     if (!b || b.getAttribute("data-mode") === rech.mode) return;
     rech.mode = b.getAttribute("data-mode");
     document.getElementById("recherche").value = "";
+    sauverBrouillon();
     rechAppliquerMode(true);
   });
   document.getElementById("rech-cours-chips").addEventListener("click", function (e) {
@@ -4285,13 +4754,18 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     }
     return rech.ocr;
   }
-  function rechLireCapture(fichier) {
+  function rechLireCapture(fichier, source) {
     var statut = document.getElementById("rech-import-status");
     var image = fichier && (/^image\//.test(fichier.type || "") ||
       /\.(png|jpe?g|webp|gif|bmp|heic|heif)$/i.test(fichier.name || ""));
     if (!image) {
       erreur(statut, "Ce fichier n'est pas une image.");
+      if (window.EZH_SUIVI) EZH_SUIVI.friction("capture_invalide");
       return;
+    }
+    if (window.EZH_SUIVI) {
+      EZH_SUIVI.envoyer("capture_choisie", { details: {
+        source: source || "fichier", octets: +fichier.size || 0 } });
     }
     attente(statut, "Ouverture de la capture…");
     rechChargerOCR().then(function (T) {
@@ -4305,18 +4779,27 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       });
     }).then(function (r) {
       var texte = ((r && r.data && r.data.text) || "").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
-      if (!texte) { erreur(statut, "Aucun texte lisible sur cette image."); return; }
+      if (!texte) {
+        erreur(statut, "Aucun texte lisible sur cette image.");
+        if (window.EZH_SUIVI) EZH_SUIVI.friction("capture_vide");
+        return;
+      }
       document.getElementById("rech-import-texte").value = texte;
       rechAjusterChamp();
+      if (window.EZH_SUIVI) EZH_SUIVI.envoyer("capture_lue", { details: { caracteres: texte.length } });
       rechImporter(true); // on enchaîne tout seuls : l'étudiant voit ses cours, pas le texte
     }, function (e) {
       erreur(statut, "Impossible de lire la capture : " + e.message);
+      if (window.EZH_SUIVI) EZH_SUIVI.friction("capture_echec");
     });
   }
   document.getElementById("rech-import").addEventListener("toggle", function () {
     if (this.open) rechAjusterChamp();
   });
-  document.getElementById("rech-import-texte").addEventListener("input", rechAjusterChamp);
+  document.getElementById("rech-import-texte").addEventListener("input", function () {
+    rechAjusterChamp();
+    sauverBrouillon();
+  });
   document.getElementById("rech-import-texte").addEventListener("paste", function () {
     setTimeout(rechAjusterChamp, 0);
   });
@@ -4351,11 +4834,11 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
         return;
       }
       if (!bloc.open) bloc.open = true;
-      rechLireCapture(fichiers[0]);
+      rechLireCapture(fichiers[0], "depot");
     });
   })();
   document.getElementById("rech-capture-fichier").addEventListener("change", function () {
-    if (this.files && this.files[0]) rechLireCapture(this.files[0]);
+    if (this.files && this.files[0]) rechLireCapture(this.files[0], "fichier");
     this.value = "";
   });
   // Coller une image (⌘V / Ctrl+V) quand le bloc d'import est ouvert.
@@ -4366,7 +4849,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     for (var i = 0; i < items.length; i++) {
       if (items[i].type && items[i].type.indexOf("image/") === 0) {
         var f = items[i].getAsFile();
-        if (f) { e.preventDefault(); rechLireCapture(f); return; }
+        if (f) { e.preventDefault(); rechLireCapture(f, "colle"); return; }
       }
     }
   });
@@ -4397,6 +4880,11 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
         // candidats crédibles, plusieurs cours du même intitulé) proposent un
         // choix ; les lignes illisibles sont simplement ignorées.
         var doutes = (d.a_confirmer || []).filter(function (x) { return x.propositions.length; });
+        if (window.EZH_SUIVI) {
+          EZH_SUIVI.envoyer("analyse", { details: {
+            resultats: (d.cours || []).length, doutes: doutes.length, capture: !!depuisCapture } });
+          if (!(d.cours || []).length) EZH_SUIVI.friction("analyse_0", { capture: !!depuisCapture });
+        }
         var zone = document.getElementById("rech-import-doutes");
         zone.hidden = !doutes.length;
         zone.innerHTML = !doutes.length ? "" :
@@ -4414,6 +4902,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
           ? (depuisCapture ? d.cours.length + " cours retrouvés sur ta capture" : "J'ai trouvé " + d.cours.length + " cours") +
             " — vérifie qu'ils sont tous là, puis « Voir mon horaire »."
           : (depuisCapture ? "Aucun cours reconnu sur cette capture." : "Aucun cours reconnu : vérifie la liste collée.");
+        sauverBrouillon();
       }, function (e) {
         btn.disabled = false;
         erreur(statut, "Échec : " + e.message);
@@ -4428,12 +4917,14 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     rech.arme = null;
     rechRendreCours();
     b.closest(".doute").hidden = true;
+    sauverBrouillon();
   });
   document.getElementById("rech-cours-voir").addEventListener("click", rechVoirCours);
   document.getElementById("rech-lien-voir").addEventListener("click", rechVerifierLien);
   document.getElementById("rech-lien-champ").addEventListener("keydown", function (e) {
     if (e.key === "Enter") { e.preventDefault(); rechVerifierLien(); }
   });
+  document.getElementById("rech-lien-champ").addEventListener("input", sauverBrouillon);
   /* Recherche : les écoles abrègent (UMONS : « BAB1 », « MAB2 », « Ir. »,
      « (Ch) »…). Chaque nom reçoit des mots-clés en clair, pour qu'on trouve
      « bac 1 droit », « master gestion », « ingénieur civil » ou « charleroi ». */
@@ -4525,9 +5016,11 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       rechDesarmer();
       clearTimeout(rech.minuteur);
       rech.minuteur = setTimeout(rechChercher, 220);
+      sauverBrouillon();
       return;
     }
     if (formations.liste) listerFormations();
+    sauverBrouillon();
   });
   document.getElementById("liste-formations").addEventListener("click", function (e) {
     var b = e.target.closest("button[data-formation]");
@@ -4837,6 +5330,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
         : n === 1 ? "Voir mon horaire" : "Voir mon horaire · " + n + " groupes";
     }
     majAvisGroupes();
+    sauverBrouillon();
   }
   document.getElementById("chips").addEventListener("click", function (e) {
     var b = e.target.closest(".chip");
@@ -4855,8 +5349,10 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       choix.theme = t;
       majThemeSelection("groupes-themes", t);
       document.body.setAttribute("data-theme", String(t));
+      sauverBrouillon();
     });
   }
+  document.getElementById("surnom").addEventListener("input", sauverBrouillon);
   document.getElementById("btn-valider").addEventListener("click", function () {
     var groupes = choix.data.groupes;
     var sel = groupes.filter(function (g) { return choix.groupes.indexOf(g) >= 0; }) // ordre de l'école
@@ -4889,6 +5385,23 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       profils.push(profil);
     }
     sauverProfils();
+    if (window.EZH_SUIVI) {
+      if (premierHoraire) {
+        EZH_SUIVI.envoyer("horaire_ok", { details: {
+          ecole: choix.ecole, groupes: sel.length, ical: !!choix.ical } });
+      }
+      // Cours à plusieurs groupes sans sélection : l'horaire restera
+      // incomplet. Même condition que le rappel affiché (chips-avis).
+      var incomplets = 0, multi = [];
+      try { multi = sectionsGroupes().filter(function (x) { return !x.option; }); } catch (e) { multi = []; }
+      if (choix.groupes.length && multi.length > 1) {
+        incomplets = multi.filter(function (x) {
+          return !x.groupes.some(function (g) { return choix.groupes.indexOf(g) >= 0; });
+        }).length;
+      }
+      if (incomplets) EZH_SUIVI.friction("groupes_partiels", { manquants: incomplets });
+    }
+    effacerBrouillon();
     document.getElementById("surnom").value = "";
     choix.editionId = null;
     choix.theme = null;
@@ -5335,14 +5848,14 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     if (popSource === b) fermerPop(); else ouvrirPop(b);
   });
   document.addEventListener("click", function (e) {
-    if (confirmationOuverte() || editionOuverte()) return;
+    if (confirmationOuverte() || editionOuverte() || bugOuvert()) return;
     if (popSource && !pop.contains(e.target) && !e.target.closest(".ev")) fermerPop();
     if (feuille.classList.contains("visible") && !feuille.contains(e.target) && !e.target.closest("#btn-moi")) fermerFeuille();
   });
   window.addEventListener("resize", fermerPop);
   /* Raccourcis clavier (ordinateur) : ← → semaines, + − zoom du PDF. */
   document.addEventListener("keydown", function (e) {
-    if (confirmationOuverte() || editionOuverte()) return;
+    if (confirmationOuverte() || editionOuverte() || bugOuvert()) return;
     if (vue !== "horaire" || e.metaKey || e.ctrlKey || e.altKey) return;
     if (e.target.closest && e.target.closest("input, textarea, select")) return;
     if (feuille.classList.contains("visible")) return;
@@ -5386,17 +5899,27 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg>';
   var ICONE_CORBEILLE = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ' +
     'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 4h4M7 7l1 13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-13"/></svg>';
-  /* Cartes des horaires. Le ⋮ n'ouvre qu'un menu (Modifier / Supprimer) ;
-     la modification elle-même se fait dans une fenêtre (ouvrirEdition). */
+  var ICONE_MONTER = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" ' +
+    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 14.5 6-6 6 6"/></svg>';
+  var ICONE_DESCENDRE = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" ' +
+    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9.5 6 6 6-6"/></svg>';
+  /* Cartes des horaires. Le ⋮ n'ouvre qu'un menu (Déplacer / Modifier /
+     Supprimer) ; la modification elle-même se fait dans une fenêtre
+     (ouvrirEdition). Avec plusieurs horaires, on attrape la carte pour la
+     faire glisser (sauf le ⋮) : l'ordre est celui du tableau `profils`,
+     donc aussi celui du sélecteur de la semaine. */
   function rendreListeProfils() {
     var zone = document.getElementById("liste-profils");
     if (!zone) return;
-    zone.innerHTML = profils.map(function (p) {
+    var plusieurs = profils.length > 1;
+    zone.classList.toggle("plusieurs", plusieurs);
+    zone.innerHTML = profils.map(function (p, i) {
       var nom = estRenomme(p) ? p.surnom : joliFormation(p.formation);
       var grp = texteGroupe(p);
       if (grp === nom) grp = ecoleDe(p.ecole).nom; // jamais deux fois la même ligne
       var ouvert = carteOuverte === p.id;
-      return '<div class="pcard halo' + (profil && p.id === profil.id ? " actif" : "") + (ouvert ? " menu-ouvert" : "") + '">' +
+      return '<div class="pcard halo' + (profil && p.id === profil.id ? " actif" : "") + (ouvert ? " menu-ouvert" : "") +
+        '" data-carte="' + txt(p.id) + '">' +
         '<div class="pcard-ligne">' +
         '<button type="button" class="pcard-main" data-liste="' + txt(p.id) + '">' +
         '<span class="pt-point" style="background:' + couleurTheme(p.theme) + '"></span>' +
@@ -5406,6 +5929,10 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
         '" aria-haspopup="menu" aria-expanded="' + ouvert + '">' + ICONE_DOTS + "</button></div>" +
         (ouvert
           ? '<div class="ppop" role="menu">' +
+            '<button type="button" class="pop-act" role="menuitem" data-act="monter" data-id="' + txt(p.id) + '"' +
+            (i === 0 || !plusieurs ? " disabled" : "") + ">" + ICONE_MONTER + "Monter</button>" +
+            '<button type="button" class="pop-act" role="menuitem" data-act="descendre" data-id="' + txt(p.id) + '"' +
+            (i === profils.length - 1 || !plusieurs ? " disabled" : "") + ">" + ICONE_DESCENDRE + "Descendre</button>" +
             '<button type="button" class="pop-act" role="menuitem" data-act="modifier" data-id="' + txt(p.id) + '">' +
             ICONE_CRAYON + "Modifier</button>" +
             '<button type="button" class="pop-act danger-txt" role="menuitem" data-act="supprimer" data-id="' + txt(p.id) + '">' +
@@ -5413,6 +5940,34 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
           : "") +
         "</div>";
     }).join("");
+  }
+  /* Déplace un horaire d'un cran dans la liste (menu ⋮) : l'ordre est gardé
+     dans `profils` (localStorage), donc la feuille et le sélecteur suivent. */
+  function deplacerProfil(id, delta) {
+    var i = -1;
+    for (var k = 0; k < profils.length; k++) if (profils[k].id === id) i = k;
+    if (i < 0) return;
+    var j = i + delta;
+    if (j < 0 || j >= profils.length) return;
+    var tampon = profils[i];
+    profils[i] = profils[j];
+    profils[j] = tampon;
+    carteOuverte = null;
+    sauverProfils();
+    rendreListeProfils();
+    rendreSeg();
+  }
+  /* Place un horaire à une position précise (fin d'un glisser) : la carte
+     sort de sa place et se réinsère à l'index visé. */
+  function placerProfil(id, cible) {
+    var i = -1;
+    for (var k = 0; k < profils.length; k++) if (profils[k].id === id) i = k;
+    if (i < 0 || cible < 0 || cible >= profils.length || cible === i) return false;
+    var p = profils.splice(i, 1)[0];
+    profils.splice(cible, 0, p);
+    carteOuverte = null;
+    sauverProfils();
+    return true;
   }
   function profilParId(id) {
     for (var i = 0; i < profils.length; i++) if (profils[i].id === id) return profils[i];
@@ -5622,14 +6177,142 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       }
     });
   }
+  /* ---------- Glisser-déposer des cartes d'horaires ----------
+     Souris : la carte s'attrape dès qu'on la déplace (6 px). Tactile :
+     appui long (~320 ms) avant que la carte ne se soulève — un doigt qui
+     défile ne bouge donc jamais les horaires. On lâche : la carte se pose
+     à l'endroit montré, et l'ordre part dans `profils`. */
+  var dragCarte = null;   // geste en cours (null sinon)
+  var dragClic = false;   // vrai après un drag : le clic de fin ne sélectionne pas
+  var dragTimer = null;
+  var APPUI_LONG = 200;   // ms (tactile) avant de soulever la carte
+  var SEUIL_SOURIS = 6;   // px avant de démarrer un drag à la souris
+  var SEUIL_SCROLL = 10;  // px : au-delà, le doigt part se promener, on laisse filer
+
+  function cartesProfils() {
+    return Array.prototype.slice.call(document.querySelectorAll("#liste-profils .pcard"));
+  }
+  function dragNettoyer() {
+    if (dragTimer) { clearTimeout(dragTimer); dragTimer = null; }
+    window.removeEventListener("pointermove", dragBouge);
+    window.removeEventListener("pointerup", dragLache);
+    window.removeEventListener("pointercancel", dragAnnule);
+  }
+  function dragSoulever() {
+    dragTimer = null;
+    if (!dragCarte || dragCarte.actif) return;
+    dragCarte.actif = true;
+    // Capture seulement maintenant : prise dès le pointerdown, elle
+    // détournerait le clic du bouton vers la carte (un simple tap ne
+    // sélectionnerait plus l'horaire).
+    try { dragCarte.carte.setPointerCapture(dragCarte.pointerId); } catch (e) { /* Safari ancien */ }
+    dragCarte.carte.classList.add("drag");
+    document.getElementById("liste-profils").classList.add("geste");
+    document.body.classList.add("drag-carte");
+    // Petit retour haptique quand le téléphone le permet.
+    try { if (navigator.vibrate) navigator.vibrate(8); } catch (e) { /* jetable */ }
+  }
+  function dragBouge(e) {
+    if (!dragCarte || e.pointerId !== dragCarte.pointerId) return;
+    var dy = e.clientY - dragCarte.y0, dx = e.clientX - dragCarte.x0;
+    if (!dragCarte.actif) {
+      var dist = Math.sqrt(dx * dx + dy * dy);
+      if (dragCarte.tactile) {
+        // Le doigt part avant la fin de l'appui long : c'est un défilement.
+        if (dist > SEUIL_SCROLL) dragTermine(false);
+        return;
+      }
+      if (dist < SEUIL_SOURIS) return;
+      dragSoulever();
+    }
+    e.preventDefault();
+    dragCarte.bouge = true;
+    dragCarte.carte.style.transform = "translateY(" + dy + "px)";
+    // Position visée : on compte les cartes dont le milieu tombe au-dessus
+    // du doigt (repères pris au soulèvement : ils ne bougent pas).
+    var centre = dragCarte.rects[dragCarte.i0].top + dy + dragCarte.hauteur / 2;
+    var cible = 0;
+    for (var k = 0; k < dragCarte.rects.length; k++) {
+      if (k === dragCarte.i0) continue;
+      var r = dragCarte.rects[k];
+      if (centre > r.top + r.height / 2) cible++;
+    }
+    if (cible === dragCarte.cible) return;
+    dragCarte.cible = cible;
+    // Les autres cartes s'écartent d'une place, dans le bon sens.
+    for (var j = 0; j < dragCarte.cartes.length; j++) {
+      var c = dragCarte.cartes[j];
+      if (c === dragCarte.carte) continue;
+      var t = "";
+      if (dragCarte.i0 < cible && j > dragCarte.i0 && j <= cible) t = "translateY(" + (-dragCarte.pas) + "px)";
+      else if (dragCarte.i0 > cible && j >= cible && j < dragCarte.i0) t = "translateY(" + dragCarte.pas + "px)";
+      c.style.transform = t;
+    }
+  }
+  function dragTermine(applique) {
+    if (!dragCarte) return;
+    var geste = dragCarte;
+    dragNettoyer();
+    dragCarte = null;
+    geste.carte.classList.remove("drag");
+    document.getElementById("liste-profils").classList.remove("geste");
+    document.body.classList.remove("drag-carte");
+    // Un vrai déplacement : le clic relâché juste après ne doit pas ouvrir
+    // l'horaire. Un appui long sans mouvement, lui, reste un clic.
+    if (geste.actif && geste.bouge) {
+      dragClic = true;
+      setTimeout(function () { dragClic = false; }, 400);
+    }
+    if (!geste.actif) return;
+    if (applique && geste.cible !== geste.i0 && placerProfil(geste.id, geste.cible)) {
+      rendreListeProfils();
+      rendreSeg();
+    } else {
+      rendreListeProfils(); // pose la carte (ou la remet en place)
+    }
+  }
+  function dragAnnule(e) {
+    if (dragCarte && e && e.pointerId !== dragCarte.pointerId) return;
+    dragTermine(false);
+  }
+  function dragLache(e) {
+    if (dragCarte && e.pointerId !== dragCarte.pointerId) return;
+    dragTermine(true);
+  }
+  document.getElementById("liste-profils").addEventListener("pointerdown", function (e) {
+    if (dragCarte || profils.length < 2) return;
+    if (e.button && e.button !== 0) return; // bouton droit : menu natif
+    var carte = e.target.closest(".pcard");
+    if (!carte || e.target.closest(".dots, .ppop")) return;
+    // Sans ce stop, la feuille prendrait ce doigt pour un glissé de fermeture.
+    e.stopPropagation();
+    var i0 = -1, cartes = cartesProfils();
+    for (var k = 0; k < cartes.length; k++) if (cartes[k] === carte) i0 = k;
+    if (i0 < 0) return;
+    var r = carte.getBoundingClientRect();
+    dragCarte = {
+      id: carte.getAttribute("data-carte"), carte: carte, cartes: cartes, i0: i0,
+      cible: i0, pas: r.height + 8, hauteur: r.height,
+      rects: cartes.map(function (c) { return c.getBoundingClientRect(); }),
+      x0: e.clientX, y0: e.clientY, pointerId: e.pointerId,
+      tactile: e.pointerType !== "mouse", actif: false, bouge: false
+    };
+    if (dragCarte.tactile) dragTimer = setTimeout(dragSoulever, APPUI_LONG);
+    window.addEventListener("pointermove", dragBouge, { passive: false });
+    window.addEventListener("pointerup", dragLache);
+    window.addEventListener("pointercancel", dragAnnule);
+  });
   document.getElementById("liste-profils").addEventListener("click", function (e) {
     // Stoppe ici : chaque tap re-rend la liste (la cible est détachée),
     // et le détecteur de clic-extérieur fermerait la feuille par erreur.
     e.stopPropagation();
+    if (dragClic) { dragClic = false; e.preventDefault(); return; }
     var a = e.target.closest("[data-act]");
     if (a) {
       var id = a.getAttribute("data-id"), act = a.getAttribute("data-act");
-      if (act === "modifier") modifierProfil(id);
+      if (act === "monter") deplacerProfil(id, -1);
+      else if (act === "descendre") deplacerProfil(id, 1);
+      else if (act === "modifier") modifierProfil(id);
       else if (act === "supprimer") { fermerMenus(); supprimerProfil(id); }
       return;
     }
@@ -6080,7 +6763,10 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     if (feuille.classList.contains("visible")) fermerFeuille(); else ouvrirFeuille();
   });
   document.addEventListener("keydown", function (e) {
-    if (e.key !== "Escape" || confirmationOuverte() || editionOuverte()) return;
+    if (e.key !== "Escape") return;
+    if (bugOuvert()) { fermerBug(); return; }
+    if (confirmationOuverte() || editionOuverte()) return;
+    if (dragCarte) { dragTermine(false); return; } // Échap repose la carte
     if (menusOuverts()) { fermerMenus(); return; } // Échap ferme d'abord le menu, puis les réglages
     fermerFeuille(); fermerPop();
   });
@@ -6163,6 +6849,269 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       });
     });
   });
+  /* ---------- Signaler un bug / faire une demande ----------
+     Boutons : coccinelle de la feuille (#btn-bug-compte), pied de page
+     (#lien-bug-footer) et petits liens de chaque étape ([data-bug], pour
+     les comptes pas encore créés). Un rail Bug / Demande en haut de la
+     fenêtre choisit le type (data-bug-type="demande" sur un lien l'ouvre
+     directement en demande). La fenêtre montre l'email du compte
+     quand il existe, sinon rien n'est demandé. Les captures sont
+     compressées (max 1280 px, JPEG) puis téléversées vers le bucket privé
+     `bug-images` ; /api/bugs ne reçoit que leurs chemins. */
+  var BUG_MAX_IMAGES = 3, BUG_TAILLE_MAX = 1280;
+  var bugImages = []; // {blob, url} après compression
+  var bugEtape = "";
+  var bugType = "bug"; // "bug" | "demande"
+  var BUG_TEXTE = {
+    bug: { titre: "Signaler un bug", label: "Que se passe-t-il ?",
+      placeholder: "ex. Mon horaire de bac 2 info affiche les cours de l'an dernier depuis lundi…",
+      vide: "Décris le bug en quelques mots.", merci: "Merci, c'est envoyé. On s'en occupe." },
+    demande: { titre: "Faire une demande", label: "Qu'aimerais-tu ?",
+      placeholder: "ex. Pouvoir comparer deux horaires côte à côte, ou ajouter mon école…",
+      vide: "Décris ta demande en quelques mots.", merci: "Merci, c'est noté. On y jettera un œil." }
+  };
+  function definirBugType(t) {
+    if (t !== "demande") t = "bug";
+    bugType = t;
+    var rail = document.getElementById("bug-rail");
+    if (rail) {
+      rail.style.setProperty("--idx", t === "demande" ? "1" : "0");
+      Array.prototype.forEach.call(rail.querySelectorAll("[data-bug-type]"), function (b) {
+        b.setAttribute("aria-selected", b.getAttribute("data-bug-type") === t ? "true" : "false");
+      });
+    }
+    var txt = BUG_TEXTE[t];
+    document.getElementById("bug-titre").textContent = txt.titre;
+    document.getElementById("bug-message-label").textContent = txt.label;
+    document.getElementById("bug-message").placeholder = txt.placeholder;
+  }
+  function bugEmail() {
+    var direct = (sessionSupabase && sessionSupabase.user) || AUTH.user || null;
+    return String((compte && compte.email) || (direct && direct.email) || "").trim();
+  }
+  function bugEtapeCourante() {
+    // L'écran affiché fait foi (vue = compte/identite/ecole/…/horaire).
+    if (typeof vue === "string" && vue) return "v-" + vue;
+    return "";
+  }
+  function bugContexte(prefill) {
+    var ctx = {};
+    try {
+      ctx.ua = String(navigator.userAgent || "").slice(0, 200);
+      ctx.largeur = window.innerWidth || 0;
+      if (choix && choix.ecole) ctx.ecole = choix.ecole;
+      if (choix && choix.formation) ctx.formation = String(choix.formation).slice(0, 160);
+      if (prefill) ctx.donnee = String(prefill).slice(0, 300);
+    } catch (e) { /* jetable */ }
+    return ctx;
+  }
+  function bugOuvert() {
+    var v = document.getElementById("voile-bug");
+    return !!v && !v.hidden;
+  }
+  function ouvrirBug(premiere, typeVoulu) {
+    bugEtape = bugEtapeCourante();
+    definirBugType(typeVoulu === "demande" || typeVoulu === "bug" ? typeVoulu : bugType);
+    var ligne = document.getElementById("bug-email-ligne");
+    var email = bugEmail();
+    if (email) {
+      ligne.hidden = false;
+      ligne.innerHTML = "";
+      ligne.appendChild(document.createTextNode("Envoyé en tant que "));
+      var fort = document.createElement("strong");
+      fort.textContent = email;
+      ligne.appendChild(fort);
+    } else {
+      ligne.hidden = true;
+      ligne.innerHTML = "";
+    }
+    if (premiere) {
+      var zone = document.getElementById("bug-message");
+      var pre = String(premiere).slice(0, 300);
+      if (pre && !zone.value) zone.value = pre;
+    }
+    statutBug("", false);
+    var voile = document.getElementById("voile-bug");
+    voile.classList.remove("sortie");
+    voile.hidden = false;
+    document.body.classList.add("confirm-ouverte");
+    setTimeout(function () {
+      try { document.getElementById("bug-message").focus({ preventScroll: true }); } catch (e) {
+        document.getElementById("bug-message").focus();
+      }
+    }, 60);
+  }
+  function fermerBug(sansAnim) {    var voile = document.getElementById("voile-bug");
+    function fin() {
+      voile.hidden = true;
+      voile.classList.remove("sortie");
+      document.body.classList.remove("confirm-ouverte");
+      if (document.activeElement && voile.contains(document.activeElement)) {
+        try { document.activeElement.blur(); } catch (e) {}
+      }
+    }
+    if (sansAnim) fin();
+    else { voile.classList.add("sortie"); setTimeout(fin, 180); }
+  }
+  function statutBug(msg, erreur) {
+    var el = document.getElementById("bug-status");
+    el.textContent = msg || "";
+    el.className = !msg ? "" : (erreur ? "erreur" : "ok");
+  }
+  function rendreBugApercus() {
+    var zone = document.getElementById("bug-apercus");
+    zone.innerHTML = "";
+    bugImages.forEach(function (img, i) {
+      var fig = document.createElement("div");
+      fig.className = "bug-apercu";
+      var im = document.createElement("img");
+      im.src = img.url;
+      im.alt = "Capture " + (i + 1);
+      fig.appendChild(im);
+      var suppr = document.createElement("button");
+      suppr.type = "button";
+      suppr.setAttribute("aria-label", "Retirer l'image " + (i + 1));
+      suppr.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+      suppr.addEventListener("click", function () {
+        try { URL.revokeObjectURL(bugImages[i].url); } catch (e) {}
+        bugImages.splice(i, 1);
+        rendreBugApercus();
+      });
+      fig.appendChild(suppr);
+      zone.appendChild(fig);
+    });
+    document.getElementById("bug-compte").textContent = bugImages.length + " / " + BUG_MAX_IMAGES;
+  }
+  function compresserImage(fichier) {
+    return new Promise(function (ok, ko) {
+      var url = URL.createObjectURL(fichier);
+      var img = new Image();
+      img.onload = function () {
+        try { URL.revokeObjectURL(url); } catch (e) {}
+        var l = img.naturalWidth || 0, h = img.naturalHeight || 0;
+        if (!l || !h) return ko(new Error("image illisible"));
+        var k = Math.min(1, BUG_TAILLE_MAX / Math.max(l, h));
+        var c = document.createElement("canvas");
+        c.width = Math.max(1, Math.round(l * k));
+        c.height = Math.max(1, Math.round(h * k));
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        if (c.toBlob) c.toBlob(function (b) {
+          if (b) ok(b); else ko(new Error("image illisible"));
+        }, "image/jpeg", 0.82);
+        else ko(new Error("image illisible"));
+      };
+      img.onerror = function () { try { URL.revokeObjectURL(url); } catch (e) {} ko(new Error("image illisible")); };
+      img.src = url;
+    });
+  }
+  document.getElementById("bug-fichiers").addEventListener("change", function (e) {
+    var fichiers = Array.prototype.slice.call(e.target.files || []);
+    e.target.value = "";
+    if (!fichiers.length) return;
+    var reste = BUG_MAX_IMAGES - bugImages.length;
+    if (fichiers.length > reste) {
+      statutBug(reste > 0 ? "3 images maximum." : "3 images maximum : retire-en une d'abord.", true);
+      fichiers = fichiers.slice(0, Math.max(0, reste));
+    } else {
+      statutBug("", false);
+    }
+    (function suivante(i) {
+      if (i >= fichiers.length) { rendreBugApercus(); return; }
+      compresserImage(fichiers[i]).then(function (blob) {
+        bugImages.push({ blob: blob, url: URL.createObjectURL(blob) });
+        suivante(i + 1);
+      }, function () {
+        statutBug("Une image est illisible, elle a été ignorée.", true);
+        suivante(i + 1);
+      });
+    })(0);
+  });
+  function uuid() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+      var r = Math.random() * 16 | 0;
+      return (c === "x" ? r : (r & 0x3 | 0x8)).toString(16);
+    });
+  }
+  document.getElementById("boite-bug").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var zone = document.getElementById("bug-message");
+    var message = zone.value.replace(/\s+/g, " ").trim();
+    if (message.length < 3) {
+      statutBug(BUG_TEXTE[bugType].vide, true);
+      zone.focus();
+      return;
+    }
+    var btn = document.getElementById("bug-envoyer");
+    btn.disabled = true;
+    statutBug("Envoi en cours…", false);
+    function envoyer(chemins) {
+      var prefill = "";
+      try {
+        if (bugEtape === "v-formation") {
+          var q = document.getElementById("recherche");
+          if (q && q.value.trim()) prefill = "Recherche : " + q.value.trim();
+        }
+      } catch (err) { /* jetable */ }
+      var corps = {
+        message: message, etape: bugEtape, email: bugEmail(), type: bugType,
+        contexte: bugContexte(prefill), image_urls: chemins,
+        site_web: document.getElementById("bug-site-web").value || ""
+      };
+      var entetes = { "Content-Type": "application/json" };
+      if (sessionSupabase && sessionSupabase.access_token) {
+        entetes.Authorization = "Bearer " + sessionSupabase.access_token;
+      }
+      return fetch("api/bugs", {
+        method: "POST", cache: "no-store",
+        headers: entetes, body: JSON.stringify(corps)
+      }).then(function (r) {
+        return r.json().catch(function () { throw new Error("réponse illisible (" + r.status + ")."); });
+      }).then(function (rep) {
+        if (!rep.ok) throw new Error(rep.erreur || "réponse incomplète.");
+      });
+    }
+    // 1) téléverser les captures (noms imprévisibles), 2) déposer le report.
+    (function televerser(i, chemins) {
+      if (i >= bugImages.length) return envoyer(chemins);
+      if (!SUPABASE_OK || !sb) return Promise.reject(new Error("connexion au serveur impossible."));
+      var chemin = uuid() + ".jpg";
+      return sb.storage.from("bug-images").upload(chemin, bugImages[i].blob, {
+        contentType: "image/jpeg", upsert: false
+      }).then(function (res) {
+        if (res.error) throw new Error("images refusées par le serveur.");
+        chemins.push(chemin);
+        return televerser(i + 1, chemins);
+      });
+    })(0, []).then(function () {
+      statutBug(BUG_TEXTE[bugType].merci, false);
+      zone.value = "";
+      bugImages.forEach(function (img) { try { URL.revokeObjectURL(img.url); } catch (e2) {} });
+      bugImages = [];
+      rendreBugApercus();
+      setTimeout(function () { fermerBug(); }, 900);
+    }, function (err) {
+      statutBug("Échec de l'envoi : " + (err && err.message ? err.message : "réessaie.") + " Tes mots et images sont gardés.", true);
+    }).then(function () { btn.disabled = false; });
+  });
+  document.getElementById("bug-annuler").addEventListener("click", function () { fermerBug(); });
+  document.getElementById("voile-bug").addEventListener("click", function (e) {
+    if (e.target === this) fermerBug();
+  });
+  /* La feuille du compte reste ouverte derrière la fenêtre : on la
+     retrouve telle quelle après « Annuler ». */
+  Array.prototype.forEach.call(document.querySelectorAll("#bug-rail [data-bug-type]"), function (b) {
+    b.addEventListener("click", function () { definirBugType(b.getAttribute("data-bug-type")); });
+  });
+  document.getElementById("btn-bug-compte").addEventListener("click", function () {
+    ouvrirBug("", "");
+  });
+  document.getElementById("lien-bug-footer").addEventListener("click", function () {
+    ouvrirBug("", "");
+  });
+  Array.prototype.forEach.call(document.querySelectorAll("[data-bug]"), function (b) {
+    b.addEventListener("click", function () { ouvrirBug("", b.getAttribute("data-bug-type") || ""); });
+  });
   /* Mise à jour depuis l'école : automatique à l'ouverture et au retour
      sur l'app après 10 min (recharger la page suffit toujours).
      Une réponse plus ancienne que ce qui est affiché est ignorée : deux
@@ -6193,6 +7142,8 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       actualiser().catch(function () { /* on garde ce qui est affiché */ });
     }
   });
+  // Page quittée ou onglet mis de côté : le brouillon d'ajout part avec.
+  window.addEventListener("pagehide", function () { sauverBrouillon(); });
 
   /* Rechargement manuel : un appui sur le logo du haut relance l'app.
      Animation de départ (~0,26 s) puis rechargement ; la nouvelle page
@@ -6290,6 +7241,9 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     return null;
   }).then(function () {
     demarrageFini = true;
+    // Visiteur sans compte : c'est une arrivée dans l'app (le retour d'un
+    // OAuth a une session, donc n'est pas recompté).
+    if (!MODE_ESSAI && !sessionSupabase && window.EZH_SUIVI) EZH_SUIVI.arrivee("app");
     if (MODE_ESSAI) {
       // Pas de connexion : un compte local de circonstance, pas de synchro.
       if (!compte || compte.fournisseur !== "essai") {
@@ -6303,7 +7257,8 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       badge.textContent = "Mode essai — aucun compte, tout reste ici";
       document.body.appendChild(badge);
       rendreAvatar();
-      if (profil) demarrerHoraire();
+      if (reprendreBrouillon()) { /* l'ajout en cours reprend */ }
+      else if (profil) demarrerHoraire();
       else ouvrirEcoles();
       return;
     }
@@ -6313,6 +7268,8 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     } else if (!connecte()) {
       if (compte) ouvrirIdentite();
       else ouvrirCompte();
+    } else if (reprendreBrouillon()) {
+      // On reprend la création d'horaire là où elle en était.
     } else if (profil) {
       demarrerHoraire();
     } else {

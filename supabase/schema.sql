@@ -142,6 +142,9 @@ as $$
 declare
   recentes integer;
 begin
+  -- Date posée par la base (même raison que limiter_evenements) : sans
+  -- ça, antidater une ligne la ferait sortir du comptage des 24 h.
+  new.created_at := now();
   new.ecole     := left(new.ecole, 120);
   new.formation := left(new.formation, 160);
   new.profil_id := left(new.profil_id, 120);
@@ -177,6 +180,398 @@ begin
   return supprimees;
 end $$;
 
+-- Entretien réservé au serveur : sans ça, n'importe qui peut appeler la
+-- purge à distance et avancer la suppression des statistiques.
+revoke all on function public.purger_visites(integer) from public, anon, authenticated;
+grant execute on function public.purger_visites(integer) to service_role;
+
 -- Si l'extension pg_cron est activée, planifier la purge (à décommenter) :
 -- select cron.schedule('ezh-purge-visites', '17 4 * * *',
 --                      'select public.purger_visites(180)');
+
+-- ---------------------------------------------------------------
+-- EzHoraire — reports de bug et demandes (rail Bug / Demande de la
+-- fenêtre de signalement : `type` vaut 'bug' ou 'demande').
+-- Une ligne = un signalement (connecté ou anonyme : user_id / email
+-- peuvent être vides). Les images vont dans le bucket `bug-images`,
+-- la ligne ne garde que leurs chemins (image_urls).
+-- Écriture : via /api/bugs (clé service_role côté serveur) — aucune
+-- politique INSERT publique, le serveur valide et limite le débit.
+-- Lecture : interdite côté app, dashboard admin seul (via /api/bugs).
+-- Rejouable : table + colonne + contrainte + bucket recréés à chaque passage.
+-- ---------------------------------------------------------------
+create table if not exists public.bug_reports (
+  id         bigint      generated always as identity primary key,
+  created_at timestamptz not null default now(),
+  user_id    uuid        references auth.users (id) on delete set null,
+  email      text        not null default '',
+  message    text        not null default '',
+  etape      text        not null default '',
+  type       text        not null default 'bug',
+  contexte   jsonb       not null default '{}'::jsonb,
+  statut     text        not null default 'nouveau',
+  image_urls text[]      not null default '{}'
+);
+
+-- Bases créées avant le rail Bug / Demande : la colonne manque, on
+-- l'ajoute (les anciens reports restent des bugs).
+alter table public.bug_reports
+  add column if not exists type text not null default 'bug';
+
+alter table public.bug_reports enable row level security;
+
+-- Pas de politique SELECT / INSERT : personne n'écrit ni ne lit depuis
+-- l'app avec la clé anon. Le backend (service_role) contourne la RLS.
+-- Les anciennes politiques INSERT publiques, si elles existent (v1
+-- directe), sont retirées pour refermer l'écriture directe.
+drop policy if exists "bug_reports_insert_public" on public.bug_reports;
+drop policy if exists "bug_reports_insert_propres" on public.bug_reports;
+drop policy if exists "bug_reports_select_propres" on public.bug_reports;
+
+do $$
+begin
+  if exists (select 1 from pg_constraint where conname = 'bug_reports_bornes') then
+    alter table public.bug_reports drop constraint bug_reports_bornes;
+  end if;
+  alter table public.bug_reports add constraint bug_reports_bornes check (
+    char_length(email) <= 320
+    and char_length(message) >= 3
+    and char_length(message) <= 5000
+    and char_length(etape) <= 40
+    and type in ('bug', 'demande')
+    and statut in ('nouveau', 'en_cours', 'corrige')
+    and coalesce(array_length(image_urls, 1), 0) <= 3
+    and octet_length(contexte::text) <= 8000
+  );
+end
+$$;
+
+create index if not exists idx_bugs_date on public.bug_reports (created_at desc);
+create index if not exists idx_bugs_statut on public.bug_reports (statut, created_at desc);
+create index if not exists idx_bugs_type on public.bug_reports (type, created_at desc);
+
+-- Bucket privé des captures jointes aux reports. Écriture directe depuis
+-- l'app avec la clé anon (chemins imprévisibles uuid/…), lecture via URLs
+-- signées fabriquées par /api/bugs (service_role).
+insert into storage.buckets (id, name, public)
+values ('bug-images', 'bug-images', false)
+on conflict (id) do update set public = false;
+
+-- Bornes du bucket : uniquement des images, 5 Mo max. Sans elles, un
+-- anonyme peut y pousser n'importe quoi (taille et type libres) jusqu'à
+-- remplir le stockage.
+update storage.buckets
+set file_size_limit = 5242880,
+    allowed_mime_types = array['image/jpeg', 'image/png', 'image/webp',
+                               'image/gif', 'image/heic', 'image/heif']
+where id = 'bug-images';
+
+drop policy if exists "bug-images_insert_anon" on storage.objects;
+create policy "bug-images_insert_anon" on storage.objects
+  for insert to anon, authenticated with check (
+    bucket_id = 'bug-images'
+    -- Seul le chemin que l'app fabrique (uuid.jpg, à la racine) passe :
+    -- pas de dossiers ni de noms choisis par un client trafiqué.
+    and name ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.jpg$'
+  );
+
+-- L'app dépose toujours un chemin neuf (uuid) et n'écrase jamais : la
+-- politique UPDATE (qui permettait de remplacer une capture existante)
+-- est retirée. Rejouable : on la supprime si une base l'a encore.
+drop policy if exists "bug-images_update_anon" on storage.objects;
+
+-- ---------------------------------------------------------------
+-- EzHoraire — parcours anonyme : arrivée → clic → compte créé.
+-- Une ligne = un événement d'une visite (arrivée sur la page
+-- d'accueil, clic « Ouvrir l'app », clic de connexion, erreur, compte
+-- créé, identité complétée, sortie). L'app (suivi.js) l'insère seule,
+-- en arrière-plan.
+--
+-- Aucun identifiant de personne : session_id est un nombre aléatoire
+-- gardé par l'onglet (sessionStorage) et jamais relié à un compte —
+-- la table n'a volontairement pas de user_id. Lecture interdite côté
+-- app : seul /api/stats (clé service_role) agrège, via la fonction
+-- stats_evenements() ci-dessous. Rejouable.
+-- ---------------------------------------------------------------
+create table if not exists public.evenements (
+  id           bigint      generated always as identity primary key,
+  created_at   timestamptz not null default now(),
+  session_id   text        not null,
+  page         text        not null default '',  -- accueil | app
+  ecran        text        not null default '',  -- compte | identite | ecole | formation | groupes | horaire
+  evenement    text        not null,             -- arrivee | clic_app | clic_connexion | connexion_erreur | compte_cree | connexion_ok | identite_ok | etape | friction | horaire_ok | sortie | capture_choisie | capture_lue | analyse
+  fournisseur  text        not null default '',  -- google | github | apple | email
+  erreur       text        not null default '',  -- code stable (email_invalide, recherche_0, capture_vide…)
+  duree_ms     integer     not null default 0,   -- sortie : temps actif cumulé de la page
+  interactions smallint    not null default 0,   -- clics + touches depuis l'arrivée
+  details      jsonb       not null default '{}'::jsonb
+);
+
+-- Bases créées avant une colonne : l'ajouter sans rien casser.
+alter table public.evenements add column if not exists version text not null default '';
+
+alter table public.evenements enable row level security;
+
+-- Insertion seule, y compris anonyme (l'arrivée précède la connexion).
+drop policy if exists "evenements_insert" on public.evenements;
+create policy "evenements_insert" on public.evenements
+  for insert to anon, authenticated with check (true);
+
+-- Pas de politique SELECT / UPDATE / DELETE : la table ne se lit que
+-- côté serveur (service_role), pour le dashboard admin.
+
+create index if not exists idx_evenements_date on public.evenements (created_at desc);
+create index if not exists idx_evenements_session on public.evenements (session_id, created_at);
+
+-- Plafond et bornes (rejouable) : l'écriture est ouverte aux anonymes,
+-- la table n'a pas à stocker des kilomètres de texte ni des milliers de
+-- lignes pour une même visite. 150 événements / 24 h couvrent large :
+-- une création de compte complète en produit une vingtaine.
+create or replace function public.limiter_evenements()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  dans_session integer;
+begin
+  -- La date est posée par la base, jamais par le client : un client
+  -- trafiqué ne peut ni antidater (ça contournerait le plafond 24 h)
+  -- ni dater dans le futur (ça fausserait les courbes par jour).
+  new.created_at   := now();
+  new.session_id   := left(new.session_id, 64);
+  new.page         := left(new.page, 20);
+  new.ecran        := left(new.ecran, 24);
+  new.evenement    := left(new.evenement, 24);
+  new.fournisseur  := left(new.fournisseur, 16);
+  new.erreur       := left(new.erreur, 40);
+  new.version      := left(new.version, 16);
+  new.duree_ms     := greatest(0, least(new.duree_ms, 86400000));
+  new.interactions := greatest(0, least(new.interactions, 10000));
+  if octet_length(new.details::text) > 2000 then
+    new.details := '{}'::jsonb;
+  end if;
+
+  if char_length(new.session_id) < 8 then
+    raise exception 'Événement invalide.';
+  end if;
+  -- Liste blanche : un client peut écrire, pas inventer des noms
+  -- d'événements pour polluer le dashboard.
+  if new.evenement not in (
+      'arrivee', 'clic_app', 'clic_connexion', 'connexion_erreur',
+      'compte_cree', 'connexion_ok', 'identite_ok', 'etape', 'friction',
+      'horaire_ok', 'sortie', 'capture_choisie', 'capture_lue', 'analyse') then
+    raise exception 'Événement inconnu : %', new.evenement;
+  end if;
+
+  select count(*) into dans_session
+  from public.evenements
+  where session_id = new.session_id
+    and created_at > now() - interval '24 hours';
+
+  if dans_session >= 150 then
+    raise exception 'Trop d''événements pour cette visite.';
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists trg_evenements_limite on public.evenements;
+create trigger trg_evenements_limite
+  before insert on public.evenements
+  for each row execute function public.limiter_evenements();
+
+-- Purge : 90 jours (les événements sont ~10 x plus nombreux que les
+-- visites, qui restent à 180). À planifier comme celle des visites.
+create or replace function public.purger_evenements(jours integer default 90)
+returns bigint
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  supprimees bigint;
+begin
+  delete from public.evenements
+  where created_at < now() - make_interval(days => greatest(jours, 30));
+  get diagnostics supprimees = row_count;
+  return supprimees;
+end $$;
+
+-- Entretien réservé au serveur (même raison que purger_visites).
+revoke all on function public.purger_evenements(integer) from public, anon, authenticated;
+grant execute on function public.purger_evenements(integer) to service_role;
+
+-- Agrégation pour /api/stats : la base calcule, l'API transmet. Sans ça,
+-- tirer les lignes brutes multiplierait les allers-retours et dépasserait
+-- les plafonds de api/stats.py en quelques semaines.
+-- SECURITY DEFINER : la fonction lit la table malgré la RLS, donc son
+-- exécution est retirée à anon / authenticated (sinon n'importe qui
+-- pourrait lire les statistiques agrégées de tout le monde).
+create or replace function public.stats_evenements(jours integer default 30)
+returns jsonb
+language sql
+security definer
+stable
+set search_path = public
+as $$
+with periode as (
+  select *
+  from public.evenements
+  where created_at >= now() - make_interval(days => greatest(least(jours, 365), 1))
+),
+sess as (
+  select
+    session_id,
+    count(*)                                            as evenements,
+    bool_or(interactions > 0)                           as a_interagi,
+    bool_or(evenement = 'sortie')                       as a_sortie,
+    max(duree_ms)                                       as duree_max,
+    sum(duree_ms)                                       as duree_totale,
+    bool_or(evenement = 'arrivee')                      as arrivee,
+    bool_or(evenement = 'arrivee' and page = 'accueil') as arrivee_accueil,
+    bool_or(evenement = 'arrivee' and page = 'app')     as arrivee_app,
+    bool_or(evenement = 'clic_app')                     as clic_app,
+    bool_or(evenement = 'clic_connexion')               as clic_connexion,
+    bool_or(evenement = 'compte_cree')                  as compte,
+    bool_or(evenement = 'connexion_ok')                 as connexion,
+    bool_or(evenement = 'identite_ok')                  as identite,
+    bool_or(evenement = 'etape' and ecran = 'ecole')    as etape_ecole,
+    bool_or(evenement = 'etape' and ecran = 'formation') as etape_formation,
+    bool_or(evenement = 'etape' and ecran = 'groupes')  as etape_groupes,
+    bool_or(evenement = 'horaire_ok')                   as horaire_ok
+  from periode
+  group by session_id
+),
+ok as (
+  -- Bots / aperçus de liens : une sortie de moins de 2 s sans aucune
+  -- interaction. Une visite sans sortie (onglet tué sans pagehide) est
+  -- gardée : impossible de la distinguer d'un vrai départ.
+  select * from sess
+  where a_interagi or not a_sortie or duree_max >= 2000
+),
+jours_serie as (
+  select generate_series(
+    (now() - make_interval(days => greatest(least(jours, 365), 1) - 1))::date,
+    now()::date, interval '1 day')::date as j
+),
+jour as (
+  select
+    p.created_at::date as j,
+    count(distinct p.session_id) filter (where p.evenement = 'arrivee')        as arrivees,
+    count(distinct p.session_id) filter (where p.evenement = 'clic_app')       as clics_app,
+    count(distinct p.session_id) filter (where p.evenement = 'clic_connexion') as clics_connexion,
+    count(distinct p.session_id) filter (where p.evenement = 'compte_cree')    as comptes
+  from periode p
+  join ok using (session_id)
+  group by 1
+),
+fournisseur as (
+  select
+    p.fournisseur,
+    count(distinct p.session_id) filter (where p.evenement = 'clic_connexion') as clics,
+    count(distinct p.session_id) filter (where p.evenement = 'compte_cree')    as comptes
+  from periode p
+  join ok using (session_id)
+  where p.fournisseur <> ''
+  group by 1
+  order by 2 desc, 3 desc
+),
+versions as (
+  select
+    p.version,
+    count(distinct p.session_id) filter (where p.evenement = 'arrivee')    as arrivees,
+    count(distinct p.session_id) filter (where p.evenement = 'compte_cree') as comptes,
+    count(distinct p.session_id) filter (where p.evenement = 'horaire_ok')  as horaires
+  from periode p
+  join ok using (session_id)
+  where p.version <> ''
+  group by 1
+  order by 2 desc, 3 desc
+  limit 10
+),
+derniers as (
+  select distinct on (p.session_id) p.session_id, p.evenement, p.ecran, p.page
+  from periode p
+  join ok using (session_id)
+  order by p.session_id, p.created_at desc, p.id desc
+),
+arrets as (
+  select
+    case
+      when evenement = 'sortie' then coalesce(nullif(ecran, ''), page)
+      when evenement = 'etape' then coalesce(nullif(ecran, ''), 'etape')
+      else evenement
+    end as etape,
+    count(*) as n
+  from derniers
+  group by 1
+  order by 2 desc
+  limit 20
+),
+erreurs as (
+  -- Erreurs de connexion et frictions du parcours (recherche vide,
+  -- capture illisible, API en échec…) : comptées par visite.
+  select
+    p.erreur,
+    coalesce(nullif(p.ecran, ''), '') as ecran,
+    count(distinct p.session_id) as n,
+    max(p.created_at) as dernier
+  from periode p
+  join ok using (session_id)
+  where p.evenement in ('connexion_erreur', 'friction') and p.erreur <> ''
+  group by 1, 2
+  order by 3 desc
+  limit 15
+)
+select jsonb_build_object(
+  'jours', greatest(least(jours, 365), 1),
+  'totaux', (select jsonb_build_object(
+      'sessions',         count(*),
+      'arrivees',         count(*) filter (where arrivee),
+      'arrivees_accueil', count(*) filter (where arrivee_accueil),
+      'arrivees_app',     count(*) filter (where arrivee_app),
+      'clics_app',        count(*) filter (where clic_app),
+      'clics_connexion',  count(*) filter (where clic_connexion),
+      'comptes',          count(*) filter (where compte),
+      'connexions',       count(*) filter (where connexion),
+      'identites',        count(*) filter (where identite),
+      'ecole',            count(*) filter (where etape_ecole),
+      'formation',        count(*) filter (where etape_formation),
+      'groupes',          count(*) filter (where etape_groupes),
+      'horaires',         count(*) filter (where horaire_ok),
+      'duree_mediane_s',  coalesce(round((percentile_cont(0.5) within group (order by nullif(duree_totale, 0))
+                             / 1000.0)::numeric, 1), 0)
+    ) from ok),
+  'aujourdhui', (select jsonb_build_object(
+      'arrivees',        coalesce(j.arrivees, 0),
+      'clics_connexion', coalesce(j.clics_connexion, 0),
+      'comptes',         coalesce(j.comptes, 0))
+    from jours_serie s left join jour j on j.j = s.j
+    where s.j = now()::date),
+  'par_jour', coalesce((select jsonb_agg(jsonb_build_object(
+      'jour',            s.j,
+      'arrivees',        coalesce(j.arrivees, 0),
+      'clics_app',       coalesce(j.clics_app, 0),
+      'clics_connexion', coalesce(j.clics_connexion, 0),
+      'comptes',         coalesce(j.comptes, 0)) order by s.j)
+    from jours_serie s left join jour j on j.j = s.j), '[]'::jsonb),
+  'par_fournisseur', coalesce((select jsonb_agg(jsonb_build_object(
+      'fournisseur', fournisseur, 'clics', clics, 'comptes', comptes)) from fournisseur), '[]'::jsonb),
+  'par_version', coalesce((select jsonb_agg(jsonb_build_object(
+      'version', version, 'arrivees', arrivees, 'comptes', comptes, 'horaires', horaires)) from versions), '[]'::jsonb),
+  'pages_arret', coalesce((select jsonb_agg(jsonb_build_object(
+      'etape', etape, 'n', n)) from arrets), '[]'::jsonb),
+  'erreurs', coalesce((select jsonb_agg(jsonb_build_object(
+      'erreur', erreur, 'ecran', ecran, 'n', n, 'dernier', dernier)) from erreurs), '[]'::jsonb),
+  'plus_ancien', (select min(created_at) from public.evenements)
+)
+$$;
+
+revoke all on function public.stats_evenements(integer) from public, anon, authenticated;
+grant execute on function public.stats_evenements(integer) to service_role;
+
+-- Si pg_cron est activée, planifier la purge des événements avec celle des
+-- visites (à décommenter, une fois) :
+-- select cron.schedule('ezh-purge-evenements', '23 4 * * *',
+--                      'select public.purger_evenements(90)');

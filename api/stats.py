@@ -7,10 +7,13 @@ agrège avec la clé service_role (jamais exposée au navigateur) :
 
   comptes (auth.admin)  +  cours suivis (table profils)
   +  consultations / jour (table visites)
+  +  parcours anonyme (table evenements, agrégé côté base par
+     stats_evenements() : arrivées, clics de connexion, comptes créés,
+     pages d'arrêt, erreurs) — absent si schema.sql n'a pas été recollé.
 
 Réponse : {"ok": true, "data": {
   "totaux": {...}, "par_jour": [...], "par_formation": [...],
-  "utilisateurs": [...],
+  "utilisateurs": [...], "parcours": {...} | null,
   "limites": {"comptes": bool, "profils": bool, "visites": bool},
   "plus_ancienne_visite": "...", "plus_ancienne_absolue": "..." }}
 
@@ -68,6 +71,15 @@ def _get_pagine(base, chemin, entetes, maximum, pas=1000, timeout=20):
             break
         depart += pas
     return lignes[:maximum]
+
+
+def _post_json(url, entetes, corps, timeout=20):
+    """Appel PostgREST en POST (RPC) : la base agrège, l'API transmet."""
+    donnees = json.dumps(corps).encode("utf-8")
+    req = Request(url, data=donnees, method="POST",
+                  headers=dict(entetes, **{"Content-Type": "application/json"}))
+    with urlopen(req, timeout=timeout) as r:
+        return json.loads(r.read().decode("utf-8") or "null")
 
 
 def _identite(compte):
@@ -203,6 +215,20 @@ class handler(BaseHTTPRequestHandler):
                                     if isinstance(vieille, list) and vieille else "") or ""
             except Exception:  # noqa: BLE001 - indicateur seul, jamais bloquant
                 ancienne_absolue = ""
+
+            # Parcours anonyme : la base calcule, l'API transmet (quelques
+            # kilo-octets, quel que soit le volume). Fonction absente
+            # (schema.sql pas encore recollé) : on continue sans, le
+            # dashboard l'indique au lieu d'échouer.
+            parcours = None
+            try:
+                parcours = _post_json(
+                    base + "/rest/v1/rpc/stats_evenements", h_svc, {"jours": jours})
+            except HTTPError as e:
+                if e.code not in (400, 404):
+                    raise
+            except Exception:  # noqa: BLE001 - indicateur seul, jamais bloquant
+                parcours = None
         except HTTPError as e:  # noqa: BLE001 - clé invalide, table manquante…
             if e.code == 401:
                 return repondre_json(self, 502, {"ok": False, "erreur":
@@ -308,6 +334,7 @@ class handler(BaseHTTPRequestHandler):
             },
             "plus_ancienne_visite": plus_ancienne.isoformat() if plus_ancienne else "",
             "plus_ancienne_absolue": ancienne_absolue,
+            "parcours": parcours,
             "par_jour": [{
                 "jour": j, "visites": par_jour[j]["visites"],
                 "visiteurs": len(par_jour[j]["visiteurs"])} for j in jours_cles],

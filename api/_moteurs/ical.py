@@ -39,6 +39,9 @@ RX_UE = re.compile(r"^[A-Z]{2,6}[0-9]{2,4}$")
 RX_GROUPE = re.compile(
     r"^[A-Z][A-Z0-9-]{1,12}\s*[:(-]"                       # B-DROIB:2, M-CRIMS:1 - PAD5
     r"|groupe|gr\.|s[ée]rie|pad\d|mineure|module|option", re.I)
+RX_TYPE = re.compile(r"^([A-Z]{2,6})\s*:\s*(.+)$")         # « CM: Analyse »
+RX_HORAIRE = re.compile(r"\d{1,2}[h:]\d{2}\s*-\s*\d{1,2}[h:]\d{2}")
+RX_NOTE = re.compile(r"^(répartition|/!\\|étudiants)", re.I)
 
 
 def _fuseau():
@@ -85,18 +88,27 @@ def _url_monhoraire(u):
     Les deux liens de l'export portent le même code : « Lien de partage »
     (/calendar/share?link=…) ouvre la vue, « Lien d'abonnement »
     (/calendar/schedule?link=…) rend le .ics — c'est celui-ci qu'on lit,
-    en recollant l'adresse depuis le code reçu."""
+    en recollant l'adresse depuis le code reçu.
+
+    Le sélecteur « Horaire #n » de l'export ajoute `choice=N` : on le
+    garde, sinon un étudiant avec plusieurs horaires recevrait toujours
+    le premier."""
     chemin = u.path.rstrip("/")
     if chemin not in ("/calendar/schedule", "/calendar/share"):
         raise ValueError("Ce lien Mon horaire (UCLouvain) n'est pas un lien d'abonnement. "
                          "Ouvre « Exporter → Lien d'abonnement » sur monhoraire.uclouvain.be "
                          "et copie le lien en entier.")
-    code = (parse_qs(u.query).get("link") or [""])[0].strip()
+    q = parse_qs(u.query)
+    code = (q.get("link") or [""])[0].strip()
     if not re.fullmatch(r"[A-Za-z0-9_-]{10,200}", code):
         raise ValueError("Ce lien Mon horaire ne contient pas de code d'abonnement "
                          "(« link=… »). Recopie-le depuis « Exporter ».")
+    params = {"link": code}
+    choix = (q.get("choice") or [""])[0].strip()
+    if re.fullmatch(r"\d{1,3}", choix):
+        params["choice"] = choix
     return urlunparse(("https", HOTE_MONHORAIRE, "/calendar/schedule", "",
-                       urlencode({"link": code}), ""))
+                       urlencode(params), ""))
 
 
 def _deplier(texte):
@@ -145,20 +157,55 @@ def _heure(texte):
     return f"{int(m.group(1)):02d}h{m.group(2)}" if m else ""
 
 
-def _analyse_resume(resume, description):
-    """(matière, type, profs, groupes) depuis un résumé TimeEdit.
+def _salle(texte):
+    """« BARB 12 | BARB 13 » -> « BARB 12, BARB 13 » (écriture des écoles)."""
+    return ", ".join(p.strip() for p in str(texte or "").split("|") if p.strip())
 
-    Format observé : « DROIC2007, Théorie, Enseignant: ROMAIN Jean-François,
-    B-DROIB:2 ». D'autres calendriers n'ont qu'un titre : on le garde tel quel
-    et on ne devine ni type ni groupe."""
-    parties = [p.strip() for p in str(resume or "").split(", ") if p.strip()]
+
+def _profs_ucl(description):
+    """Le premier nom après la ligne d'horaires (flux Mon horaire UCLouvain).
+
+    Format observé : code d'activité, horaires, puis enseignant(s), parfois
+    suivi de consignes (« - Etudiants du BARB04… », adresse, « Répartition : »)
+    qu'on ne prend pas pour des noms."""
+    lignes = [l.strip() for l in _texte(description or "").split("\n")]
+    for i, ligne in enumerate(lignes):
+        if not RX_HORAIRE.search(ligne):
+            continue
+        for suite in lignes[i + 1:]:
+            if not suite:
+                continue
+            if suite.startswith("-") or RX_NOTE.match(suite):
+                break
+            return " ".join(suite.split())
+        break
+    return ""
+
+
+def _analyse_resume(resume, description):
+    """(matière, type, profs, groupes) depuis un résumé d'abonnement.
+
+    Deux formats connus :
+    - TimeEdit (ULB) : « DROIC2007, Théorie, Enseignant: ROMAIN, B-DROIB:2 » ;
+    - Mon horaire (UCLouvain) : « CM: Analyse » — le type est préfixé, la
+      matière peut contenir des virgules, les profs sont dans la
+      description sous la ligne d'horaires.
+
+    Un résumé qui ne commence pas par un code n'est pas découpé sur les
+    virgules : le faire tronquerait un titre UCLouvain (« CM: Société,
+    cultures et religions… »)."""
+    brut = " ".join(str(resume or "").split())
+    if not brut:
+        premiere = _texte(description or "").split("\n")[0].strip()
+        return premiere or "Cours", "", "", []
+    parties = [p.strip() for p in brut.split(", ") if p.strip()]
     codes, i = [], 0
     while i < len(parties) and RX_UE.match(parties[i]):
         codes.append(parties[i])
         i += 1
     if not codes:
-        titre = _texte(description or "").split("\n")[0].strip()
-        return (parties[0] if parties else titre) or "Cours", "", "", []
+        m = RX_TYPE.match(brut)
+        return brut, m.group(1) if m else "", _profs_ucl(description), []
     typ = ""
     if i < len(parties) and not parties[i].lower().startswith("enseignant:") and not RX_GROUPE.search(parties[i]):
         typ = parties[i]
@@ -285,7 +332,7 @@ def horaire_ical(lien, budget=30):
         if not fin or fin == "00h00":
             fin = _heure(heure)
         matiere, typ, profs, groupes = _analyse_resume(e.get("summary"), e.get("description"))
-        salles = " ".join(str(e.get("location") or "").split())
+        salles = _salle(e.get("location"))
         cle = (date.weekday(), _heure(heure), fin, matiere, profs, salles, typ,
                tuple(sorted(set(groupes), key=tri_naturel)))
         ligne = cours.get(cle)

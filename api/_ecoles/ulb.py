@@ -22,6 +22,7 @@ from _moteurs.timeedit import ClientTimeEdit  # noqa: E402
 
 BASE = "https://cloud.timeedit.net/be_ulb/web/public"
 NOM = "ULB — Université libre de Bruxelles"
+NOM_COURT = "l'ULB"  # dans les phrases (import, messages)
 SOURCE = "cloud.timeedit.net/be_ulb (horaires publics)"
 PREMIER_LUNDI_DEFAUT = "2026-09-14"  # premier lundi de l'année académique
 ANNEE = "202627"                     # 2026-2027 : filtre des unités d'enseignement

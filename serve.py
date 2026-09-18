@@ -38,6 +38,7 @@ import pdf  # noqa: E402
 import recherche  # noqa: E402
 import config  # noqa: E402
 import stats  # noqa: E402
+import bugs  # noqa: E402
 
 PORT_DEFAUT = 8902
 ROUTES = {"/api/formations": formations.handler,
@@ -47,7 +48,8 @@ ROUTES = {"/api/formations": formations.handler,
           "/api/importer": importer.handler,
           "/api/pdf": pdf.handler,
           "/api/config": config.handler,
-          "/api/stats": stats.handler}
+          "/api/stats": stats.handler,
+          "/api/bugs": bugs.handler}
 
 # En-têtes identiques à vercel.json (garder les deux synchronisés) : le site
 # local doit se comporter comme la production, surtout pour la CSP.
@@ -56,7 +58,7 @@ ROUTES = {"/api/formations": formations.handler,
 CSP = ("default-src 'self'; "
        "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
        "style-src 'self' 'unsafe-inline'; "
-       "img-src 'self' data: blob:; "
+       "img-src 'self' data: blob: https://*.supabase.co; "
        "font-src 'self'; "
        "connect-src 'self' https://*.supabase.co https://cdn.jsdelivr.net; "
        "frame-src blob:; "
@@ -102,9 +104,26 @@ class Handler(SimpleHTTPRequestHandler):
             return None
         return chemin
 
+    def _redirection_app(self):
+        """L'app vit à la racine : /app.html n'existe plus, mais des
+        favoris et des liens d'avant pointent encore dessus. On renvoie
+        vers « / » en gardant les paramètres (?essai=1, par exemple).
+        Même redirection que vercel.json en ligne."""
+        if self.path.split("?")[0] not in ("/app.html", "/app"):
+            return False
+        requete = self.path.split("?", 1)
+        cible = "/" + ("?" + requete[1] if len(requete) > 1 else "")
+        self.send_response(301)
+        self.send_header("Location", cible)
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+        return True
+
     def do_GET(self):
         chemin = self._chemin_autorise()
         if chemin is None:
+            return
+        if self._redirection_app():
             return
         route = ROUTES.get(chemin)
         if route:
@@ -124,9 +143,22 @@ class Handler(SimpleHTTPRequestHandler):
         else:
             self.send_error(405, "Méthode non autorisée")
 
+    def do_PATCH(self):
+        # /api/bugs (changement de statut admin) est le seul PATCH.
+        chemin = self._chemin_autorise()
+        if chemin is None:
+            return
+        route = ROUTES.get(chemin.split("?")[0])
+        if route and hasattr(route, "do_PATCH"):
+            route.do_PATCH(self)
+        else:
+            self.send_error(405, "Méthode non autorisée")
+
     def do_HEAD(self):
         # Même garde que GET : do_HEAD hérité la contournerait entièrement.
         if self._chemin_autorise() is None:
+            return
+        if self._redirection_app():
             return
         super().do_HEAD()
 

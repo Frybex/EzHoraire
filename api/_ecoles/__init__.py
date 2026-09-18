@@ -115,6 +115,9 @@ _DEBIT_MAX = {
     # 6 / min / IP le garde sous le fuse d'instance (400 appels / min),
     # même quand plusieurs imports tombent en même temps.
     "importer": (6, 60.0),
+    # Un report de bug ne coûte rien à l'école, mais l'écriture est ouverte
+    # aux anonymes : 10 / heure / IP suffit aux humains et calme les robots.
+    "bugs": (10, 3600.0),
 }
 _DEBIT = {}  # (point d'entrée, ip) -> deque des horodatages (monotonic)
 _DEBIT_VERROU = threading.Lock()
@@ -162,7 +165,8 @@ def debit(h, cle, erreur):
         while file and maintenant - file[0] > fenetre:
             file.popleft()
         if len(file) >= limite:
-            erreur(429, "Trop de demandes : réessaie dans une minute.")
+            erreur(429, "Trop de demandes : réessaie dans une minute." if fenetre <= 60
+                  else "Trop de demandes : réessaie plus tard.")
             return False
         file.append(maintenant)
         # Ménage occasionnel : le dictionnaire ne grossit pas sans borne

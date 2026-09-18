@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+  <defs>
+    <linearGradient id="t" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#232832"/>
+      <stop offset="1" stop-color="#101216"/>
+    </linearGradient>
+    <radialGradient id="h" cx=".26" cy=".08" r=".9">
+      <stop offset="0" stop-color="#5b86ff33"/>
+      <stop offset="1" stop-color="#5b86ff33" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="c">
+      <rect width="100" height="100" rx="22"/>
+    </clipPath>
+    <linearGradient id="borderGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="rgba(255,255,255,.22)"/>
+      <stop offset=".45" stop-color="rgba(255,255,255,.04)"/>
+      <stop offset="1" stop-color="rgba(0,0,0,.4)"/>
+    </linearGradient>
+  </defs>
+  <rect width="100" height="100" rx="22" fill="url(#t)"/>
+  <rect width="100" height="100" rx="22" fill="url(#h)"/>
+  <g clip-path="url(#c)" stroke="rgba(255,255,255,.06)" stroke-width="1">
+    <path d="M0 22H100"/><path d="M0 34H100"/><path d="M0 44H100"/><path d="M0 56H100"/><path d="M0 66H100"/><path d="M0 78H100"/>
+    <path d="M16 0V100"/><path d="M50 0V100"/><path d="M84 0V100"/>
+  </g>
+  <g>
+    <!-- Cadre extérieur d'accent (comme sur votre croquis Paint) -->
+    <rect x="12" y="12" width="76" height="76" rx="6" fill="none" stroke="#5b86ff" stroke-width="2.5" />
+    <!-- Barre haute pleine largeur intérieure (Blanc) -->
+    <rect x="17" y="20" width="66" height="10" rx="1.5" fill="#f4f5f7" />
+    <!-- Diagonale du Z + Barre centrale du E (Même couleur Accent, arrêt net au centre bas) -->
+    <polygon points="17,45 60,45 70,30 80,30 50,70 40,70 50,55 17,55" fill="#5b86ff" />
+    <!-- Barre basse pleine largeur intérieure (Blanc) -->
+    <rect x="17" y="70" width="66" height="10" rx="1.5" fill="#f4f5f7" />
+  </g>
+  <rect x=".5" y=".5" width="99" height="99" rx="21.5" fill="none" stroke="url(#borderGrad)"/>
+</svg>

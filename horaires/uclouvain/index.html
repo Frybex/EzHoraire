@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#f4f5f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#101216" media="(prefers-color-scheme: dark)">
+<title>Horaire UCLouvain lisible sur téléphone — EzHoraire</title>
+<meta name="description" content="Ton horaire UCLouvain (Louvain-la-Neuve, Bruxelles, Mons) bientôt lisible sur EzHoraire : par programme, par cours ou lien Mon Horaire.">
+<link rel="canonical" href="https://www.ezhoraire.be/horaires/uclouvain/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="EzHoraire">
+<meta property="og:locale" content="fr_BE">
+<meta property="og:url" content="https://www.ezhoraire.be/horaires/uclouvain/">
+<meta property="og:title" content="Horaire UCLouvain lisible sur téléphone — EzHoraire">
+<meta property="og:description" content="UCLouvain Louvain-la-Neuve, Bruxelles, Mons : ouverture progressive sur EzHoraire. Par programme, par cours ou lien Mon Horaire.">
+<meta property="og:image" content="https://www.ezhoraire.be/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+{"@type":"Organization","@id":"https://www.ezhoraire.be/#org","name":"EzHoraire","url":"https://www.ezhoraire.be/","logo":"https://www.ezhoraire.be/icon-512.png"},
+{"@type":"BreadcrumbList","itemListElement":[
+{"@type":"ListItem","position":1,"name":"Accueil","item":"https://www.ezhoraire.be/"},
+{"@type":"ListItem","position":2,"name":"Horaire UCLouvain","item":"https://www.ezhoraire.be/horaires/uclouvain/"}]},
+{"@type":"FAQPage","mainEntity":[
+{"@type":"Question","name":"L'UCLouvain est-elle disponible sur EzHoraire ?","acceptedAnswer":{"@type":"Answer","text":"L'UCLouvain est en ouverture progressive : développée mais pas encore proposée à tout le monde dans l'app. Cette page explique comment elle fonctionnera."}},
+{"@type":"Question","name":"Comment ouvrirai-je mon horaire UCLouvain ?","acceptedAnswer":{"@type":"Answer","text":"Par programme (ex. ingénieur civil, droit bloc 1), par codes de cours (ex. LINFO1101), ou avec ton lien d'abonnement Mon Horaire UCLouvain."}},
+{"@type":"Question","name":"Où trouver mon lien Mon Horaire ?","acceptedAnswer":{"@type":"Answer","text":"Sur monhoraire.uclouvain.be, connecté avec ton identifiant UCLouvain : Exporter, puis Lien d'abonnement. Garde-le pour toi comme un mot de passe."}},
+{"@type":"Question","name":"EzHoraire est-il affilié à l'UCLouvain ?","acceptedAnswer":{"@type":"Answer","text":"Non : projet indépendant, sans affiliation ni soutien de l'UCLouvain."}}
+]}]}
+</script>
+<script>
+try { var _a = localStorage.getItem("ezh_apparence"); if (_a === "clair" || _a === "sombre") document.documentElement.setAttribute("data-apparence", _a); } catch (e) {}
+</script>
+<link rel="stylesheet" href="/legal.css">
+<script defer src="/legal.js"></script>
+<style>
+/* Pas de filets d’accent (ni en haut, ni à gauche) : cases unies, comme l’app. */
+.note { box-shadow: inset 0 0 0 1px var(--line); }
+.note.ok { box-shadow: inset 0 0 0 1px var(--line); }
+</style>
+</head>
+<body>
+<div class="aurore" aria-hidden="true"></div>
+<div class="page">
+  <header class="barre">
+    <a class="marque" href="/" aria-label="EzHoraire, accueil">
+      <svg width="30" height="30" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#232832"/><stop offset="1" stop-color="#101216"/></linearGradient></defs><rect width="100" height="100" rx="20" fill="url(#lg)"/><clipPath id="ezm"><rect y="34.5" width="100" height="31"/></clipPath><path d="M18 26.5A5 5 0 0 1 23 21.5L77 21.5A5 5 0 0 1 82 26.5L82 32.12A7 7 0 0 1 80.55 36.39L62.52 59.87A3.5 3.5 0 0 0 65.3 65.5L77 65.5A5 5 0 0 1 82 70.5L82 73.5A5 5 0 0 1 77 78.5L23 78.5A5 5 0 0 1 18 73.5L18 70.5A5 5 0 0 1 23 65.5L40.08 65.5A3.5 3.5 0 0 0 42.86 64.13L47.23 58.43A1.2 1.2 0 0 0 46.28 56.5L23 56.5A5 5 0 0 1 18 51.5L18 48.5A5 5 0 0 1 23 43.5L58.11 43.5A1.2 1.2 0 0 0 59.06 43.03L64.13 36.43A1.2 1.2 0 0 0 63.17 34.5L23 34.5A5 5 0 0 1 18 29.5Z" fill="#f4f5f7"/><path d="M18 26.5A5 5 0 0 1 23 21.5L77 21.5A5 5 0 0 1 82 26.5L82 32.12A7 7 0 0 1 80.55 36.39L62.52 59.87A3.5 3.5 0 0 0 65.3 65.5L77 65.5A5 5 0 0 1 82 70.5L82 73.5A5 5 0 0 1 77 78.5L23 78.5A5 5 0 0 1 18 73.5L18 70.5A5 5 0 0 1 23 65.5L40.08 65.5A3.5 3.5 0 0 0 42.86 64.13L47.23 58.43A1.2 1.2 0 0 0 46.28 56.5L23 56.5A5 5 0 0 1 18 51.5L18 48.5A5 5 0 0 1 23 43.5L58.11 43.5A1.2 1.2 0 0 0 59.06 43.03L64.13 36.43A1.2 1.2 0 0 0 63.17 34.5L23 34.5A5 5 0 0 1 18 29.5Z" fill="#5b86ff" clip-path="url(#ezm)"/></svg>
+      <span>Ez<span class="ac">Horaire</span></span>
+    </a>
+    <a class="retour" href="/">Ouvrir l'app <span aria-hidden="true">→</span></a>
+  </header>
+  <main>
+    <div class="entete">
+      <p class="sur-titre">Horaire étudiant · UCLouvain · Ouverture progressive</p>
+      <h1>Horaire UCLouvain, <em>bientôt lisible.</em></h1>
+      <p class="chapeau">Étudiant à Louvain-la-Neuve, Bruxelles ou Mons ? La prise en charge <strong>UCLouvain</strong> est développée et s'ouvre progressivement dans EzHoraire : par programme, par codes de cours, ou avec ton lien personnel Mon Horaire. En attendant, les horaires HEH, UMONS et ULB sont déjà ouverts.</p>
+      <p><a class="bouton" href="/">Ouvrir l'app</a></p>
+      <ul class="meta"><li>UCLouvain · Louvain-la-Neuve · Bruxelles · Mons</li><li>Ouverture progressive</li><li>Par programme ou par cours</li></ul>
+    </div>
+    <div class="corps">
+      <nav class="sommaire" aria-label="Sommaire"><details><summary>Sommaire</summary><ol>
+        <li><a href="#statut">Où en est l'ouverture</a></li>
+        <li><a href="#ouvrir">Comment ça marchera</a></li>
+        <li><a href="#lien">Ton lien Mon Horaire</a></li>
+        <li><a href="#attente">En attendant</a></li>
+        <li><a href="#faq">Questions fréquentes</a></li>
+      </ol></details></nav>
+      <div class="texte">
+        <section id="statut">
+          <h2>Où en est l'ouverture</h2>
+          <p>L'UCLouvain est codée mais pas encore publiée pour tout le monde : le serveur ne la propose que progressivement, pour vérifier la qualité des données avant une rentrée complète. Si tu ne la vois pas encore dans l'app, c'est normal — elle arrive. Cette page est là pour que tu saches à quoi t'attendre, et pour que les recherches « horaire UCLouvain lisible » trouvent déjà la réponse.</p>
+        </section>
+        <section id="ouvrir">
+          <h2>Comment ça marchera</h2>
+          <ul>
+            <li><strong>Par programme.</strong> Cherche ton programme par son code (SINF11BA) ou son intitulé (ingénieur civil, droit bloc 1) : l'app liste les cours du programme.</li>
+            <li><strong>Par codes de cours.</strong> Cherche par code (LINFO1101, LDROI1001) et coche les cours que tu suis : idéal pour les horaires à la carte.</li>
+            <li><strong>Mon horaire UCLouvain (lien personnel).</strong> Colle ton lien d'abonnement : ton horaire personnel s'affiche, relu à chaque visite.</li>
+          </ul>
+        </section>
+        <section id="lien">
+          <h2>Ton lien Mon Horaire</h2>
+          <p>Ouvre <a href="https://monhoraire.uclouvain.be/" rel="noopener">monhoraire.uclouvain.be</a>, connecte-toi avec ton identifiant UCLouvain, puis « Exporter » → « Lien d'abonnement », et colle le lien dans EzHoraire quand l'école te sera proposée. Comme pour l'ULB, ce lien donne accès à ton horaire : garde-le pour toi.</p>
+        </section>
+        <section id="attente">
+          <h2>En attendant</h2>
+          <p>Les horaires <a href="/horaires/heh/">HEH</a>, <a href="/horaires/umons/">UMONS</a> et <a href="/horaires/ulb/">ULB</a> sont ouverts : le fonctionnement (semaine claire, groupes, compte gratuit, PDF officiel quand l'école en publie un) sera le même pour l'UCLouvain. Et l'horaire officiel UCLouvain reste la référence, surtout avant un examen.</p>
+          <div class="note"><p><strong>Indépendance :</strong> EzHoraire n'est ni affilié, ni approuvé, ni soutenu par l'UCLouvain.</p></div>
+        </section>
+        <section id="faq">
+          <h2>Questions fréquentes</h2>
+          <h3>Pourquoi je ne vois pas l'UCLouvain dans l'app ?</h3>
+          <p>Parce que l'ouverture est progressive. Réessaie après une mise à jour, ou écris à <a href="mailto:contact@ezhoraire.be">contact@ezhoraire.be</a>.</p>
+          <h3>Ce sera gratuit ?</h3>
+          <p>Oui, comme le reste : sans pub.</p>
+          <p><a class="bouton" href="/">Ouvrir l'app</a></p>
+          <p>Autres écoles : <a href="/horaires/heh/">horaire HEH</a>, <a href="/horaires/umons/">horaire UMONS</a>, <a href="/horaires/ulb/">horaire ULB</a>. Aide : <a href="/aide/">aide EzHoraire</a>.</p>
+        </section>
+      </div>
+    </div>
+  </main>
+  <footer class="pied">
+    <span>© 2026 EzHoraire</span>
+    <nav aria-label="Pages">
+      <a href="/">Accueil</a>
+      <a href="/horaires/heh/">Horaire HEH</a>
+      <a href="/horaires/umons/">Horaire UMONS</a>
+      <a href="/horaires/ulb/">Horaire ULB</a>
+      <a href="/horaires/uclouvain/" aria-current="page">Horaire UCLouvain</a>
+      <a href="/aide/">Aide</a>
+      <a href="/confidentialite.html">Confidentialité</a>
+      <a href="/cgu.html">Conditions d'utilisation</a>
+    </nav>
+  </footer>
+</div>
+</body>
+</html>

@@ -8,14 +8,20 @@ vue publique des horaires.
 À l'UCLouvain, un « code » désigne aussi bien un cours (LINFO1101) qu'un
 programme (SINF11BA) : la même recherche publique répond les deux, et un
 code donne toutes ses séances. Deux façons de composer un horaire :
-- par programme : « SINF11BA · … » — toutes les séances du programme ;
+- par programme : « SINF11BA » — toutes les séances du programme ;
 - par cours (sigles) : la clé commence par « PAR: » et liste des codes
   (« PAR:LINFO1101,LEPL1101 ») — utile pour les cours isolés et les
   programmes à la carte.
 
-L'API change de projet à chaque année académique (year=2026-2027) : elle
-est déduite de la date, avec repli sur l'année précédente tant que la
-nouvelle n'est pas publiée.
+La recherche renvoie des entrées utilisables **telles quelles** : les
+sous-sélections (« DROI11BA - Cours obligatoires ») et les variantes
+(« SINF11BA - anglais ») sont des codes à part entière, avec leurs
+propres séances — les replier sur leur préfixe perdrait la sélection.
+
+L'année académique (year=2026-2027) est déduite de la date. Mon horaire
+l'ignore aujourd'hui (vérifié : 2020-2021 répond la même chose que
+2026-2027) et renvoie ce qui est publié ; le repli sur l'année
+précédente reste en filet si l'API se remet à filtrer par année.
 """
 import json
 import re
@@ -36,8 +42,18 @@ APPELS_PAR_MINUTE = 300   # fuse anti-abus : appels Mon horaire / min / instance
 FENETRE_APPELS = 60.0
 
 RX_UE = re.compile(r"^[A-Z]{2,6}[0-9]{3,4}[A-Z]?$")     # LINFO1101, WFARM2121
-RX_CODE = re.compile(r"^[A-Z][A-Z0-9]*(?:[._-][A-Z0-9]+)*$")
 RX_TYPE = re.compile(r"^([A-Z]{2,6})\s*:\s*(.+)$")
+RX_HORAIRE = re.compile(r"\d{1,2}[h:]\d{2}\s*-\s*\d{1,2}[h:]\d{2}")
+RX_NOTE = re.compile(r"^(répartition|/!\\|étudiants)", re.I)
+# Types d'audience : le code d'activité dit qui est concerné (tout le
+# programme, une faculté…) ou une séance subie (examens, tests, concours,
+# consultations), pas un choix d'étudiant. Sans groupe, le filtre de
+# l'app garde ces séances toujours visibles — rien d'important n'est
+# caché si l'étudiant ne coche que son TP. Seuls TP et LABO restent des
+# choix (groupes de TP, créneaux de labo).
+TYPES_AUDIENCE = {"CM", "EXAM", "OTHER"}
+ERREUR_VIDE = ("Aucun cours pour cette sélection : le code est peut-être inconnu, "
+               "ou l'UCLouvain n'a pas encore publié ces horaires.")
 
 
 def _annee_scolaire(quand=None):
@@ -53,24 +69,38 @@ def _annee_precedente(annee):
 
 
 def _couper(brut):
-    """« DROI11BA - Bachelier en droit bloc 1 » -> ('DROI11BA', 'Bachelier…').
+    """Un code de la recherche, normalisé, prêt à réinterroger Mon horaire.
 
-    Mon horaire mélange les deux ordres (« … - SINC12BA ») et certains
-    codes sont des intitulés (« Approfond. en droit ») : tout ce que la
-    recherche renvoie est un code utilisable, on ne retire que l'intitulé
-    accolé quand il y en a un.
+    La recherche renvoie des codes utilisables **tels quels**, y compris
+    les sous-sélections (« DROI11BA - Cours obligatoires », 287 séances)
+    et les variantes (« SINF11BA - anglais », 125 séances) : replier ces
+    entrées sur leur préfixe ferait perdre la sélection (et dédoublonner
+    les variantes avec le parent). On ne fait que nettoyer les espaces ;
+    l'entrée entière se lit déjà bien dans la liste.
     """
-    brut = " ".join(str(brut or "").split())
-    if not brut:
-        return "", ""
-    morceaux = [m.strip() for m in re.split(r"\s+-\s+", brut) if m.strip()]
-    if len(morceaux) == 1:
-        return brut, ""
-    for i, m in enumerate(morceaux):
-        if RX_CODE.match(m):
-            titre = " - ".join(morceaux[:i] + morceaux[i + 1:])
-            return m, titre
-    return brut, ""
+    return " ".join(str(brut or "").split())
+
+
+def _profs(description):
+    """Le premier nom après la ligne d'horaires de la description.
+
+    Format observé chez Mon horaire : code d'activité, horaires, puis
+    enseignant(s). Suivent parfois des consignes (« - Etudiants du
+    BARB04… », adresse, « Répartition : ») qui ne sont pas des noms, et
+    certaines séances n'ont personne : on renvoie alors une chaîne vide.
+    """
+    lignes = [l.strip() for l in str(description or "").split("\n")]
+    for i, ligne in enumerate(lignes):
+        if not RX_HORAIRE.search(ligne):
+            continue
+        for suite in lignes[i + 1:]:
+            if not suite:
+                continue
+            if suite.startswith("-") or RX_NOTE.match(suite):
+                break
+            return " ".join(suite.split())
+        break
+    return ""
 
 
 def _salle(texte):
@@ -158,16 +188,15 @@ class ClientUCL:
             d = self._json("/calendar/" + quote(texte, safe=""), budget=budget)
             resultats, vus = [], set()
             for brut in d.get("codes") or []:
-                code, titre = _couper(brut)
+                code = _couper(brut)
                 if not code or code in vus:
                     continue
-                est_ue = bool(RX_UE.match(code))
-                if (genre == "ue") != est_ue:
+                # Un cours (UE) est un sigle seul : « CODE - libellé » est
+                # un programme ou une sous-sélection, du côté « niveau ».
+                if (genre == "ue") != bool(RX_UE.match(code)):
                     continue
                 vus.add(code)
-                resultats.append({"cle": f"{code} · {titre}".strip(" ·")
-                                  if titre else code,
-                                  "code": code, "titre": titre})
+                resultats.append({"cle": code, "code": code, "titre": ""})
             return resultats[:60]
 
         return self._memo(("recherche", genre, texte.lower()), 3600, calcul)
@@ -199,8 +228,7 @@ class ClientUCL:
 
         evenements = self._memo(("horaire", tuple(codes), annee), 900, calcul)
         if not evenements:
-            raise ValueError("Aucun cours publié pour l'instant pour cette sélection : "
-                             "l'UCLouvain publie ses horaires au fil de l'année.")
+            raise ValueError(ERREUR_VIDE)
 
         parse = []
         for e in evenements:
@@ -211,7 +239,7 @@ class ClientUCL:
                 continue
             parse.append((e, d0, d1))
         if not parse:
-            raise ValueError("Aucun cours publié pour l'instant pour cette sélection.")
+            raise ValueError(ERREUR_VIDE)
         lundi0 = min(d0.date() for _, d0, _ in parse)
         lundi0 -= timedelta(days=lundi0.weekday())
 
@@ -229,10 +257,11 @@ class ClientUCL:
             m = RX_TYPE.match(titre)
             if m:
                 type_cours = m.group(1)
-            profs = ""
+            profs = _profs(e.get("description"))
             salles = _salle(e.get("location"))
             activite = " ".join(str(e.get("event_code") or "").split())
-            groupes = [activite] if activite and activite != titre else []
+            groupes = ([activite] if activite and activite != titre
+                       and type_cours not in TYPES_AUDIENCE else [])
             cle = (d0.weekday(), debut_h, fin_h, titre, profs, salles, type_cours,
                    tuple(groupes))
             ligne = cours.get(cle)
@@ -246,7 +275,7 @@ class ClientUCL:
             semaines.add(sem)
 
         if not semaines:
-            raise ValueError("Aucun cours publié pour l'instant pour cette sélection.")
+            raise ValueError(ERREUR_VIDE)
         liste = sorted(cours.values(), key=lambda c: (min(c["semaines"]), c["jour"], c["debut"]))
         for c in liste:
             c["semaines"].sort()
@@ -292,6 +321,7 @@ class _Appels:
 
 
 NOM = "UCLouvain — Université catholique de Louvain"
+NOM_COURT = "l'UCLouvain"  # dans les phrases (import, messages)
 SOURCE = "monhoraire.uclouvain.be (horaire public)"
 
 CLIENT = ClientUCL(nom=NOM, source=SOURCE)

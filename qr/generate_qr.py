@@ -7,7 +7,7 @@ Caractéristiques :
   Les 4 coins extérieurs sont 100% transparents (canal alpha pur).
 - Conforme aux standards QR Code (Correction d'erreur niveau H : 30% de redondance).
 - Modules squircle arrondis modernes et repères optiques personnalisés cobalt.
-- Badge central intégré avec l'icône officielle EzHoraire (les 3 barres d'agenda).
+- Badge central intégré avec l'icône officielle EzHoraire (le Monolithe E + Z).
 - Déclinaisons :
     1. qr-dark.png / .svg         : Tuile sombre aux bords arrondis (titane & bleu) sur fond transparent
     2. qr-light.png / .svg        : Tuile blanche aux bords arrondis (épure suisse) sur fond transparent
@@ -27,8 +27,13 @@ import base64
 import os
 import subprocess
 import tempfile
+import sys
+
 import qrcode
 from PIL import Image
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "logos", "monolithe"))
+from build import glyphe as logo_monolithe  # noqa: E402
 
 BRAVE = "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"
 DEFAULT_URL = "https://www.ezhoraire.be"
@@ -87,7 +92,6 @@ def generate_svg_tile_qr(matrix, theme="dark", size_px=800, border_modules=4):
         badge_stroke = "rgba(91, 134, 255, 0.45)"
         bar1 = "#f1f3f7"
         bar2 = "#5b86ff"
-        bar3 = "#f1f3f7"
         defs = f"""
         <radialGradient id="halo-dark" cx="50%" cy="50%" r="60%">
             <stop offset="0%" stop-color="#5b86ff" stop-opacity="0.14"/>
@@ -105,7 +109,6 @@ def generate_svg_tile_qr(matrix, theme="dark", size_px=800, border_modules=4):
         badge_stroke = "#e2e6ed"
         bar1 = "#111317"
         bar2 = "#2456e0"
-        bar3 = "#111317"
     elif theme == "cyber":
         bg_card = "#090b10"
         border_stroke = "rgba(56, 189, 248, 0.25)"
@@ -116,7 +119,6 @@ def generate_svg_tile_qr(matrix, theme="dark", size_px=800, border_modules=4):
         badge_stroke = "url(#cyber-ring)"
         bar1 = "#f8fafc"
         bar2 = "#38bdf8"
-        bar3 = "#f8fafc"
         defs = """
         <linearGradient id="cyber-grad" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stop-color="#38bdf8"/>
@@ -174,14 +176,12 @@ def generate_svg_tile_qr(matrix, theme="dark", size_px=800, border_modules=4):
     b_size = 7 * cell
     svg.append(f'<rect x="{bx:.2f}" y="{by:.2f}" width="{b_size:.2f}" height="{b_size:.2f}" rx="{cell*0.9:.2f}" fill="{badge_bg}" stroke="{badge_stroke}" stroke-width="2.5"/>')
 
-    # 3 barres EzHoraire
+    # Logo EzHoraire (Monolithe)
     scale = (b_size / 100.0) * 0.74
     tx = bx + (b_size - 100 * scale) / 2
     ty = by + (b_size - 100 * scale) / 2
     svg.append(f'<g transform="translate({tx:.2f}, {ty:.2f}) scale({scale:.4f})">')
-    svg.append(f'<rect x="21" y="22" width="58" height="15" rx="7.5" fill="{bar1}"/>')
-    svg.append(f'<rect x="21" y="42.5" width="40" height="15" rx="7.5" fill="{bar2}"/>')
-    svg.append(f'<rect x="21" y="63" width="58" height="15" rx="7.5" fill="{bar3}"/>')
+    svg.append(logo_monolithe(bar1, bar2))
     svg.append('</g>')
 
     svg.append('</svg>')
@@ -242,7 +242,7 @@ def generate_svg_pure_transparent(matrix, style="black", size_px=800, border_mod
     render_finder(0, qr_size - 7)
     render_finder(qr_size - 7, 0)
 
-    # 3 barres sans fond
+    # Logo sans fond
     bx = (c_start + border_modules) * cell
     by = (c_start + border_modules) * cell
     b_size = 7 * cell
@@ -250,9 +250,7 @@ def generate_svg_pure_transparent(matrix, style="black", size_px=800, border_mod
     tx = bx + (b_size - 100 * scale) / 2
     ty = by + (b_size - 100 * scale) / 2
     svg.append(f'<g transform="translate({tx:.2f}, {ty:.2f}) scale({scale:.4f})">')
-    svg.append(f'<rect x="21" y="22" width="58" height="15" rx="7.5" fill="{module_col}"/>')
-    svg.append(f'<rect x="21" y="42.5" width="40" height="15" rx="7.5" fill="{accent_col}"/>')
-    svg.append(f'<rect x="21" y="63" width="58" height="15" rx="7.5" fill="{module_col}"/>')
+    svg.append(logo_monolithe(module_col, accent_col))
     svg.append('</g>')
 
     svg.append('</svg>')
@@ -295,9 +293,7 @@ def generate_svg_card(matrix, theme="dark", width=1200, height=1600):
   <g transform="translate(600, 220)" text-anchor="middle">
     <rect x="-42" y="-42" width="84" height="84" rx="22" fill="{accent}"/>
     <g transform="translate(-42, -42) scale(0.84)">
-      <rect x="21" y="22" width="58" height="15" rx="7.5" fill="#ffffff"/>
-      <rect x="21" y="42.5" width="40" height="15" rx="7.5" fill="{'#14171f' if is_dark else '#ffffff'}"/>
-      <rect x="21" y="63" width="58" height="15" rx="7.5" fill="#ffffff"/>
+      {logo_monolithe("#ffffff", "#14171f" if is_dark else "#ffffff")}
     </g>
 
     <text y="105" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="52" font-weight="800" fill="{text_primary}" letter-spacing="-1">EzHoraire</text>

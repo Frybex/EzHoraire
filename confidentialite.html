@@ -36,7 +36,7 @@ try { var _a = localStorage.getItem("ezh_apparence"); if (_a === "clair" || _a =
 <div class="page">
   <header class="barre">
     <a class="marque" href="/" aria-label="EzHoraire, retour à l'app">
-      <svg width="30" height="30" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#232832"/><stop offset="1" stop-color="#101216"/></linearGradient></defs><rect width="100" height="100" rx="20" fill="url(#lg)"/><rect x="21" y="22" width="58" height="15" rx="7.5" fill="#f4f5f7"/><rect x="21" y="42.5" width="40" height="15" rx="7.5" fill="#5b86ff"/><rect x="21" y="63" width="58" height="15" rx="7.5" fill="#f4f5f7"/></svg>
+      <svg width="30" height="30" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#232832"/><stop offset="1" stop-color="#101216"/></linearGradient></defs><rect width="100" height="100" rx="20" fill="url(#lg)"/><clipPath id="ezm"><rect y="34.5" width="100" height="31"/></clipPath><path d="M18 26.5A5 5 0 0 1 23 21.5L77 21.5A5 5 0 0 1 82 26.5L82 32.12A7 7 0 0 1 80.55 36.39L62.52 59.87A3.5 3.5 0 0 0 65.3 65.5L77 65.5A5 5 0 0 1 82 70.5L82 73.5A5 5 0 0 1 77 78.5L23 78.5A5 5 0 0 1 18 73.5L18 70.5A5 5 0 0 1 23 65.5L40.08 65.5A3.5 3.5 0 0 0 42.86 64.13L47.23 58.43A1.2 1.2 0 0 0 46.28 56.5L23 56.5A5 5 0 0 1 18 51.5L18 48.5A5 5 0 0 1 23 43.5L58.11 43.5A1.2 1.2 0 0 0 59.06 43.03L64.13 36.43A1.2 1.2 0 0 0 63.17 34.5L23 34.5A5 5 0 0 1 18 29.5Z" fill="#f4f5f7"/><path d="M18 26.5A5 5 0 0 1 23 21.5L77 21.5A5 5 0 0 1 82 26.5L82 32.12A7 7 0 0 1 80.55 36.39L62.52 59.87A3.5 3.5 0 0 0 65.3 65.5L77 65.5A5 5 0 0 1 82 70.5L82 73.5A5 5 0 0 1 77 78.5L23 78.5A5 5 0 0 1 18 73.5L18 70.5A5 5 0 0 1 23 65.5L40.08 65.5A3.5 3.5 0 0 0 42.86 64.13L47.23 58.43A1.2 1.2 0 0 0 46.28 56.5L23 56.5A5 5 0 0 1 18 51.5L18 48.5A5 5 0 0 1 23 43.5L58.11 43.5A1.2 1.2 0 0 0 59.06 43.03L64.13 36.43A1.2 1.2 0 0 0 63.17 34.5L23 34.5A5 5 0 0 1 18 29.5Z" fill="#5b86ff" clip-path="url(#ezm)"/></svg>
       <span>Ez<span class="ac">Horaire</span></span>
     </a>
     <a class="retour" href="/"><span aria-hidden="true">←</span> Retour à l'app</a>
@@ -63,7 +63,7 @@ try { var _a = localStorage.getItem("ezh_apparence"); if (_a === "clair" || _a =
       <article class="tuile">
         <span class="ico" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg></span>
         <h3>Zéro pub, zéro revente</h3>
-        <p>Aucun traceur publicitaire, aucun cookie de mesure, aucune donnée vendue.</p>
+        <p>Aucun traceur publicitaire, aucune donnée vendue. La mesure d'usage est anonyme, par visite.</p>
       </article>
       <article class="tuile">
         <span class="ico" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg></span>
@@ -128,6 +128,7 @@ try { var _a = localStorage.getItem("ezh_apparence"); if (_a === "clair" || _a =
           <h3>Ce qui est produit par l'usage</h3>
           <ul>
             <li><strong>Consultations :</strong> à chaque ouverture d'un horaire, une ligne avec ton identifiant de compte, l'horaire concerné (école, formation) et la date et l'heure.</li>
+            <li><strong>Étapes de visite anonymes :</strong> arrivée sur le site, écrans atteints, clic de connexion, compte et horaire créés, écran quitté, durée active, code d'erreur ou de friction (recherche sans résultat, capture illisible…) — sans aucun identifiant de personne (voir <a href="#stockage">Cookies et stockage local</a>).</li>
             <li><strong>Données techniques :</strong> adresse IP, type de navigateur, pages et adresses d'API appelées, horodatage. Elles passent par nos serveurs et ceux de nos prestataires pour que le site fonctionne et se défende contre les abus.</li>
           </ul>
           <div class="note ok">
@@ -201,7 +202,8 @@ try { var _a = localStorage.getItem("ezh_apparence"); if (_a === "clair" || _a =
 
         <section id="stockage">
           <h2>Cookies et stockage local</h2>
-          <p><strong>EzHoraire n'utilise aucun cookie</strong>, ni publicitaire, ni de mesure d'audience, ni de réseau social. C'est pour ça qu'il n'y a pas de bandeau de cookies : il n'y a rien à accepter ou refuser.</p>
+          <p><strong>EzHoraire n'utilise aucun cookie</strong>, ni publicitaire, ni de réseau social. C'est pour ça qu'il n'y a pas de bandeau : rien ne permet de te suivre d'un site à l'autre.</p>
+          <p>Pour savoir combien de visiteurs arrivent, cliquent sur « se connecter » et créent un compte — et où les autres s'arrêtent — l'app enregistre des <strong>étapes de visite anonymes</strong> : un identifiant aléatoire gardé par l'onglet le temps de la visite, l'écran atteint, la durée active et les erreurs de connexion. Cet identifiant n'est jamais relié à ton compte ni à ton adresse : personne ne peut savoir qui a fait quoi. Ces étapes sont <strong>effacées automatiquement après 90 jours</strong>.</p>
           <p>L'app range en revanche quelques informations dans le stockage local de ton navigateur. Elles sont <strong>strictement nécessaires</strong> au service que tu demandes, ce qui les dispense de consentement (article 5.3 de la directive « vie privée et communications électroniques » 2002/58/CE, transposé en droit belge). Elles ne sont lues par personne d'autre que l'app.</p>
           <div class="cadre">
             <table class="tableau">
@@ -212,6 +214,7 @@ try { var _a = localStorage.getItem("ezh_apparence"); if (_a === "clair" || _a =
                 <tr><td><code>ezh_profils</code>, <code>ezh_courant</code></td><td data-label="Contenu">Tes horaires et celui ouvert en dernier</td><td data-label="Durée">Jusqu'à la déconnexion</td></tr>
                 <tr><td><code>ezh_horaire:…</code></td><td data-label="Contenu">Dernier horaire reçu, pour l'afficher hors ligne</td><td data-label="Durée">Remplacé à chaque mise à jour</td></tr>
                 <tr><td><code>ezh_apparence</code>, <code>ezh_pdf_h:…</code>, <code>ezh_pwa_propose</code></td><td data-label="Contenu">Préférences d'affichage (thème clair ou sombre, hauteur du PDF, suggestion d'installation déjà montrée)</td><td data-label="Durée">Jusqu'à ce que tu vides les données du site</td></tr>
+                <tr><td><code>ezh_sess</code>, <code>ezh_tr…</code> (sessionStorage)</td><td data-label="Contenu">Identifiant aléatoire de la visite en cours (mesure anonyme) et étapes déjà comptées. Fermer l'onglet l'efface.</td><td data-label="Durée">Jusqu'à la fermeture de l'onglet</td></tr>
               </tbody>
             </table>
           </div>
@@ -226,7 +229,7 @@ try { var _a = localStorage.getItem("ezh_apparence"); if (_a === "clair" || _a =
             <table class="tableau">
               <thead><tr><th scope="col">Prestataire</th><th scope="col">Rôle</th><th scope="col">Données concernées</th></tr></thead>
               <tbody>
-                <tr><td>Supabase, Inc.</td><td data-label="Rôle">Authentification et base de données</td><td data-label="Données concernées">Compte, horaires suivis, consultations, journaux de connexion (dont l'adresse IP)</td></tr>
+                <tr><td>Supabase, Inc.</td><td data-label="Rôle">Authentification et base de données</td><td data-label="Données concernées">Compte, horaires suivis, consultations, étapes de visite anonymes, journaux de connexion (dont l'adresse IP)</td></tr>
                 <tr><td>Vercel, Inc.</td><td data-label="Rôle">Hébergement du site et des API</td><td data-label="Données concernées">Données techniques, contenu des requêtes le temps de les traiter</td></tr>
                 <tr><td>Resend (Plus Five Five, Inc.)</td><td data-label="Rôle">Envoi des emails du service, réception des messages à contact@ezhoraire.be</td><td data-label="Données concernées">Email, contenu des messages</td></tr>
                 <tr><td>TypeSafe</td><td data-label="Rôle">Aide à la reconnaissance des cours importés (Jev)</td><td data-label="Données concernées">Lignes de la liste importée, sans identité</td></tr>
@@ -250,6 +253,7 @@ try { var _a = localStorage.getItem("ezh_apparence"); if (_a === "clair" || _a =
               <tbody>
                 <tr><td>Compte et horaires suivis</td><td data-label="Durée">Tant que le compte existe. Supprimés sous 30 jours après ta demande de suppression.</td></tr>
                 <tr><td>Consultations</td><td data-label="Durée">180 jours, puis effacement automatique</td></tr>
+                <tr><td>Étapes de visite anonymes</td><td data-label="Durée">90 jours, puis effacement automatique</td></tr>
                 <tr><td>Liste de cours importée</td><td data-label="Durée">Pas conservée : traitée le temps de la réponse</td></tr>
                 <tr><td>Journaux techniques (hébergeur, connexions)</td><td data-label="Durée">Durée courte fixée par nos prestataires, en général de quelques jours à quelques semaines</td></tr>
                 <tr><td>Messages et demandes</td><td data-label="Durée">Le temps de les traiter, puis au plus 12 mois pour garder la trace d'une demande d'exercice de droits</td></tr>
@@ -308,6 +312,7 @@ try { var _a = localStorage.getItem("ezh_apparence"); if (_a === "clair" || _a =
     <span>© 2026 EzHoraire</span>
     <nav aria-label="Pages légales">
       <a href="/">Accueil</a>
+      <a href="/aide/">Aide</a>
       <a href="/confidentialite.html" aria-current="page">Confidentialité</a>
       <a href="/cgu.html">Conditions d'utilisation</a>
       <a href="mailto:contact@ezhoraire.be">contact@ezhoraire.be</a>

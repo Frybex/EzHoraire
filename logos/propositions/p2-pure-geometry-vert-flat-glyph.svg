@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+  <!-- Prop 2: Pure Géométrie Swiss -->
+  <g>
+    <!-- Continuous Z Monolith in Crisp White -->
+    <path d="M 16 22 L 84 22 L 84 34 L 40 70 L 84 70 L 84 82 L 16 82 L 16 70 L 60 34 L 16 34 Z" fill="#f4f5f7" />
+    <!-- Middle bar of E: Anchored at left, connecting seamlessly to the diagonal in Accent -->
+    <polygon points="16,46 47,46 37,58 16,58" fill="#4cc38a" />
+  </g>
+</svg>

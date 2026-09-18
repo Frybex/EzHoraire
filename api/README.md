@@ -13,7 +13,9 @@ api/
 ├── importer.py     POST /api/importer (corps JSON)        liste collée → cours
 ├── pdf.py          GET /api/pdf?ecole=…&semaine=…         PDF officiel
 ├── config.py       GET /api/config                        clés publiques + écoles exposées
-├── stats.py        GET /api/stats                         dashboard admin (réservé)
+├── stats.py        GET /api/stats                         dashboard admin (réservé : comptes, visites, parcours anonyme)
+├── bugs.py         POST /api/bugs (public)                reports bug / demande (anonymes OK)
+│                   GET /api/bugs + PATCH /api/bugs?id=..  lecture + statuts (admin)
 │
 ├── _ecoles/        UNE ÉCOLE = UN FICHIER
 │   ├── __init__.py  registre ECOLES + aides HTTP (réponses, quotas par IP)

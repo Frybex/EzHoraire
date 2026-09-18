@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+  <defs>
+    <linearGradient id="t" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#232832"/>
+      <stop offset="1" stop-color="#101216"/>
+    </linearGradient>
+  </defs>
+  <rect width="100" height="100" rx="20" fill="url(#t)"/>
+  <g>
+    <!-- Barre haute pleine largeur (Blanc) -->
+    <rect x="16" y="22" width="68" height="12" rx="2" fill="#f4f5f7" />
+    <!-- Ruban d'accent : Diagonale du Z + Barre centrale du E (Même couleur, arrêt parfait) -->
+    <polygon points="16,44 62,44 72,34 84,34 52,66 40,66 50,56 16,56" fill="#ffa8d0" />
+    <!-- Barre basse pleine largeur (Blanc) -->
+    <rect x="16" y="66" width="68" height="12" rx="2" fill="#f4f5f7" />
+  </g>
+</svg>

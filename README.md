@@ -4,11 +4,18 @@ Les horaires de cours, lisibles sur téléphone. On se connecte (Google,
 GitHub ou email), on indique son nom et prénom une fois, on choisit son
 école, sa formation et son groupe ; ensuite l'app s'ouvre directement
 sur son horaire (session + choix gardés sur l'appareil : `localStorage`
-clés `ezh_compte`, `ezh_profils`, `ezh_courant`).
+clés `ezh_compte`, `ezh_profils`, `ezh_courant`). Une création d'horaire
+en cours (école, formation, cours cochés, groupes) est gardée dans
+`ezh_brouillon` et reprise au retour, même après un rechargement de la
+page.
 
 Un seul horaire : affichage classique, sans nom ni sélecteur. Plusieurs
 horaires : chacun a son surnom (ex. Info, Droit, demandé à partir du 2e)
 et sa couleur, avec une barre de sélection en haut façon Horairelm.
+L'ordre des cartes se règle dans les Réglages : on attrape un horaire
+pour le faire glisser (appui long sur téléphone, pour ne pas confondre
+avec le défilement) ; la barre de sélection de la page principale suit,
+et le menu ⋮ garde Monter / Descendre au clavier.
 Un profil = un cours / une option complète
 (école + formation + groupes), pas juste un groupe. Le bouton en haut à
 droite ouvre les **Réglages** (identité, déconnexion, mes horaires).
@@ -42,7 +49,11 @@ horaires. `serve.py` pose la variable pour le développement.
 ## Comptes (Supabase Auth, branché)
 
 L'entrée de l'app, c'est la connexion : 2 boutons OAuth (Google / GitHub)
-+ email (mot de passe), à côté d'un aperçu d'une semaine type, puis
++ email (mot de passe), avec un rail « Se connecter / Créer un compte » :
+en mode connexion, une adresse inconnue reste une erreur (elle ne crée
+plus de compte fantôme sur une faute de frappe) ; en mode création, une
+adresse déjà inscrite est refusée. Google / GitHub font les deux, c'est le
+fournisseur qui décide. À côté, un aperçu d'une semaine type, puis
 nom + prénom demandés une fois (pré-remplis depuis le fournisseur si
 possible) et affichés dans les Réglages (l'avatar en haut à droite montre
 les initiales). Session persistante : par défaut, on rouvre directement
@@ -96,21 +107,26 @@ et par Vercel), `serve.py` le charge au démarrage. Sans ce fichier, l'app
 tourne en connexion factice (uniquement sur localhost ; en ligne, la
 connexion est refusée avec un message si le cloud est injoignable).
 
-## Dashboard admin (comptes → cours → consultations)
+## Dashboard admin (comptes → cours → consultations → parcours)
 
 `/dashboard.html` : comptes créés, cours suivis (`profils`), consultations
-par jour (`visites`, 1 ligne = 1 ouverture d'horaire). Réservé aux admins,
-via `GET /api/stats` (clé service_role côté serveur uniquement, jamais
-dans le navigateur). Un compte est admin si son `user_id` figure dans
-`ADMIN_USER_IDS`, ou si son `app_metadata` contient `"admin": true`, ou
-(Repli) si son email figure dans `ADMIN_EMAILS`. Préfère
-`ADMIN_USER_IDS` : un email n'est pas un identifiant, il ne vaut que
-tant que le compte qui le porte existe déjà.
+par jour (`visites`, 1 ligne = 1 ouverture d'horaire) et **parcours
+anonyme** (table `evenements` : arrivées, clics « se connecter », comptes
+créés, écrans d'arrêt, erreurs de connexion — voir plus bas). Réservé aux
+admins, via `GET /api/stats` (clé service_role côté serveur uniquement,
+jamais dans le navigateur). Le bouton Apparence de l'en-tête règle le
+clair / sombre / système et la couleur de l'accent (bleu, vert, rose),
+gardée dans `ezh_admin_couleur`. Un compte est admin si son `user_id`
+figure dans `ADMIN_USER_IDS`, ou si son `app_metadata` contient
+`"admin": true`, ou (Repli) si son email figure dans `ADMIN_EMAILS`.
+Préfère `ADMIN_USER_IDS` : un email n'est pas un identifiant, il ne vaut
+que tant que le compte qui le porte existe déjà.
 
 Mise en route (une fois) :
 
-1. Supabase → SQL Editor : recoller `supabase/schema.sql` (table `visites`
-   + plafond et purge, ajoutés depuis ; rejouable sans rien casser).
+1. Supabase → SQL Editor : recoller `supabase/schema.sql` (tables
+   `visites`, `bug_reports` et `evenements` + plafonds, purge et fonction
+   d'agrégation, ajoutés depuis ; rejouable sans rien casser).
 2. Supabase → Project Settings → API : copier la clé `service_role`.
 3. Supabase → Authentication → Users : copier l'UUID du compte admin.
 4. Vercel → Settings → Environment Variables (Production + Preview) :
@@ -120,9 +136,33 @@ Mise en route (une fois) :
 5. Ouvrir `https://www.ezhoraire.be/dashboard.html` avec ton compte admin
    (connecté au préalable sur `/`). Les autres comptes voient « réservé ».
 
-La purge de `visites` (180 jours) est fournie par `purger_visites()` :
-la planifier si l'extension pg_cron est active (voir la fin de
-`schema.sql`), sinon l'appeler de temps en temps dans le SQL Editor.
+La purge de `visites` (180 jours) est fournie par `purger_visites()`,
+celle des étapes anonymes (90 jours) par `purger_evenements()` : les
+planifier si l'extension pg_cron est active (voir la fin de
+`schema.sql`), sinon les appeler de temps en temps dans le SQL Editor.
+
+**Parcours anonyme (`evenements`).** `suivi.js`, chargé par l'app
+(`index.html`), note une visite sans jamais l'identifier : identifiant
+aléatoire en `sessionStorage` (effacé à la fermeture de l'onglet), aucun
+`user_id`, jamais relié à un compte. Écriture seule avec la clé anon (RLS
+insert-only, plafond 150 événements / 24 h / session) ; la lecture est
+réservée au dashboard : `api/stats.py` appelle la fonction
+`stats_evenements()` (service_role), qui agrège côté base et renvoie
+quelques kilo-octets — les lignes brutes ne transitent jamais.
+
+Ce qui est mesuré : arrivée, clics de connexion, compte créé, identité,
+étapes école / formation / groupes, horaire enregistré, sortie (durée
+active, écran quitté) ; et les frictions, une fois par visite et par code
+— recherche sans résultat, capture illisible ou vide, analyse sans cours
+reconnu, horaire validé avec des cours sans groupe, école trop lente,
+hors ligne, erreur de réponse. Chaque événement porte la version du
+parcours (`window.EZH_VERSION` dans `index.html`, à incrémenter à chaque
+correctif) pour comparer avant / après dans le dashboard. Fichiers :
+`suivi.js` (collecte), fin de `supabase/schema.sql` (table, plafond,
+purge, agrégation), section `Parcours` de `dashboard.html`. Si la table
+manque, le dashboard l'indique au lieu d'échouer. Mesure sans cookie,
+décrite dans `confidentialite.html` : la revoir si un jour un identifiant
+persistant est ajouté (il rouvrirait la question du consentement).
 
 Requêtes utiles (SQL Editor) sans le dashboard :
 
@@ -132,6 +172,8 @@ select formation, count(distinct user_id) from profils group by formation;
 -- consultations par jour (7 derniers jours)
 select date_trunc('day', created_at)::date as jour, count(*)
 from visites where created_at > now() - interval '7 days' group by 1 order by 1;
+-- entonnoir d'une période
+select public.stats_evenements(30);
 ```
 
 Il n'y a volontairement aucun bouton de connexion ni d'actualisation dans
@@ -185,17 +227,34 @@ téléchargée : le champ de recherche appelle `api/recherche`.
 Spécificités UCLouvain (**en test, publiée seulement si `EZH_UCL=1`**) :
 un même « code » désigne un cours (`LINFO1101`) ou un programme
 (`SINF11BA`), et la recherche publique (`api/recherche`) répond les
-deux. Trois entrées, comme pour l'ULB : par programme, par codes de cours
-(« PAR:LINFO1101,LEPL1101 »), ou l'horaire personnel via le lien
-d'abonnement iCal de Mon horaire
+deux. Un code de programme suffit — l'onglet conseillé est donc « Par
+programme » (et non « Par codes de cours » comme à l'ULB) : il donne
+toutes les séances de l'année d'un coup. Les deux autres entrées restent
+disponibles : par codes de cours (« PAR:LINFO1101,LEPL1101 ») et
+l'horaire personnel via le lien d'abonnement iCal de Mon horaire
 (monhoraire.uclouvain.be → « Exporter » → « Lien d'abonnement », ou le
-lien de partage). Le moteur lit la vue publique de Mon horaire
-(`/calendar/<recherche>`, `/api/events`), sans session ni identifiant ;
-l'année académique est déduite de la date, avec repli sur la précédente
-tant que la nouvelle n'est pas publiée. Les groupes affichés sont les
-codes d'activité de l'UCLouvain (`LINFO1101_Q1.A2`…) : l'étudiant coche
-ses TP, les séances sans choix (accueil, CM d'audience unique) restent
-visibles. Pas de PDF officiel : le bouton est masqué pour cette école.
+lien de partage ; le sélecteur « Horaire #n » est conservé). L'import
+(capture d'écran ou liste collée) marche aussi pour l'UCLouvain : il lit
+les codes de cours, pas les intitulés — une liste copiée de Mon horaire
+contient les codes, c'est le cas normal.
+
+Le moteur lit la vue publique de Mon horaire (`/calendar/<recherche>`,
+`/api/events`), sans session ni identifiant. La recherche renvoie des
+entrées utilisables telles quelles, y compris les sous-sélections
+(« DROI11BA - Cours obligatoires ») et les variantes (« SINF11BA -
+anglais ») : elles sont gardées entières, sinon une sélection précise
+retomberait sur le programme complet. Mon horaire ignore aujourd'hui le
+paramètre `year` (vérifié : 2020-2021 répond la même chose que
+2026-2027) ; l'année est quand même envoyée et le repli sur la précédente
+reste en filet si l'API se remet à filtrer.
+
+Côté groupes : seuls TP et LABO sont des choix (codes d'activité
+`LINFO1101_Q1.A2`, `LEPL1201-Q1-Réser. labo B (créneau 2)`…). Les séances
+CM, EXAM et OTHER (audience, examens, tests, consultations, monitorats)
+n'ont pas de groupe : elles restent toujours visibles, même si
+l'étudiant ne coche que son TP — sinon il verrait une semaine presque
+vide. Les noms d'enseignants sont lus dans la description des séances.
+Pas de PDF officiel : le bouton est masqué pour cette école.
 
 Spécificités UMONS (382 formations) : chaque groupe est préfixé par sa
 formation (`<.BAB1 - Droit>Dr. rom - Gr 1`), l'API renvoie les noms
@@ -247,7 +306,13 @@ les sources. `logos/ecoles/` est déployé, `logos/da/` et `logos/ez/`
 
 ## Fichiers
 
-- `index.html` — l'app (choix école → formation → groupe(s), puis horaire).
+- `index.html` — l'app (connexion, choix école → formation → groupe(s),
+  puis horaire).
+- `demo.html` — page de démonstration (ouvre l'app en mode essai, sans
+  compte).
+- `suivi.js` — mesure anonyme du parcours (arrivée → clic → compte →
+  horaire) et des frictions, chargée par `index.html` ; voir le dashboard
+  admin.
 - `confidentialite.html`, `cgu.html` — politique de confidentialité et
   conditions d'utilisation (mentions légales incluses), stylées par
   `legal.css` + `legal.js` (sommaire). À relire à chaque nouveau

@@ -12,6 +12,9 @@
 /* Apparence choisie dans l'app (Clair / Sombre / Système) : pas d'éclair. */
 try { var _a = localStorage.getItem("ezh_apparence"); document.documentElement.setAttribute("data-apparence", (_a === "clair" || _a === "sombre") ? _a : "systeme"); }
 catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); }
+/* Couleur du dashboard (Bleu / Vert / Rose), choisie ici même. */
+try { var _c = +localStorage.getItem("ezh_admin_couleur"); if (_c === 1 || _c === 3) document.documentElement.setAttribute("data-couleur", String(_c)); }
+catch (e) { /* navigation privée */ }
 </script>
 <style>
   :root {
@@ -36,6 +39,16 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     --bg: #101216; --surface: #171a20; --ink: #f0f3f7; --muted: #98a1b1; --line: #262b34;
     --accent: #8ba6ff; --accent-soft: rgba(139, 166, 255, .13); --track: #20252e; --free: #5fce96;
   }
+  /* Couleur du dashboard (Bleu = défaut, Vert, Rose) : teinte l'accent.
+     Placée après les règles d'apparence : à spécificité égale, elle gagne. */
+  html[data-couleur="1"] { --accent: #0e8655; --accent-soft: rgba(14, 134, 85, .11); }
+  html[data-couleur="3"] { --accent: #d14d8a; --accent-soft: rgba(209, 77, 138, .13); }
+  @media (prefers-color-scheme: dark) {
+    html:not([data-apparence="clair"])[data-couleur="1"] { --accent: #4cc38a; --accent-soft: rgba(76, 195, 138, .15); }
+    html:not([data-apparence="clair"])[data-couleur="3"] { --accent: #ffa8d0; --accent-soft: rgba(255, 168, 208, .17); }
+  }
+  html[data-apparence="sombre"][data-couleur="1"] { --accent: #4cc38a; --accent-soft: rgba(76, 195, 138, .15); }
+  html[data-apparence="sombre"][data-couleur="3"] { --accent: #ffa8d0; --accent-soft: rgba(255, 168, 208, .17); }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font);
     font-size: 15px; line-height: 1.4; -webkit-font-smoothing: antialiased; }
@@ -134,6 +147,17 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   .plus { display: block; width: 100%; margin-top: 12px; padding: 10px; border-radius: 12px;
     border: 1px solid var(--line); background: none; font-weight: 650; color: var(--accent); }
 
+  /* ---------- Parcours (arrivée → compte créé, anonyme) ---------- */
+  .parc { display: grid; gap: 20px; }
+  @media (min-width: 900px) {
+    .parc { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); }
+    .parc > div:nth-child(3) { grid-column: 1 / -1; }
+  }
+  .parc h3 { margin: 0 0 10px; font-size: .72rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .05em; color: var(--muted); }
+  .parc h3.sep { margin-top: 18px; }
+  .parc .vide-liste { padding: 10px 0; }
+
   /* ---------- Comptes ---------- */
   .comptes { margin-top: 12px; }
   .outils { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
@@ -189,6 +213,28 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     .fiche { padding-left: 48px; }
   }
 
+  /* ---------- Bugs & demandes (reports de l'app) ---------- */
+  .statut { display: inline-block; font-size: .72rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .04em; border-radius: 6px; padding: 2px 8px; vertical-align: 1px; }
+  .statut.nouveau { color: var(--accent); background: var(--accent-soft); }
+  .statut.en_cours { color: #b47908; background: color-mix(in srgb, #b47908 12%, transparent); }
+  .statut.corrige { color: var(--free); background: color-mix(in srgb, var(--free) 12%, transparent); }
+  .type { display: inline-block; font-size: .72rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .04em; border-radius: 6px; padding: 2px 8px; vertical-align: 1px; }
+  .type.bug { color: var(--accent); background: var(--accent-soft); }
+  .type.demande { color: var(--free); background: color-mix(in srgb, var(--free) 12%, transparent); }
+  .bug-msg .type { margin-right: 6px; }
+  .bug-msg { grid-area: cours; min-width: 0; overflow: hidden; display: -webkit-box;
+    -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: .88rem; }
+  .bug-imgs { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+  .bug-imgs a { display: block; width: 96px; height: 96px; border-radius: 10px; overflow: hidden;
+    border: 1px solid var(--line); background: var(--track); }
+  .bug-imgs img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .bug-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .bug-actions button { border: 1px solid var(--line); background: none; border-radius: 999px;
+    padding: 7px 14px; font-size: .83rem; font-weight: 650; color: var(--muted); }
+  .bug-actions button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+
   /* ---------- Apparence : bouton + menu déroulant (Claire / Sombre / Système) ---------- */
   .theme-wrap { position: relative; flex: none; }
   #btn-apparence svg { display: block; }
@@ -214,6 +260,23 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   .theme-opt[aria-checked="true"] { font-weight: 700; }
   .theme-opt .check { margin-left: auto; flex: none; visibility: hidden; }
   .theme-opt[aria-checked="true"] .check { visibility: visible; }
+  /* Couleur : trois pastilles, sous l'apparence. */
+  .theme-sep { height: 1px; margin: 5px 8px; background: var(--line); }
+  .theme-couleurs { display: flex; align-items: center; justify-content: center; gap: 16px; padding: 8px 12px 10px; }
+  .theme-couleurs button {
+    width: 24px; height: 24px; padding: 0; border: 0; border-radius: 50%; flex: none;
+    background: var(--pastille); cursor: pointer;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .12);
+    transition: box-shadow .15s, transform .12s;
+  }
+  .theme-couleurs button:hover { transform: scale(1.08); }
+  .theme-couleurs button[aria-checked="true"] { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--pastille); }
+  .theme-couleurs button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  /* Le libellé annonce la rangée : un lecteur d'écran lit « Couleur, Bleu, coché ». */
+  .theme-couleur-titre {
+    margin: 2px 12px 0; font-size: .72rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .05em; color: var(--muted);
+  }
 </style>
 </head>
 <body>
@@ -254,6 +317,13 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
           Système
           <svg class="check" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg>
         </button>
+        <div class="theme-sep" role="separator"></div>
+        <p class="theme-couleur-titre" role="presentation">Couleur</p>
+        <div class="theme-couleurs" role="group" aria-label="Couleur">
+          <button type="button" role="menuitemradio" data-couleur-opt="2" aria-checked="true" aria-label="Bleu" style="--pastille:#2456e0"></button>
+          <button type="button" role="menuitemradio" data-couleur-opt="1" aria-checked="false" aria-label="Vert" style="--pastille:#0e8655"></button>
+          <button type="button" role="menuitemradio" data-couleur-opt="3" aria-checked="false" aria-label="Rose" style="--pastille:#d14d8a"></button>
+        </div>
       </div>
     </div>
   </div>
@@ -279,6 +349,27 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       </section>
     </div>
 
+    <section class="card comptes" id="sec-parcours">
+      <div class="card-h"><h2>Parcours</h2><span class="mut" id="parcours-resume"></span></div>
+      <p class="mut" id="parcours-vide" hidden></p>
+      <div class="parc" id="parcours-corps" hidden>
+        <div>
+          <h3>Arrivée → compte</h3>
+          <ul class="forms" id="parcours-entonnoir"></ul>
+        </div>
+        <div>
+          <h3>Où ils s'arrêtent</h3>
+          <ul class="forms" id="parcours-arrets"></ul>
+        </div>
+        <div>
+          <h3>Erreurs et frictions</h3>
+          <ul class="forms" id="parcours-erreurs"></ul>
+          <h3 class="sep">Par version</h3>
+          <ul class="forms" id="parcours-versions"></ul>
+        </div>
+      </div>
+    </section>
+
     <section class="card comptes">
       <div class="card-h"><h2>Comptes</h2><span class="mut" id="comptes-resume"></span></div>
       <div class="outils">
@@ -293,6 +384,13 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       <div class="entete" aria-hidden="true"><span></span><span>Compte</span><span>Horaires</span><span>7 j</span><span>Période</span><span>Dernière visite</span></div>
       <ul class="liste" id="liste"></ul>
       <button class="plus" id="liste-plus" hidden></button>
+    </section>
+
+    <section class="card comptes" id="sec-bugs">
+      <div class="card-h"><h2>Bugs & demandes</h2><span class="mut" id="bugs-resume"></span></div>
+      <div class="puces" id="bugs-types" role="group" aria-label="Filtrer par type"></div>
+      <div class="puces" id="bugs-filtres" role="group" aria-label="Filtrer par statut"></div>
+      <ul class="liste" id="bugs-liste"></ul>
     </section>
   </div>
 </main>
@@ -496,6 +594,246 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     return html + "</li>";
   }
 
+  /* ---------- Parcours (arrivée → compte créé, anonyme) ----------
+     Données agrégées côté Supabase (stats_evenements) : aucune ligne
+     n'est reliée à un compte, on lit des visites. */
+  var NOMS_ECRAN = { accueil: "Page d'accueil", app: "Entrée de l'app", compte: "Écran de connexion",
+    identite: "Écran nom/prénom", ecole: "Écran école", formation: "Écran formation",
+    groupes: "Écran groupes", horaire: "Horaire" };
+  var NOMS_EVENEMENT = { arrivee: "Arrivée sans autre action", clic_app: "Clic « Ouvrir l'app »",
+    clic_connexion: "Clic connexion sans suite", connexion_erreur: "Erreur de connexion",
+    compte_cree: "Compte créé", connexion_ok: "Connexion existante", identite_ok: "Identité complétée",
+    etape: "Étape en cours", friction: "Friction rencontrée", horaire_ok: "Horaire enregistré",
+    capture_choisie: "Capture choisie", capture_lue: "Capture lue", analyse: "Liste analysée" };
+  var NOMS_ERREUR = { email_invalide: "Adresse email invalide", mot_de_passe_court: "Mot de passe trop court",
+    connexion_injoignable: "Service de connexion injoignable", invalid_credentials: "Email ou mot de passe incorrect",
+    email_not_confirmed: "Adresse pas encore confirmée", over_email_send_rate_limit: "Trop de tentatives",
+    over_request_rate_limit: "Trop de requêtes", weak_password: "Mot de passe trop faible",
+    signup_disabled: "Inscriptions fermées", interdit: "Piège anti-robot déclenché",
+    lien_expire: "Lien expiré", indisponible: "Service indisponible", connexion_echouee: "Échec de connexion",
+    recherche_0: "Recherche sans résultat", capture_invalide: "Capture : fichier non reconnu",
+    capture_vide: "Capture : aucun texte lisible", capture_echec: "Capture : lecture impossible",
+    analyse_0: "Liste analysée : aucun cours reconnu", groupes_partiels: "Horaire validé avec des cours sans groupe",
+    api_lente: "École trop lente à répondre", api_hors_ligne: "Hors ligne", api_erreur: "Réponse de l'école en erreur" };
+  function nomEtape(v) { return NOMS_ECRAN[v] || NOMS_EVENEMENT[v] || v || "—"; }
+  function fmtDuree(s) {
+    s = +s || 0;
+    if (s < 60) return Math.round(s) + " s";
+    return Math.floor(s / 60) + " min " + Math.round(s % 60) + " s";
+  }
+  function parcours() {
+    var p = donnees.parcours, corps = $("parcours-corps"), vide = $("parcours-vide");
+    if (!p) {
+      vide.hidden = false;
+      vide.textContent = "Pas encore de données. Si la table n'existe pas, recolle supabase/schema.sql dans le SQL Editor de Supabase, puis recharge.";
+      corps.hidden = true;
+      $("parcours-resume").textContent = "";
+      return;
+    }
+    vide.hidden = true;
+    var t = p.totaux || {};
+    var arrivees = +t.arrivees || 0, clics = +t.clics_connexion || 0;
+    var comptes = +t.comptes || 0, connexions = +t.connexions || 0;
+    var pct = arrivees ? Math.round(comptes / arrivees * 100) : 0;
+    $("parcours-resume").textContent = arrivees
+      ? pct + " % des arrivées créent un compte" + (+t.duree_mediane_s ? " · durée médiane " + fmtDuree(t.duree_mediane_s) : "")
+      : "aucune arrivée sur la période";
+    var abandons = Math.max(0, clics - comptes - connexions);
+    var four = (p.par_fournisseur || []).map(function (f) {
+      return (f.fournisseur || "?") + " : " + nb(f.clics) + " clic" + (f.clics > 1 ? "s" : "") +
+        ", " + nb(f.comptes) + " compte" + (f.comptes > 1 ? "s" : "");
+    });
+    var det3 = [];
+    if (abandons) det3.push(abandons + " clic" + (abandons > 1 ? "s" : "") + " sans suite");
+    if (four.length) det3.push(four.join(" · "));
+    var etapes = [
+      ["Arrivées sur le site", arrivees,
+        (+t.arrivees_accueil ? nb(t.arrivees_accueil) + " par la page d'accueil · " : "") +
+        nb(t.arrivees_app) + " dans l'app"],
+      ["Ont cliqué « se connecter »", clics, det3.join(" · ")],
+      ["Compte créé", comptes,
+        connexions ? "+ " + nb(connexions) + " connexion" + (connexions > 1 ? "s" : "") + " de comptes existants" : ""],
+      ["Identité complétée", +t.identites || 0, "prénom et nom enregistrés"],
+      ["Écran école", +t.ecole || 0, ""],
+      ["Écran formation", +t.formation || 0, ""],
+      ["Écran groupes", +t.groupes || 0, ""],
+      ["Horaire enregistré", +t.horaires || 0, "premier horaire sauvegardé"]
+    ];
+    var max = Math.max(1, arrivees);
+    $("parcours-entonnoir").innerHTML = etapes.map(function (e, i) {
+      var avant = i ? etapes[i - 1][1] : e[1];
+      var det = [];
+      if (i) det.push((avant ? Math.round(e[1] / avant * 100) : 100) + " % de l'étape d'avant");
+      if (e[2]) det.push(e[2]);
+      return '<li><span class="nom">' + txt(e[0]) + "</span>" +
+        '<span class="val num">' + nb(e[1]) + "</span>" +
+        '<span class="barre"><i style="width:' + (e[1] / max * 100) + '%"></i></span>' +
+        '<span class="det">' + txt(det.join(" · ")) + "</span></li>";
+    }).join("");
+    var arrets = (p.pages_arret || []).slice(0, 8);
+    var maxA = Math.max.apply(null, arrets.map(function (a) { return a.n; }).concat([1]));
+    $("parcours-arrets").innerHTML = arrets.map(function (a) {
+      return '<li><span class="nom">' + txt(nomEtape(a.etape)) + "</span>" +
+        '<span class="val num">' + nb(a.n) + "</span>" +
+        '<span class="barre"><i style="width:' + (a.n / maxA * 100) + '%"></i></span>' +
+        '<span class="det">' + (arrivees ? Math.round(a.n / arrivees * 100) + " % des visites" : "") + "</span></li>";
+    }).join("") || '<li class="vide-liste">Aucune visite sur la période.</li>';
+    var errs = p.erreurs || [];
+    var maxE = Math.max.apply(null, errs.map(function (e) { return e.n; }).concat([1]));
+    $("parcours-erreurs").innerHTML = errs.map(function (e) {
+      var det = [];
+      if (e.ecran) det.push(nomEtape(e.ecran));
+      det.push("dernier : " + ilya(e.dernier));
+      return '<li><span class="nom">' + txt(NOMS_ERREUR[e.erreur] || e.erreur) + "</span>" +
+        '<span class="val num">' + nb(e.n) + "</span>" +
+        '<span class="barre"><i style="width:' + (e.n / maxE * 100) + '%"></i></span>' +
+        '<span class="det">' + txt(det.join(" · ")) + "</span></li>";
+    }).join("") || '<li class="vide-liste">Aucune erreur ni friction.</li>';
+    var vers = p.par_version || [];
+    $("parcours-versions").innerHTML = vers.map(function (v) {
+      var taux = v.arrivees ? Math.round(v.comptes / v.arrivees * 100) : 0;
+      return '<li><span class="nom">v' + txt(v.version) + "</span>" +
+        '<span class="val num">' + nb(v.arrivees) + "</span>" +
+        '<span class="det">' + nb(v.comptes) + " compte" + (v.comptes > 1 ? "s" : "") + " · " +
+        nb(v.horaires) + " horaire" + (v.horaires > 1 ? "s" : "") + " · " + taux + " % des visiteurs</span></li>";
+    }).join("") || '<li class="vide-liste">Aucune version enregistrée (elle arrive avec la prochaine visite).</li>';
+    corps.hidden = false;
+  }
+
+  /* ---------- Bugs & demandes : reports lus via /api/bugs (admin) ---------- */
+  var bugs = null, reqBugs = 0;
+  var vueBugs = { filtre: "tous", type: "tous", ouvert: null };
+  var NOMS_STATUT = { nouveau: "Nouveau", en_cours: "En cours", corrige: "Corrigé" };
+  var NOMS_TYPE = { bug: "Bug", demande: "Demande" };
+  function typeDe(b) { return b.type === "demande" ? "demande" : "bug"; }
+  function bugsFiltres() {
+    if (!bugs) return [];
+    return bugs.filter(function (b) {
+      return (vueBugs.filtre === "tous" || b.statut === vueBugs.filtre) &&
+        (vueBugs.type === "tous" || typeDe(b) === vueBugs.type);
+    });
+  }
+  function pucesTypes() {
+    var Tous = [["tous", "Tous"], ["bug", "Bugs"], ["demande", "Demandes"]];
+    $("bugs-types").innerHTML = Tous.map(function (f) {
+      var n = bugs ? bugs.filter(function (b) {
+        return (vueBugs.filtre === "tous" || b.statut === vueBugs.filtre) &&
+          (f[0] === "tous" || typeDe(b) === f[0]);
+      }).length : 0;
+      return '<button data-t="' + f[0] + '" aria-pressed="' + (vueBugs.type === f[0]) + '">' + f[1] +
+        "<span>" + nb(n) + "</span></button>";
+    }).join("");
+  }
+  function pucesBugs() {
+    var Tous = [["tous", "Tous"], ["nouveau", "Nouveaux"], ["en_cours", "En cours"], ["corrige", "Corrigés"]];
+    $("bugs-filtres").innerHTML = Tous.map(function (f) {
+      var n = bugs ? bugs.filter(function (b) {
+        return (vueBugs.type === "tous" || typeDe(b) === vueBugs.type) &&
+          (f[0] === "tous" || b.statut === f[0]);
+      }).length : 0;
+      return '<button data-f="' + f[0] + '" aria-pressed="' + (vueBugs.filtre === f[0]) + '">' + f[1] +
+        "<span>" + nb(n) + "</span></button>";
+    }).join("");
+  }
+  function ligneBug(b) {
+    var ouvert = vueBugs.ouvert === b.id;
+    var t = typeDe(b);
+    var html = '<li><button class="ligne" data-b="' + b.id + '" aria-expanded="' + ouvert + '">' +
+      '<span class="av' + (b.statut === "nouveau" ? "" : " off") + '" aria-hidden="true">' + (t === "demande" ? "💡" : "!") + "</span>" +
+      '<span class="qui"><b>' + txt(b.email || "Anonyme") + "</b>" +
+      "<small>" + txt(ilya(b.created_at)) + (b.etape ? " · " + txt(b.etape) : "") + "</small></span>" +
+      '<span class="bug-msg"><span class="type ' + t + '">' + txt(NOMS_TYPE[t]) + "</span>" + txt(b.message) + "</span>" +
+      '<span class="act"><span class="statut ' + txt(b.statut) + '">' + txt(NOMS_STATUT[b.statut] || b.statut) + "</span></span>" +
+      '<span class="c7"></span><span class="cp"></span>' +
+      '<span class="quand">' + txt(ilya(b.created_at)) + "</span></button>";
+    if (ouvert) {
+      var ctx = b.contexte || {};
+      var det = [];
+      if (ctx.ecole) det.push("École : " + ctx.ecole);
+      if (ctx.formation) det.push("Formation : " + ctx.formation);
+      if (ctx.donnee) det.push(ctx.donnee);
+      html += '<div class="fiche"><dl>' +
+        "<dt>Message</dt><dd>" + txt(b.message) + "</dd>" +
+        "<dt>Type</dt><dd>" + txt(NOMS_TYPE[t]) + "</dd>" +
+        (b.email ? "<dt>Email</dt><dd>" + txt(b.email) + "</dd>" : "<dt>Email</dt><dd>— (anonyme)</dd>") +
+        "<dt>Étape</dt><dd>" + txt(b.etape || "—") + "</dd>" +
+        (det.length ? "<dt>Détails</dt><dd>" + det.map(txt).join("<br>") + "</dd>" : "") +
+        (ctx.ua ? "<dt>Appareil</dt><dd><code>" + txt(ctx.ua) + "</code></dd>" : "") +
+        "<dt>Reçu</dt><dd>" + txt(date(b.created_at, true)) + "</dd></dl>";
+      if ((b.images || []).length) {
+        html += '<div class="bug-imgs">' + b.images.map(function (im, i) {
+          var href = im.url || "";
+          return href ? '<a href="' + txt(href) + '" target="_blank" rel="noopener">' +
+            '<img src="' + txt(href) + '" alt="Capture ' + (i + 1) + '" loading="lazy"></a>' : "";
+        }).join("") + "</div>";
+      }
+      html += '<div class="bug-actions" role="group" aria-label="Changer le statut">' +
+        ["nouveau", "en_cours", "corrige"].map(function (s) {
+          return '<button data-s="' + s + '" data-b="' + b.id + '" aria-pressed="' + (b.statut === s) + '">' +
+            txt(NOMS_STATUT[s]) + "</button>";
+        }).join("") + "</div></div>";
+    }
+    return html + "</li>";
+  }
+  function rendreBugs() {
+    pucesTypes();
+    pucesBugs();
+    if (!bugs) {
+      $("bugs-resume").textContent = "chargement…";
+      $("bugs-liste").innerHTML = "";
+      return;
+    }
+    var lignes = bugsFiltres();
+    var n = bugs.filter(function (b) { return b.statut === "nouveau"; }).length;
+    var nBugs = bugs.filter(function (b) { return typeDe(b) === "bug"; }).length;
+    var nDemandes = bugs.length - nBugs;
+    $("bugs-resume").textContent = bugs.length
+      ? (n ? n + " nouveau" + (n > 1 ? "x" : "") + " · " : "") +
+        nBugs + " bug" + (nBugs > 1 ? "s" : "") + ", " + nDemandes + " demande" + (nDemandes > 1 ? "s" : "") +
+        " · " + bugs.length + " au total"
+      : "aucun report";
+    $("bugs-liste").innerHTML = lignes.map(ligneBug).join("") ||
+      '<li class="vide-liste">Aucun bug ni demande ici. Tout roule (pour l\'instant).</li>';
+  }
+  function chargerBugs() {
+    var id = ++reqBugs;
+    rendreBugs();
+    if (!sb) return;
+    sb.auth.getSession().then(function (res) {
+      var session = res && res.data && res.data.session;
+      if (!session || id !== reqBugs) return;
+      return fetch("api/bugs?limite=100", {
+        headers: { "Authorization": "Bearer " + session.access_token }, cache: "no-store"
+      }).then(function (r) { return r.json(); }).then(function (rep) {
+        if (id !== reqBugs || !rep.ok) throw new Error((rep && rep.erreur) || "Erreur.");
+        bugs = rep.data.bugs || [];
+        rendreBugs();
+      });
+    }).catch(function () {
+      if (id !== reqBugs) return;
+      bugs = bugs || [];
+      $("bugs-resume").textContent = "lecture impossible";
+      pucesTypes();
+      pucesBugs();
+    });
+  }
+  function changerStatutBug(id, statut) {
+    if (!sb) return;
+    sb.auth.getSession().then(function (res) {
+      var session = res && res.data && res.data.session;
+      if (!session) return;
+      return fetch("api/bugs?id=" + id, {
+        method: "PATCH", cache: "no-store",
+        headers: { "Authorization": "Bearer " + session.access_token, "Content-Type": "application/json" },
+        body: JSON.stringify({ statut: statut })
+      }).then(function (r) { return r.json(); }).then(function (rep) {
+        if (!rep.ok) throw new Error(rep.erreur || "Erreur.");
+        if (bugs) bugs.forEach(function (b) { if (b.id === id) b.statut = statut; });
+        rendreBugs();
+      });
+    }).catch(function () { /* on garde l'état affiché */ });
+  }
+
   /* ---------- Alertes : plafonds atteints, purge à planifier ---------- */
   function alertes() {
     var msgs = [];
@@ -517,6 +855,15 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
           "(pg_cron ou à la main, voir supabase/schema.sql).");
       }
     }
+    var pe = donnees.parcours && donnees.parcours.plus_ancien;
+    if (pe && !isNaN(new Date(pe))) {
+      var ageE = Math.floor((Date.now() - new Date(pe)) / 864e5);
+      if (ageE > 100) {
+        msgs.push("Table evenements jamais purgée (données depuis le " + txt(date(pe)) +
+          ") : planifie <code>select public.purger_evenements(90)</code> " +
+          "(pg_cron ou à la main, voir supabase/schema.sql).");
+      }
+    }
     var el = $("alerte");
     el.hidden = !msgs.length;
     el.innerHTML = msgs.map(function (m) { return "<div>" + m + "</div>"; }).join("");
@@ -525,7 +872,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   function rendre() {
     var maj = new Date().toLocaleTimeString("fr-BE", { hour: "2-digit", minute: "2-digit" });
     $("sous-titre").textContent = jours + " derniers jours · à jour à " + maj;
-    kpis(); alertes(); graphique(); formations(); puces(); comptes();
+    kpis(); alertes(); parcours(); graphique(); formations(); puces(); comptes();
   }
 
   /* ---------- Données ---------- */
@@ -548,6 +895,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
         donnees = rep.data;
         etat("");
         rendre();
+        chargerBugs();
       });
     }).catch(function (e) {
       if (id !== requete) return;
@@ -594,6 +942,30 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     comptes();
   });
   $("liste-plus").addEventListener("click", function () { vue.n += 40; comptes(); });
+  $("bugs-types").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-t]");
+    if (!b) return;
+    vueBugs.type = b.getAttribute("data-t");
+    rendreBugs();
+  });
+  $("bugs-filtres").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-f]");
+    if (!b) return;
+    vueBugs.filtre = b.getAttribute("data-f");
+    rendreBugs();
+  });
+  $("bugs-liste").addEventListener("click", function (e) {
+    var act = e.target.closest("button[data-s]");
+    if (act) {
+      changerStatutBug(+act.getAttribute("data-b"), act.getAttribute("data-s"));
+      return;
+    }
+    var b = e.target.closest(".ligne");
+    if (!b) return;
+    var id = +b.getAttribute("data-b");
+    vueBugs.ouvert = vueBugs.ouvert === id ? null : id;
+    rendreBugs();
+  });
   var largeur = window.innerWidth;
   window.addEventListener("resize", function () {
     if (donnees && (largeur < 560) !== (window.innerWidth < 560)) graphique();
@@ -617,6 +989,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
 (function () {
   "use strict";
   var CLE = "ezh_apparence";
+  var CLE_COULEUR = "ezh_admin_couleur";
   var ICONES = {
     clair: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
     sombre: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13.5A8 8 0 0 1 10.5 4 8 8 0 1 0 20 13.5z"/></svg>',
@@ -626,6 +999,18 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   function lire() {
     try { var v = localStorage.getItem(CLE); return (v === "clair" || v === "sombre") ? v : "systeme"; }
     catch (e) { return "systeme"; }
+  }
+  function lireCouleur() {
+    try { var v = +localStorage.getItem(CLE_COULEUR); return (v === 1 || v === 3) ? v : 2; }
+    catch (e) { return 2; }
+  }
+  function appliquerCouleur() {
+    var v = lireCouleur();
+    document.documentElement.setAttribute("data-couleur", String(v));
+    var opts = document.querySelectorAll("#menu-apparence [data-couleur-opt]");
+    for (var i = 0; i < opts.length; i++) {
+      opts[i].setAttribute("aria-checked", +opts[i].getAttribute("data-couleur-opt") === v ? "true" : "false");
+    }
   }
   function maj() {
     var clair = document.querySelector('meta[name="theme-color"][media*="light"]');
@@ -662,6 +1047,13 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     this.setAttribute("aria-expanded", ouvre ? "true" : "false");
   });
   document.getElementById("menu-apparence").addEventListener("click", function (e) {
+    var c = e.target.closest("[data-couleur-opt]");
+    if (c) {
+      // Le menu reste ouvert : on peut comparer les couleurs à la volée.
+      try { localStorage.setItem(CLE_COULEUR, c.getAttribute("data-couleur-opt")); } catch (err) { /* navigation privée */ }
+      appliquerCouleur();
+      return;
+    }
     var b = e.target.closest("[data-apparence-opt]");
     if (!b) return;
     try { localStorage.setItem(CLE, b.getAttribute("data-apparence-opt")); } catch (err) { /* navigation privée */ }
@@ -675,8 +1067,12 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     if (e.key === "Escape" && !document.getElementById("menu-apparence").hidden) fermer();
   });
   appliquer();
+  appliquerCouleur();
   try {
-    window.addEventListener("storage", function (e) { if (e.key === CLE) appliquer(); });
+    window.addEventListener("storage", function (e) {
+      if (e.key === CLE) appliquer();
+      else if (e.key === CLE_COULEUR) appliquerCouleur();
+    });
     if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").addEventListener) {
       window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function () {
         if (lire() === "systeme") maj();

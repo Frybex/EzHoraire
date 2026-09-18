@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>EzHoraire — Démo locale</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #eaf0fa; color: #17191d; }
+  @media (prefers-color-scheme: dark) { body { background: #0d1322; color: #f0f3f7; } }
+  .carte { max-width: 430px; margin: 24px; padding: 28px; border-radius: 24px;
+    background: #fff; box-shadow: 0 20px 60px -30px rgba(23, 32, 68, .5); }
+  @media (prefers-color-scheme: dark) { .carte { background: #171a20; } }
+  h1 { margin: 0 0 10px; font-size: 1.4rem; letter-spacing: -.02em; }
+  h1 span { color: #2456e0; }
+  @media (prefers-color-scheme: dark) { h1 span { color: #8ba6ff; } }
+  p { margin: 0 0 18px; color: #626977; line-height: 1.5; }
+  @media (prefers-color-scheme: dark) { p { color: #98a1b1; } }
+  button { width: 100%; height: 52px; border: 0; border-radius: 14px; cursor: pointer;
+    font: inherit; font-size: 1rem; font-weight: 650; color: #fff; background: #2456e0; }
+  .erreur { color: #d42a3c; font-size: .9rem; margin: 12px 0 0; }
+</style>
+</head>
+<body>
+<main class="carte">
+  <h1>Démo <span>EzHoraire</span></h1>
+  <p id="texte">Installation de trois horaires de test (HEH, sans compte),
+     puis ouverture de l'app en mode essai…</p>
+  <button id="go" hidden>Ouvrir l'app</button>
+  <p class="erreur" id="erreur" hidden></p>
+</main>
+<script>
+/* Page locale de test : pose trois horaires HEH bien réels dans
+   localStorage, puis ouvre l'app en mode essai (aucune connexion, aucun
+   cloud). Le site range l'app tantôt à la racine, tantôt dans app.html :
+   on regarde où est le code de l'app avant de rediriger. Recharger cette
+   page remet la démo à zéro. */
+(function () {
+  "use strict";
+  var PROFILS = [
+    { id: "demo-info1", surnom: "Info B1", ecole: "heh", formation: "BA1P Informatique",
+      groupes: ["Groupe 1 BA1P Informatique"], ical: "", theme: 2 },
+    { id: "demo-info2", surnom: "Info B2", ecole: "heh", formation: "BA2P Informatique",
+      groupes: ["Groupe 1 BA2P Informatique Dévelop."], ical: "", theme: 1 },
+    { id: "demo-social", surnom: "Social", ecole: "heh", formation: "BA1 Assistant social (Ms)",
+      groupes: ["Groupe 1"], ical: "", theme: 3 }
+  ];
+  var b = document.getElementById("go");
+  function ouvrir(lien) {
+    b.addEventListener("click", function () { location.href = lien; });
+    location.replace(lien);
+  }
+  /* Vrai si le fichier existe et contient le code de l'app (marqueur
+     MODE_ESSAI), pas la page d'accueil. */
+  function estLApp(fichier) {
+    return fetch(fichier, { cache: "no-store" }).then(function (r) {
+      return r.ok ? r.text() : "";
+    }).then(function (t) {
+      return t.indexOf("MODE_ESSAI") >= 0;
+    }, function () { return false; });
+  }
+  try {
+    localStorage.setItem("ezh_profils", JSON.stringify(PROFILS));
+    localStorage.setItem("ezh_courant", PROFILS[0].id);
+    localStorage.removeItem("ezh_brouillon");
+    localStorage.removeItem("ezh_profil");
+  } catch (e) {
+    document.getElementById("texte").textContent =
+      "Le navigateur bloque le stockage local (navigation privée ?) : ouvre l'app en mode essai directement.";
+    b.hidden = false;
+    var err = document.getElementById("erreur");
+    err.hidden = false;
+    err.textContent = String((e && e.message) || e);
+    return;
+  }
+  estLApp("app.html").then(function (oui) {
+    return oui ? "/app.html?essai=1" : "/?essai=1";
+  }).then(ouvrir);
+})();
+</script>
+</body>
+</html>

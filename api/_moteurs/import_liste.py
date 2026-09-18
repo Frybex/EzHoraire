@@ -1,9 +1,11 @@
-"""Import d'une liste de cours (copier-coller de MonULB / TimeEdit).
+"""Import d'une liste de cours (copier-coller MonULB / Mon Horaire, capture).
 
 Le code fait le travail sûr — découper les lignes, repérer les codes,
 chercher dans le catalogue de l'année — et Jev (TypeSafe) tranche les cas
 flous : un code abîmé (« COMMB3O5 »), une ligne sans code (« Espagnol I »).
 L'app montre ensuite la liste trouvée à l'étudiant : c'est lui qui valide.
+L'école est celle du module (`mod`) : les phrases nomment l'ULB ou
+l'UCLouvain selon le cas, et l'année n'est citée que si l'école en donne une.
 """
 import difflib
 import re
@@ -128,8 +130,12 @@ def importer(texte, mod, annee, budget=40):
                        "propositions": propositions})
 
     # Jev tranche les cas flous (s'il est configuré) : un seul appel groupé.
+    # Les phrases portent l'école du module : les mêmes lignes ne veulent pas
+    # dire la même chose à l'ULB et à l'UCLouvain.
     jev = False
     if doutes and _typesafe.disponible():
+        etablissement = getattr(mod, "NOM_COURT", None) or getattr(mod, "NOM", "l'école")
+        quand = " (année %s)" % annee if annee else ""
         questions = {}
         for d in doutes:
             if not d["propositions"]:
@@ -138,9 +144,9 @@ def importer(texte, mod, annee, budget=40):
                         for p in d["propositions"]}
             criteres["aucun"] = "aucun de ces cours"
             questions["l%d" % d["i"]] = (
-                "La ligne « %s » vient d'une liste de cours de l'ULB "
-                "(année %s). Quel cours du catalogue est visé ?"
-                % (d["ligne"][:160], annee), criteres)
+                "La ligne « %s » vient d'une liste de cours de %s%s. "
+                "Quel cours du catalogue est visé ?"
+                % (d["ligne"][:160], etablissement, quand), criteres)
         if questions:
             try:
                 reponses = _typesafe.choix(

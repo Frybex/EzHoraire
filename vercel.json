@@ -1,4 +1,8 @@
 {
+  "redirects": [
+    { "source": "/app.html", "destination": "/", "permanent": true },
+    { "source": "/app", "destination": "/", "permanent": true }
+  ],
   "headers": [
     {
       "source": "/",
@@ -7,6 +11,14 @@
     {
       "source": "/index.html",
       "headers": [{ "key": "Cache-Control", "value": "no-store, must-revalidate" }]
+    },
+    {
+      "source": "/horaires/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=3600, stale-while-revalidate=86400" }]
+    },
+    {
+      "source": "/aide/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=3600, stale-while-revalidate=86400" }]
     },
     {
       "source": "/mot-de-passe.html",
@@ -20,7 +32,7 @@
         { "key": "X-Frame-Options", "value": "DENY" },
         { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" },
         { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(), payment=()" },
-        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://*.supabase.co https://cdn.jsdelivr.net; frame-src blob:; worker-src blob: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'" }
+        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.supabase.co; font-src 'self'; connect-src 'self' https://*.supabase.co https://cdn.jsdelivr.net; frame-src blob:; worker-src blob: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'" }
       ]
     }
   ],
@@ -31,6 +43,7 @@
     "api/recherche.py": { "maxDuration": 30 },
     "api/ical.py": { "maxDuration": 30 },
     "api/importer.py": { "maxDuration": 60 },
-    "api/stats.py": { "maxDuration": 30 }
+    "api/stats.py": { "maxDuration": 30 },
+    "api/bugs.py": { "maxDuration": 30 }
   }
 }
