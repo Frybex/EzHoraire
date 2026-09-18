@@ -8,7 +8,24 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="EzHoraire">
-<title>EzHoraire</title>
+<title>EzHoraire — Ton horaire de cours, enfin lisible</title>
+<meta name="description" content="Ton horaire de cours HEH, UMONS ou ULB, clair et lisible sur téléphone. Choisis ton école, ta formation et tes groupes : ta semaine s'ouvre directement, à jour à chaque visite.">
+<link rel="canonical" href="https://www.ezhoraire.be/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="EzHoraire">
+<meta property="og:locale" content="fr_BE">
+<meta property="og:url" content="https://www.ezhoraire.be/">
+<meta property="og:title" content="EzHoraire — Ton horaire de cours, enfin lisible">
+<meta property="og:description" content="Ton horaire HEH, UMONS ou ULB, clair sur téléphone et à jour à chaque ouverture.">
+<meta property="og:image" content="https://www.ezhoraire.be/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="EzHoraire : une semaine de cours affichée en cases de couleur, avec le slogan « Enfin des horaires pratiques et lisibles. »">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="EzHoraire — Ton horaire de cours, enfin lisible">
+<meta name="twitter:description" content="Ton horaire HEH, UMONS ou ULB, clair sur téléphone et à jour à chaque ouverture.">
+<meta name="twitter:image" content="https://www.ezhoraire.be/og-image.png">
+<meta name="twitter:image:alt" content="EzHoraire : une semaine de cours affichée en cases de couleur.">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -18,13 +35,12 @@
 try { var _a = localStorage.getItem("ezh_apparence"); document.documentElement.setAttribute("data-apparence", (_a === "clair" || _a === "sombre") ? _a : "systeme"); }
 catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); }
 </script>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" integrity="sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e" crossorigin="anonymous"></script>
 <style>
   :root {
     --bg: #f4f5f7;
     --surface: #ffffff;
     --ink: #17191d;
-    --muted: #6d7482;
+    --muted: #626977;
     --line: #e4e7ec;
     --accent: #2456e0;
     --accent-soft: rgba(36, 86, 224, .09);
@@ -727,6 +743,11 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     min-height: 44px; padding: 0 12px;
   }
   .oublie:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .piege { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+  .mention-legale { margin: 18px auto 0; max-width: 34ch; text-align: center; font-size: .78rem; line-height: 1.45; color: var(--muted); }
+  .mention-legale a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+  .mention-legale a:hover { color: var(--ink); }
+  #identite-status { padding: 10px 10px 0; }
   #bloc-reset .champ-titre { text-align: center; margin-bottom: 10px; }
   @media (hover: hover) and (pointer: fine) {
     .btn-entree:hover { color: var(--ink); }
@@ -800,8 +821,8 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   .ap-ev b { font-size: .72rem; font-weight: 650; letter-spacing: -.005em; flex-shrink: 0; }
   .ap-ev i { font-size: .66rem; font-weight: 600; opacity: .85; flex-grow: 1; display: grid; align-content: center; }
   .ap-ev .ap-eb { display: flex; align-items: baseline; gap: 6px; margin-top: auto; }
-  .ap-ev u { flex: 1 1 auto; min-width: 0; font-size: .64rem; opacity: .68; }
-  .ap-ev em { flex: none; margin-left: auto; font-size: .62rem; font-weight: 500; opacity: .55; font-variant-numeric: tabular-nums; }
+  .ap-ev u { flex: 1 1 auto; min-width: 0; font-size: .64rem; opacity: .8; }
+  .ap-ev em { flex: none; margin-left: auto; font-size: .62rem; font-weight: 500; opacity: .8; font-variant-numeric: tabular-nums; }
   /* Colonne étroite : le prof cède la place aux horaires. */
   .ap-col { container: apcol / inline-size; }
   .ap-ev u { display: none; }
@@ -1636,8 +1657,8 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       white-space: normal; overflow-wrap: anywhere; overflow: hidden;
     }
     @container salle (max-height: 33px) { .ev .es > span { -webkit-line-clamp: 1; } }
-    .ev .ep { font-size: .74rem; opacity: .68; }
-    .ev .eh { font-size: .72rem; font-weight: 500; opacity: .55; font-variant-numeric: tabular-nums; }
+    .ev .ep { font-size: .74rem; opacity: .8; }
+    .ev .eh { font-size: .72rem; font-weight: 500; opacity: .8; font-variant-numeric: tabular-nums; }
     /* Bas de case : prof à gauche, horaires calés en bas à droite sur la
        même ligne. Ça rend une ligne au titre, qui n'est plus coupé quand
        la colonne est étroite. Sans prof, les horaires restent à droite. */
@@ -1802,7 +1823,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   html[data-apparence="clair"] { color-scheme: light; }
   html[data-apparence="sombre"] { color-scheme: dark; }
   html[data-apparence="clair"] {
-    --bg: #f4f5f7; --surface: #ffffff; --ink: #17191d; --muted: #6d7482;
+    --bg: #f4f5f7; --surface: #ffffff; --ink: #17191d; --muted: #626977;
     --line: #e4e7ec; --accent: #2456e0; --accent-soft: rgba(36, 86, 224, .09);
     --wash: rgba(36, 86, 224, 0); --free: #18794e; --seg-track: #e8eaef;
     --shadow: 0 16px 40px -24px rgba(23, 32, 68, .28); --danger: #d42a3c;
@@ -1995,6 +2016,12 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
           </button>
         </div>
       </div>
+      <!-- Piège à robots : invisible et hors du parcours clavier. Un humain
+           ne le remplit jamais ; un script qui remplit tout, si. -->
+      <div class="piege" aria-hidden="true">
+        <label for="site-web">Ne pas remplir</label>
+        <input id="site-web" type="text" tabindex="-1" autocomplete="off">
+      </div>
       <button type="button" class="btn-entree halo" id="btn-email">
         <span class="be-lib">Continuer</span>
         <span class="tourne" aria-hidden="true"></span>
@@ -2018,6 +2045,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
         </button>
       </div>
       <p class="pdf-status" id="auth-status" role="status" hidden></p>
+      <p class="mention-legale">En continuant, tu acceptes les <a href="/cgu.html">conditions d'utilisation</a> et la <a href="/confidentialite.html">politique de confidentialité</a>.</p>
     </div>
 
     <!-- Aperçu décoratif : une semaine type, dans le style de la grille de l'app. -->
@@ -2087,6 +2115,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       </div>
       <p class="surnom-aide">Il colore toute l'application pour ton horaire — touche une couleur pour voir le résultat.</p>
     </div>
+    <p class="pdf-status erreur" id="identite-status" role="status" hidden></p>
     <button class="primaire halo" id="btn-identite" type="button">Continuer</button>
   </section>
 
@@ -2251,7 +2280,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       <footer>
         <p id="maj"></p>
         <span class="sep" aria-hidden="true">·</span>
-        <p><a href="/confidentialite.html">Confidentialité</a></p>
+        <p><a href="/confidentialite.html">Confidentialité</a> · <a href="/cgu.html">Conditions d'utilisation</a></p>
       </footer>
     </div>
   </section>
@@ -3285,6 +3314,24 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
      d'attente en boucle ; il disparaît dès que le PDF est là. */
   var pdfURL = null, pdfCharge = false, pdfOuvert = false, pdfDemande = 0, pdfDoc = null;
   var PDFJS_CDN = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
+  var PDFJS_INTEGRITE = "sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e";
+  /* pdf.js (~320 Ko) n'est chargé qu'à la première ouverture d'un PDF :
+     la plupart des visites n'en ouvrent aucun, inutile de le payer au
+     démarrage. Même vérification d'intégrité qu'une balise <script>. */
+  var pdfJsPromesse = null;
+  function chargerPdfJs() {
+    if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+    if (!pdfJsPromesse) {
+      pdfJsPromesse = new Promise(function (ok, ko) {
+        var s = document.createElement("script");
+        s.src = PDFJS_CDN + "pdf.min.js"; s.integrity = PDFJS_INTEGRITE; s.crossOrigin = "anonymous";
+        s.onload = function () { if (window.pdfjsLib) ok(window.pdfjsLib); else { pdfJsPromesse = null; ko(); } };
+        s.onerror = function () { pdfJsPromesse = null; ko(); };
+        document.head.appendChild(s);
+      });
+    }
+    return pdfJsPromesse;
+  }
   var ICONE_PDF = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
     'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/>' +
     '<path d="M14 3v5h5M9 13h6M9 17h4"/></svg>';
@@ -3790,7 +3837,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     });
   });
   /* Connexion classique par email (mot de passe). */
-  function emailValide(v) { return /.+@.+\..+/.test(String(v || "").trim()); }
+  function emailValide(v) { return /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)*\.[a-z]{2,}$/i.test(String(v || "").trim()); }
   function majBoutonEmail() {
     document.getElementById("btn-email").classList.toggle("pret",
       emailValide(document.getElementById("email").value) && document.getElementById("mdp").value.length >= 6);
@@ -3800,6 +3847,8 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     if (btn.classList.contains("charge")) return;
     var em = document.getElementById("email").value;
     var mp = document.getElementById("mdp").value;
+    var piege = document.getElementById("site-web");
+    if (piege && piege.value) { statutAuthErreur("Connexion impossible pour le moment."); return; }
     if (!emailValide(em)) {
       try { document.getElementById("email").focus(); } catch (e) { /* jetable */ }
       statutAuthErreur("Indique une adresse email valide.");
@@ -3914,10 +3963,19 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   document.getElementById("btn-identite").addEventListener("click", function () {
     var p = document.getElementById("prenom").value.replace(/\s+/g, " ").trim().slice(0, 30);
     var n = document.getElementById("nom").value.replace(/\s+/g, " ").trim().slice(0, 30);
-    if (!p || !n) {
-      try { (!p ? document.getElementById("prenom") : document.getElementById("nom")).focus(); } catch (e) { /* jetable */ }
+    var st = document.getElementById("identite-status");
+    var lettre = /\p{L}/u;
+    var fautif = !lettre.test(p) ? "prenom" : (!lettre.test(n) ? "nom" : null);
+    ["prenom", "nom"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) { if (id === fautif) el.setAttribute("aria-invalid", "true"); else el.removeAttribute("aria-invalid"); }
+    });
+    if (fautif) {
+      if (st) { st.textContent = fautif === "prenom" ? "Indique ton prénom." : "Indique ton nom."; st.hidden = false; }
+      try { document.getElementById(fautif).focus(); } catch (e) { /* jetable */ }
       return;
     }
+    if (st) { st.hidden = true; st.textContent = ""; }
     if (!compte) compte = { fournisseur: fournisseurChoisi || "local", nom: "", prenom: "" };
     compte.prenom = p; compte.nom = n;
     sauverCompte();
@@ -5746,6 +5804,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     if (pdfCharge) return; // téléchargement en cours : on attend la boucle
     if (pdfOuvert) { fermerPdf(); return; }
     var maDemande = ++pdfDemande;
+    chargerPdfJs().catch(function () { /* repli iframe au rendu */ }); // en parallèle du PDF
     pdfCharge = true; pdfOuvert = true;
     btn.disabled = true;
     majBoutonPdf();
@@ -5823,19 +5882,20 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
           if (zi) { zi.classList.remove("attente"); zi.style.minHeight = ""; }
           memoriserHauteurPdf(); recadrerPdfFinal(); // hauteur fixe immédiate : on corrige tout de suite
         }
-        if (typeof pdfjsLib === "undefined") { repliIframe(); return; }
-        try {
-          pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_CDN + "pdf.worker.min.js";
-        } catch (e) { /* ouvrier déjà réglé */ }
-        blob.arrayBuffer().then(function (buf) {
-          if (maDemande !== pdfDemande) return;
-          pdfjsLib.getDocument({ data: buf, isEvalSupported: false }).promise.then(function (doc) {
-            if (maDemande !== pdfDemande) { try { doc.destroy(); } catch (e) { /* jetable */ } return; }
-            oublierPdfDoc();
-            pdfDoc = doc;
-            rendrePagesPdf(pages);
-          }, repliIframe);
-        }, repliIframe);
+        chargerPdfJs().then(function (pdfjsLib) {
+          try {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_CDN + "pdf.worker.min.js";
+          } catch (e) { /* ouvrier déjà réglé */ }
+          return blob.arrayBuffer().then(function (buf) {
+            if (maDemande !== pdfDemande) return;
+            pdfjsLib.getDocument({ data: buf, isEvalSupported: false }).promise.then(function (doc) {
+              if (maDemande !== pdfDemande) { try { doc.destroy(); } catch (e) { /* jetable */ } return; }
+              oublierPdfDoc();
+              pdfDoc = doc;
+              rendrePagesPdf(pages);
+            }, repliIframe);
+          });
+        }).catch(repliIframe);
       }, function (e) {
         if (maDemande !== pdfDemande) return;
         pdfCharge = false; pdfOuvert = true; // zone reste ouverte sur l'erreur

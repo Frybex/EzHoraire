@@ -238,7 +238,9 @@ au-delà de ce que l'école publie, paramètre d'URL en trop ou en double
 déjà en mémoire.
 
 Les libs chargées depuis les CDN (`supabase-js` 2.116.0, `pdf.js`
-3.11.174) sont épinglées et protégées par `integrity` ; la CSP de
+3.11.174) sont épinglées et protégées par `integrity` ; `pdf.js` n'est
+téléchargé qu'à la première ouverture d'un PDF (`chargerPdfJs()`), pas au
+démarrage ; la CSP de
 `vercel.json` (dupliquée dans `serve.py`, à garder synchronisée) limite
 les sources. `logos/ecoles/` est déployé, `logos/da/` et `logos/ez/`
 (scripts) ne le sont pas (`.vercelignore`).
@@ -246,6 +248,16 @@ les sources. `logos/ecoles/` est déployé, `logos/da/` et `logos/ez/`
 ## Fichiers
 
 - `index.html` — l'app (choix école → formation → groupe(s), puis horaire).
+- `confidentialite.html`, `cgu.html` — politique de confidentialité et
+  conditions d'utilisation (mentions légales incluses), stylées par
+  `legal.css` + `legal.js` (sommaire). À relire à chaque nouveau
+  prestataire, nouvelle donnée ou nouvelle école.
+- `404.html` — page des adresses inconnues (servie seule par Vercel, et
+  par `serve.py` en local).
+- `og-image.png` — aperçu des liens partagés (1200 × 630). Source :
+  `logos/og/og-image.html`, rendu par `python3 logos/og/build.py`.
+- `robots.txt`, `sitemap.xml` — référencement (l'API, le dashboard et la
+  page de mot de passe sont exclus).
 - `mot-de-passe.html` — page d'atterrissage du lien « mot de passe oublié »
   (vérification du jeton, adresse du compte, choix et enregistrement du
   nouveau mot de passe, renvoi d'un lien si celui-ci a expiré).

@@ -133,6 +133,20 @@ class Handler(SimpleHTTPRequestHandler):
     def log_message(self, *args):
         pass  # silencieux
 
+    def send_error(self, code, message=None, explain=None):
+        # Comme Vercel : une adresse inconnue reçoit la page 404 du site.
+        page = os.path.join(os.path.dirname(os.path.abspath(__file__)), "404.html")
+        if code != 404 or not os.path.isfile(page):
+            return super().send_error(code, message, explain)
+        with open(page, "rb") as f:
+            corps = f.read()
+        self.send_response(404, message)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(corps)))
+        self.end_headers()
+        if self.command != "HEAD":
+            self.wfile.write(corps)
+
     def end_headers(self):
         for cle, valeur in ENTETES_SECURITE.items():
             self.send_header(cle, valeur)

@@ -4,104 +4,316 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="robots" content="index, follow">
-<title>Confidentialité — EzHoraire</title>
+<meta name="theme-color" content="#f4f5f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#101216" media="(prefers-color-scheme: dark)">
+<title>Politique de confidentialité — EzHoraire</title>
+<meta name="description" content="Quelles données EzHoraire utilise, pourquoi, chez qui elles sont hébergées, combien de temps elles sont gardées et comment exercer tes droits (RGPD).">
+<link rel="canonical" href="https://www.ezhoraire.be/confidentialite.html">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="EzHoraire">
+<meta property="og:locale" content="fr_BE">
+<meta property="og:url" content="https://www.ezhoraire.be/confidentialite.html">
+<meta property="og:title" content="Politique de confidentialité — EzHoraire">
+<meta property="og:description" content="Ce qu'EzHoraire fait de tes données, en clair.">
+<meta property="og:image" content="https://www.ezhoraire.be/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="EzHoraire : une semaine de cours affichée en cases de couleur.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<style>
-  :root {
-    --bg: #f4f5f7; --surface: #fff; --ink: #17191d; --muted: #6d7482;
-    --line: #e4e7ec; --accent: #2456e0;
-    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root { --bg: #101216; --surface: #171a20; --ink: #f0f3f7; --muted: #98a1b1; --line: #262b34; --accent: #8ba6ff; }
-  }
-  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
-  .wrap { max-width: 680px; margin: 0 auto; padding: 28px 18px 64px; }
-  a { color: var(--accent); }
-  .retour { display: inline-block; margin-bottom: 18px; text-decoration: none; font-weight: 600; font-size: .92rem; }
-  h1 { font-size: clamp(1.7rem, 7vw, 2.2rem); letter-spacing: -.04em; line-height: 1.08; margin: 0 0 6px; }
-  h1 span { color: var(--accent); }
-  .maj { color: var(--muted); font-size: .88rem; margin: 0 0 26px; }
-  h2 { font-size: 1.08rem; letter-spacing: -.01em; margin: 28px 0 8px; }
-  p, li { overflow-wrap: break-word; }
-  p { margin: 8px 0; }
-  ul { margin: 8px 0; padding-left: 22px; }
-  li { margin: 4px 0; }
-  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; margin: 12px 0; }
-  .card p { margin: 4px 0; font-size: .95rem; }
-  code { font-size: .85em; }
-  footer { margin-top: 34px; color: var(--muted); font-size: .82rem; }
-</style>
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<script>
+/* Même apparence que l'app (Clair / Sombre / Système), posée avant le rendu. */
+try { var _a = localStorage.getItem("ezh_apparence"); if (_a === "clair" || _a === "sombre") document.documentElement.setAttribute("data-apparence", _a); } catch (e) {}
+</script>
+<link rel="stylesheet" href="/legal.css">
+<script defer src="/legal.js"></script>
 </head>
 <body>
-<main class="wrap">
-  <a class="retour" href="/">← Retour à EzHoraire</a>
-  <h1>Confidentialité <span>EzHoraire</span></h1>
-  <p class="maj">Dernière mise à jour : 17 septembre 2026</p>
+<div class="aurore" aria-hidden="true"></div>
 
-  <div class="card">
-    <p><strong>Responsable :</strong> Maxence Bastin — EzHoraire, Belgique.</p>
-    <p><strong>Contact vie privée :</strong> <a href="mailto:contact@ezhoraire.be">contact@ezhoraire.be</a> (accès, rectification, suppression).</p>
-  </div>
+<div class="page">
+  <header class="barre">
+    <a class="marque" href="/" aria-label="EzHoraire, retour à l'app">
+      <svg width="30" height="30" viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#232832"/><stop offset="1" stop-color="#101216"/></linearGradient></defs><rect width="100" height="100" rx="20" fill="url(#lg)"/><rect x="21" y="22" width="58" height="15" rx="7.5" fill="#f4f5f7"/><rect x="21" y="42.5" width="40" height="15" rx="7.5" fill="#5b86ff"/><rect x="21" y="63" width="58" height="15" rx="7.5" fill="#f4f5f7"/></svg>
+      <span>Ez<span class="ac">Horaire</span></span>
+    </a>
+    <a class="retour" href="/"><span aria-hidden="true">←</span> Retour à l'app</a>
+  </header>
 
-  <h2>1. Ce que fait EzHoraire</h2>
-  <p>EzHoraire affiche les horaires de cours des écoles partenaires (HEH, UMONS) de façon lisible sur téléphone. Pour garder vos horaires d'une visite à l'autre, l'app crée un compte et mémorise vos choix (école, formation, groupes).</p>
+  <main>
+    <div class="entete">
+      <p class="sur-titre">Vie privée</p>
+      <h1>Politique de <em>confidentialité</em></h1>
+      <p class="chapeau">Ce qu'EzHoraire fait de tes données, pourquoi, chez qui elles vivent et comment en garder la main. Écrit pour être lu, conforme au Règlement général sur la protection des données (RGPD) et au droit belge.</p>
+      <ul class="meta">
+        <li>En vigueur le 18 septembre 2026</li>
+        <li>Version 2</li>
+        <li>Lecture : 8 min</li>
+      </ul>
+    </div>
 
-  <h2>2. Données collectées</h2>
-  <ul>
-    <li><strong>Compte :</strong> prénom, nom, adresse email, fournisseur de connexion (Google, GitHub, Apple ou email), pseudo public si fourni par le fournisseur (ex. pseudo GitHub).</li>
-    <li><strong>Horaires suivis :</strong> école, formation, groupes choisis, surnom et couleur de chaque horaire.</li>
-    <li><strong>Usage :</strong> une ligne par consultation d'horaire (date, école, formation) pour le tableau de bord interne.</li>
-    <li><strong>Sur votre appareil :</strong> compte et horaires dans le stockage local du navigateur (<code>ezh_compte</code>, <code>ezh_profils</code>, <code>ezh_courant</code>). Supprimer les données du site les efface.</li>
-  </ul>
-  <p>Nous ne collectons ni localisation, ni contacts, ni photos, ni données de santé. Pas de publicité, pas de revente de données, aucun traceur publicitaire.</p>
+    <section class="essentiel" aria-label="L'essentiel en quatre points">
+      <article class="tuile">
+        <span class="ico" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></span>
+        <h3>Le strict nécessaire</h3>
+        <p>Ton email, ton nom, et les horaires que tu suis. Rien d'autre sur toi.</p>
+      </article>
+      <article class="tuile">
+        <span class="ico" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg></span>
+        <h3>Zéro pub, zéro revente</h3>
+        <p>Aucun traceur publicitaire, aucun cookie de mesure, aucune donnée vendue.</p>
+      </article>
+      <article class="tuile">
+        <span class="ico" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg></span>
+        <h3>Ton mot de passe, jamais</h3>
+        <p>Ni celui de ton école, ni celui de Google ou GitHub. Le tien est chiffré par notre prestataire.</p>
+      </article>
+      <article class="tuile">
+        <span class="ico" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg></span>
+        <h3>Tout effacer, sur demande</h3>
+        <p>Un email suffit : compte, horaires et historique disparaissent sous 30 jours.</p>
+      </article>
+    </section>
 
-  <h2>3. Finalités et bases légales (RGPD)</h2>
-  <ul>
-    <li><strong>Fournir le service</strong> (afficher et synchroniser vos horaires) : exécution du service demandé (art. 6.1.b).</li>
-    <li><strong>Mesure d'audience interne</strong> (consultations par formation, comptes actifs) : intérêt légitime à faire fonctionner et dimensionner le service (art. 6.1.f).</li>
-  </ul>
+    <div class="corps">
+      <nav class="sommaire" aria-label="Sommaire">
+        <details>
+          <summary>Sommaire</summary>
+          <ol>
+            <li><a href="#responsable">Qui est responsable</a></li>
+            <li><a href="#donnees">Données utilisées</a></li>
+            <li><a href="#finalites">Finalités et bases légales</a></li>
+            <li><a href="#connexion">Connexion Google, GitHub ou email</a></li>
+            <li><a href="#import">Import d'une liste de cours</a></li>
+            <li><a href="#stockage">Cookies et stockage local</a></li>
+            <li><a href="#destinataires">Destinataires et sous-traitants</a></li>
+            <li><a href="#transferts">Transferts hors de l'UE</a></li>
+            <li><a href="#conservation">Durées de conservation</a></li>
+            <li><a href="#securite">Sécurité</a></li>
+            <li><a href="#droits">Tes droits</a></li>
+            <li><a href="#mineurs">Mineurs</a></li>
+            <li><a href="#modifications">Modifications</a></li>
+          </ol>
+        </details>
+      </nav>
 
-  <h2>4. Connexion via un tiers</h2>
-  <p>Vous pouvez vous connecter avec Google, GitHub, Apple ou par email + mot de passe. Dans ce cas, le fournisseur nous transmet uniquement les informations nécessaires : nom, prénom, adresse email et identifiant de compte. Votre mot de passe tiers ne transite jamais par nos serveurs. La connexion par email est gérée directement par notre prestataire d'authentification (voir ci-dessous).</p>
+      <div class="texte">
+        <section id="responsable">
+          <h2>Qui est responsable de tes données</h2>
+          <p>EzHoraire est un service gratuit édité à titre personnel. Le responsable du traitement, au sens de l'article 4.7 du RGPD, est :</p>
+          <div class="carte filet">
+            <dl class="fiche">
+              <dt>Responsable</dt><dd>Maxence Bastin, éditeur d'EzHoraire</dd>
+              <dt>Pays</dt><dd>Belgique</dd>
+              <!-- À compléter si l'éditeur dispose d'une adresse publique ou d'un numéro d'entreprise (BCE). -->
+              <dt>Contact</dt><dd><a href="mailto:contact@ezhoraire.be">contact@ezhoraire.be</a></dd>
+              <dt>Site</dt><dd><a href="https://www.ezhoraire.be">www.ezhoraire.be</a></dd>
+            </dl>
+          </div>
+          <p>EzHoraire n'a pas désigné de délégué à la protection des données : ce n'est pas obligatoire pour un service de cette taille (article 37 du RGPD). L'adresse ci-dessus répond à toutes les questions de vie privée.</p>
+        </section>
 
-  <h2>5. Sous-traitants et destinataires</h2>
-  <ul>
-    <li><strong>Supabase</strong> : authentification et base de données des comptes, profils et consultations.</li>
-    <li><strong>Vercel</strong> : hébergement de l'application et des API.</li>
-    <li><strong>Resend</strong> : envoi des emails du service (réinitialisation de mot de passe) et réception des messages adressés à contact@ezhoraire.be.</li>
-    <li><strong>Google, GitHub, Apple</strong> : uniquement pour l'authentification si vous choisissez ce mode.</li>
-    <li><strong>Écoles (HEH, UMONS)</strong> : l'app interroge leurs plannings publics pour afficher les cours ; aucune donnée personnelle ne leur est envoyée.</li>
-  </ul>
+        <section id="donnees">
+          <h2>Les données que nous utilisons</h2>
+          <h3>Ce que tu nous confies</h3>
+          <ul>
+            <li><strong>Ton compte :</strong> adresse email, prénom, nom, identifiant technique du compte, mode de connexion (Google, GitHub ou email), date de création et de dernière connexion. Avec Google ou GitHub, le fournisseur transmet aussi le nom affiché, la photo de profil et, pour GitHub, le pseudo : ces informations restent dans les métadonnées du compte, l'app ne les affiche pas.</li>
+            <li><strong>Ton mot de passe</strong> (connexion par email) : il est chiffré (haché) par notre prestataire d'authentification. Personne, pas même l'éditeur, ne peut le lire.</li>
+            <li><strong>Les horaires que tu suis :</strong> école, formation ou programme, groupes cochés, surnom et couleur de chaque horaire.</li>
+            <li><strong>Ton lien d'abonnement personnel</strong> (facultatif, ULB et UCLouvain) : si tu colles le lien « S'abonner » de ton horaire universitaire, nous le gardons pour relire ton horaire à chaque ouverture. Ce lien donne accès à ton horaire personnel : traite-le comme un mot de passe.</li>
+            <li><strong>Une liste de cours collée ou photographiée</strong> (facultatif, voir la section <a href="#import">Import</a>).</li>
+            <li><strong>Tes messages</strong> si tu nous écris.</li>
+          </ul>
+          <h3>Ce qui est produit par l'usage</h3>
+          <ul>
+            <li><strong>Consultations :</strong> à chaque ouverture d'un horaire, une ligne avec ton identifiant de compte, l'horaire concerné (école, formation) et la date et l'heure.</li>
+            <li><strong>Données techniques :</strong> adresse IP, type de navigateur, pages et adresses d'API appelées, horodatage. Elles passent par nos serveurs et ceux de nos prestataires pour que le site fonctionne et se défende contre les abus.</li>
+          </ul>
+          <div class="note ok">
+            <p><strong>Nous ne collectons jamais :</strong> ta localisation, tes contacts, tes photos (une capture importée est lue sur ton appareil et n'est pas envoyée), tes notes, tes identifiants d'école ou des données sensibles au sens de l'article 9 du RGPD.</p>
+          </div>
+          <p>L'email, le prénom et le nom sont nécessaires pour créer un compte : sans eux, l'app ne peut pas garder ni synchroniser tes horaires. Tout le reste est facultatif.</p>
+        </section>
 
-  <h2>6. Transferts hors UE</h2>
-  <p>Nos prestataires (hébergement, authentification, email) peuvent traiter des données hors de l'Union européenne, notamment aux États-Unis, avec les garanties prévues par le RGPD (clauses contractuelles types et mesures de sécurité des prestataires).</p>
+        <section id="finalites">
+          <h2>Pourquoi, et sur quelle base légale</h2>
+          <p>Chaque usage repose sur une des bases prévues par l'article 6 du RGPD.</p>
+          <div class="cadre">
+            <table class="tableau">
+              <thead><tr><th scope="col">Finalité</th><th scope="col">Données</th><th scope="col">Base légale</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td>Créer ton compte, te connecter, afficher et synchroniser tes horaires sur tous tes appareils</td>
+                  <td data-label="Données">Compte, horaires suivis, lien d'abonnement</td>
+                  <td data-label="Base légale"><span class="pastille">Contrat</span> exécution du service que tu demandes (art. 6.1.b), selon les <a href="/cgu.html">conditions d'utilisation</a></td>
+                </tr>
+                <tr>
+                  <td>Reconnaître les cours d'une liste que tu importes</td>
+                  <td data-label="Données">Texte de la liste</td>
+                  <td data-label="Base légale"><span class="pastille">Contrat</span> art. 6.1.b, fonction que tu déclenches toi-même</td>
+                </tr>
+                <tr>
+                  <td>T'envoyer les emails du service (confirmation d'adresse, mot de passe oublié)</td>
+                  <td data-label="Données">Email</td>
+                  <td data-label="Base légale"><span class="pastille">Contrat</span> art. 6.1.b</td>
+                </tr>
+                <tr>
+                  <td>Suivre l'usage du service : comptes actifs, formations suivies, consultations par jour, pour le faire tourner, le dimensionner et repérer les abus</td>
+                  <td data-label="Données">Compte, horaires suivis, consultations</td>
+                  <td data-label="Base légale"><span class="pastille">Intérêt légitime</span> art. 6.1.f : faire fonctionner un service gratuit et ménager les serveurs des écoles. Tu peux t'y opposer (voir <a href="#droits">Tes droits</a>).</td>
+                </tr>
+                <tr>
+                  <td>Protéger le service et les écoles : limites de débit par adresse IP, journaux techniques, lutte contre les robots</td>
+                  <td data-label="Données">Données techniques</td>
+                  <td data-label="Base légale"><span class="pastille">Intérêt légitime</span> art. 6.1.f : sécurité du service</td>
+                </tr>
+                <tr>
+                  <td>Répondre à tes messages et à tes demandes d'exercice de droits</td>
+                  <td data-label="Données">Email, contenu du message</td>
+                  <td data-label="Base légale"><span class="pastille">Obligation légale</span> art. 6.1.c pour les demandes RGPD, <span class="pastille">Intérêt légitime</span> pour le reste</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p>Le tableau de bord interne, réservé à l'éditeur, montre pour chaque compte : l'email, le nom, les dates de création et de dernière connexion, les horaires suivis et le nombre de consultations. Il ne sert qu'aux finalités ci-dessus.</p>
+          <p>Aucune décision automatisée produisant des effets juridiques à ton égard n'est prise (article 22 du RGPD), et aucun profil publicitaire n'est construit.</p>
+        </section>
 
-  <h2>7. Durées de conservation</h2>
-  <ul>
-    <li><strong>Horaires suivis :</strong> conservés jusqu'à la suppression de votre compte.</li>
-    <li><strong>Consultations d'usage :</strong> 180 jours maximum, puis purge automatique.</li>
-    <li><strong>Compte :</strong> jusqu'à votre demande de suppression.</li>
-    <li><strong>Correspondance :</strong> les messages envoyés à contact@ezhoraire.be sont conservés le temps de traiter la demande, puis supprimés.</li>
-  </ul>
+        <section id="connexion">
+          <h2>Connexion avec Google, GitHub ou par email</h2>
+          <p>Si tu choisis <strong>Google</strong> ou <strong>GitHub</strong>, tu t'identifies chez eux : ton mot de passe ne passe jamais par EzHoraire. Ils nous transmettent ton identifiant de compte, ton adresse email et ton nom (plus ta photo de profil et ton pseudo selon le fournisseur). Ils savent de leur côté que tu utilises EzHoraire. Google et GitHub agissent alors en responsables de traitement indépendants, selon leurs propres politiques :
+            <a href="https://policies.google.com/privacy?hl=fr" rel="noopener">Google</a> ·
+            <a href="https://docs.github.com/fr/site-policy/privacy-policies/github-general-privacy-statement" rel="noopener">GitHub</a>.</p>
+          <p>Avec <strong>email et mot de passe</strong>, le compte est géré par notre prestataire d'authentification (Supabase), qui peut t'envoyer un lien pour confirmer ton adresse ou changer ton mot de passe.</p>
+          <p>Ta session est gardée sur ton appareil pour t'éviter de te reconnecter à chaque visite. La déconnexion, dans les Réglages, l'efface.</p>
+        </section>
 
-  <h2>8. Sécurité</h2>
-  <p>Chiffrement en transit (HTTPS), accès base verrouillé par politiques « chacun ne voit que ses lignes », clés d'administration conservées uniquement côté serveur et jamais exposées au navigateur.</p>
+        <section id="import">
+          <h2>Import d'une liste de cours</h2>
+          <p>Pour composer un horaire « à la carte », tu peux coller ta liste de cours ou en prendre une capture.</p>
+          <ul>
+            <li><strong>Une capture d'écran</strong> est lue <strong>sur ton appareil</strong> par un moteur de reconnaissance de texte (Tesseract), téléchargé à ce moment-là depuis le CDN jsDelivr. L'image ne quitte pas ton appareil.</li>
+            <li><strong>Le texte obtenu</strong> (ou collé) est envoyé à notre serveur, qui y repère les codes de cours et les vérifie dans le catalogue public de l'école. Il n'est pas enregistré.</li>
+            <li><strong>Les lignes ambiguës</strong> peuvent être soumises, sans ton nom ni ton email, à Jev (TypeSafe), un service d'IA qui suggère le cours le plus probable. C'est toujours toi qui valides le résultat avant qu'il soit ajouté.</li>
+          </ul>
+        </section>
 
-  <h2>9. Vos droits</h2>
-  <p>Accès, rectification, effacement, limitation, portabilité, opposition et retrait du consentement : écrivez à <a href="mailto:contact@ezhoraire.be">contact@ezhoraire.be</a> depuis votre adresse de compte. Pour tout effacer vite : déconnectez-vous dans les Réglages, videz les données du site dans votre navigateur, puis demandez la suppression du compte par email — elle supprime compte, horaires et historique associé.</p>
-  <p>Réclamation possible auprès de l'Autorité de protection des données (Belgique) : <a href="https://www.autoriteprotectiondonnees.be">autoriteprotectiondonnees.be</a>.</p>
+        <section id="stockage">
+          <h2>Cookies et stockage local</h2>
+          <p><strong>EzHoraire n'utilise aucun cookie</strong>, ni publicitaire, ni de mesure d'audience, ni de réseau social. C'est pour ça qu'il n'y a pas de bandeau de cookies : il n'y a rien à accepter ou refuser.</p>
+          <p>L'app range en revanche quelques informations dans le stockage local de ton navigateur. Elles sont <strong>strictement nécessaires</strong> au service que tu demandes, ce qui les dispense de consentement (article 5.3 de la directive « vie privée et communications électroniques » 2002/58/CE, transposé en droit belge). Elles ne sont lues par personne d'autre que l'app.</p>
+          <div class="cadre">
+            <table class="tableau">
+              <thead><tr><th scope="col">Clé</th><th scope="col">Contenu</th><th scope="col">Durée</th></tr></thead>
+              <tbody>
+                <tr><td><code>sb-…-auth-token</code></td><td data-label="Contenu">Jeton de session (te garde connecté)</td><td data-label="Durée">Jusqu'à la déconnexion</td></tr>
+                <tr><td><code>ezh_compte</code></td><td data-label="Contenu">Prénom, nom, mode de connexion</td><td data-label="Durée">Jusqu'à la déconnexion</td></tr>
+                <tr><td><code>ezh_profils</code>, <code>ezh_courant</code></td><td data-label="Contenu">Tes horaires et celui ouvert en dernier</td><td data-label="Durée">Jusqu'à la déconnexion</td></tr>
+                <tr><td><code>ezh_horaire:…</code></td><td data-label="Contenu">Dernier horaire reçu, pour l'afficher hors ligne</td><td data-label="Durée">Remplacé à chaque mise à jour</td></tr>
+                <tr><td><code>ezh_apparence</code>, <code>ezh_pdf_h:…</code>, <code>ezh_pwa_propose</code></td><td data-label="Contenu">Préférences d'affichage (thème clair ou sombre, hauteur du PDF, suggestion d'installation déjà montrée)</td><td data-label="Durée">Jusqu'à ce que tu vides les données du site</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>Tu peux tout effacer à tout moment dans les réglages de ton navigateur (« Effacer les données du site »).</p>
+          <p><strong>Bibliothèques externes.</strong> Pour s'afficher, l'app télécharge quelques bibliothèques publiques depuis les CDN jsDelivr et cdnjs (Cloudflare) : le client de connexion, et à la demande le lecteur de PDF et la reconnaissance de texte. Comme pour tout site, ces services voient passer ton adresse IP au moment du téléchargement. Aucun cookie n'y est déposé.</p>
+        </section>
 
-  <h2>10. Mineurs</h2>
-  <p>EzHoraire s'adresse aux étudiants de l'enseignement supérieur. Si vous êtes mineur, utilisez le service avec l'accord d'un parent ou responsable légal.</p>
+        <section id="destinataires">
+          <h2>Qui reçoit tes données</h2>
+          <p>Tes données ne sont <strong>ni vendues, ni louées, ni partagées</strong> à des fins commerciales. Seuls les prestataires techniques nécessaires au service y ont accès, chacun lié par un contrat de sous-traitance conforme à l'article 28 du RGPD et limité à ce qu'il doit faire pour nous.</p>
+          <div class="cadre">
+            <table class="tableau">
+              <thead><tr><th scope="col">Prestataire</th><th scope="col">Rôle</th><th scope="col">Données concernées</th></tr></thead>
+              <tbody>
+                <tr><td>Supabase, Inc.</td><td data-label="Rôle">Authentification et base de données</td><td data-label="Données concernées">Compte, horaires suivis, consultations, journaux de connexion (dont l'adresse IP)</td></tr>
+                <tr><td>Vercel, Inc.</td><td data-label="Rôle">Hébergement du site et des API</td><td data-label="Données concernées">Données techniques, contenu des requêtes le temps de les traiter</td></tr>
+                <tr><td>Resend (Plus Five Five, Inc.)</td><td data-label="Rôle">Envoi des emails du service, réception des messages à contact@ezhoraire.be</td><td data-label="Données concernées">Email, contenu des messages</td></tr>
+                <tr><td>TypeSafe</td><td data-label="Rôle">Aide à la reconnaissance des cours importés (Jev)</td><td data-label="Données concernées">Lignes de la liste importée, sans identité</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p><strong>Les écoles</strong> (HEH, UMONS, ULB et, lorsqu'elle est proposée, UCLouvain) : l'app lit leurs plannings publics. Aucune donnée te concernant ne leur est envoyée, à une exception près : si tu fournis ton lien d'abonnement personnel, notre serveur l'utilise pour récupérer ton horaire auprès de l'école qui l'a émis. EzHoraire n'est affilié à aucune de ces écoles.</p>
+          <p>Nous pourrions enfin devoir communiquer des données à une autorité qui les exige légalement (par exemple sur décision judiciaire).</p>
+        </section>
 
-  <h2>11. Modifications</h2>
-  <p>Cette page peut évoluer avec le service ; la date en haut fait foi. En cas de changement important, nous l'indiquerons dans l'application.</p>
+        <section id="transferts">
+          <h2>Transferts hors de l'Union européenne</h2>
+          <p>Plusieurs prestataires (Supabase, Vercel, Resend, TypeSafe, ainsi que Google et GitHub si tu les utilises) sont établis aux États-Unis. Tes données peuvent donc y être traitées. Ces transferts sont encadrés par les garanties de l'article 46 du RGPD, à savoir les <strong>clauses contractuelles types</strong> adoptées par la Commission européenne, ou par la décision d'adéquation du <strong>cadre de protection des données UE–États-Unis</strong> (Data Privacy Framework) pour les entreprises qui y sont certifiées. Tu peux nous demander une copie des garanties applicables.</p>
+        </section>
 
-  <footer>
-    <p>EzHoraire — <a href="/">accueil</a> · <a href="mailto:contact@ezhoraire.be">contact@ezhoraire.be</a></p>
+        <section id="conservation">
+          <h2>Combien de temps nous les gardons</h2>
+          <div class="cadre">
+            <table class="tableau">
+              <thead><tr><th scope="col">Données</th><th scope="col">Durée</th></tr></thead>
+              <tbody>
+                <tr><td>Compte et horaires suivis</td><td data-label="Durée">Tant que le compte existe. Supprimés sous 30 jours après ta demande de suppression.</td></tr>
+                <tr><td>Consultations</td><td data-label="Durée">180 jours, puis effacement automatique</td></tr>
+                <tr><td>Liste de cours importée</td><td data-label="Durée">Pas conservée : traitée le temps de la réponse</td></tr>
+                <tr><td>Journaux techniques (hébergeur, connexions)</td><td data-label="Durée">Durée courte fixée par nos prestataires, en général de quelques jours à quelques semaines</td></tr>
+                <tr><td>Messages et demandes</td><td data-label="Durée">Le temps de les traiter, puis au plus 12 mois pour garder la trace d'une demande d'exercice de droits</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>Supprimer ton compte efface aussi, en cascade, tes horaires et ton historique de consultations. Les sauvegardes techniques éventuelles du prestataire s'écrasent ensuite selon leur propre cycle.</p>
+        </section>
+
+        <section id="securite">
+          <h2>Sécurité</h2>
+          <ul>
+            <li>Connexions chiffrées de bout en bout (HTTPS obligatoire, HSTS).</li>
+            <li>Base de données verrouillée ligne par ligne : chaque compte ne peut lire et modifier que ses propres données.</li>
+            <li>Mots de passe hachés par le prestataire d'authentification, jamais visibles.</li>
+            <li>Clés d'administration conservées uniquement côté serveur, jamais dans le navigateur.</li>
+            <li>Politique de sécurité du contenu stricte, bibliothèques externes épinglées et vérifiées par empreinte.</li>
+            <li>Limites de débit et protection contre les robots sur les points d'entrée.</li>
+          </ul>
+          <p>Aucun système n'est infaillible. En cas de violation de données présentant un risque pour toi, nous prévenons l'Autorité de protection des données sous 72 heures et, si le risque est élevé, nous te prévenons directement (articles 33 et 34 du RGPD).</p>
+        </section>
+
+        <section id="droits">
+          <h2>Tes droits</h2>
+          <p>Le RGPD (articles 15 à 21) te donne les droits suivants sur tes données :</p>
+          <ul class="droits">
+            <li><strong>Accès</strong><span>Savoir ce que nous avons sur toi et en recevoir une copie.</span></li>
+            <li><strong>Rectification</strong><span>Corriger ton nom dans les Réglages, ou le reste par email.</span></li>
+            <li><strong>Effacement</strong><span>Supprimer ton compte et tout ce qui s'y rattache.</span></li>
+            <li><strong>Limitation</strong><span>Geler l'usage de tes données le temps d'une vérification.</span></li>
+            <li><strong>Portabilité</strong><span>Recevoir tes horaires dans un format lisible par une machine (JSON).</span></li>
+            <li><strong>Opposition</strong><span>Refuser le suivi d'usage fondé sur notre intérêt légitime.</span></li>
+          </ul>
+          <p><strong>Comment faire :</strong> écris à <a href="mailto:contact@ezhoraire.be?subject=Demande%20RGPD">contact@ezhoraire.be</a> depuis l'adresse de ton compte, en précisant le droit que tu exerces. Nous répondons dans un délai d'un mois (prolongeable de deux mois pour une demande complexe, avec explication). C'est gratuit. Si nous avons un doute raisonnable sur ton identité, nous pouvons te demander de la confirmer.</p>
+          <p>Pour effacer aussi ce qui est sur ton appareil : déconnecte-toi dans les Réglages, puis vide les données du site dans ton navigateur.</p>
+          <div class="note">
+            <p><strong>Une réclamation ?</strong> Tu peux t'adresser à l'<a href="https://www.autoriteprotectiondonnees.be" rel="noopener">Autorité de protection des données</a>, rue de la Presse 35, 1000 Bruxelles, <a href="mailto:contact@apd-gba.be">contact@apd-gba.be</a>, ou à l'autorité du pays de l'UE où tu vis. N'hésite pas à nous écrire d'abord : on règle souvent ça plus vite ensemble.</p>
+          </div>
+        </section>
+
+        <section id="mineurs">
+          <h2>Mineurs</h2>
+          <p>EzHoraire s'adresse aux étudiants de l'enseignement supérieur. Le service ne vise pas les enfants et ne doit pas être utilisé par des personnes de moins de 13 ans. Si tu es mineur, utilise-le avec l'accord d'un parent ou d'un responsable légal. Un parent qui pense que son enfant de moins de 13 ans a créé un compte peut nous écrire pour le faire supprimer.</p>
+        </section>
+
+        <section id="modifications">
+          <h2>Modifications de cette politique</h2>
+          <p>Cette politique évolue avec le service. La date d'entrée en vigueur, en haut de la page, fait foi. Si un changement modifie de façon importante l'usage de tes données, nous te prévenons dans l'app avant qu'il s'applique.</p>
+          <p><a class="bouton" href="mailto:contact@ezhoraire.be">Une question ? Écris-nous</a></p>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <footer class="pied">
+    <span>© 2026 EzHoraire</span>
+    <nav aria-label="Pages légales">
+      <a href="/">Accueil</a>
+      <a href="/confidentialite.html" aria-current="page">Confidentialité</a>
+      <a href="/cgu.html">Conditions d'utilisation</a>
+      <a href="mailto:contact@ezhoraire.be">contact@ezhoraire.be</a>
+    </nav>
   </footer>
-</main>
+</div>
 </body>
 </html>

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Aperçu réseaux sociaux — EzHoraire</title>
+<!-- Source de /og-image.png (1200 × 630). Rendu : python3 build.py -->
+<style>
+  :root {
+    --bg: #f4f5f7; --surface: #fff; --ink: #17191d; --muted: #626977;
+    --line: #e4e7ec; --accent: #2456e0;
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; }
+  body {
+    background: var(--bg);
+    background-image:
+      radial-gradient(70% 60% at 100% 0%, rgba(36, 86, 224, .10), transparent 70%),
+      radial-gradient(50% 50% at 0% 100%, rgba(36, 86, 224, .05), transparent 70%);
+    font-family: var(--font); color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    display: grid; grid-template-columns: 540px 1fr; align-items: center;
+    padding: 0 0 0 72px;
+  }
+  .gauche { display: flex; flex-direction: column; gap: 28px; }
+  .marque { display: flex; align-items: center; gap: 16px; }
+  .marque svg { width: 60px; height: 60px; border-radius: 14px; box-shadow: 0 10px 24px -12px rgba(16, 18, 22, .6); }
+  .marque b { font-size: 38px; font-weight: 750; letter-spacing: -.045em; }
+  .marque b span { color: var(--accent); }
+  h1 { margin: 0; font-size: 62px; line-height: 1.02; letter-spacing: -.05em; font-weight: 760; }
+  h1 em { font-style: normal; color: var(--accent); }
+  p { margin: 0; font-size: 25px; line-height: 1.35; color: var(--muted); letter-spacing: -.01em; max-width: 21em; }
+  .pied { display: flex; align-items: center; gap: 12px; font-size: 21px; font-weight: 650; color: var(--ink); }
+  .pied i { font-style: normal; padding: 7px 14px; border-radius: 999px; background: var(--surface);
+    box-shadow: inset 0 0 0 1px var(--line), 0 6px 16px -12px rgba(23, 32, 68, .4); color: var(--muted); font-weight: 600; font-size: 18px; }
+
+  /* Semaine type, même langage que l'aperçu de l'écran de connexion. */
+  .semaine {
+    position: relative; margin-left: 40px; width: 660px; height: 520px;
+    background: linear-gradient(#fdfdfe, #f7f8fa); border-radius: 26px 0 0 26px;
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 #fff, 0 40px 80px -40px rgba(23, 32, 68, .45);
+    padding: 22px 0 22px 22px; display: grid; grid-template-rows: 44px 1fr;
+  }
+  .tete, .corps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; padding-right: 22px; }
+  .tete div { text-align: center; font-size: 15px; font-weight: 650; color: var(--muted); }
+  .tete div.auj { color: var(--accent); }
+  .col { position: relative; }
+  .col.auj::before { content: ""; position: absolute; inset: -6px -4px; border-radius: 14px;
+    background: rgba(36, 86, 224, .05); box-shadow: inset 0 0 0 1px rgba(36, 86, 224, .16); }
+  .ev {
+    position: absolute; left: 0; right: 0; top: calc(var(--t) * 1%); height: calc(var(--d) * 1% - 6px);
+    border-radius: 12px; padding: 10px 11px; display: flex; flex-direction: column; gap: 3px;
+    background: hsl(var(--h) 58% 95%); color: hsl(var(--h) 28% 23%);
+    box-shadow: inset 3px 0 0 hsl(var(--h) 55% 55%);
+  }
+  .ev b { font-size: 14.5px; font-weight: 700; letter-spacing: -.01em; line-height: 1.15; }
+  .ev i { font-style: normal; font-size: 13px; font-weight: 600; opacity: .85; }
+  .ev em { margin-top: auto; font-style: normal; font-size: 12px; font-weight: 550; opacity: .8; }
+  .libre { position: absolute; inset: 0; border-radius: 12px; display: grid; place-items: center;
+    background: repeating-linear-gradient(-45deg, transparent 0 13px, rgba(98, 105, 119, .12) 13px 14px); }
+  .libre span { background: #f9fafb; padding: 6px 10px; border-radius: 10px; font-size: 13px; font-weight: 650; color: var(--muted); }
+  .maintenant { position: absolute; left: -6px; right: -4px; top: 46%; height: 2px; background: #e5484d; border-radius: 2px; z-index: 2; }
+  .maintenant::before { content: ""; position: absolute; left: 0; top: -4px; width: 10px; height: 10px; border-radius: 50%; background: #e5484d; }
+</style>
+</head>
+<body>
+  <div class="gauche">
+    <div class="marque">
+      <svg viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="t" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#232832"/><stop offset="1" stop-color="#101216"/></linearGradient></defs><rect width="100" height="100" rx="20" fill="url(#t)"/><rect x="21" y="22" width="58" height="15" rx="7.5" fill="#f4f5f7"/><rect x="21" y="42.5" width="40" height="15" rx="7.5" fill="#5b86ff"/><rect x="21" y="63" width="58" height="15" rx="7.5" fill="#f4f5f7"/></svg>
+      <b>Ez<span>Horaire</span></b>
+    </div>
+    <h1>Enfin des horaires pratiques et <em>lisibles.</em></h1>
+    <p>Ton horaire de cours, clair sur téléphone et à jour à chaque ouverture.</p>
+    <div class="pied">ezhoraire.be <i>HEH</i><i>UMONS</i><i>ULB</i></div>
+  </div>
+
+  <div class="semaine">
+    <div class="tete"><div>Lun</div><div>Mar</div><div class="auj">Mer</div><div>Jeu</div><div>Ven</div></div>
+    <div class="corps">
+      <div class="col">
+        <div class="ev" style="--h:221;--t:0;--d:24"><b>Algorithmique</b><i>A.204</i><em>8h30 – 10h30</em></div>
+        <div class="ev" style="--h:18;--t:26;--d:24"><b>Analyse</b><i>B.112</i><em>10h45 – 12h45</em></div>
+        <div class="ev" style="--h:152;--t:60;--d:36"><b>Labo web</b><i>L3.07</i><em>13h45 – 16h45</em></div>
+      </div>
+      <div class="col">
+        <div class="ev" style="--h:262;--t:0;--d:36"><b>Réseaux</b><i>A.018</i><em>8h30 – 11h30</em></div>
+        <div class="ev" style="--h:332;--t:60;--d:20"><b>Anglais</b><i>C.301</i><em>13h45 – 15h15</em></div>
+      </div>
+      <div class="col auj">
+        <div class="ev" style="--h:190;--t:6;--d:36"><b>Bases de données</b><i>L2.11</i><em>9h00 – 12h00</em></div>
+        <div class="maintenant"></div>
+        <div class="ev" style="--h:40;--t:62;--d:24"><b>Systèmes</b><i>A.204</i><em>14h00 – 16h00</em></div>
+      </div>
+      <div class="col">
+        <div class="ev" style="--h:221;--t:0;--d:24"><b>Algorithmique</b><i>A.204</i><em>8h30 – 10h30</em></div>
+        <div class="ev" style="--h:292;--t:62;--d:36"><b>Projet</b><i>L1.02</i><em>14h00 – 17h00</em></div>
+      </div>
+      <div class="col">
+        <div class="ev" style="--h:152;--t:14;--d:30"><b>Statistiques</b><i>B.020</i><em>9h45 – 12h15</em></div>
+        <div class="ev" style="--h:18;--t:50;--d:24"><b>Économie</b><i>A.110</i><em>13h00 – 15h00</em></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

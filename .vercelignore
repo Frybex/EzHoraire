@@ -19,6 +19,7 @@ serve.log
 # (la ré-inclusion d'un sous-dossier n'est pas honorée ici — vérifié).
 logos/da/
 logos/ez/
+logos/og/
 logos/*.svg
 logos/*.py
 logos/preview.html
