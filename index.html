@@ -2641,9 +2641,12 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   var CLE_PWA_PROPOSE = "ezh_pwa_propose";
   var CLE_BROUILLON = "ezh_brouillon";
 
-  /* Ajout à l'écran d'accueil : proposé une seule fois, juste après la
-     création du tout premier horaire, uniquement sur mobile. Android
-     capture l'évènement natif pour déclencher la vraie invite d'install ;
+  /* Ajout à l'écran d'accueil : proposé une seule fois, à la première
+     connexion du compte sur mobile (plus à la création d'horaire). Le
+     « déjà proposé » est mémorisé côté compte (user_metadata Supabase,
+     donc partagé entre téléphones) avec un repli local par compte puis
+     global (installs d'avant le suivi par compte). Android capture
+     l'évènement natif pour déclencher la vraie invite d'install ;
      iOS n'a pas cet évènement, on affiche juste la marche à suivre. */
   var inviteInstallAndroid = null;
   window.addEventListener("beforeinstallprompt", function (e) {
@@ -2656,10 +2659,50 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   }
   function estIOS() { return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream; }
   function estAndroid() { return /Android/.test(navigator.userAgent); }
-  function proposerEcranAccueil() {
-    if (appDejaInstallee() || lire(CLE_PWA_PROPOSE)) return;
-    if (!estIOS() && !estAndroid()) return; // seulement sur mobile
+  function clePwaPropose(uid) { return uid ? CLE_PWA_PROPOSE + ":" + uid : CLE_PWA_PROPOSE; }
+  function pwaDejaProposeCompte(uid) {
+    var um = null;
+    try { um = sessionSupabase && sessionSupabase.user && sessionSupabase.user.user_metadata; } catch (e) { um = null; }
+    if (um && um.pwa_mobile_propose === true) return true;
+    if (uid && lire(clePwaPropose(uid))) return true;
+    if (lire(CLE_PWA_PROPOSE)) return true; // installs d'avant le suivi par compte
+    return false;
+  }
+  function marquerPwaPropose(uid) {
     ecrire(CLE_PWA_PROPOSE, true);
+    if (uid) ecrire(clePwaPropose(uid), true);
+    try {
+      if (SUPABASE_OK && sb && sessionSupabase && sessionSupabase.user &&
+          (!uid || sessionSupabase.user.id === uid)) {
+        var meta = sessionSupabase.user.user_metadata || {};
+        if (meta.pwa_mobile_propose !== true) {
+          sb.auth.updateUser({ data: { pwa_mobile_propose: true } }).then(function (res) {
+            if (res && res.data && res.data.user) {
+              sessionSupabase.user = res.data.user;
+              try { if (AUTH) AUTH.user = res.data.user; } catch (e2) { /* jetable */ }
+            }
+          }, function () { /* hors ligne : le repli local suffit */ });
+          meta.pwa_mobile_propose = true; // optimiste : pas de 2e pop-up avant le retour réseau
+          sessionSupabase.user.user_metadata = meta;
+          try {
+            if (AUTH && AUTH.user) {
+              AUTH.user.user_metadata = AUTH.user.user_metadata || {};
+              AUTH.user.user_metadata.pwa_mobile_propose = true;
+            }
+          } catch (e3) { /* jetable */ }
+        }
+      }
+    } catch (e) { /* jetable */ }
+  }
+  function proposerEcranAccueil() {
+    var uid = null;
+    try {
+      uid = (compte && compte.supabase_id) ||
+            (sessionSupabase && sessionSupabase.user && sessionSupabase.user.id) || null;
+    } catch (e) { uid = null; }
+    if (appDejaInstallee() || pwaDejaProposeCompte(uid)) return;
+    if (!estIOS() && !estAndroid()) return; // seulement sur mobile
+    marquerPwaPropose(uid);
     if (estAndroid()) {
       demanderConfirmation({
         titre: "Ajouter à l'écran d'accueil ?",
@@ -2675,6 +2718,14 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
         annuler: "Plus tard", confirmer: "Compris", danger: false
       });
     }
+  }
+  /* Première connexion du compte sur mobile uniquement : à appeler après
+     une connexion (retour OAuth, session restaurée, identité complétée).
+     Jamais sur ordinateur, jamais si déjà installée, jamais deux fois. */
+  function planifierPropositionPwa() {
+    if (!estIOS() && !estAndroid()) return;
+    if (appDejaInstallee()) return;
+    setTimeout(proposerEcranAccueil, 700);
   }
   var THEMES = [
     { id: 2, nom: "Bleu", couleur: "#1d4fd7" },
@@ -3181,6 +3232,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       } else {
         ouvrirIdentite();
       }
+      planifierPropositionPwa(); // 1re connexion du compte sur mobile : pop-up écran d'accueil
     });
   }
 
@@ -4423,6 +4475,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     } else {
       ouvrirEcoles();
     }
+    planifierPropositionPwa(); // identité complétée = connexion terminée sur ce mobile
   });
 
   /* ---------- 1. École ---------- */
@@ -5413,7 +5466,6 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     resetDepliage(); deplierAujourdhui();
     afficherHoraire();
     actualiser().catch(function () { /* garde le cache local */ });
-    if (premierHoraire) setTimeout(proposerEcranAccueil, 700);
   });
 
   /* ---------- 4. Horaire (multi-profils) ---------- */
@@ -7278,6 +7330,12 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     }
     // Un autre appareil a peut-être tout : on pousse le local en douceur.
     if (sessionSupabase) pushProfils().then(function () { /* jetable */ }, function () { /* jetable */ });
+    // 1re connexion du compte sur mobile : pop-up écran d'accueil, une seule fois.
+    // Session cloud (dont retour OAuth traité avant le routeur), mode essai,
+    // ou compte local avec identité : jamais pour un visiteur non connecté.
+    if (sessionSupabase && sessionSupabase.user) planifierPropositionPwa();
+    else if (MODE_ESSAI) planifierPropositionPwa();
+    else if (connecte() && !(compte && compte.supabase_id)) planifierPropositionPwa();
   });
 })();
 </script>
