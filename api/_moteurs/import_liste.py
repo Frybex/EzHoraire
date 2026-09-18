@@ -185,9 +185,6 @@ def importer(texte, mod, annee, budget=40):
                       "confiance": r.get("confiance")})
         if len(cours) >= COURS_MAX:
             break
-    inconnus = [d["ligne"] for d in doutes
-                if not any(c.get("releve") == (d.get("code") or d.get("titre"))
-                           for c in cours)]
     # « À confirmer » : lignes douteuses, avec les candidats et le cas échéant
     # le choix proposé par Jev (à valider par l'étudiant).
     a_confirmer = []

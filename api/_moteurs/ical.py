@@ -13,7 +13,7 @@ adresse fournie par l'utilisateur.
 import os
 import re
 from datetime import datetime, timedelta, timezone
-from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
+from urllib.parse import parse_qs, urlencode, urljoin, urlparse, urlunparse
 
 import requests
 

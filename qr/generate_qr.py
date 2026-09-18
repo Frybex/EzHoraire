@@ -30,7 +30,6 @@ import tempfile
 import sys
 
 import qrcode
-from PIL import Image
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "logos", "monolithe"))
 from build import glyphe as logo_monolithe  # noqa: E402
@@ -92,7 +91,7 @@ def generate_svg_tile_qr(matrix, theme="dark", size_px=800, border_modules=4):
         badge_stroke = "rgba(91, 134, 255, 0.45)"
         bar1 = "#f1f3f7"
         bar2 = "#5b86ff"
-        defs = f"""
+        defs = """
         <radialGradient id="halo-dark" cx="50%" cy="50%" r="60%">
             <stop offset="0%" stop-color="#5b86ff" stop-opacity="0.14"/>
             <stop offset="100%" stop-color="#0e1117" stop-opacity="0"/>
