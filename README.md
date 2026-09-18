@@ -14,8 +14,7 @@ horaires : chacun a son surnom (ex. Info, Droit, demandé à partir du 2e)
 et sa couleur, avec une barre de sélection en haut façon Horairelm.
 L'ordre des cartes se règle dans les Réglages : on attrape un horaire
 pour le faire glisser (appui long sur téléphone, pour ne pas confondre
-avec le défilement) ; la barre de sélection de la page principale suit,
-et le menu ⋮ garde Monter / Descendre au clavier.
+avec le défilement) ; la barre de sélection de la page principale suit.
 Un profil = un cours / une option complète
 (école + formation + groupes), pas juste un groupe. Le bouton en haut à
 droite ouvre les **Réglages** (identité, déconnexion, mes horaires).
@@ -210,7 +209,11 @@ formation à groupes de classe (Médecine : `Groupe A`..`X` partout) garde
 une seule liste. Un rappel signale les cours pour lesquels aucun groupe
 n'est coché (cours silencieusement absents de l'horaire autrement).
 Au-delà de 8 groupes, l'app exige au moins une sélection (sans elle,
-l'horaire mélangerait toutes les options).
+l'horaire mélangerait toutes les options). Les groupes se changent plus
+tard sans refaire l'horaire : la fenêtre « Modifier » d'une carte (menu ⋮
+des Réglages) rouvre le même écran de choix, sélection existante reprise,
+et la semaine se réaffiche avec les nouveaux groupes. L'écran de création
+le dit lui-même, sous les pastilles.
 
 Spécificités ULB (TimeEdit) : deux façons de composer un horaire — par
 niveau d'études (« B-DROIB:2 · Bachelier en droit… », puis le groupe :
