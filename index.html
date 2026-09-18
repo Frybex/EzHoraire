@@ -4740,7 +4740,9 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   }
   function rechVoirCours() {
     if (!rech.cours.length) return;
-    choix.formation = "PAR:" + rech.cours.map(function (c) { return c.split(" · ")[0]; }).join(",");
+    // Clé triée : le même panier dans un ordre différent reste le même horaire
+    // (et une seule ligne « formation » dans le dashboard).
+    choix.formation = "PAR:" + rech.cours.map(function (c) { return c.split(" · ")[0].trim(); }).sort().join(",");
     choix.data = null; choix.groupes = []; choix.ical = null;
     document.getElementById("recherche").blur();
     aller("groupes");

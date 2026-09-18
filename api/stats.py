@@ -113,6 +113,19 @@ def _iso_date(s):
         return None
 
 
+def _cle_formation(ecole, formation):
+    """Clé de regroupement (école, formation) : les parcours « PAR:A,B »
+    (ULB / UCL, cours choisis dans l'ordre de sélection) sont triés pour
+    que le même panier dans un ordre différent compte comme une seule
+    formation. Affiche la forme canonique triée."""
+    eco = (ecole or "").strip()
+    form = (formation or "").strip()
+    if form.startswith("PAR:"):
+        codes = sorted({c.strip().upper() for c in form[4:].split(",") if c.strip()})
+        form = "PAR:" + ",".join(codes)
+    return "%s\x00%s" % (eco, form), eco, form
+
+
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         q = parse_qs(urlparse(self.path).query)
@@ -257,9 +270,9 @@ class handler(BaseHTTPRequestHandler):
                 par_jour[d.date().isoformat()]["visites"] += 1
                 if v.get("user_id"):
                     par_jour[d.date().isoformat()]["visiteurs"].add(v["user_id"])
-            cle = "%s\x00%s" % (v.get("ecole") or "", v.get("formation") or "")
-            e = par_formation.setdefault(cle, {"ecole": v.get("ecole") or "",
-                "formation": v.get("formation") or "", "visites": 0, "visiteurs": set()})
+            cle, eco, form = _cle_formation(v.get("ecole"), v.get("formation"))
+            e = par_formation.setdefault(cle, {"ecole": eco,
+                "formation": form, "visites": 0, "visiteurs": set()})
             e["visites"] += 1
             if v.get("user_id"):
                 e["visiteurs"].add(v["user_id"])
@@ -277,7 +290,7 @@ class handler(BaseHTTPRequestHandler):
         for p in profils:
             if p.get("user_id"):
                 profils_par_user.setdefault(p["user_id"], []).append(p)
-            cle = "%s\x00%s" % (p.get("ecole") or "", p.get("formation") or "")
+            cle, _, _ = _cle_formation(p.get("ecole"), p.get("formation"))
             inscrits_par_formation.setdefault(cle, set()).add(p.get("user_id"))
 
         utilisateurs = []
