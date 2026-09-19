@@ -133,6 +133,33 @@
   box-shadow: inset 0 0 0 1px var(--line);
 }
 
+/* Rôle d'une source : année principale / année d'ajout */
+.tag-role {
+  display: inline-flex; align-items: center; vertical-align: 1px; margin-left: 4px;
+  font-size: .64rem; font-weight: 750; letter-spacing: .02em; text-transform: uppercase;
+  border-radius: 6px; padding: 2px 6px;
+  color: var(--accent); background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 24%, transparent);
+}
+
+/* Les cours retirés (année principale) et ajoutés (autre année) */
+.src-matieres .retire, .src-matieres .ajoute { display: inline-flex; align-items: center; gap: 4px; }
+.src-matieres .retire::before { content: "−"; font-weight: 700; }
+.src-matieres .retire { text-decoration: line-through; opacity: .8; }
+.src-matieres .ajoute::before { content: "+"; font-weight: 750; color: var(--free); }
+.src-matieres .ajoute { color: var(--ink); }
+
+/* Tout cocher · Tout décocher, au-dessus de la liste des cours */
+.liens-cours {
+  display: flex; gap: 8px; align-items: center;
+  margin: -6px 0 14px; font-size: .85rem; color: var(--muted);
+}
+.liens-cours button {
+  border: none; background: none; padding: 4px 2px;
+  font: inherit; font-size: inherit; color: var(--accent); font-weight: 600;
+  cursor: pointer; text-decoration: underline; text-underline-offset: 3px;
+}
+
 /* En-tête du composeur */
 .perso-compte {
   display: flex; align-items: center; gap: 8px; margin: 0 0 14px;

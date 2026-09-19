@@ -32,9 +32,11 @@ option d'une autre année.
 
 ## 2. Périmètre (v1)
 
-Une **source** = une formation d'une école + ses groupes, éventuellement
-réduite à **certains cours** (c'est-à-dire l'unité que l'app sait déjà
-charger : `api/horaires`, ou `api/ical` pour un lien personnel).
+Une **source** = une formation d'une école + ses groupes, avec un
+**rôle** : *année principale* (on garde tout et on décoche les cours qu'on
+ne suit pas) ou *année d'ajout* (on ne coche que les cours qu'on ajoute).
+C'est l'unité que l'app sait déjà charger : `api/horaires`, ou `api/ical`
+pour un lien personnel.
 
 - 2 à 6 sources, **d'une même école** en v1 (HEH, UMONS, Condorcet, ULB,
   UCLouvain). Les semaines d'une même école partent du même lundi et
@@ -118,42 +120,44 @@ Nouvelle vue `v-perso` (même langage que `v-groupes`) :
 - L'école est fixée par la 1re source ; l'écran ne propose que cette
   école en v1 (l'en-tête le rappelle).
 
-### 3.5 Toute l'année, ou seulement certains cours
+### 3.5 Année principale (on décoche) ou année d'ajout (on coche)
 
-C'est le cœur du cas « 3 cours de BA1, le reste de BA2 ». Une fois la
-formation choisie, un rail à deux positions décide de la granularité de la
-source (même composant `.seg` que partout dans l'app) :
+C'est le cœur du cas « 3 cours de BA1, le reste de BA2 ». Chaque source a
+un **rôle**, choisi avec le rail `.seg` de l'app, qui décide de ce qui est
+coché au départ :
 
-![Mode « Toute l'année » : la source entière](./05-source-annee.png)
+![Année principale : tout est coché, on décoche](./05-source-principal.png)
 
-- **Toute l'année** (défaut, un tap de plus seulement pour ceux qui
-  personnalisent) : « Tous les cours de BA1 Informatique » →
-  « Choisir mes groupes », puis le composeur.
+- **Année principale** (défaut de la 1re source) : tous les cours de
+  l'année sont cochés, on **décoche** ceux qu'on ne suit pas (« Projet »,
+  ici). Le compteur dit « 5 cours gardés sur 6 · 1 retiré » et le bouton
+  « Garder ces 5 cours ». Zéro coché ⇒ bouton désactivé
+  (« Garde au moins un cours »).
+- Une année principale avec tout coché = l'année entière, exactement comme
+  un horaire normal ; aucune case à toucher si on suit tout.
+- Le rôle « principale » est mémorisé comme une **liste de retraits**
+  (`source.sans`), pas comme une liste de cours gardés : si l'école ajoute
+  un cours en cours d'année, il apparaît tout seul.
+
+![Année d'ajout : rien n'est coché, on coche](./06-source-ajout.png)
+
+- **Cours à ajouter** (défaut des sources suivantes : la 2e année, une
+  option) : rien n'est coché, on **coche** seulement les cours ajoutés
+  (« Analyse », « Mathématiques discrètes », « Systèmes »). Compteur
+  « 3 cours cochés sur 6 », bouton « Ajouter ces 3 cours ». Zéro coché ⇒
+  désactivé.
+- Le rôle « ajout » est une **liste de cours choisis** (`source.avec`) :
+  plus courte à stocker, et sans surprise si l'école ajoute un cours qu'on
+  n'a pas demandé.
+- « Tout cocher / Tout décocher » au-dessus de la liste pour basculer d'un
+  coup (et changer de rôle remet les cases au défaut du rôle).
 - Si la formation n'a pas de groupes, on va directement au composeur.
-
-![Mode « Certains cours » : 3 cours sur 6 cochés](./06-source-cours.png)
-
-- **Certains cours** : la liste des cours de l'année (matière, rythme,
-  code), une pastille à cocher par cours, un compteur vivant
-  (« 3 cours cochés sur 6 ») et un bouton qui dit le nombre
-  (« Ajouter ces 3 cours »). Zéro cours coché ⇒ bouton désactivé
-  (« Coche au moins un cours »).
-- Les matières cochées sont mémorisées dans la source
-  (`source.matieres`) ; les séances des autres matières sont écartées de
-  la fusion (`c.matiere ∈ matieres`), y compris les séances de type
-  « toute la formation » qui, sinon, restent toujours visibles.
-- Une matière absente de la liste un jour (intitulé changé par l'école) :
-  elle est signalée dans le composeur comme les groupes disparus, avec
-  « Rechoisir les cours ».
-- Pour l'ULB et l'UCLouvain, le mode « Certains cours » est **déjà plus
-  simple** : le sélecteur par codes (`rech.cours`,
-  `rechVoirCours()` `index.html:4819`) construit un `PAR:CODE1,CODE2` ;
-  il devient une source comme une autre, et le rail sert alors à choisir
-  entre un programme entier (`SINF11BA`) et une liste de codes.
-- Deux entrées possibles, à trancher (§9) : le rail dans l'écran des
-  cours (proposé, zéro clic de plus au quotidien) ou un écran dédié
-  « Comment veux-tu suivre cette année ? » (un clic de plus pour tout le
-  monde, mais le choix est plus visible).
+- Une matière cochée qui disparaît (intitulé changé par l'école) est
+  signalée dans le composeur, avec « Rechoisir les cours ».
+- Pour l'ULB et l'UCLouvain, l'équivalent existe déjà : le sélecteur par
+  codes (`rech.cours`, `rechVoirCours()` `index.html:4819`) construit un
+  `PAR:CODE1,CODE2`, qui devient une source « cours à ajouter » ; un
+  programme entier (`SINF11BA`) est une source « année principale ».
 
 ### 3.6 Groupes de la source
 
@@ -177,10 +181,11 @@ source (même composant `.seg` que partout dans l'app) :
 ![Composeur : BA2 entière + BA1 en 3 cours, et l'alerte de chevauchement](./09-composeur-3-cours.png)
 
 - Une **carte par source** (`srccard`) : pastille numérotée colorée, nom
-  de la source (modifiable plus tard), détail (`Groupe B`,
-  `3 cours choisis`, `option annuelle`…), **les cours retenus en
-  pastilles** quand il y a une sélection, crayon (cours et groupes) et
-  corbeille (retirer).
+  de la source, badge **Principale** sur l'année principale, détail
+  (`Groupe B · 5 cours sur 6`, `Groupe A · 3 cours ajoutés`,
+  `option annuelle`…), les cours retirés en pastilles barrées
+  (`− Projet`) et les cours ajoutés en pastilles (`+ Analyse`), crayon
+  (cours et groupes) et corbeille (retirer).
 - Sous les sources, le bouton **« Ajouter une année, une option, des
   cours »**.
 - **Alerte de chevauchement** (`choc`, ambre) : titre « Mardi 10h45 :
@@ -279,11 +284,15 @@ absorbe l'usage — un horaire sur mesure à 3 sources ne coûte au plus que
    c.groupes.some(g => groupeDans(sel, g))`, `index.html:5675`). C'est ce
    qui règle la collision des noms de groupes entre formations : chaque
    source filtre chez elle.
-2. **Cours de la source** : si `source.matieres` est renseigné (mode
-   « Certains cours »), ne garder que ces matières — **avant** le filtre
-   des groupes, et y compris les séances sans groupe (« toute la
-   formation ») qui seraient gardées sinon. Comparaison sur
-   `c.matiere` nettoyé (`nettoyerMatiere()` `index.html:5423`).
+2. **Cours de la source** : selon le rôle, appliqué **avant** le filtre
+   des groupes, y compris aux séances sans groupe (« toute la
+   formation ») qui seraient gardées sinon :
+   - année principale : garder `c.matiere ∉ source.sans` (liste de
+     retraits ; vide = toute l'année) ;
+   - année d'ajout : garder `c.matiere ∈ source.avec` (liste de cours
+     choisis).
+   Comparaison sur `c.matiere` nettoyé (`nettoyerMatiere()`
+   `index.html:5423`).
 3. **Alignement des semaines** : si `meta.premier_lundi` diffère, on
    décale les numéros de semaine de la source de `delta` semaines
    entières (positif ou négatif) ; si l'écart n'est pas un nombre entier
@@ -349,21 +358,26 @@ Proposition — un champ `sources` optionnel, **rien d'autre ne bouge** :
 { "id": "p…", "surnom": "Info 2026", "theme": 2, "ecole": "heh",
   "formation": "", "groupes": [],
   "sources": [
-    { "ecole": "heh", "formation": "BA2 Informatique",
-      "groupes": ["Groupe B"], "ical": "", "surnom": "", "matieres": [] },
-    { "ecole": "heh", "formation": "BA1 Informatique",
+    { "ecole": "heh", "formation": "BA2 Informatique", "role": "principale",
+      "groupes": ["Groupe B"], "ical": "", "surnom": "", "sans": ["Projet"] },
+    { "ecole": "heh", "formation": "BA1 Informatique", "role": "ajout",
       "groupes": ["Groupe A"], "ical": "", "surnom": "Cours carrés",
-      "matieres": ["Analyse", "Mathématiques discrètes", "Systèmes"] }
+      "avec": ["Analyse", "Mathématiques discrètes", "Systèmes"] }
   ] }
 ```
 
 - `sources` absent ou vide ⇒ horaire normal, tout le code actuel
   fonctionne tel quel (c'est la garantie de non-régression).
 - `surnom` par source : optionnel, défaut = `joliFormation(formation)`.
-- `matieres` : liste vide = toute l'année ; sinon seules ces matières
-  sont reprises (mode « Certains cours »). On stocke l'intitulé exact de
-  l'école, pas un index : le jour où l'école renomme un cours, on peut le
-  dire et le réparer.
+- `role` : `"principale"` (défaut de la 1re source) ou `"ajout"` (défaut
+  des suivantes), modifiable sur l'écran des cours. Au plus une source
+  principale : passer une autre source en principale rétrograde
+  l'ancienne en `"ajout"` (ses cours gardés deviennent son `avec`).
+- `sans` : cours **retirés** de l'année principale (liste vide = toute
+  l'année, donc les nouveaux cours de l'école arrivent seuls).
+- `avec` : cours **ajoutés** d'une année d'ajout (au moins un).
+- On stocke l'intitulé exact de l'école, pas un index : le jour où
+  l'école renomme un cours, on peut le dire et le réparer.
 - `sources.length` entre 2 et 6. Une seule source n'est pas un perso :
   c'est un horaire normal.
 - `ecole` reste rempli (école unique en v1) : tris, PDF, stats et tri de
@@ -427,13 +441,14 @@ Tout tient dans `index.html` ; l'API ne bouge pas.
    l'écran formation et l'écran groupes reçoivent un « contexte source »
    (variable `choix.source` : null = parcours normal, objet = ajout à un
    perso), ce qui évite de dupliquer les écrans existants.
-   **Sélection de cours** : `choisirCoursSource()` (rail Toute l'année /
-   Certains cours + liste cochable, alimentée par `data.cours` groupés par
-   `nettoyerMatiere()`), résultat dans `choix.source.matieres`.
+   **Sélection de cours** : `choisirCoursSource()` (rail Année principale /
+   Cours à ajouter + liste cochable alimentée par `data.cours` groupés par
+   `nettoyerMatiere()`, compteur et bouton qui disent le nombre), résultat
+   dans `choix.source.sans` ou `choix.source.avec` selon le rôle.
 3. **Fusion** : `chargerPerso(p)`, `fusionner(p, liste)`,
    `alignerSemaines(data, delta)`, `dedoublonner(cours)`,
-   `chevauchements(cours)`, et le filtre `c.matiere ∈ source.matieres`
-   appliqué avant le filtre des groupes.
+   `chevauchements(cours)`, et le filtre des cours selon le rôle
+   (`sans` / `avec`), appliqué avant le filtre des groupes.
 4. **Affichage** : `installer()` (`5654`) accepte le résultat fusionné ;
    `afficherHoraire()` (`5716`) affiche « n sources » ; `detailJour()`
    (`5760`) ajoute la ligne Source ; `rendre()` (`5793`) gère les groupes
@@ -467,6 +482,7 @@ Tout tient dans `index.html` ; l'API ne bouge pas.
 | Hors ligne, aucune source en cache | Message actuel d'échec de chargement (`horaire-status`). |
 | Groupe disparu chez une source | Avis « Certains groupes de BA1 n'apparaissent plus » + « Rechoisir » qui ouvre cette source. |
 | Matière cochée disparue (cours renommé) | Avis « Le cours “Analyse” n'apparaît plus dans BA1 » + « Rechoisir les cours » ; la matière est gardée pour ne pas perdre le choix si c'est un hoquet de l'école. |
+| Nouveau cours chez l'école | Une année **principale** le prend automatiquement (elle ne stocke que les retraits) ; une année d'**ajout** l'ignore, c'est voulu. |
 | Source déjà ajoutée | Impossible à re-choisir (« Déjà ajouté »). |
 | Plus de 6 sources | Le bouton Ajouter est désactivé avec « Maximum atteint ». |
 | Chevauchements | Signalés, jamais bloquants. |
@@ -502,9 +518,11 @@ suppression, et un horaire normal **inchangé**.
    message ?
 3. **Nom affiché** : « sur mesure » (proposé, court), « personnalisé »,
    « assemblage » ? Il apparaît dans la carte, le tag et l'aide.
-4. **Sélection de cours** : rail dans l'écran des cours (proposé, aucun
-   clic de plus pour « toute l'année ») ou écran dédié « Comment veux-tu
-   suivre cette année ? » (choix plus visible, un clic de plus) ?
+4. **Sélection de cours** : rail « Année principale / Cours à ajouter »
+   au-dessus de la liste (proposé) — le rôle par défaut suit l'ordre des
+   sources (1re = principale, suivantes = ajout). D'accord, ou il faut un
+   écran dédié « Comment veux-tu suivre cette année ? », plus visible mais
+   un clic de plus ?
    Et : cocher des **matières** (proposé, lisible) ou des **codes de
    cours** quand l'école en publie (HEH/UMONS en ont dans `matiere`) ?
 5. **Fonctions pures dans `fusion.js` + test Node** (proposé), ou tout
@@ -527,9 +545,10 @@ suppression, et un horaire normal **inchangé**.
 
 - `maquette.html` — prototype **cliquable** (téléphone) : Réglages →
   Ajouter un horaire → formation → carte sur mesure → ajout d'une année →
-  toute l'année ou certains cours → groupes → composeur → semaine.
+  année principale ou cours à ajouter → groupes → composeur →
+  semaine.
   Navigation aussi par ancre : `#reglages`, `#formation`, `#composer0`,
-  `#composer`, `#ajout`, `#source-annee`, `#source-cours`,
+  `#composer`, `#ajout`, `#source-principal`, `#source-ajout`,
   `#ajoutgroupes`, `#composer2`, `#composer3`, `#horaire`, `#detail`,
   `#pdf`, `#modifier`.
 - `maquette-bureau.html` — variante ordinateur (composeur + semaine
