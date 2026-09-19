@@ -48,6 +48,19 @@
     { id: "demo-social", surnom: "Social", ecole: "heh", formation: "BA1 Assistant social (Ms)",
       groupes: ["Groupe 1"], ical: "", theme: 3 }
   ];
+  /* ?n=4 … ?n=10 : autant d'horaires, pour tester le rail défilant. Les
+     horaires en plus reprennent les trois formations sous d'autres noms. */
+  var n = Math.min(10, Math.max(1, parseInt((/[?&]n=(\d+)/.exec(location.search) || [])[1], 10) || PROFILS.length));
+  var NOMS = ["Maxence", "Lilian", "Laura", "Anthony", "Sophie", "Jean-Baptiste", "Nora", "Tom", "Élise", "Karim"];
+  if (n !== PROFILS.length) {
+    var base = PROFILS;
+    PROFILS = [];
+    for (var i = 0; i < n; i++) {
+      var m = base[i % base.length];
+      PROFILS.push({ id: "demo-" + (i + 1), surnom: NOMS[i], ecole: m.ecole, formation: m.formation,
+        groupes: m.groupes, ical: "", theme: (i % 3) + 1 });
+    }
+  }
   var b = document.getElementById("go");
   function ouvrir(lien) {
     b.addEventListener("click", function () { location.href = lien; });

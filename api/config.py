@@ -1,6 +1,6 @@
 """GET /api/config — configuration publique de l'app.
 
-{"ok": true, "supabase": {...}, "ecoles": ["heh", "umons", "ulb"]}
+{"ok": true, "supabase": {...}, "ecoles": ["heh", "umons", "condorcet", "ulb"]}
 
 L'URL et la clé *anon* (publique) sont lues dans l'environnement Vercel
 (SUPABASE_URL / SUPABASE_ANON_KEY, alias NEXT_PUBLIC_* acceptés). Sans

@@ -29,15 +29,16 @@ d'une semaine à l'autre. Rendu volontairement mat : fond très peu
 saturé, rail de couleur à gauche, texte neutre.
 
 Écoles prises en charge : **HEH** (HEH Planning), **UMONS** (UMONS Planning,
-espace invités public), **ULB** (TimeEdit, vue publique « je n'ai pas
-encore d'ULBID ») et **UCLouvain** (Mon horaire, en test — voir plus bas).
-Objectif : la plupart des universités et hautes écoles belges, puis les
-applications iOS et Android, et les comptes (Google, GitHub, email).
+espace invités public), **Condorcet** (Condorcet Planning, espace invités
+public), **ULB** (TimeEdit, vue publique « je n'ai pas encore d'ULBID ») et
+**UCLouvain** (Mon horaire, en test — voir plus bas). Objectif : la plupart
+des universités et hautes écoles belges, puis les applications iOS et
+Android, et les comptes (Google, GitHub, email).
 
-L'UMONS et l'ULB, branchées récemment, portent une étiquette **Bêta** sur
-l'écran des écoles (`beta: true` dans `ECOLES`, `index.html`) : elles
-n'ont pas encore vu une année entière. À retirer quand elles auront tenu
-une rentrée.
+L'UMONS, Condorcet et l'ULB, branchées récemment, portent une étiquette
+**Bêta** sur l'écran des écoles (`beta: true` dans `ECOLES`, `index.html`) :
+elles n'ont pas encore vu une année entière. À retirer quand elles auront
+tenu une rentrée.
 
 Une école peut être codée sans être publiée : elle est enregistrée dans
 `api/_ecoles/__init__.py` derrière `EZH_UCL=1` et l'app ne la propose que si
@@ -108,10 +109,15 @@ connexion est refusée avec un message si le cloud est injoignable).
 
 ## Dashboard admin (comptes → cours → consultations → parcours)
 
-`/dashboard.html` : comptes créés, cours suivis (`profils`), consultations
-par jour (`visites`, 1 ligne = 1 ouverture d'horaire) et **parcours
-anonyme** (table `evenements` : arrivées, clics « se connecter », comptes
-créés, écrans d'arrêt, erreurs de connexion — voir plus bas). Réservé aux
+`/dashboard.html`, en quatre onglets : **Aperçu** (consultations par jour,
+comparées à la période d'avant, puis par école → formations), **Parcours**
+(de la visite à l'horaire enregistré, problèmes rencontrés), **Comptes**
+(rangés par école ; un compte qui a des horaires dans plusieurs écoles
+apparaît dans chacune, signalé) et **Retours** (bugs et demandes, titre puis
+détail au clic). Une consultation = une personne connectée qui ouvre un de
+ses horaires (`visites`) ; rouvrir le même horaire dans les 30 min ne
+recompte pas (filtre côté app ET dans `api/stats.py`, qui dédoublonne aussi
+l'historique). Jours à l'heure de Bruxelles. Réservé aux
 admins, via `GET /api/stats` (clé service_role côté serveur uniquement,
 jamais dans le navigateur). Le bouton Apparence de l'en-tête règle le
 clair / sombre / système et la couleur de l'accent (bleu, vert, rose),
@@ -156,7 +162,7 @@ active, écran quitté) ; et les frictions, une fois par visite et par code
 reconnu, horaire validé avec des cours sans groupe, école trop lente,
 hors ligne, erreur de réponse. Chaque événement porte la version du
 parcours (`window.EZH_VERSION` dans `index.html`, à incrémenter à chaque
-correctif) pour comparer avant / après dans le dashboard. Fichiers :
+correctif) pour comparer avant / après (lisible en SQL, plus affichée dans le dashboard). Fichiers :
 `suivi.js` (collecte), fin de `supabase/schema.sql` (table, plafond,
 purge, agrégation), section `Parcours` de `dashboard.html`. Si la table
 manque, le dashboard l'indique au lieu d'échouer. Mesure sans cookie,
@@ -269,10 +275,23 @@ marqué commun à la formation. Les séances « événement » sans intitulé
 langues`). Avec plusieurs groupes, la visionneuse PDF propose de choisir
 le groupe (ou toute la formation).
 
+Spécificités Condorcet (525 ressources, dont la ressource d'essai « TEST »
+écartée de la liste, soit 524 proposées ; espace invités Pronote Campus) :
+une configuration de plus sur le moteur Hyperplanning, comme la HEH et
+l'UMONS. L'école publie une ressource d'essai « TEST » : elle est écartée
+de la liste des formations (le reste de son planning reste servi tel
+quel). Les intitulés sont préfixés par l'année et le diplôme (« B1-Bac »,
+« B2-Mas », « B3-Cer ») : l'app les range par rubrique (bacheliers,
+masters, certificats, puis les activités d'aide à la réussite — des
+séances de soutien, pas des formations diplômantes) et la recherche
+comprend leurs abréviations (« bac 1 », « option », « AESI »,
+« St-Ghislain »…).
+
 Protection de l'école, en quatre couches :
 
 1. **Le cache partagé de l'hébergeur** (`s-maxage` : 15 min pour un
-   horaire, 30 min pour un PDF, 1 h pour une recherche) absorbe l'usage
+   horaire, 30 min pour un PDF, 1 h pour les listes de formations et les
+   recherches) absorbe l'usage
    normal — tous les étudiants d'une même formation ne comptent que pour
    une visite chez l'école.
 2. **Le cache d'instance** (`_memo`) rattrape ce qui passe à côté :
@@ -284,7 +303,7 @@ Protection de l'école, en quatre couches :
    6 imports. Un import cherche jusqu'à 25 fois chez l'école, d'où sa
    limite plus basse.
 4. **Le fusible par instance** : 120 sessions / min chez Hyperplanning
-   (HEH, UMONS), 400 appels / min chez TimeEdit (ULB), 300 chez
+   (HEH, UMONS, Condorcet), 400 appels / min chez TimeEdit (ULB), 300 chez
    l'UCLouvain. Au-delà, l'app répond « réessaie dans une minute » au lieu
    d'insister.
 
@@ -336,10 +355,10 @@ les sources. `logos/ecoles/` est déployé, `logos/da/` et `logos/ez/`
   les **points d'entrée** à la racine (`formations.py`, `horaires.py`,
   `recherche.py`, `ical.py`, `importer.py`, `pdf.py`, `config.py`,
   `stats.py`), les **écoles** dans `api/_ecoles/` (un fichier par école :
-  `heh.py`, `umons.py`, `ulb.py`, `ucl.py`, plus `__init__.py` qui tient
-  le registre et les aides HTTP), et les **moteurs** partagés dans
-  `api/_moteurs/` (`hyperplanning.py`, `timeedit.py`, `ical.py`,
-  `import_liste.py`, `typesafe.py`).
+  `heh.py`, `umons.py`, `condorcet.py`, `ulb.py`, `ucl.py`, plus
+  `__init__.py` qui tient le registre et les aides HTTP), et les **moteurs**
+  partagés dans `api/_moteurs/` (`hyperplanning.py`, `timeedit.py`,
+  `ical.py`, `import_liste.py`, `typesafe.py`).
 - `serve.py` — serveur local avec la même API (http://localhost:8902).
 
 Chercher quelque chose qui touche une école précise ? Tout ce qui lui est
@@ -377,8 +396,10 @@ vercel --prod --yes
 ```
 
 À la rentrée prochaine : adapter `BASE` (`hehplanning2026`) dans
-`api/_ecoles/heh.py` ET `BASE` (`hplanning2026`) + `PREMIER_LUNDI_DEFAUT` dans
-`api/_ecoles/umons.py`. Sans ça, l'école concernée répond « L'école ne répond
-pas correctement » partout. Pour l'ULB : `PREMIER_LUNDI_DEFAUT` et `ANNEE`
-(`202627`) dans `api/_ecoles/ulb.py` (le reste — vues publiques `sid`, fin de
-fenêtre — TimeEdit s'en occupe).
+`api/_ecoles/heh.py`, `BASE` (`hplanning2026`) + `PREMIER_LUNDI_DEFAUT` dans
+`api/_ecoles/umons.py`, et `BASE` (`horaires2026`) +
+`PREMIER_LUNDI_DEFAUT` dans `api/_ecoles/condorcet.py`. Sans ça, l'école
+concernée répond « L'école ne répond pas correctement » partout. Pour
+l'ULB : `PREMIER_LUNDI_DEFAUT` et `ANNEE` (`202627`) dans
+`api/_ecoles/ulb.py` (le reste — vues publiques `sid`, fin de fenêtre —
+TimeEdit s'en occupe).

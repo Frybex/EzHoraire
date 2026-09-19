@@ -8,21 +8,21 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="EzHoraire">
-<title>EzHoraire — Horaire étudiant HEH, UMONS, ULB, UCLouvain</title>
-<meta name="description" content="Horaire de cours étudiant en Belgique : HEH, UMONS, ULB et UCLouvain, lisible sur téléphone et à jour à chaque visite. Gratuit, sans pub.">
+<title>EzHoraire — Horaire étudiant HEH, UMONS, Condorcet, ULB, UCLouvain</title>
+<meta name="description" content="Horaire de cours étudiant en Belgique : HEH, UMONS, Condorcet, ULB et UCLouvain, lisible sur téléphone et à jour à chaque visite. Gratuit, sans pub.">
 <link rel="canonical" href="https://www.ezhoraire.be/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="EzHoraire">
 <meta property="og:locale" content="fr_BE">
 <meta property="og:url" content="https://www.ezhoraire.be/">
-<meta property="og:title" content="EzHoraire — Horaire étudiant HEH, UMONS, ULB, UCLouvain">
-<meta property="og:description" content="Ton horaire de cours en Belgique, clair sur téléphone et à jour à chaque visite. HEH, UMONS, ULB, UCLouvain. Gratuit, sans pub.">
+<meta property="og:title" content="EzHoraire — Horaire étudiant HEH, UMONS, Condorcet, ULB, UCLouvain">
+<meta property="og:description" content="Ton horaire de cours en Belgique, clair sur téléphone et à jour à chaque visite. HEH, UMONS, Condorcet, ULB, UCLouvain. Gratuit, sans pub.">
 <meta property="og:image" content="https://www.ezhoraire.be/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="EzHoraire : une semaine de cours affichée en cases de couleur.">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="EzHoraire — Horaire étudiant HEH, UMONS, ULB, UCLouvain">
+<meta name="twitter:title" content="EzHoraire — Horaire étudiant HEH, UMONS, Condorcet, ULB, UCLouvain">
 <meta name="twitter:description" content="Ton horaire de cours en Belgique, clair sur téléphone et à jour à chaque visite. Gratuit, sans pub.">
 <meta name="twitter:image" content="https://www.ezhoraire.be/og-image.png">
 <meta name="twitter:image:alt" content="EzHoraire : une semaine de cours affichée en cases de couleur.">
@@ -514,7 +514,23 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     transition: transform .3s cubic-bezier(.16,1,.3,1);
     pointer-events: none;
   }
-  .seg.defile { display: flex; }
+  /* Mode défilant (4 horaires et plus, jusqu'à 10) : chaque onglet prend
+     la largeur de son nom, on glisse du doigt. Safari ignore le padding de
+     fin d'un conteneur flex défilant : le ::after sert de marge droite pour
+     que le dernier onglet actif ne colle pas au bord. Un fondu signale
+     qu'il reste des noms cachés à gauche ou à droite. */
+  .seg.defile {
+    display: flex; scroll-snap-type: x proximity; scroll-padding: 0 4px;
+    -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain;
+  }
+  .seg.defile::after { content: ""; flex: 0 0 4px; }
+  .seg.defile.suite-d { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+    mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); }
+  .seg.defile.suite-g { -webkit-mask-image: linear-gradient(90deg, transparent, #000 28px);
+    mask-image: linear-gradient(90deg, transparent, #000 28px); }
+  .seg.defile.suite-g.suite-d {
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 28px, #000 calc(100% - 28px), transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 28px, #000 calc(100% - 28px), transparent); }
   .seg.defile .pill { display: none; }
   .seg button {
     position: relative; z-index: 1; border: none; background: none;
@@ -523,7 +539,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     transition: color .2s;
   }
-  .seg.defile button { flex: 1 0 auto; padding-left: 18px; padding-right: 18px; }
+  .seg.defile button { flex: 1 0 auto; padding-left: 18px; padding-right: 18px; scroll-snap-align: start; }
   .seg button[aria-selected="true"] { color: var(--ink); font-weight: 650; }
   .seg.defile button[aria-selected="true"] {
     background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
@@ -1280,6 +1296,14 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   .bug-email strong { color: var(--ink); font-weight: 650; }
+  #bug-sujet {
+    display: block; width: 100%; margin-bottom: 14px;
+    border: none; border-radius: 13px; padding: 12px 14px;
+    font: inherit; font-size: 1rem; line-height: 1.3; color: var(--ink);
+    background: var(--creux);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre);
+  }
+  #bug-sujet:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
   #bug-message {
     width: 100%; min-height: 130px; resize: none;
     border: none; border-radius: 13px; padding: 12px 14px;
@@ -2548,6 +2572,9 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     </div>
     <h3 id="bug-titre">Signaler un bug</h3>
     <p class="bug-email" id="bug-email-ligne" hidden></p>
+    <label class="champ-titre" for="bug-sujet">Titre</label>
+    <input id="bug-sujet" type="text" maxlength="80" autocomplete="off" spellcheck="true"
+           placeholder="ex. Horaire de l'an dernier affiché">
     <label class="champ-titre" for="bug-message" id="bug-message-label">Que se passe-t-il ?</label>
     <textarea id="bug-message" rows="5" maxlength="5000" spellcheck="true"
               placeholder="ex. Mon horaire de bac 2 info affiche les cours de l'an dernier depuis lundi…"></textarea>
@@ -2588,6 +2615,8 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   var ECOLES = [
     { id: "heh", nom: "HEH", detail: "Haute École en Hainaut · Mons, Tournai", logo: "logos/ecoles/heh.svg" },
     { id: "umons", nom: "UMONS", detail: "Université de Mons · Mons, Charleroi", logo: "logos/ecoles/umons.svg", beta: true },
+    { id: "condorcet", nom: "Condorcet", detail: "Haute École de la Province de Hainaut · Mons, Charleroi, Tournai…",
+      logo: "logos/ecoles/condorcet.svg", beta: true },
     { id: "ulb", nom: "ULB", detail: "Université libre de Bruxelles · Bruxelles, Charleroi", logo: "logos/ecoles/ulb.svg", recherche: true, beta: true },
     { id: "ucl", nom: "UCLouvain", detail: "Université catholique de Louvain · Louvain-la-Neuve, Bruxelles, Mons…",
       logo: "logos/ecoles/ucl.svg", recherche: true, pdf: false, beta: true }
@@ -2600,7 +2629,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
      Tant qu'il n'a pas répondu, on reste sur les écoles sûres — une école
      développée mais pas encore ouverte (l'UCLouvain, voir EZH_UCL côté
      api/) ne doit jamais apparaître par défaut. */
-  var ECOLES_ACTIVES = ["heh", "umons", "ulb"];
+  var ECOLES_ACTIVES = ["heh", "umons", "condorcet", "ulb"];
   function ecoleActive(id) { return ECOLES_ACTIVES.indexOf(id) >= 0; }
 
   /* Libellés des écoles « recherche » (pas de liste complète à
@@ -2814,6 +2843,19 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     if (p.ical != null && typeof p.ical !== "string") return false;
     return true;
   }
+  /* Une sélection de cours « PAR:… » n'existe qu'à l'ULB et à l'UCLouvain.
+     Rangée sous une autre école (HEH, UMONS), l'horaire devient
+     introuvable : on la rend à la bonne école (sigles UCLouvain en
+     « L…1234 », sinon ULB). Renvoie vrai si le profil a été réparé. */
+  function reparerEcoleParcours(p) {
+    if (!p || String(p.formation || "").indexOf("PAR:") !== 0) return false;
+    var ec = ecoleDe(p.ecole);
+    if (ec && ec.recherche) return false;
+    var codes = p.formation.slice(4).split(",").filter(Boolean);
+    var ucl = codes.length && codes.every(function (c) { return /^L[A-Z]{2,6}\d{4}[A-Z]?$/.test(c.trim()); });
+    p.ecole = ucl ? "ucl" : "ulb";
+    return true;
+  }
   function nouveauId() {
     return "p" + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36);
   }
@@ -2855,6 +2897,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     profils = profils.filter(profilValide);
     profils.forEach(function (p, i) {
       p.theme = normaliserTheme(p.theme);
+      if (reparerEcoleParcours(p)) { p.maj = Date.now(); profilsSales = true; }
       // Groupes : espaces nettoyés. Le préfixe éventuel ('<…>…', UMONS)
       // est gardé : c'est la clé de l'école quand le nom court est ambigu
       // (voir memeGroupe pour les profils des anciennes versions).
@@ -3275,7 +3318,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     }).then(function (res) {
       if (generation !== generationCompte || !sessionSupabase || !sessionSupabase.user || sessionSupabase.user.id !== uid || !compte || compte.supabase_id !== uid) return false;
       if (res.error) throw res.error;
-      var parId = {};
+      var parId = {}, aReecrire = false;
       profils.forEach(function (p) { parId[p.id] = p; });
       (res.data || []).forEach(function (l, i) {
         if (!l || !l.id) return;
@@ -3292,9 +3335,12 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
             anciensSurnomsAuto(l.formation).indexOf(distant.surnom) >= 0) {
           distant.surnom = surnomDefaut(l.formation);
         }
+        // École faussée côté cloud : réparée ici, puis réécrite plus bas.
+        if (reparerEcoleParcours(distant)) { distant.maj = Date.now(); aReecrire = true; }
         var local = parId[l.id];
         if (!local || (distant.maj && distant.maj > (local.maj || 0))) parId[l.id] = distant;
       });
+      if (aReecrire) planifierPush();
       profils = Object.keys(parId).map(function (k) { return parId[k]; }).filter(profilValide);
       if (profil) {
         var t = null;
@@ -3351,10 +3397,21 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   /* ---------- Suivi d'usage (dashboard admin) ----------
      Une consultation = ouverture de l'app sur un horaire, ou changement
      d'horaire. Fire-and-forget : jamais bloquant, jamais d'erreur visible.
-     Table `visites` (voir supabase/schema.sql), RLS insert-only. */
+     Table `visites` (voir supabase/schema.sql), RLS insert-only.
+     supabase-js réémet SIGNED_IN à chaque retour sur l'onglet, ce qui
+     relance demarrerHoraire() : le même horaire rouvert dans les 30 min
+     ne recompte pas (même fenêtre que api/stats.py). */
+  var CLE_VISITES = "ezh_visites_tracees";
   function tracerVisite() {
     try {
       if (!SUPABASE_OK || !sb || !sessionSupabase || !sessionSupabase.user || !profil) return;
+      var cle = sessionSupabase.user.id + ":" + profil.id, maintenant = Date.now();
+      var tracees = {};
+      try { tracees = JSON.parse(localStorage.getItem(CLE_VISITES) || "{}") || {}; } catch (e) { tracees = {}; }
+      if (maintenant - (+tracees[cle] || 0) < 30 * 60 * 1000) return;
+      tracees[cle] = maintenant;
+      for (var k in tracees) if (maintenant - tracees[k] > 30 * 60 * 1000) delete tracees[k];
+      try { localStorage.setItem(CLE_VISITES, JSON.stringify(tracees)); } catch (e) { /* navigation privée */ }
       sb.from("visites").insert({
         user_id: sessionSupabase.user.id,
         profil_id: profil.id,
@@ -5003,8 +5060,9 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   });
   document.getElementById("rech-lien-champ").addEventListener("input", sauverBrouillon);
   /* Recherche : les écoles abrègent (UMONS : « BAB1 », « MAB2 », « Ir. »,
-     « (Ch) »…). Chaque nom reçoit des mots-clés en clair, pour qu'on trouve
-     « bac 1 droit », « master gestion », « ingénieur civil » ou « charleroi ». */
+     « (Ch) » ; Condorcet : « B1-Bac », « B1-Mas », « op », « sp »…). Chaque
+     nom reçoit des mots-clés en clair, pour qu'on trouve « bac 1 droit »,
+     « master gestion », « ingénieur civil » ou « charleroi ». */
   var ALIAS_FORMATION = [
     [/\bbab?(\d)\b/g, " ba$1 bac$1 bachelier bloc$1 b$1 "],
     [/\bba(\d)p?\b/g, " bac$1 bachelier bloc$1 b$1 "],
@@ -5012,16 +5070,27 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     [/\bma(60|120)\b/g, " master "],
     [/\bms\b/g, " master de specialisation "],
     [/\baess\b/g, " agregation enseignement secondaire superieur "],
+    [/\baesi\b/g, " agrege enseignement secondaire inferieur "],
     [/\bcapaes\b/g, " certificat aptitude pedagogique "],
     [/\bciu?\b/g, " certificat universitaire formation continue "],
+    [/\bb([1-9])-bac/g, " bac$1 bachelier bloc$1 b$1 "],
+    [/\bb([1-9])-mas/g, " ma$1 master m$1 "],
+    [/\bb([1-9])-cer/g, " certificat "],
     [/\bir\b\.?/g, " ingenieur "],
     [/\bing\b\.?/g, " ingenieur "],
     [/\bsc\b\.?/g, " sciences "],
     [/\bpsycho\b\.?/g, " psychologie "],
     [/\beduc\b\.?/g, " education "],
     [/\bor\b\.?/g, " orientation "],
+    [/\bop\b\.?/g, " option "],
+    [/\bsp\b/g, " specialisation "],
+    [/\btec\b/g, " technique "],
+    [/\bsys\b/g, " systemes "],
+    [/\bres\b/g, " ressources "],
     [/\beco\b\.?/g, " economie economiques "],
     [/\binfo\b/g, " informatique "],
+    [/\bmlz\b/g, " morlanwelz "],
+    [/\bst-(?=[a-z])/g, " saint "],
     [/\(ch\)/g, " charleroi "],
     [/\bfs\b/g, " finalite specialisee "],
     [/\bfd\b/g, " finalite didactique "],
@@ -5040,15 +5109,19 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   }
   /* Ordre de lecture : bacheliers, masters, compléments, certificats, puis
      les formations d'autres établissements hébergées par l'école (UMONS :
-     formation des enseignants co-organisée avec les hautes écoles). Dans
-     chaque rubrique : année puis nom. */
+     formation des enseignants co-organisée avec les hautes écoles) et les
+     activités d'aide à la réussite (Condorcet : « B1-Activités d'aide… »,
+     des séances de soutien, pas des formations diplômantes). Dans chaque
+     rubrique : année puis nom. Les sigles de Condorcet (« B1-Bac »,
+     « B2-Mas », « B3-Cer ») rejoignent leur rubrique. */
   var RUBRIQUES = [
-    [/^ba(b)?\d/, "Bacheliers"],
-    [/^ma(b)?\d|^ma60|^ma120|^m\d/, "Masters"],
+    [/^ba(b)?\d|^b[1-9]-bac/, "Bacheliers"],
+    [/^ma(b)?\d|^ma60|^ma120|^m\d|^b[1-9]-mas/, "Masters"],
     [/^bloc compl|^ms\b|^ms /, "Compléments et masters de spécialisation"],
     [/^aess|^capaes/, "Agrégations"],
-    [/^cu\b|^ciu\b|^cu-|^ciu-|^ifa\b|^mobilite/, "Certificats et formations continues"],
-    [/^(heh|hephc|namur|tournai|marcinelle|morlanwelz)\b/, "Formation des enseignants (hautes écoles partenaires)"]
+    [/^cu\b|^ciu\b|^cu-|^ciu-|^ifa\b|^mobilite|^b[1-9]-cer/, "Certificats et formations continues"],
+    [/^(heh|hephc|namur|tournai|marcinelle|morlanwelz)\b/, "Formation des enseignants (hautes écoles partenaires)"],
+    [/^b[1-9]-activites/, "Activités d'aide à la réussite"]
   ];
   function rubrique(f) {
     var n = sansAccents(joliFormation(f));
@@ -5444,6 +5517,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     var surnom = document.getElementById("surnom").value.replace(/\s+/g, " ").trim() ||
                  surnomDefaut(choix.formation, sel);
     surnom = surnom.slice(0, 24);
+    reparerEcoleParcours(choix); // jamais une sélection de cours ULB rangée à la HEH
     var premierHoraire = !choix.editionId && profils.length === 0;
     if (choix.editionId) {
       for (var i = 0; i < profils.length; i++) {
@@ -5542,14 +5616,37 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   // passe en mode défilant, où chaque onglet prend la largeur de son nom.
   function ajusterSeg() {
     var seg = document.getElementById("seg");
-    if (seg.hidden || !profils || profils.length >= 4) return;
-    seg.classList.remove("defile");
-    var coupe = Array.prototype.some.call(seg.querySelectorAll("button"), function (b) {
-      return b.scrollWidth > b.clientWidth + 1;
-    });
-    seg.classList.toggle("defile", coupe);
+    if (seg.hidden || !profils) return;
+    if (profils.length < 4) {
+      seg.classList.remove("defile");
+      var coupe = Array.prototype.some.call(seg.querySelectorAll("button"), function (b) {
+        return b.scrollWidth > b.clientWidth + 1;
+      });
+      seg.classList.toggle("defile", coupe);
+    }
+    montrerOngletActif(seg);
+  }
+  // Mode défilant : l'onglet actif est ramené dans la zone visible (centré
+  // si possible), puis les fondus de bord sont mis à jour.
+  function montrerOngletActif(seg) {
+    if (!seg.classList.contains("defile")) { majFonduSeg(seg); return; }
+    var b = seg.querySelector('button[aria-selected="true"]');
+    if (b) {
+      var cible = b.offsetLeft - (seg.clientWidth - b.offsetWidth) / 2;
+      seg.scrollLeft = Math.max(0, Math.min(cible, seg.scrollWidth - seg.clientWidth));
+    }
+    majFonduSeg(seg);
+  }
+  function majFonduSeg(seg) {
+    var defile = seg.classList.contains("defile");
+    var max = seg.scrollWidth - seg.clientWidth;
+    seg.classList.toggle("suite-g", defile && seg.scrollLeft > 2);
+    seg.classList.toggle("suite-d", defile && seg.scrollLeft < max - 2);
   }
   window.addEventListener("resize", ajusterSeg);
+  document.getElementById("seg").addEventListener("scroll", function () {
+    majFonduSeg(this);
+  }, { passive: true });
   document.getElementById("seg").addEventListener("click", function (e) {
     var b = e.target.closest("button[data-profil]");
     if (b) choisirProfil(b.getAttribute("data-profil"));
@@ -6954,9 +7051,11 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   var bugType = "bug"; // "bug" | "demande"
   var BUG_TEXTE = {
     bug: { titre: "Signaler un bug", label: "Que se passe-t-il ?",
+      sujet: "ex. Horaire de l'an dernier affiché",
       placeholder: "ex. Mon horaire de bac 2 info affiche les cours de l'an dernier depuis lundi…",
       vide: "Décris le bug en quelques mots.", merci: "Merci, c'est envoyé. On s'en occupe." },
     demande: { titre: "Faire une demande", label: "Qu'aimerais-tu ?",
+      sujet: "ex. Comparer deux horaires",
       placeholder: "ex. Pouvoir comparer deux horaires côte à côte, ou ajouter mon école…",
       vide: "Décris ta demande en quelques mots.", merci: "Merci, c'est noté. On y jettera un œil." }
   };
@@ -6974,6 +7073,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     document.getElementById("bug-titre").textContent = txt.titre;
     document.getElementById("bug-message-label").textContent = txt.label;
     document.getElementById("bug-message").placeholder = txt.placeholder;
+    document.getElementById("bug-sujet").placeholder = txt.sujet;
   }
   function bugEmail() {
     var direct = (sessionSupabase && sessionSupabase.user) || AUTH.user || null;
@@ -7026,9 +7126,9 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     voile.hidden = false;
     document.body.classList.add("confirm-ouverte");
     setTimeout(function () {
-      try { document.getElementById("bug-message").focus({ preventScroll: true }); } catch (e) {
-        document.getElementById("bug-message").focus();
-      }
+      // Le titre d'abord, sauf s'il est déjà rempli (réouverture après un échec).
+      var champ = document.getElementById(document.getElementById("bug-sujet").value ? "bug-message" : "bug-sujet");
+      try { champ.focus({ preventScroll: true }); } catch (e) { champ.focus(); }
     }, 60);
   }
   function fermerBug(sansAnim) {    var voile = document.getElementById("voile-bug");
@@ -7126,7 +7226,14 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   document.getElementById("boite-bug").addEventListener("submit", function (e) {
     e.preventDefault();
     var zone = document.getElementById("bug-message");
+    var sujet = document.getElementById("bug-sujet");
+    var titre = sujet.value.replace(/\s+/g, " ").trim();
     var message = zone.value.replace(/\s+/g, " ").trim();
+    if (titre.length < 3) {
+      statutBug("Donne un titre en quelques mots.", true);
+      sujet.focus();
+      return;
+    }
     if (message.length < 3) {
       statutBug(BUG_TEXTE[bugType].vide, true);
       zone.focus();
@@ -7144,7 +7251,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
         }
       } catch (err) { /* jetable */ }
       var corps = {
-        message: message, etape: bugEtape, email: bugEmail(), type: bugType,
+        titre: titre, message: message, etape: bugEtape, email: bugEmail(), type: bugType,
         contexte: bugContexte(prefill), image_urls: chemins,
         site_web: document.getElementById("bug-site-web").value || ""
       };
@@ -7176,6 +7283,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     })(0, []).then(function () {
       statutBug(BUG_TEXTE[bugType].merci, false);
       zone.value = "";
+      sujet.value = "";
       bugImages.forEach(function (img) { try { URL.revokeObjectURL(img.url); } catch (e2) {} });
       bugImages = [];
       rendreBugApercus();
@@ -7183,6 +7291,12 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     }, function (err) {
       statutBug("Échec de l'envoi : " + (err && err.message ? err.message : "réessaie.") + " Tes mots et images sont gardés.", true);
     }).then(function () { btn.disabled = false; });
+  });
+  // Entrée dans le titre passe au message au lieu d'envoyer.
+  document.getElementById("bug-sujet").addEventListener("keydown", function (e) {
+    if (e.key !== "Enter" || e.isComposing) return;
+    e.preventDefault();
+    document.getElementById("bug-message").focus();
   });
   document.getElementById("bug-annuler").addEventListener("click", function () { fermerBug(); });
   document.getElementById("voile-bug").addEventListener("click", function (e) {

@@ -214,6 +214,7 @@ try { var _a = localStorage.getItem("ezh_apparence"); if (_a === "clair" || _a =
                 <tr><td><code>ezh_profils</code>, <code>ezh_courant</code></td><td data-label="Contenu">Tes horaires et celui ouvert en dernier</td><td data-label="Durée">Jusqu'à la déconnexion</td></tr>
                 <tr><td><code>ezh_horaire:…</code></td><td data-label="Contenu">Dernier horaire reçu, pour l'afficher hors ligne</td><td data-label="Durée">Remplacé à chaque mise à jour</td></tr>
                 <tr><td><code>ezh_apparence</code>, <code>ezh_pdf_h:…</code>, <code>ezh_pwa_propose</code></td><td data-label="Contenu">Préférences d'affichage (thème clair ou sombre, hauteur du PDF, suggestion d'installation déjà montrée)</td><td data-label="Durée">Jusqu'à ce que tu vides les données du site</td></tr>
+                <tr><td><code>ezh_visites_tracees</code></td><td data-label="Contenu">Heure de la dernière consultation comptée par horaire, pour ne pas la recompter à chaque retour dans l'app</td><td data-label="Durée">30 minutes</td></tr>
                 <tr><td><code>ezh_sess</code>, <code>ezh_tr…</code> (sessionStorage)</td><td data-label="Contenu">Identifiant aléatoire de la visite en cours (mesure anonyme) et étapes déjà comptées. Fermer l'onglet l'efface.</td><td data-label="Durée">Jusqu'à la fermeture de l'onglet</td></tr>
               </tbody>
             </table>
@@ -236,7 +237,7 @@ try { var _a = localStorage.getItem("ezh_apparence"); if (_a === "clair" || _a =
               </tbody>
             </table>
           </div>
-          <p><strong>Les écoles</strong> (HEH, UMONS, ULB et, lorsqu'elle est proposée, UCLouvain) : l'app lit leurs plannings publics. Aucune donnée te concernant ne leur est envoyée, à une exception près : si tu fournis ton lien d'abonnement personnel, notre serveur l'utilise pour récupérer ton horaire auprès de l'école qui l'a émis. EzHoraire n'est affilié à aucune de ces écoles.</p>
+          <p><strong>Les écoles</strong> (HEH, UMONS, Condorcet, ULB et, lorsqu'elle est proposée, UCLouvain) : l'app lit leurs plannings publics. Aucune donnée te concernant ne leur est envoyée, à une exception près : si tu fournis ton lien d'abonnement personnel, notre serveur l'utilise pour récupérer ton horaire auprès de l'école qui l'a émis. EzHoraire n'est affilié à aucune de ces écoles.</p>
           <p>Nous pourrions enfin devoir communiquer des données à une autorité qui les exige légalement (par exemple sur décision judiciaire).</p>
         </section>
 

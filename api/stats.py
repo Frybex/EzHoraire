@@ -6,13 +6,16 @@ vérifie qui c'est via /auth/v1/user, refuse les non-admins (403), puis
 agrège avec la clé service_role (jamais exposée au navigateur) :
 
   comptes (auth.admin)  +  cours suivis (table profils)
-  +  consultations / jour (table visites)
+  +  consultations / jour (table visites, dédoublonnées : une même
+     personne qui rouvre le même horaire dans les 30 min ne compte
+     qu'une fois ; jours à l'heure de Bruxelles)
   +  parcours anonyme (table evenements, agrégé côté base par
      stats_evenements() : arrivées, clics de connexion, comptes créés,
      pages d'arrêt, erreurs) — absent si schema.sql n'a pas été recollé.
 
 Réponse : {"ok": true, "data": {
-  "totaux": {...}, "par_jour": [...], "par_formation": [...],
+  "totaux": {...}, "precedent": {...}, "par_jour": [...],
+  "par_ecole": [...], "par_formation": [...],
   "utilisateurs": [...], "parcours": {...} | null,
   "limites": {"comptes": bool, "profils": bool, "visites": bool},
   "plus_ancienne_visite": "...", "plus_ancienne_absolue": "..." }}
@@ -34,6 +37,18 @@ from http.server import BaseHTTPRequestHandler
 from urllib.parse import parse_qs, urlparse
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
+
+try:
+    from zoneinfo import ZoneInfo
+    _TZ = ZoneInfo("Europe/Brussels")
+except Exception:  # noqa: BLE001 - sans tzdata : UTC, décalé d'une ou deux heures
+    _TZ = timezone.utc
+
+# Une consultation = une personne qui ouvre un de ses horaires. L'app
+# réenregistre à chaque retour sur l'onglet : rouvrir le même horaire dans
+# cette fenêtre ne recompte pas (côté app ET ici, pour l'historique).
+FENETRE_CONSULTATION = timedelta(minutes=30)
+VISITES_MAX = 40000
 
 ICI = os.path.dirname(os.path.abspath(__file__))
 if ICI not in sys.path:
@@ -106,6 +121,24 @@ def _identite(compte):
     return "", ""
 
 
+# Photos de profil affichées dans le dashboard : uniquement ces hôtes
+# (les mêmes que la CSP img-src de vercel.json et serve.py).
+_HOTES_AVATAR = ("lh3.googleusercontent.com", "avatars.githubusercontent.com")
+
+
+def _avatar(compte):
+    """URL https de la photo fournie par Google / GitHub, sinon ""."""
+    sources = [compte.get("user_metadata") or {}] + [
+        i.get("identity_data") or {} for i in (compte.get("identities") or [])]
+    for m in sources:
+        for cle in ("avatar_url", "picture"):
+            u = str(m.get(cle) or "").strip()
+            hote = urlparse(u).hostname or ""
+            if u.startswith("https://") and hote in _HOTES_AVATAR and len(u) <= 500:
+                return u
+    return ""
+
+
 def _iso_date(s):
     try:
         return datetime.fromisoformat(str(s).replace("Z", "+00:00"))
@@ -124,6 +157,27 @@ def _cle_formation(ecole, formation):
         codes = sorted({c.strip().upper() for c in form[4:].split(",") if c.strip()})
         form = "PAR:" + ",".join(codes)
     return "%s\x00%s" % (eco, form), eco, form
+
+
+def _dedoublonner(visites):
+    """Garde une visite par (compte, horaire) et par fenêtre de 30 min,
+    triées de la plus ancienne à la plus récente. Renvoie [(date, v)]."""
+    datees = []
+    for v in visites:
+        d = _iso_date(v.get("created_at"))
+        if d:
+            datees.append((d, v))
+    datees.sort(key=lambda x: x[0])
+    derniere, gardees = {}, []
+    for d, v in datees:
+        cle = (v.get("user_id") or "", v.get("profil_id") or
+               "%s\x00%s" % (v.get("ecole") or "", v.get("formation") or ""))
+        avant = derniere.get(cle)
+        if avant is not None and d - avant < FENETRE_CONSULTATION:
+            continue
+        derniere[cle] = d
+        gardees.append((d, v))
+    return gardees
 
 
 class handler(BaseHTTPRequestHandler):
@@ -208,14 +262,20 @@ class handler(BaseHTTPRequestHandler):
                 h_svc, 10000) or []
             profils_tronques = len(profils) >= 10000
 
-            # Consultations sur la période.
-            limite = (datetime.now(timezone.utc) - timedelta(days=jours)).isoformat()
+            # Consultations sur la période ET la précédente (même durée),
+            # pour la comparaison « vs 7 j précédents ». Jours calendaires
+            # de Bruxelles : minuit local, pas minuit UTC.
+            auj = datetime.now(_TZ).date()
+            debut_periode = datetime.combine(auj - timedelta(days=jours - 1),
+                                             datetime.min.time(), _TZ)
+            debut_precedent = debut_periode - timedelta(days=jours)
+            limite = debut_precedent.astimezone(timezone.utc).isoformat()
             visites = _get_pagine(
                 base, "/rest/v1/visites?select=user_id,profil_id,ecole,formation,created_at"
                 "&created_at=gte." + limite.replace("+", "%2B") +
                 "&order=created_at.desc",
-                dict(h_svc, Accept="application/json"), 20000) or []
-            visites_tronquees = len(visites) >= 20000
+                dict(h_svc, Accept="application/json"), VISITES_MAX) or []
+            visites_tronquees = len(visites) >= VISITES_MAX
 
             # La plus vieille consultation tout court (1 ligne) : si elle
             # dépasse 200 jours, la purge (purger_visites, voir schema.sql)
@@ -256,42 +316,56 @@ class handler(BaseHTTPRequestHandler):
             return repondre_json(self, 502, {"ok": False,
                 "erreur": "Supabase injoignable : " + str(e)[-200:]})
 
-        auj = datetime.now(timezone.utc).date()
         jours_cles = [(auj - timedelta(days=i)).isoformat() for i in range(jours - 1, -1, -1)]
         par_jour = {j: {"jour": j, "visites": 0, "visiteurs": set()} for j in jours_cles}
         par_formation = {}
+        par_ecole = {}
         visites_par_user = {}
+        visiteurs_periode = set()
+        precedent = {"consultations": 0, "visiteurs": set()}
+        brutes = sum(1 for v in visites
+                     if (_iso_date(v.get("created_at")) or debut_precedent) >= debut_periode)
         plus_ancienne = None  # pour voir d'un coup d'œil si la purge tourne
-        for v in visites:
-            d = _iso_date(v.get("created_at"))
-            if d and (plus_ancienne is None or d < plus_ancienne):
+        for d, v in _dedoublonner(visites):
+            uid_v = v.get("user_id") or ""
+            if d < debut_periode:
+                precedent["consultations"] += 1
+                if uid_v:
+                    precedent["visiteurs"].add(uid_v)
+                continue
+            if plus_ancienne is None or d < plus_ancienne:
                 plus_ancienne = d
-            if d and d.date().isoformat() in par_jour:
-                par_jour[d.date().isoformat()]["visites"] += 1
-                if v.get("user_id"):
-                    par_jour[d.date().isoformat()]["visiteurs"].add(v["user_id"])
+            jour = d.astimezone(_TZ).date().isoformat()
+            if jour in par_jour:
+                par_jour[jour]["visites"] += 1
+                if uid_v:
+                    par_jour[jour]["visiteurs"].add(uid_v)
             cle, eco, form = _cle_formation(v.get("ecole"), v.get("formation"))
             e = par_formation.setdefault(cle, {"ecole": eco,
                 "formation": form, "visites": 0, "visiteurs": set()})
             e["visites"] += 1
-            if v.get("user_id"):
-                e["visiteurs"].add(v["user_id"])
-            if v.get("user_id"):
-                u = visites_par_user.setdefault(v["user_id"], {"total": 0, "dates": []})
+            pe = par_ecole.setdefault(eco, {"visites": 0, "visiteurs": set()})
+            pe["visites"] += 1
+            if uid_v:
+                e["visiteurs"].add(uid_v)
+                pe["visiteurs"].add(uid_v)
+                visiteurs_periode.add(uid_v)
+                u = visites_par_user.setdefault(uid_v, {"total": 0, "dates": []})
                 u["total"] += 1
-                if d:
-                    u["dates"].append(d)
+                u["dates"].append(d)
 
         for cle in list(par_formation):
             par_formation[cle]["visiteurs"] = len(par_formation[cle]["visiteurs"])
 
         profils_par_user = {}
         inscrits_par_formation = {}
+        inscrits_par_ecole = {}
         for p in profils:
             if p.get("user_id"):
                 profils_par_user.setdefault(p["user_id"], []).append(p)
-            cle, _, _ = _cle_formation(p.get("ecole"), p.get("formation"))
+            cle, eco, _ = _cle_formation(p.get("ecole"), p.get("formation"))
             inscrits_par_formation.setdefault(cle, set()).add(p.get("user_id"))
+            inscrits_par_ecole.setdefault(eco, set()).add(p.get("user_id"))
 
         utilisateurs = []
         for c in comptes:
@@ -300,12 +374,13 @@ class handler(BaseHTTPRequestHandler):
             profs = profils_par_user.get(uid, [])
             stats = visites_par_user.get(uid, {"total": 0, "dates": []})
             dates = sorted(stats["dates"])
-            j7 = sum(1 for d in dates if (auj - d.date()).days < 7)
+            j7 = sum(1 for d in dates if (auj - d.astimezone(_TZ).date()).days < 7)
             utilisateurs.append({
                 "user_id": uid,
                 "email": c.get("email") or "",
                 "prenom": prenom,
                 "nom": nom,
+                "avatar": _avatar(c),
                 "compte_cree": c.get("created_at") or "",
                 "derniere_connexion": c.get("last_sign_in_at") or "",
                 "profils": [{
@@ -331,15 +406,26 @@ class handler(BaseHTTPRequestHandler):
                     "inscrits": len(ids), "visites": 0, "visiteurs": 0})
         lignes_formations.sort(key=lambda l: (l["visites"], l["inscrits"]), reverse=True)
 
+        lignes_ecoles = []
+        for eco in set(par_ecole) | set(inscrits_par_ecole):
+            pe = par_ecole.get(eco, {"visites": 0, "visiteurs": set()})
+            lignes_ecoles.append({"ecole": eco, "visites": pe["visites"],
+                                  "visiteurs": len(pe["visiteurs"]),
+                                  "inscrits": len(inscrits_par_ecole.get(eco, set()))})
+        lignes_ecoles.sort(key=lambda l: (l["visites"], l["inscrits"]), reverse=True)
+
         return repondre_json(self, 200, {"ok": True, "data": {
             "totaux": {
                 "comptes": len(comptes),
                 "horaires_suivis": len(profils),
-                "consultations": len(visites),
-                "visiteurs_uniques": len(visites_par_user),
+                "consultations": sum(p["visites"] for p in par_jour.values()),
+                "consultations_brutes": brutes,
+                "visiteurs_uniques": len(visiteurs_periode),
                 "aujourdhui": par_jour[auj.isoformat()]["visites"] if auj.isoformat() in par_jour else 0,
                 "jours": jours,
             },
+            "precedent": {"consultations": precedent["consultations"],
+                          "visiteurs": len(precedent["visiteurs"])},
             "limites": {  # un plafond atteint = chiffres tronqués, à signaler
                 "comptes": comptes_tronques,
                 "profils": profils_tronques,
@@ -351,6 +437,7 @@ class handler(BaseHTTPRequestHandler):
             "par_jour": [{
                 "jour": j, "visites": par_jour[j]["visites"],
                 "visiteurs": len(par_jour[j]["visiteurs"])} for j in jours_cles],
+            "par_ecole": lignes_ecoles,
             "par_formation": lignes_formations,
             "utilisateurs": utilisateurs,
         }})

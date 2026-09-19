@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Logo officiel de la Haute École de la Province de Hainaut Condorcet,
+     posé sur blanc (le badge de l'app) et embarqué ici pour rester un
+     fichier .svg unique, comme les autres logos d'école. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 71" role="img" aria-label="Condorcet — Haute École de la Province de Hainaut">
+  <image width="250" height="71" href="data:image/png;base64,
+    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
+  "/>
+</svg>

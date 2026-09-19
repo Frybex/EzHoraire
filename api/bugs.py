@@ -1,10 +1,13 @@
 """Bugs & demandes — reports de l'app et du dashboard admin.
 
 POST /api/bugs  (public, anonymes acceptés)
-  Corps JSON : {"message": "…", "etape": "v-formation", "type": "bug",
+  Corps JSON : {"titre": "…", "message": "…", "etape": "v-formation", "type": "bug",
                 "email": "", "contexte": {...}, "image_urls": ["uuid.jpg"],
                 "site_web": ""}
   - `type` : "bug" (défaut, pour les anciens clients) ou "demande".
+  - `titre` : résumé court (80 caractères), rangé dans `contexte.titre`
+    (pas de migration). Les anciens clients n'en envoient pas : le
+    dashboard reprend alors le début du message.
   - `site_web` est le piège à robots (comme #site-web dans index.html) :
     rempli = poubelle silencieuse (réponse OK factice, rien en base).
   - Débit : 10 / heure / IP (voir _ecoles.debit).
@@ -45,6 +48,7 @@ from _ecoles import debit, repondre_json  # noqa: E402
 
 CORPS_MAX = 32 * 1024
 MESSAGE_MAX = 5000
+TITRE_MAX = 80
 ETAPES = {"v-compte", "v-identite", "v-ecole", "v-formation",
           "v-groupes", "v-horaire", "dashboard", ""}
 TYPES = ("bug", "demande")
@@ -167,7 +171,10 @@ def _signer(base, service, chemin):
                             {"apikey": service, "Authorization": "Bearer " + service},
                             {"expiresIn": 3600}, timeout=15)
         signe = (rep or {}).get("signedURL") or ""
-        return base + signe if signe.startswith("/") else signe
+        # Supabase renvoie un chemin relatif à /storage/v1 ("/object/sign/…").
+        if signe.startswith("/storage/v1/"):
+            return base + signe
+        return base + "/storage/v1" + signe if signe.startswith("/") else signe
     except Exception:  # noqa: BLE001 - une image illisible ne bloque pas la liste
         return ""
 
@@ -179,7 +186,7 @@ class handler(BaseHTTPRequestHandler):
             return _erreur(self, 400, "Paramètre inattendu.")
         if not debit(self, "bugs", _erreur):
             return
-        corps = _lire_corps(self, {"message", "etape", "type", "email", "contexte",
+        corps = _lire_corps(self, {"titre", "message", "etape", "type", "email", "contexte",
                                    "image_urls", "site_web"})
         if corps is None:
             return
@@ -188,6 +195,7 @@ class handler(BaseHTTPRequestHandler):
             return repondre_json(self, 200, {"ok": True, "data": {"id": 0}})
 
         message = " ".join(str(corps.get("message") or "").split())
+        titre = " ".join(str(corps.get("titre") or "").split())
         etape = str(corps.get("etape") or "")[:40]
         typ = str(corps.get("type") or "bug").strip().lower() or "bug"
         email = str(corps.get("email") or "").strip()[:320]
@@ -206,8 +214,13 @@ class handler(BaseHTTPRequestHandler):
             return _erreur(self, 400, "Type inconnu.")
         if "@" in email and not re.match(r"^[^@\s]{1,120}@[^@\s]{1,200}\.[^@\s]{2,}$", email):
             return _erreur(self, 400, "Adresse email invalide.")
+        if len(titre) > TITRE_MAX:
+            return _erreur(self, 400, "Titre trop long (%d caractères max)." % TITRE_MAX)
         if len(json.dumps(contexte, ensure_ascii=False)) > 8000:
             return _erreur(self, 400, "Contexte trop long.")
+        contexte = {k: v for k, v in contexte.items() if k != "titre"}
+        if titre:
+            contexte["titre"] = titre
         chemins = []
         for img in images[:3]:
             c = str(img or "")
@@ -332,6 +345,7 @@ class handler(BaseHTTPRequestHandler):
             t = b.get("type") if b.get("type") in TYPES else ("demande" if ctx_brut.get("type_demande") else "bug")
             bugs.append({
                 "id": b.get("id"), "created_at": b.get("created_at") or "",
+                "titre": str(ctx_brut.get("titre") or "")[:TITRE_MAX],
                 "user_id": b.get("user_id") or "", "email": b.get("email") or "",
                 "message": b.get("message") or "", "etape": b.get("etape") or "",
                 "type": t,

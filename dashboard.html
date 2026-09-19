@@ -19,27 +19,31 @@ catch (e) { /* navigation privée */ }
 </script>
 <style>
   :root {
-    --bg: #f4f5f7; --surface: #fff; --ink: #17191d; --muted: #626977;
+    --bg: #f4f5f7; --surface: #fff; --ink: #17191d; --muted: #626977; --faint: #8c93a1;
     --line: #e4e7ec; --accent: #2456e0; --accent-soft: rgba(36, 86, 224, .09);
-    --track: #e8eaef; --free: #18794e; --radius: 16px;
+    --track: #e8eaef; --free: #18794e; --warn: #b45309; --bad: #c2410c; --radius: 16px;
+    --shadow: 0 1px 2px rgba(16, 24, 40, .04), 0 1px 3px rgba(16, 24, 40, .05);
     --rail: 1600px;
     --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   }
   @media (prefers-color-scheme: dark) {
-    :root { --bg: #101216; --surface: #171a20; --ink: #f0f3f7; --muted: #98a1b1; --line: #262b34;
-      --accent: #8ba6ff; --accent-soft: rgba(139, 166, 255, .13); --track: #20252e; --free: #5fce96; }
+    :root { --bg: #101216; --surface: #171a20; --ink: #f0f3f7; --muted: #98a1b1; --faint: #6f7786; --line: #262b34;
+      --accent: #8ba6ff; --accent-soft: rgba(139, 166, 255, .13); --track: #20252e; --free: #5fce96;
+      --warn: #f0b35a; --bad: #ff8a65; --shadow: none; }
   }
   /* Apparence forcée depuis l'app (même clé ezh_apparence). */
   html[data-apparence="clair"] { color-scheme: light; }
   html[data-apparence="sombre"] { color-scheme: dark; }
   html[data-apparence="clair"] {
-    --bg: #f4f5f7; --surface: #fff; --ink: #17191d; --muted: #626977;
+    --bg: #f4f5f7; --surface: #fff; --ink: #17191d; --muted: #626977; --faint: #8c93a1;
     --line: #e4e7ec; --accent: #2456e0; --accent-soft: rgba(36, 86, 224, .09);
-    --track: #e8eaef; --free: #18794e;
+    --track: #e8eaef; --free: #18794e; --warn: #b45309; --bad: #c2410c;
+    --shadow: 0 1px 2px rgba(16, 24, 40, .04), 0 1px 3px rgba(16, 24, 40, .05);
   }
   html[data-apparence="sombre"] {
-    --bg: #101216; --surface: #171a20; --ink: #f0f3f7; --muted: #98a1b1; --line: #262b34;
+    --bg: #101216; --surface: #171a20; --ink: #f0f3f7; --muted: #98a1b1; --faint: #6f7786; --line: #262b34;
     --accent: #8ba6ff; --accent-soft: rgba(139, 166, 255, .13); --track: #20252e; --free: #5fce96;
+    --warn: #f0b35a; --bad: #ff8a65; --shadow: none;
   }
   /* Couleur du dashboard (Bleu = défaut, Vert, Rose) : teinte l'accent.
      Placée après les règles d'apparence : à spécificité égale, elle gagne. */
@@ -61,212 +65,285 @@ catch (e) { /* navigation privée */ }
   .mut { color: var(--muted); }
   [hidden] { display: none !important; }
 
-  /* ---------- En-tête (collant) ---------- */
-  .top { position: sticky; top: 0; z-index: 5;
-    background: color-mix(in srgb, var(--bg) 86%, transparent);
-    -webkit-backdrop-filter: saturate(1.6) blur(14px); backdrop-filter: saturate(1.6) blur(14px);
-    border-bottom: 1px solid var(--line);
-    padding: calc(10px + env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 10px max(16px, env(safe-area-inset-left)); }
-  .top-in { max-width: var(--rail); margin: 0 auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-  .retour { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px;
-    color: var(--ink); text-decoration: none; background: var(--surface); border: 1px solid var(--line); flex: none; }
-  .titre { flex: 1; min-width: 0; }
-  .titre h1 { margin: 0; font-size: 1.15rem; letter-spacing: -.02em; line-height: 1.2; }
-  .titre h1 span { color: var(--accent); }
-  .titre p { margin: 0; font-size: .8rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .icone { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px; flex: none;
-    background: var(--surface); border: 1px solid var(--line); }
+  /* Un seul rail pour l'en-tête, les onglets et le contenu : la flèche
+     retour et le bouton d'apparence tombent pile sur les bords des cartes. */
+  .rail { max-width: var(--rail); margin: 0 auto;
+    padding-left: max(20px, env(safe-area-inset-left)); padding-right: max(20px, env(safe-area-inset-right)); }
+  @media (max-width: 560px) { .rail { padding-left: max(14px, env(safe-area-inset-left)); padding-right: max(14px, env(safe-area-inset-right)); } }
+
+  /* ---------- En-tête + onglets (collants) ---------- */
+  .top { position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--bg) 84%, transparent);
+    -webkit-backdrop-filter: saturate(1.6) blur(16px); backdrop-filter: saturate(1.6) blur(16px);
+    border-bottom: 1px solid var(--line); padding-top: env(safe-area-inset-top); }
+  .top-in { display: flex; align-items: center; gap: 10px; padding-top: 12px; padding-bottom: 10px; }
+  .retour, .icone { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px; flex: none;
+    color: var(--ink); text-decoration: none; background: var(--surface); border: 1px solid var(--line);
+    box-shadow: var(--shadow); }
   .icone.tourne svg { animation: tourne .8s linear infinite; }
   @keyframes tourne { to { transform: rotate(360deg); } }
-  .seg { display: flex; background: var(--track); border-radius: 12px; padding: 3px; gap: 2px; }
-  .seg button { border: 0; background: none; color: var(--muted); font-weight: 650; font-size: .85rem;
-    padding: 7px 12px; border-radius: 9px; min-width: 48px; }
+  .titre { flex: 1; min-width: 0; }
+  .titre h1 { margin: 0; font-size: 1.1rem; letter-spacing: -.02em; line-height: 1.2; font-weight: 750; }
+  .titre h1 span { color: var(--accent); }
+  .titre p { margin: 1px 0 0; font-size: .78rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .seg { display: flex; background: var(--track); border-radius: 11px; padding: 3px; gap: 2px; flex: none; }
+  .seg button { border: 0; background: none; color: var(--muted); font-weight: 650; font-size: .82rem;
+    padding: 6px 11px; border-radius: 8px; white-space: nowrap; }
   .seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+  .seg button span { font-variant-numeric: tabular-nums; opacity: .6; margin-left: 5px; }
+  @media (max-width: 480px) {
+    .titre { display: none; }
+    .top-in > .seg { margin-right: auto; margin-left: auto; }
+  }
+
+  .onglets { display: flex; gap: 4px; margin-bottom: -1px; overflow-x: auto; scrollbar-width: none; }
+  .onglets::-webkit-scrollbar { display: none; }
+  .onglets a { position: relative; display: inline-flex; align-items: center; gap: 7px; padding: 10px 12px 12px;
+    color: var(--muted); text-decoration: none; font-weight: 650; font-size: .9rem; white-space: nowrap; }
+  .onglets a:first-child { margin-left: -12px; } /* texte aligné sur le bord des cartes */
+  .onglets a:hover { color: var(--ink); }
+  .onglets a[aria-current="page"] { color: var(--ink); }
+  .onglets a[aria-current="page"]::after { content: ""; position: absolute; left: 10px; right: 10px; bottom: 0;
+    height: 2px; border-radius: 2px; background: var(--accent); }
+  .onglets .pastille { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--accent);
+    color: #fff; font-size: .7rem; font-weight: 750; display: inline-grid; place-items: center; font-variant-numeric: tabular-nums; }
+  html[data-apparence="sombre"] .onglets .pastille { color: #101216; }
+  @media (prefers-color-scheme: dark) { html:not([data-apparence="clair"]) .onglets .pastille { color: #101216; } }
   @media (max-width: 560px) {
-    .top-in > .seg { order: 5; flex: 1 0 100%; }
-    .top-in > .seg button { flex: 1; }
+    .onglets { gap: 0; }
+    .onglets a { flex: 1; justify-content: center; padding-left: 6px; padding-right: 6px; }
+    .onglets a:first-child { margin-left: 0; }
+    .onglets a { font-size: .86rem; gap: 5px; }
   }
 
   /* ---------- Mise en page ---------- */
-  main { max-width: var(--rail); margin: 0 auto;
-    padding: 20px max(20px, env(safe-area-inset-right)) calc(48px + env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left)); }
-  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; min-width: 0; }
-  .card-h { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin: 0 0 14px; }
-  .card-h h2 { margin: 0; font-size: 1rem; letter-spacing: -.01em; }
+  main { padding-top: 22px; padding-bottom: calc(56px + env(safe-area-inset-bottom)); }
+  .vue { display: grid; gap: 16px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 20px; min-width: 0; box-shadow: var(--shadow); }
+  .card-h { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 14px; min-height: 24px; }
+  .card-h h2 { margin: 0; font-size: .98rem; letter-spacing: -.01em; font-weight: 700; }
   .card-h .mut { font-size: .82rem; text-align: right; }
-  .grille { display: grid; gap: 16px; margin-top: 16px; }
-  @media (min-width: 900px) {
-    .grille { grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); }
-    .grille > .card:first-child { display: flex; flex-direction: column; }
-    .grille .graph { flex: 1; min-height: 180px; }
-  }
+  .deux { display: grid; gap: 16px; }
+  @media (min-width: 980px) { .deux { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); align-items: start; } }
+  @media (max-width: 560px) { .card { padding: 16px; } main { padding-top: 16px; } .vue, .deux { gap: 12px; } }
 
-  #etat { padding: 64px 12px; text-align: center; color: var(--muted); }
+  #etat { padding: 72px 12px; text-align: center; color: var(--muted); }
   #etat.erreur { color: var(--ink); }
   #etat a { color: var(--accent); }
   .btn { display: inline-block; padding: 12px 20px; border-radius: 12px; background: var(--ink);
     color: var(--bg) !important; text-decoration: none; font-weight: 650; }
+  .vide { padding: 28px 8px; text-align: center; color: var(--muted); font-size: .9rem; }
 
-  /* ---------- Chiffres clés ---------- */
-  .kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-  @media (min-width: 760px) { .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-  .kpi { padding: 14px 16px; }
-  .kpi .l { font-size: .8rem; color: var(--muted); font-weight: 600; }
-  .kpi b { display: block; font-size: 1.75rem; letter-spacing: -.03em; line-height: 1.15; margin: 2px 0; }
-  .kpi .s { font-size: .8rem; color: var(--muted); }
-  .kpi .s em { font-style: normal; color: var(--free); font-weight: 650; }
-  @media (min-width: 1200px) { .kpi { padding: 18px 22px; } .kpi b { font-size: 2rem; } }
+  .alerte { border-radius: 14px; padding: 12px 16px; font-size: .85rem; display: grid; gap: 6px;
+    background: color-mix(in srgb, var(--warn) 9%, var(--surface));
+    border: 1px solid color-mix(in srgb, var(--warn) 35%, var(--line)); }
 
-  /* ---------- Alertes (plafonds, purge) ---------- */
-  .alerte { margin-top: 16px; border-radius: var(--radius); padding: 12px 16px;
-    font-size: .85rem; display: grid; gap: 6px;
-    background: color-mix(in srgb, #b47908 10%, var(--surface));
-    border: 1px solid color-mix(in srgb, #b47908 38%, var(--line)); }
+  /* ---------- Info (i) : une phrase, pas plus ---------- */
+  .info { position: relative; display: inline-flex; vertical-align: middle; }
+  .info > button { width: 20px; height: 20px; padding: 0; border: 0; border-radius: 50%; background: none;
+    color: var(--faint); display: grid; place-items: center; }
+  .info > button:hover, .info > button[aria-expanded="true"] { color: var(--ink); background: var(--track); }
+  .bulle { position: absolute; z-index: 25; top: calc(100% + 8px); left: -8px; width: min(300px, 78vw);
+    padding: 12px 14px; border-radius: 12px; background: var(--ink); color: var(--bg);
+    font-size: .82rem; font-weight: 500; line-height: 1.45; letter-spacing: 0; text-transform: none;
+    box-shadow: 0 16px 40px -12px rgba(0, 0, 0, .4); }
+  .bulle b { font-weight: 700; }
 
-  /* ---------- Courbe (barres) ---------- */
-  .graph { position: relative; height: 180px; display: flex; align-items: stretch; gap: 2px;
-    border-bottom: 1px solid var(--line); touch-action: pan-y; }
-  .graph .col { flex: 1; display: flex; align-items: flex-end; min-width: 0; cursor: crosshair; }
-  .graph .col i { display: block; width: 100%; min-height: 2px; border-radius: 4px 4px 1px 1px;
-    background: color-mix(in srgb, var(--accent) 55%, transparent); transition: background .12s; }
-  .graph .col.on i, .graph .col.auj i { background: var(--accent); }
-  .graph .max { position: absolute; left: 0; right: 0; top: 0; border-top: 1px dashed var(--line);
-    font-size: .72rem; color: var(--muted); pointer-events: none; }
-  .graph .max span { position: absolute; right: 0; top: -1px; transform: translateY(-100%); padding-bottom: 1px; }
-  .axe { display: flex; justify-content: space-between; font-size: .72rem; color: var(--muted); margin-top: 6px; }
-  .infobulle { margin: -4px 0 10px; min-height: 1.4em; font-size: .85rem; }
-  .infobulle b { font-variant-numeric: tabular-nums; }
-
-  /* ---------- Formations ---------- */
-  .forms { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
-  .forms li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; align-items: baseline; }
-  .forms .nom { font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .forms .val { font-weight: 700; }
-  .forms .barre { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--track); overflow: hidden; }
-  .forms .barre i { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
-  .forms .det { grid-column: 1 / -1; font-size: .8rem; color: var(--muted); }
-  .tag { display: inline-block; font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
-    color: var(--accent); background: var(--accent-soft); border-radius: 6px; padding: 1px 6px; vertical-align: 1px; }
-  .plus { display: block; width: 100%; margin-top: 12px; padding: 10px; border-radius: 12px;
-    border: 1px solid var(--line); background: none; font-weight: 650; color: var(--accent); }
-
-  /* ---------- Parcours (arrivée → compte créé, anonyme) ---------- */
-  .parc { display: grid; gap: 28px; }
-  @media (min-width: 900px) {
-    .parc { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); }
-    .parc > div:nth-child(3) { grid-column: 1 / -1; }
+  /* ---------- Aperçu : consultations ---------- */
+  .hero { padding: 22px 22px 16px; }
+  .hero-h { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 18px 32px; margin-bottom: 20px; }
+  .hero-l { min-width: 0; }
+  .etiquette { display: flex; align-items: center; gap: 6px; font-size: .82rem; font-weight: 650; color: var(--muted); }
+  .grand { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; margin-top: 4px; }
+  .grand b { font-size: 2.9rem; line-height: 1; letter-spacing: -.045em; font-weight: 750; font-variant-numeric: tabular-nums; }
+  .delta { display: inline-flex; align-items: center; gap: 3px; font-size: .8rem; font-weight: 700;
+    padding: 3px 8px; border-radius: 999px; font-variant-numeric: tabular-nums; }
+  .delta.haut { color: var(--free); background: color-mix(in srgb, var(--free) 12%, transparent); }
+  .delta.bas { color: var(--bad); background: color-mix(in srgb, var(--bad) 12%, transparent); }
+  .delta.egal { color: var(--muted); background: var(--track); }
+  .delta-txt { font-size: .8rem; color: var(--muted); }
+  .minis { display: flex; gap: 28px; }
+  .mini .l { font-size: .78rem; color: var(--muted); font-weight: 600; }
+  .mini b { display: block; font-size: 1.35rem; letter-spacing: -.03em; font-weight: 700; font-variant-numeric: tabular-nums; margin-top: 2px; }
+  @media (max-width: 560px) {
+    .grand b { font-size: 2.4rem; }
+    .minis { width: 100%; gap: 0; justify-content: space-between; padding-top: 14px; border-top: 1px solid var(--line); }
+    .mini b { font-size: 1.15rem; }
   }
-  @media (min-width: 1200px) {
-    .parc { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .parc > div:nth-child(3) { grid-column: auto; }
-  }
-  .parc h3 { margin: 0 0 10px; font-size: .72rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: .05em; color: var(--muted); }
-  .parc h3.sep { margin-top: 18px; }
-  .parc .vide-liste { padding: 10px 0; }
+
+  .graph { position: relative; height: 220px; margin-right: 34px; touch-action: pan-y; }
+  .graph .grille-l { position: absolute; left: 0; right: -34px; border-top: 1px dashed var(--line); pointer-events: none; }
+  .graph .grille-l span { position: absolute; right: 0; top: -.62em; font-size: .7rem; color: var(--faint);
+    background: var(--surface); padding-left: 6px; font-variant-numeric: tabular-nums; }
+  .graph .barres { position: absolute; inset: 0; display: flex; align-items: stretch; gap: 3px; }
+  .graph .col { flex: 1; display: flex; align-items: flex-end; justify-content: center; min-width: 0; cursor: crosshair; }
+  .graph .col i { display: block; width: 100%; max-width: 56px; border-radius: 5px 5px 2px 2px;
+    background: color-mix(in srgb, var(--accent) 42%, transparent); transition: background .12s; }
+  .graph .col.auj i { background: color-mix(in srgb, var(--accent) 75%, transparent); }
+  .graph .col.on i { background: var(--accent); }
+  .graph .col.zero i { height: 2px !important; background: var(--track); }
+  .axe { position: relative; height: 18px; margin: 8px 34px 0 0; font-size: .72rem; color: var(--faint); }
+  .axe span { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap; }
+  .axe span:first-child { transform: none; }
+  .axe span:last-child { transform: translateX(-100%); }
+  .tip { position: absolute; z-index: 4; bottom: calc(100% + 8px); transform: translateX(-50%);
+    padding: 8px 11px; border-radius: 10px; background: var(--ink); color: var(--bg);
+    font-size: .8rem; white-space: nowrap; pointer-events: none; box-shadow: 0 10px 30px -10px rgba(0,0,0,.45); }
+  .tip b { font-variant-numeric: tabular-nums; }
+  .tip small { display: block; opacity: .7; font-size: .74rem; }
+  @media (max-width: 560px) { .graph { height: 170px; } }
+
+  /* ---------- Listes à barres (écoles, parcours, problèmes) ---------- */
+  .rangs { list-style: none; margin: 0; padding: 0; }
+  .rangs > li + li { border-top: 1px solid var(--line); }
+  .rang { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto 18px; align-items: center; gap: 4px 12px;
+    width: 100%; padding: 12px 0; border: 0; background: none; text-align: left; }
+  button.rang:hover .rang-nom { color: var(--accent); }
+  .rang-logo { grid-row: span 2; width: 40px; height: 40px; border-radius: 11px; background: #fff;
+    border: 1px solid var(--line); display: grid; place-items: center; overflow: hidden; align-self: center; }
+  .rang-logo img { width: 100%; height: 100%; object-fit: contain; padding: 5px; }
+  .rang-logo.lettre { background: var(--accent-soft); color: var(--accent); font-weight: 750; border-color: transparent; }
+  .rang-nom .mini-ecoles { vertical-align: 2px; margin-left: 4px; }
+  .rang-nom { font-weight: 680; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color .12s; }
+  .rang-det { grid-column: 2; font-size: .8rem; color: var(--muted); min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rang-val { grid-row: span 2; text-align: right; font-weight: 750; font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+  .rang-val small { display: block; font-size: .72rem; font-weight: 600; color: var(--muted); }
+  .chev { grid-row: span 2; color: var(--faint); transition: transform .2s; }
+  [aria-expanded="true"] > .chev { transform: rotate(90deg); color: var(--ink); }
+  .sous { padding: 0 0 14px 52px; }
+  .sous-liste { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+  .sous-liste li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 5px 12px; align-items: baseline; font-size: .88rem; }
+  .sous-liste .nom { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+  .sous-liste .val { font-weight: 700; font-variant-numeric: tabular-nums; }
+  .sous-liste .det { grid-column: 1 / -1; margin-top: -3px; font-size: .76rem; color: var(--muted); }
+  .barre { grid-column: 1 / -1; height: 5px; border-radius: 3px; background: var(--track); overflow: hidden; }
+  .barre i { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
+  .lien { display: inline-block; margin-top: 12px; padding: 0; border: 0; background: none;
+    color: var(--accent); font-weight: 650; font-size: .85rem; }
+  @media (max-width: 560px) { .sous { padding-left: 0; } }
+
+  /* Chiffres de la communauté (colonne de droite de l'aperçu). */
+  .stats-l { list-style: none; margin: 0; padding: 0; }
+  .stats-l li + li { border-top: 1px solid var(--line); }
+  .stat { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 0;
+    width: 100%; border: 0; background: none; text-align: left; text-decoration: none; color: inherit; }
+  a.stat:hover .stat-l { color: var(--accent); }
+  .stat-l { font-weight: 600; transition: color .12s; }
+  .stat-l small { display: block; font-weight: 500; font-size: .78rem; color: var(--muted); }
+  .stat b { font-size: 1.2rem; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .stat b em { font-style: normal; font-size: .78rem; font-weight: 700; color: var(--free); margin-left: 6px; letter-spacing: 0; }
+
+  /* ---------- Parcours ---------- */
+  .tuiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  @media (min-width: 900px) { .tuiles { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  @media (max-width: 560px) { .tuiles { gap: 12px; } }
+  .tuile { padding: 16px 18px; }
+  .tuile .l { display: flex; align-items: center; gap: 6px; font-size: .8rem; color: var(--muted); font-weight: 600; }
+  .tuile b { display: block; font-size: 1.75rem; letter-spacing: -.035em; line-height: 1.15; margin-top: 4px; font-variant-numeric: tabular-nums; }
+
+  .entonnoir { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  .etape { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; align-items: center; gap: 6px 12px; padding: 8px 0; }
+  .etape .n { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
+    background: var(--accent-soft); color: var(--accent); font-size: .78rem; font-weight: 750; }
+  .etape .nom { font-weight: 650; min-width: 0; }
+  .etape .nom small { display: block; font-size: .76rem; font-weight: 500; color: var(--muted); }
+  .etape .val { text-align: right; font-weight: 750; font-size: 1.1rem; font-variant-numeric: tabular-nums; }
+  .etape .val small { display: block; font-size: .72rem; font-weight: 600; color: var(--muted); }
+  .etape .barre { grid-column: 2 / -1; height: 8px; border-radius: 4px; }
+  .fuite { display: flex; align-items: center; gap: 6px; margin-left: 13px; padding: 0 0 0 27px;
+    border-left: 2px dotted var(--line); min-height: 22px; font-size: .76rem; color: var(--bad); font-weight: 600; }
+  .fuite.rien { color: var(--faint); font-weight: 500; }
 
   /* ---------- Comptes ---------- */
-  .comptes { margin-top: 16px; }
-  .outils { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
-  .outils input[type=search] { flex: 1 1 240px; min-width: 0; padding: 10px 12px; border-radius: 12px;
-    border: 1px solid var(--line); background: var(--bg); font-size: 16px; }
-  .outils select { padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); font-size: 15px; }
-  .puces { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0 -20px 8px; padding: 0 20px; }
-  .puces::-webkit-scrollbar { display: none; }
-  .puces button { flex: none; border: 1px solid var(--line); background: none; border-radius: 999px;
-    padding: 6px 12px; font-size: .85rem; font-weight: 600; color: var(--muted); white-space: nowrap; }
-  .puces button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
-  .puces button span { opacity: .7; margin-left: 4px; font-variant-numeric: tabular-nums; }
+  .outils { display: flex; gap: 8px; margin-bottom: 6px; }
+  .champ { flex: 1 1 auto; min-width: 0; position: relative; }
+  .champ svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--faint); pointer-events: none; }
+  .champ input { width: 100%; padding: 10px 12px 10px 36px; border-radius: 12px; border: 1px solid var(--line);
+    background: var(--bg); font-size: 16px; }
+  .outils select { flex: none; padding: 10px 30px 10px 12px; border-radius: 12px; border: 1px solid var(--line);
+    background: var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 11px center;
+    -webkit-appearance: none; appearance: none; font-size: 15px; max-width: 46%; }
 
   .liste { list-style: none; margin: 0; padding: 0; }
-  .ligne, .entete { display: grid; align-items: center; gap: 4px 12px;
-    grid-template-columns: 36px minmax(0, 1fr) auto; grid-template-areas: "av qui act" "av cours cours"; }
+  .liste > li + li { border-top: 1px solid var(--line); }
+  .entete, .compte { display: grid; align-items: center; gap: 2px 12px;
+    grid-template-columns: 38px minmax(0, 1fr) auto; }
   .entete { display: none; }
-  .liste > li { border-top: 1px solid var(--line); }
-  .liste > li:first-child { border-top: 0; }
-  .ligne { width: 100%; text-align: left; border: 0; background: none; padding: 12px 0; }
-  .av { grid-area: av; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center;
-    font-weight: 700; font-size: .9rem; background: var(--accent-soft); color: var(--accent); align-self: start; }
+  .compte { width: 100%; padding: 12px 0; border: 0; background: none; text-align: left; }
+  /* L'avatar est centré sur toute la hauteur de la ligne (nom, email et
+     horaires) : il reste en face du nom même avec plusieurs horaires. */
+  .av { grid-column: 1; grid-row: 1 / span 2; align-self: center; width: 38px; height: 38px; border-radius: 50%;
+    display: grid; place-items: center; font-weight: 700; font-size: .88rem; letter-spacing: -.02em;
+    background: var(--accent-soft); color: var(--accent); }
   .av.off { background: var(--track); color: var(--muted); }
-  .qui { grid-area: qui; min-width: 0; }
-  .qui b, .qui small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .qui small { color: var(--muted); font-size: .8rem; }
-  .cours { grid-area: cours; min-width: 0; display: flex; flex-wrap: wrap; gap: 4px; }
-  .pil { font-size: .78rem; background: var(--track); border-radius: 6px; padding: 2px 7px; max-width: 100%;
+  .qui { grid-column: 2; grid-row: 1; min-width: 0; }
+  .qui b { display: flex; align-items: center; gap: 6px; min-width: 0; font-weight: 650; }
+  .qui b span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .qui small { display: block; color: var(--muted); font-size: .8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .horaires { grid-column: 2; grid-row: 2; min-width: 0; display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+  .pil { font-size: .76rem; background: var(--track); border-radius: 6px; padding: 2px 7px; max-width: 100%;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .pil.vide { background: none; color: var(--muted); padding-left: 0; }
-  .act { grid-area: act; text-align: right; white-space: nowrap; }
-  .act b { display: block; font-variant-numeric: tabular-nums; }
-  .act small { color: var(--muted); font-size: .78rem; }
-  .c7, .cp, .quand { display: none; }
-  .fiche { padding: 0 0 14px 48px; font-size: .85rem; display: grid; gap: 6px; }
-  .fiche dl { margin: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 12px; }
+  .mini-ecoles { flex: none; display: inline-block; font-size: .7rem; font-weight: 600; white-space: nowrap;
+    color: var(--muted); background: var(--track); border-radius: 6px; padding: 1px 6px; }
+  .cv { grid-column: 3; grid-row: 1 / span 2; align-self: center; text-align: right; white-space: nowrap; }
+  .cv b { display: block; font-variant-numeric: tabular-nums; font-size: 1rem; }
+  .cv small { color: var(--muted); font-size: .76rem; }
+  .cv-q { display: none; }
+  .fiche { padding: 0 0 16px 50px; font-size: .85rem; }
+  .fiche dl { margin: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 14px; }
   .fiche dt { color: var(--muted); }
   .fiche dd { margin: 0; overflow-wrap: anywhere; }
-  .fiche code { font-size: .78rem; color: var(--muted); }
-  .vide-liste { padding: 24px 0; text-align: center; color: var(--muted); }
-
-  @media (min-width: 760px) {
-    .ligne, .entete { grid-template-columns: 36px minmax(0, 1.2fr) minmax(0, 1.3fr) 56px 64px 120px;
-      grid-template-areas: "av qui cours c7 cp quand"; }
-    .entete { display: grid; padding: 0 0 8px; font-size: .72rem; font-weight: 700; text-transform: uppercase;
+  .fiche code { font-size: .76rem; color: var(--muted); }
+  .avert { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 10px; padding: 9px 12px; border-radius: 10px;
+    color: var(--warn); background: color-mix(in srgb, var(--warn) 10%, transparent); font-weight: 600; }
+  @media (max-width: 560px) { .fiche { padding-left: 0; } }
+  @media (min-width: 820px) {
+    .entete, .compte { grid-template-columns: 38px minmax(0, 1fr) minmax(0, 1.1fr) 110px 120px; }
+    .entete { display: grid; padding: 4px 0 8px; font-size: .7rem; font-weight: 700; text-transform: uppercase;
       letter-spacing: .05em; color: var(--muted); border-bottom: 1px solid var(--line); }
     .entete span:nth-child(n+4) { text-align: right; }
-    .ligne { padding: 14px 0; border-radius: 10px; }
-    .ligne:hover { background: color-mix(in srgb, var(--track) 50%, transparent); }
-    .act { display: none; }
-    .c7, .cp, .quand { display: block; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
-    .c7 { grid-area: c7; } .cp { grid-area: cp; font-weight: 700; } .quand { grid-area: quand; color: var(--muted); font-size: .85rem; }
-    .fiche { padding-left: 48px; }
+    .av { grid-row: 1; }
+    .horaires { grid-column: 3; grid-row: 1; margin-top: 0; }
+    .cv { grid-column: 4; grid-row: 1; }
+    .cv-q { grid-column: 5; grid-row: 1; }
+    .cv small { display: none; }
+    .cv-q { display: block; text-align: right; color: var(--muted); font-size: .85rem; white-space: nowrap; }
+    .compte { border-radius: 10px; }
+    .compte:hover { background: color-mix(in srgb, var(--track) 45%, transparent); }
   }
+  .groupe-comptes { padding-bottom: 6px; }
 
-  /* ---------- Bugs & demandes (reports de l'app) ---------- */
-  .statut { display: inline-block; font-size: .72rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: .04em; border-radius: 6px; padding: 2px 8px; vertical-align: 1px; }
+  /* ---------- Retours (bugs & demandes) ---------- */
+  .retours-h { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+  .retours-h .seg { flex: 0 1 auto; }
+  @media (max-width: 560px) { .retours-h .seg { flex: 1; } .retours-h .seg button { flex: 1; padding-left: 6px; padding-right: 6px; } }
+  .retour-l { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto 18px; align-items: center; gap: 2px 12px;
+    width: 100%; padding: 13px 0; border: 0; background: none; text-align: left; }
+  .retour-l .ic { grid-column: 1; grid-row: 1 / span 2; width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center;
+    background: var(--track); color: var(--muted); }
+  .retour-l .ic.bug { background: color-mix(in srgb, var(--bad) 12%, transparent); color: var(--bad); }
+  .retour-l .ic.demande { background: color-mix(in srgb, var(--free) 13%, transparent); color: var(--free); }
+  .retour-l .t { grid-column: 2; grid-row: 1; min-width: 0; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .retour-l .t .point { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--accent);
+    margin-right: 7px; vertical-align: 2px; }
+  .retour-l .m { grid-column: 2; grid-row: 2; min-width: 0; font-size: .8rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .retour-l .statut { grid-column: 3; grid-row: 1 / span 2; }
+  .retour-l .chev { grid-column: 4; grid-row: 1 / span 2; }
+  .statut { display: inline-block; font-size: .7rem; font-weight: 700; border-radius: 6px; padding: 3px 8px; white-space: nowrap; }
   .statut.nouveau { color: var(--accent); background: var(--accent-soft); }
-  .statut.en_cours { color: #b47908; background: color-mix(in srgb, #b47908 12%, transparent); }
+  .statut.en_cours { color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, transparent); }
   .statut.corrige { color: var(--free); background: color-mix(in srgb, var(--free) 12%, transparent); }
-  .type { display: inline-block; font-size: .72rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: .04em; border-radius: 6px; padding: 2px 8px; vertical-align: 1px; }
-  .type.bug { color: var(--accent); background: var(--accent-soft); }
-  .type.demande { color: var(--free); background: color-mix(in srgb, var(--free) 12%, transparent); }
-  /* La ligne montre le texte et, s'il y en a, les captures : pas besoin de
-     dérouler. Tout le reste (type, email, étape, appareil) vit dans le menu ⋯. */
-  .bug-item { position: relative; }
-  .bug-item .ligne { align-items: center;
-    grid-template-columns: 36px minmax(0, 1fr) auto 34px;
-    grid-template-areas: "av qui act menu" "av corps corps corps"; }
-  .bug-item .ligne:hover { background: none; }
-  .bug-corps { grid-area: corps; min-width: 0; }
-  .bug-msg .type { margin-right: 6px; }
-  .bug-msg { min-width: 0; overflow: hidden; display: -webkit-box;
-    -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: .88rem; }
-  .bug-imgs { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
-  .bug-imgs a { display: block; width: 96px; height: 96px; border-radius: 10px; overflow: hidden;
+  .retour-d { padding: 2px 0 18px 50px; display: grid; gap: 14px; }
+  .retour-d .msg { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .92rem; line-height: 1.55; }
+  .retour-d .imgs { display: flex; gap: 8px; flex-wrap: wrap; }
+  .retour-d .imgs a { display: block; width: 104px; height: 104px; border-radius: 10px; overflow: hidden;
     border: 1px solid var(--line); background: var(--track); }
-  .bug-imgs img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .bug-menu-btn { grid-area: menu; justify-self: end; display: grid; place-items: center;
-    width: 34px; height: 34px; padding: 0; border: 0; border-radius: 10px;
-    background: none; color: var(--muted); }
-  .bug-menu-btn:hover, .bug-menu-btn[aria-expanded="true"] { background: var(--track); color: var(--ink); }
-  .menu-bug { position: absolute; top: 46px; right: 0; z-index: 30; min-width: 200px; padding: 6px;
-    border-radius: 14px; background: var(--surface); border: 1px solid var(--line);
-    box-shadow: 0 20px 44px -14px rgba(0, 0, 0, .35), 0 2px 6px rgba(0, 0, 0, .12); }
-  .menu-bug:not([hidden]) { animation: menu-apparait .18s cubic-bezier(.16, 1, .3, 1); }
-  .menu-titre { margin: 6px 12px 2px; font-size: .72rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: .05em; color: var(--muted); }
-  .menu-sep { height: 1px; margin: 5px 8px; background: var(--line); }
-  .menu-opt { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 12px;
-    border: 0; border-radius: 9px; background: none; color: var(--ink); text-align: left;
-    font-size: .88rem; font-weight: 550; }
-  .menu-opt:hover, .menu-opt:focus-visible { background: var(--accent-soft); outline: none; }
-  .menu-opt .check { margin-left: auto; flex: none; visibility: hidden; }
-  .menu-opt[aria-checked="true"] .check { visibility: visible; }
-  @media (min-width: 760px) {
-    .bug-item .ligne { grid-template-columns: 36px minmax(200px, .6fr) minmax(0, 1.4fr) auto 34px;
-      grid-template-areas: "av qui corps act menu"; }
-    .bug-item .act { display: block; text-align: right; }
-  }
+  .retour-d .imgs img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .retour-d .meta-d { margin: -4px 0 0; font-size: .76rem; color: var(--faint); overflow-wrap: anywhere; }
+  .retour-d .seg { justify-self: start; }
+  @media (max-width: 560px) { .retour-d { padding-left: 0; } .retour-d .seg { justify-self: stretch; } .retour-d .seg button { flex: 1; } }
 
   /* ---------- Apparence : bouton + menu déroulant (Claire / Sombre / Système) ---------- */
   .theme-wrap { position: relative; flex: none; }
@@ -293,7 +370,6 @@ catch (e) { /* navigation privée */ }
   .theme-opt[aria-checked="true"] { font-weight: 700; }
   .theme-opt .check { margin-left: auto; flex: none; visibility: hidden; }
   .theme-opt[aria-checked="true"] .check { visibility: visible; }
-  /* Couleur : trois pastilles, sous l'apparence. */
   .theme-sep { height: 1px; margin: 5px 8px; background: var(--line); }
   .theme-couleurs { display: flex; align-items: center; justify-content: center; gap: 16px; padding: 8px 12px 10px; }
   .theme-couleurs button {
@@ -305,7 +381,6 @@ catch (e) { /* navigation privée */ }
   .theme-couleurs button:hover { transform: scale(1.08); }
   .theme-couleurs button[aria-checked="true"] { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--pastille); }
   .theme-couleurs button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  /* Le libellé annonce la rangée : un lecteur d'écran lit « Couleur, Bleu, coché ». */
   .theme-couleur-titre {
     margin: 2px 12px 0; font-size: .72rem; font-weight: 700;
     text-transform: uppercase; letter-spacing: .05em; color: var(--muted);
@@ -314,7 +389,7 @@ catch (e) { /* navigation privée */ }
 </head>
 <body>
 <header class="top">
-  <div class="top-in">
+  <div class="rail top-in">
     <a class="retour" href="/" aria-label="Retour à l'app">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
     </a>
@@ -322,7 +397,7 @@ catch (e) { /* navigation privée */ }
       <h1>Dashboard <span>EzHoraire</span></h1>
       <p id="sous-titre">Chargement…</p>
     </div>
-    <div class="seg" role="group" aria-label="Période">
+    <div class="seg" id="periode" role="group" aria-label="Période">
       <button data-j="7" aria-pressed="true">7 j</button>
       <button data-j="30" aria-pressed="false">30 j</button>
       <button data-j="90" aria-pressed="false">90 j</button>
@@ -360,71 +435,103 @@ catch (e) { /* navigation privée */ }
       </div>
     </div>
   </div>
+  <nav class="rail onglets" aria-label="Sections">
+    <a href="#apercu" data-vue="apercu">Aperçu</a>
+    <a href="#parcours" data-vue="parcours">Parcours</a>
+    <a href="#comptes" data-vue="comptes">Comptes</a>
+    <a href="#retours" data-vue="retours">Retours <span class="pastille" id="retours-pastille" hidden></span></a>
+  </nav>
 </header>
 
-<main>
+<main class="rail">
   <div id="etat">Chargement…</div>
   <div id="contenu" hidden>
-    <section class="kpis" id="kpis" aria-label="Chiffres clés"></section>
-    <div class="alerte" id="alerte" hidden></div>
 
-    <div class="grille">
-      <section class="card">
-        <div class="card-h"><h2>Consultations</h2><span class="mut" id="graph-resume"></span></div>
-        <div class="infobulle" id="infobulle" aria-live="polite"></div>
+    <!-- Aperçu -->
+    <div class="vue" id="vue-apercu">
+      <div class="alerte" id="alerte" hidden></div>
+      <section class="card hero" aria-labelledby="h-consult">
+        <div class="hero-h">
+          <div class="hero-l">
+            <div class="etiquette">
+              <span id="h-consult">Consultations</span>
+              <span class="info">
+                <button type="button" aria-label="Comment c'est compté" aria-expanded="false" data-info>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5v.5"/></svg>
+                </button>
+                <span class="bulle" id="bulle-consult" role="tooltip" hidden></span>
+              </span>
+            </div>
+            <div class="grand"><b id="total">0</b><span class="delta" id="delta" hidden></span><span class="delta-txt" id="delta-txt"></span></div>
+          </div>
+          <div class="minis">
+            <div class="mini"><div class="l">Aujourd'hui</div><b id="m-auj">0</b></div>
+            <div class="mini"><div class="l">Moyenne / jour</div><b id="m-moy">0</b></div>
+            <div class="mini"><div class="l">Personnes</div><b id="m-pers">0</b></div>
+          </div>
+        </div>
         <div class="graph" id="graph" role="img"></div>
-        <div class="axe" id="axe"></div>
+        <div class="axe" id="axe" aria-hidden="true"></div>
       </section>
+
+      <div class="deux">
+        <section class="card">
+          <div class="card-h"><h2>Par école</h2><span class="mut">consultations</span></div>
+          <ul class="rangs" id="ecoles"></ul>
+        </section>
+        <section class="card">
+          <div class="card-h"><h2>Communauté</h2></div>
+          <ul class="stats-l" id="communaute"></ul>
+        </section>
+      </div>
+    </div>
+
+    <!-- Parcours -->
+    <div class="vue" id="vue-parcours" hidden>
+      <p class="card vide" id="parcours-vide" hidden></p>
+      <div id="parcours-corps" class="vue">
+        <section class="tuiles" id="parcours-tuiles" aria-label="Chiffres clés du parcours"></section>
+        <div class="deux">
+          <section class="card">
+            <div class="card-h"><h2>De la visite à l'horaire</h2><span class="mut" id="parcours-resume"></span></div>
+            <ol class="entonnoir" id="entonnoir"></ol>
+          </section>
+          <section class="card">
+            <div class="card-h"><h2>Problèmes rencontrés</h2><span class="mut">visites touchées</span></div>
+            <ul class="rangs" id="problemes"></ul>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <!-- Comptes -->
+    <div class="vue" id="vue-comptes" hidden>
       <section class="card">
-        <div class="card-h"><h2>Formations</h2><span class="mut">consultations</span></div>
-        <ul class="forms" id="forms"></ul>
-        <button class="plus" id="forms-plus" hidden></button>
+        <div class="card-h"><h2>Comptes</h2><span class="mut" id="comptes-resume"></span></div>
+        <div class="outils">
+          <label class="champ">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <input id="recherche" type="search" placeholder="Rechercher…" aria-label="Rechercher un compte" autocomplete="off">
+          </label>
+          <select id="tri" aria-label="Trier">
+            <option value="visite">Dernière visite</option>
+            <option value="actifs">Plus actifs</option>
+            <option value="recents">Plus récents</option>
+          </select>
+        </div>
+        <ul class="rangs" id="groupes"></ul>
       </section>
     </div>
 
-    <section class="card comptes" id="sec-parcours">
-      <div class="card-h"><h2>Parcours</h2><span class="mut" id="parcours-resume"></span></div>
-      <p class="mut" id="parcours-vide" hidden></p>
-      <div class="parc" id="parcours-corps" hidden>
-        <div>
-          <h3>Arrivée → compte</h3>
-          <ul class="forms" id="parcours-entonnoir"></ul>
+    <!-- Retours -->
+    <div class="vue" id="vue-retours" hidden>
+      <section class="card">
+        <div class="retours-h">
+          <div class="seg" id="retours-filtre" role="group" aria-label="Filtrer"></div>
         </div>
-        <div>
-          <h3>Où ils s'arrêtent</h3>
-          <ul class="forms" id="parcours-arrets"></ul>
-        </div>
-        <div>
-          <h3>Erreurs et frictions</h3>
-          <ul class="forms" id="parcours-erreurs"></ul>
-          <h3 class="sep">Par version</h3>
-          <ul class="forms" id="parcours-versions"></ul>
-        </div>
-      </div>
-    </section>
-
-    <section class="card comptes">
-      <div class="card-h"><h2>Comptes</h2><span class="mut" id="comptes-resume"></span></div>
-      <div class="outils">
-        <input id="recherche" type="search" placeholder="Email, nom, formation…" aria-label="Rechercher un compte" autocomplete="off">
-        <select id="tri" aria-label="Trier">
-          <option value="visite">Dernière visite</option>
-          <option value="actifs">Plus actifs</option>
-          <option value="recents">Plus récents</option>
-        </select>
-      </div>
-      <div class="puces" id="filtres" role="group" aria-label="Filtrer"></div>
-      <div class="entete" aria-hidden="true"><span></span><span>Compte</span><span>Horaires</span><span>7 j</span><span>Période</span><span>Dernière visite</span></div>
-      <ul class="liste" id="liste"></ul>
-      <button class="plus" id="liste-plus" hidden></button>
-    </section>
-
-    <section class="card comptes" id="sec-bugs">
-      <div class="card-h"><h2>Bugs & demandes</h2><span class="mut" id="bugs-resume"></span></div>
-      <div class="puces" id="bugs-types" role="group" aria-label="Filtrer par type"></div>
-      <div class="puces" id="bugs-filtres" role="group" aria-label="Filtrer par statut"></div>
-      <ul class="liste" id="bugs-liste"></ul>
-    </section>
+        <ul class="liste" id="retours-liste"></ul>
+      </section>
+    </div>
   </div>
 </main>
 
@@ -433,13 +540,25 @@ catch (e) { /* navigation privée */ }
 (function () {
   "use strict";
   var jours = 7, donnees = null, sb = null, requete = 0;
-  var vue = { filtre: "tous", tri: "visite", q: "", n: 40, formsTout: false, ouvert: null };
+  var vue = { onglet: "apercu", ecoleOuverte: null, formsTout: {}, groupes: {}, n: {}, q: "", tri: "visite", ouvert: null };
   var $ = function (id) { return document.getElementById(id); };
+
+  var ECOLES = {
+    heh: { nom: "HEH", detail: "Haute École en Hainaut" },
+    umons: { nom: "UMONS", detail: "Université de Mons" },
+    condorcet: { nom: "Condorcet", detail: "Haute École de la Province de Hainaut" },
+    ulb: { nom: "ULB", detail: "Université libre de Bruxelles" },
+    ucl: { nom: "UCLouvain", detail: "Université catholique de Louvain" }
+  };
+  var CHEV = '<svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
+  var ATTENTION = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>';
 
   function txt(s) {
     return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;")
       .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
+  function nb(n) { return (+n || 0).toLocaleString("fr-BE"); }
+  function pl(n, un, plusieurs) { return nb(n) + " " + ((+n || 0) > 1 ? (plusieurs || un + "s") : un); }
   // L'UMONS préfixe ses formations d'un point ('.BAB1 - Droit') : décapé à l'affichage.
   function joli(f) {
     return String(f == null ? "" : f).replace(/^\s*[.\s]+/, "").replace(/\s+/g, " ").trim();
@@ -448,7 +567,22 @@ catch (e) { /* navigation privée */ }
   function groupe(g) {
     return String(g == null ? "" : g).replace(/^\s*<[^>]*>\s*/, "").replace(/\s+/g, " ").trim();
   }
-  function nb(n) { return (+n || 0).toLocaleString("fr-BE"); }
+  function aLaCarte(f) { return String(f || "").indexOf("PAR:") === 0; }
+  function estLien(f) { return /^Mon horaire \(lien/.test(String(f || "")); }
+  // Nom lisible d'un horaire : un panier ULB/UCL « PAR:A,B,C » devient « 3 cours choisis ».
+  function nomFormation(f) {
+    if (aLaCarte(f)) {
+      var codes = String(f).slice(4).split(",").filter(Boolean);
+      return codes.length > 2 ? codes.length + " cours choisis" : codes.join(" · ");
+    }
+    if (estLien(f)) return "Lien personnel";
+    return joli(f) || "—";
+  }
+  function ecoleNom(id) { return (ECOLES[id] && ECOLES[id].nom) || (id ? String(id).toUpperCase() : "Autre"); }
+  function logo(id) {
+    if (ECOLES[id]) return '<span class="rang-logo"><img src="/logos/ecoles/' + txt(id) + '.svg" alt="" loading="lazy"></span>';
+    return '<span class="rang-logo lettre">' + txt((id || "?").charAt(0).toUpperCase()) + "</span>";
+  }
   function date(iso, heure) {
     var d = iso ? new Date(iso) : null;
     if (!d || isNaN(d)) return "—";
@@ -470,8 +604,28 @@ catch (e) { /* navigation privée */ }
   function jourCourt(j) {
     return new Date(j + "T12:00:00Z").toLocaleDateString("fr-BE", { day: "numeric", month: "short" });
   }
+  function jourLong(j) {
+    return new Date(j + "T12:00:00Z").toLocaleDateString("fr-BE", { weekday: "short", day: "numeric", month: "short" });
+  }
+  function fmtDuree(s) {
+    s = +s || 0;
+    if (s < 60) return Math.round(s) + " s";
+    return Math.floor(s / 60) + " min " + (Math.round(s % 60) ? Math.round(s % 60) + " s" : "");
+  }
   function nomDe(u) { return ((u.prenom || "") + " " + (u.nom || "")).trim(); }
-  function initiale(u) { return (nomDe(u) || u.email || "?").charAt(0).toUpperCase(); }
+  function initiales(u) {
+    var p = String(u.prenom || "").replace(/^@/, ""), n = String(u.nom || "");
+    var s = (p.charAt(0) + n.charAt(0)) || String(u.email || "?").charAt(0);
+    return s.toUpperCase();
+  }
+  function ecolesDe(u) {
+    var vu = {};
+    return u.profils.map(function (p) { return p.ecole || ""; }).filter(function (e) {
+      if (vu[e]) return false;
+      vu[e] = 1; return true;
+    });
+  }
+  function actifSurPeriode(u) { return u.visites_periode > 0; }
 
   function etat(msg, erreur) {
     var el = $("etat");
@@ -480,164 +634,177 @@ catch (e) { /* navigation privée */ }
     $("contenu").hidden = !!msg;
   }
 
-  /* ---------- Chiffres clés ---------- */
-  function kpis() {
-    var t = donnees.totaux, us = donnees.utilisateurs;
-    var limite = Date.now() - jours * 864e5;
-    var nouveaux = us.filter(function (u) { return new Date(u.compte_cree) >= limite; }).length;
-    var sansHoraire = us.filter(function (u) { return !u.profils.length; }).length;
-    var pct = t.comptes ? Math.round(t.visiteurs_uniques / t.comptes * 100) : 0;
-    function tuile(l, v, s) {
-      return '<div class="card kpi"><div class="l">' + l + '</div><b class="num">' + nb(v) +
-        '</b><div class="s">' + s + "</div></div>";
-    }
-    $("kpis").innerHTML =
-      tuile("Comptes", t.comptes, nouveaux ? "<em>+" + nb(nouveaux) + "</em> sur la période" : "aucun nouveau") +
-      tuile("Actifs", t.visiteurs_uniques, pct + " % des comptes") +
-      tuile("Consultations", t.consultations, nb(t.aujourdhui) + " aujourd'hui") +
-      tuile("Horaires suivis", t.horaires_suivis, sansHoraire ? nb(sansHoraire) + " compte" + (sansHoraire > 1 ? "s" : "") + " sans horaire" : "tous les comptes en ont");
+  /* ---------- Onglets (#apercu, #parcours, #comptes, #retours) ---------- */
+  var ONGLETS = ["apercu", "parcours", "comptes", "retours"];
+  function ongletDepuisAdresse() {
+    var h = (location.hash || "").replace("#", "");
+    return ONGLETS.indexOf(h) >= 0 ? h : "apercu";
+  }
+  function montrerOnglet(o, defiler) {
+    vue.onglet = o;
+    ONGLETS.forEach(function (x) { $("vue-" + x).hidden = x !== o; });
+    document.querySelectorAll(".onglets a").forEach(function (a) {
+      if (a.getAttribute("data-vue") === o) a.setAttribute("aria-current", "page");
+      else a.removeAttribute("aria-current");
+    });
+    fermerBulles();
+    if (defiler) window.scrollTo(0, 0);
   }
 
-  /* ---------- Graphique ---------- */
+  /* ---------- Aperçu : consultations ---------- */
+  function consultations() {
+    var t = donnees.totaux, prec = donnees.precedent || {};
+    var serie = donnees.par_jour, n = serie.length;
+    $("total").textContent = nb(t.consultations);
+    var d = $("delta"), dt = $("delta-txt");
+    if (+prec.consultations > 0) {
+      var pct = Math.round((t.consultations - prec.consultations) / prec.consultations * 100);
+      d.hidden = false;
+      d.className = "delta " + (pct > 0 ? "haut" : pct < 0 ? "bas" : "egal");
+      d.textContent = (pct > 0 ? "↑ " : pct < 0 ? "↓ " : "") + Math.abs(pct) + " %";
+      dt.textContent = "vs les " + jours + " jours d'avant";
+    } else {
+      d.hidden = true;
+      dt.textContent = jours + " derniers jours";
+    }
+    var auj = serie.length ? serie[n - 1] : { visites: 0 };
+    $("m-auj").textContent = nb(auj.visites);
+    $("m-moy").textContent = nb(Math.round(t.consultations / Math.max(1, n) * 10) / 10);
+    $("m-pers").textContent = nb(t.visiteurs_uniques);
+    var brut = +t.consultations_brutes || 0;
+    $("bulle-consult").innerHTML = "<b>Une consultation</b> = une personne connectée qui ouvre un de ses horaires. " +
+      "Revenir sur l'app dans les 30 minutes ne compte pas deux fois." +
+      (brut > t.consultations ? "<br><br>" + nb(brut) + " ouvertures brutes sur la période." : "");
+    graphique();
+  }
+  function arrondiHaut(m) {
+    if (m <= 4) return 4;
+    var p = Math.pow(10, Math.floor(Math.log(m) / Math.LN10)), r = m / p;
+    return (r <= 1 ? 1 : r <= 2 ? 2 : r <= 5 ? 5 : 10) * p;
+  }
   function graphique() {
     var serie = donnees.par_jour, n = serie.length;
-    var max = Math.max.apply(null, serie.map(function (p) { return p.visites; }).concat([1]));
-    var total = serie.reduce(function (s, p) { return s + p.visites; }, 0);
+    var brutMax = Math.max.apply(null, serie.map(function (p) { return p.visites; }).concat([0]));
+    var max = arrondiHaut(brutMax);
     var g = $("graph");
-    g.style.gap = n > 45 ? "1px" : "3px";
-    g.innerHTML = '<div class="max"><span>' + nb(max) + "</span></div>" + serie.map(function (p, i) {
-      var h = p.visites ? Math.max(2, p.visites / max * 100) : 0;
-      return '<div class="col' + (i === n - 1 ? " auj" : "") + '" data-i="' + i + '"><i style="height:' + h + '%"></i></div>';
+    var lignes = [max, Math.round(max / 2), 0].map(function (v) {
+      return '<div class="grille-l" style="top:' + (100 - v / max * 100) + '%"><span>' + nb(v) + "</span></div>";
     }).join("");
-    g.setAttribute("aria-label", "Consultations par jour : " + nb(total) + " au total, pic à " + nb(max));
-    $("graph-resume").textContent = "moy. " + nb(Math.round(total / Math.max(1, n) * 10) / 10) + " / jour";
-    var pas = Math.ceil(n / (window.innerWidth < 560 ? 3 : 5));
-    var marques = [];
-    for (var i = 0; i < n - 1; i += pas) marques.push(jourCourt(serie[i].jour));
-    marques.push("Auj.");
-    $("axe").innerHTML = marques.map(function (m) { return "<span>" + txt(m) + "</span>"; }).join("");
-    montrer(null);
-  }
-  function montrer(i) {
-    var serie = donnees.par_jour;
-    document.querySelectorAll("#graph .col.on").forEach(function (c) { c.classList.remove("on"); });
-    if (i == null) {
-      var p = serie[serie.length - 1];
-      $("infobulle").innerHTML = "Aujourd'hui · <b>" + nb(p.visites) + "</b> consultation" + (p.visites > 1 ? "s" : "") +
-        ' <span class="mut">· ' + nb(p.visiteurs) + " visiteur" + (p.visiteurs > 1 ? "s" : "") + "</span>";
-      return;
+    g.innerHTML = lignes + '<div class="barres" style="gap:' + (n > 45 ? 1 : n > 20 ? 2 : 4) + 'px">' +
+      serie.map(function (p, i) {
+        return '<div class="col' + (i === n - 1 ? " auj" : "") + (p.visites ? "" : " zero") + '" data-i="' + i + '">' +
+          '<i style="height:' + (p.visites / max * 100) + '%"></i></div>';
+      }).join("") + "</div>";
+    g.setAttribute("aria-label", "Consultations par jour : " + nb(donnees.totaux.consultations) +
+      " au total, pic à " + nb(brutMax));
+    var marques = window.innerWidth < 560 ? 3 : 6;
+    var pas = Math.max(1, Math.ceil((n - 1) / (marques - 1)));
+    var html = "";
+    for (var i = 0; i < n; i += pas) {
+      if (i && n - 1 - i < pas / 2) break; // pas de collision avec « Auj. »
+      html += '<span style="left:' + ((i + .5) / n * 100) + '%">' + txt(jourCourt(serie[i].jour)) + "</span>";
     }
-    var q = serie[i];
-    var col = document.querySelector('#graph .col[data-i="' + i + '"]');
+    html += '<span style="left:' + ((n - .5) / n * 100) + '%">Auj.</span>';
+    $("axe").innerHTML = html;
+  }
+  function montrerJour(i) {
+    var g = $("graph");
+    var ancien = g.querySelector(".tip");
+    if (ancien) ancien.remove();
+    g.querySelectorAll(".col.on").forEach(function (c) { c.classList.remove("on"); });
+    if (i == null) return;
+    var p = donnees.par_jour[i], n = donnees.par_jour.length;
+    var col = g.querySelector('.col[data-i="' + i + '"]');
     if (col) col.classList.add("on");
-    $("infobulle").innerHTML = txt(jourCourt(q.jour)) + " · <b>" + nb(q.visites) + "</b> consultation" + (q.visites > 1 ? "s" : "") +
-      ' <span class="mut">· ' + nb(q.visiteurs) + " visiteur" + (q.visiteurs > 1 ? "s" : "") + "</span>";
+    var tip = document.createElement("div");
+    tip.className = "tip";
+    var gauche = (i + .5) / n * 100;
+    tip.style.left = gauche + "%";
+    if (gauche < 18) tip.style.transform = "translateX(-12%)";
+    else if (gauche > 82) tip.style.transform = "translateX(-88%)";
+    tip.style.bottom = "calc(" + Math.min(100, p.visites / arrondiHaut(Math.max.apply(null,
+      donnees.par_jour.map(function (x) { return x.visites; }).concat([0]))) * 100) + "% + 10px)";
+    tip.innerHTML = "<small>" + txt(i === n - 1 ? "Aujourd'hui" : jourLong(p.jour)) + "</small><b>" + pl(p.visites, "consultation") +
+      "</b> · " + pl(p.visiteurs, "personne");
+    g.appendChild(tip);
   }
   function survol(e) {
     if (!donnees) return;
-    var g = $("graph"), r = g.getBoundingClientRect();
-    var n = donnees.par_jour.length;
+    var r = $("graph").getBoundingClientRect(), n = donnees.par_jour.length;
     var i = Math.floor((e.clientX - r.left) / r.width * n);
-    montrer(Math.max(0, Math.min(n - 1, i)));
+    montrerJour(Math.max(0, Math.min(n - 1, i)));
   }
 
-  /* ---------- Formations ---------- */
-  function formations() {
-    var fs = donnees.par_formation;
-    var max = Math.max.apply(null, fs.map(function (f) { return f.visites; }).concat([1]));
-    var montres = vue.formsTout ? fs : fs.slice(0, 6);
-    $("forms").innerHTML = montres.map(function (f) {
-      return '<li><span class="nom" title="' + txt(f.formation) + '">' +
-        (f.ecole ? '<span class="tag">' + txt(f.ecole) + "</span> " : "") + txt(joli(f.formation) || "—") + "</span>" +
-        '<span class="val num">' + nb(f.visites) + "</span>" +
-        '<span class="barre"><i style="width:' + (f.visites / max * 100) + '%"></i></span>' +
-        '<span class="det">' + nb(f.inscrits) + " inscrit" + (f.inscrits > 1 ? "s" : "") +
-        " · " + nb(f.visiteurs) + " actif" + (f.visiteurs > 1 ? "s" : "") + "</span></li>";
-    }).join("") || '<li class="vide-liste">Aucune donnée.</li>';
-    var b = $("forms-plus");
-    b.hidden = fs.length <= 6;
-    b.textContent = vue.formsTout ? "Réduire" : "Voir les " + fs.length + " formations";
+  /* ---------- Aperçu : écoles → formations ---------- */
+  function formationsDe(ecole) {
+    // Les paniers de cours (ULB, UCL) sont presque tous uniques : un seul
+    // rang « Cours à la carte », idem pour les liens personnels.
+    var rangs = [], carte = null, liens = null;
+    (donnees.par_formation || []).forEach(function (f) {
+      if ((f.ecole || "") !== ecole) return;
+      if (aLaCarte(f.formation) || estLien(f.formation)) {
+        var cible = aLaCarte(f.formation) ? (carte = carte || { nom: "Cours à la carte", visites: 0, inscrits: 0, visiteurs: 0, n: 0 })
+          : (liens = liens || { nom: "Liens personnels", visites: 0, inscrits: 0, visiteurs: 0, n: 0 });
+        cible.visites += f.visites; cible.inscrits += f.inscrits; cible.visiteurs += f.visiteurs; cible.n++;
+        return;
+      }
+      rangs.push({ nom: nomFormation(f.formation), visites: f.visites, inscrits: f.inscrits, visiteurs: f.visiteurs });
+    });
+    if (carte) rangs.push(carte);
+    if (liens) rangs.push(liens);
+    return rangs.sort(function (a, b) { return b.visites - a.visites || b.inscrits - a.inscrits; });
+  }
+  function ecoles() {
+    var es = donnees.par_ecole || [];
+    var total = Math.max(1, donnees.totaux.consultations);
+    $("ecoles").innerHTML = es.map(function (e) {
+      var id = e.ecole || "";
+      var ouvert = vue.ecoleOuverte === id;
+      var html = '<li><button class="rang" data-ecole="' + txt(id) + '" aria-expanded="' + ouvert + '">' +
+        logo(id) + '<span class="rang-nom">' + txt(ecoleNom(id)) + "</span>" +
+        '<span class="rang-val">' + nb(e.visites) + "<small>" + Math.round(e.visites / total * 100) + " %</small></span>" + CHEV +
+        '<span class="rang-det">' + pl(e.visiteurs, "personne") + " · " + pl(e.inscrits, "inscrit") + "</span></button>";
+      if (ouvert) {
+        var fs = formationsDe(id), tout = vue.formsTout[id], montres = tout ? fs : fs.slice(0, 6);
+        var max = Math.max.apply(null, fs.map(function (f) { return f.visites; }).concat([1]));
+        html += '<div class="sous"><ul class="sous-liste">' + (montres.map(function (f) {
+          return '<li><span class="nom" title="' + txt(f.nom) + '">' + txt(f.nom) + "</span>" +
+            '<span class="val">' + nb(f.visites) + "</span>" +
+            '<span class="barre"><i style="width:' + (f.visites / max * 100) + '%"></i></span>' +
+            '<span class="det">' + (f.n ? pl(f.n, "combinaison") + " · " : "") + pl(f.inscrits, "inscrit") +
+            " · " + pl(f.visiteurs, "actif") + "</span></li>";
+        }).join("") || '<li class="vide">Aucune formation.</li>') + "</ul>" +
+          (fs.length > 6 ? '<button class="lien" data-tout="' + txt(id) + '">' +
+            (tout ? "Réduire" : "Voir les " + fs.length + " formations") + "</button>" : "") + "</div>";
+      }
+      return html + "</li>";
+    }).join("") || '<li class="vide">Aucune consultation sur la période.</li>';
   }
 
-  /* ---------- Comptes ---------- */
-  var FILTRES = [
-    ["tous", "Tous", function () { return true; }],
-    ["actifs", "Actifs 7 j", function (u) { return u.visites_7j > 0; }],
-    ["inactifs", "Inactifs", function (u) { return !u.visites_periode; }],
-    ["sans", "Sans horaire", function (u) { return !u.profils.length; }],
-    ["nouveaux", "Nouveaux", function (u) { return new Date(u.compte_cree) >= Date.now() - jours * 864e5; }]
-  ];
-  var TRIS = {
-    visite: function (a, b) { return (b.derniere_visite || "").localeCompare(a.derniere_visite || ""); },
-    actifs: function (a, b) { return b.visites_periode - a.visites_periode || b.visites_7j - a.visites_7j; },
-    recents: function (a, b) { return (b.compte_cree || "").localeCompare(a.compte_cree || ""); }
-  };
-  function puces() {
-    var us = donnees.utilisateurs;
-    $("filtres").innerHTML = FILTRES.map(function (f) {
-      return '<button data-f="' + f[0] + '" aria-pressed="' + (vue.filtre === f[0]) + '">' + f[1] +
-        "<span>" + nb(us.filter(f[2]).length) + "</span></button>";
-    }).join("");
-  }
-  function comptes() {
-    var test = FILTRES.filter(function (f) { return f[0] === vue.filtre; })[0][2];
-    var q = vue.q.toLowerCase().trim();
-    var lignes = donnees.utilisateurs.filter(function (u) {
-      if (!test(u)) return false;
-      if (!q) return true;
-      return (u.email + " " + nomDe(u) + " " + u.profils.map(function (p) {
-        return p.formation + " " + p.surnom + " " + p.ecole + " " + (p.groupes || []).join(" ");
-      }).join(" ")).toLowerCase().indexOf(q) >= 0;
-    }).sort(TRIS[vue.tri]);
-    $("comptes-resume").textContent = lignes.length === donnees.utilisateurs.length
-      ? nb(lignes.length) + " au total" : nb(lignes.length) + " sur " + nb(donnees.utilisateurs.length);
-    $("liste").innerHTML = lignes.slice(0, vue.n).map(ligne).join("") ||
-      '<li class="vide-liste">Aucun compte ne correspond.</li>';
-    var b = $("liste-plus");
-    b.hidden = lignes.length <= vue.n;
-    b.textContent = "Afficher " + Math.min(40, lignes.length - vue.n) + " de plus";
-  }
-  function ligne(u) {
-    var nom = nomDe(u), ouvert = vue.ouvert === u.user_id;
-    var cours = u.profils.length ? u.profils.map(function (p) {
-      var g = (p.groupes || []).map(groupe).join(", ");
-      return '<span class="pil">' + txt(joli(p.formation) || p.surnom || "—") + (g ? ' <span class="mut">· ' + txt(g) + "</span>" : "") + "</span>";
-    }).join("") : '<span class="pil vide">aucun horaire</span>';
-    var html = '<li><button class="ligne" data-u="' + txt(u.user_id) + '" aria-expanded="' + ouvert + '">' +
-      '<span class="av' + (u.visites_7j ? "" : " off") + '" aria-hidden="true">' + txt(initiale(u)) + "</span>" +
-      '<span class="qui"><b>' + txt(nom || u.email || "—") + "</b>" + (nom ? "<small>" + txt(u.email) + "</small>" : "") + "</span>" +
-      '<span class="cours">' + cours + "</span>" +
-      '<span class="act"><b>' + nb(u.visites_periode) + "</b><small>" + txt(ilya(u.derniere_visite)) + "</small></span>" +
-      '<span class="c7">' + nb(u.visites_7j) + "</span>" +
-      '<span class="cp">' + nb(u.visites_periode) + "</span>" +
-      '<span class="quand">' + txt(ilya(u.derniere_visite)) + "</span></button>";
-    if (ouvert) {
-      html += '<div class="fiche"><dl>' +
-        "<dt>Consultations</dt><dd>" + nb(u.visites_7j) + " sur 7 j · " + nb(u.visites_periode) + " sur " + jours + " j</dd>" +
-        "<dt>Dernière visite</dt><dd>" + txt(date(u.derniere_visite, true)) + "</dd>" +
-        "<dt>Connexion</dt><dd>" + txt(date(u.derniere_connexion, true)) + "</dd>" +
-        "<dt>Compte créé</dt><dd>" + txt(date(u.compte_cree)) + "</dd>" +
-        u.profils.map(function (p) {
-          return "<dt>" + txt(p.surnom || "Horaire") + "</dt><dd>" + txt(joli(p.formation) || "—") +
-            (p.ecole ? ' <span class="tag">' + txt(p.ecole) + "</span>" : "") +
-            ((p.groupes || []).length ? '<br><span class="mut">Groupes : ' + txt(p.groupes.map(groupe).join(", ")) + "</span>" : "") + "</dd>";
-        }).join("") +
-        "<dt>ID</dt><dd><code>" + txt(u.user_id) + "</code></dd></dl></div>";
+  /* ---------- Aperçu : communauté ---------- */
+  function communaute() {
+    var t = donnees.totaux, us = donnees.utilisateurs;
+    var limite = Date.now() - jours * 864e5;
+    var nouveaux = us.filter(function (u) { return new Date(u.compte_cree) >= limite; }).length;
+    var sans = us.filter(function (u) { return !u.profils.length; }).length;
+    var actifs = us.filter(actifSurPeriode).length;
+    var aTraiter = bugs ? bugs.filter(function (b) { return b.statut !== "corrige"; }).length : null;
+    function ligne(href, l, s, v) {
+      return '<li><a class="stat" href="' + href + '"><span class="stat-l">' + l + (s ? "<small>" + s + "</small>" : "") +
+        "</span><b>" + v + "</b></a></li>";
     }
-    return html + "</li>";
+    $("communaute").innerHTML =
+      ligne("#comptes", "Comptes", sans ? pl(sans, "compte") + " sans horaire" : "tous ont un horaire",
+        nb(t.comptes) + (nouveaux ? "<em>+" + nb(nouveaux) + "</em>" : "")) +
+      ligne("#comptes", "Actifs", "au moins une consultation sur " + jours + " j",
+        nb(actifs) + ' <span class="mut" style="font-size:.8rem;font-weight:600">' +
+        (t.comptes ? Math.round(actifs / t.comptes * 100) : 0) + " %</span>") +
+      ligne("#comptes", "Horaires suivis", t.comptes ? (Math.round(t.horaires_suivis / t.comptes * 10) / 10).toLocaleString("fr-BE") + " par compte" : "",
+        nb(t.horaires_suivis)) +
+      ligne("#retours", "Retours à traiter", "bugs et demandes", aTraiter == null ? "…" : nb(aTraiter));
   }
 
-  /* ---------- Parcours (arrivée → compte créé, anonyme) ----------
-     Données agrégées côté Supabase (stats_evenements) : aucune ligne
-     n'est reliée à un compte, on lit des visites. */
-  var NOMS_ECRAN = { accueil: "Page d'accueil", app: "Entrée de l'app", compte: "Écran de connexion",
-    identite: "Écran nom/prénom", ecole: "Écran école", formation: "Écran formation",
-    groupes: "Écran groupes", horaire: "Horaire" };
-  var NOMS_EVENEMENT = { arrivee: "Arrivée sans autre action", clic_app: "Clic « Ouvrir l'app »",
-    clic_connexion: "Clic connexion sans suite", connexion_erreur: "Erreur de connexion",
-    compte_cree: "Compte créé", connexion_ok: "Connexion existante", identite_ok: "Identité complétée",
-    etape: "Étape en cours", friction: "Friction rencontrée", horaire_ok: "Horaire enregistré",
-    capture_choisie: "Capture choisie", capture_lue: "Capture lue", analyse: "Liste analysée" };
+  /* ---------- Parcours (anonyme : visites, pas personnes) ---------- */
   var NOMS_ERREUR = { email_invalide: "Adresse email invalide", mot_de_passe_court: "Mot de passe trop court",
     connexion_injoignable: "Service de connexion injoignable", invalid_credentials: "Email ou mot de passe incorrect",
     email_not_confirmed: "Adresse pas encore confirmée", over_email_send_rate_limit: "Trop de tentatives",
@@ -646,214 +813,261 @@ catch (e) { /* navigation privée */ }
     lien_expire: "Lien expiré", indisponible: "Service indisponible", connexion_echouee: "Échec de connexion",
     recherche_0: "Recherche sans résultat", capture_invalide: "Capture : fichier non reconnu",
     capture_vide: "Capture : aucun texte lisible", capture_echec: "Capture : lecture impossible",
-    analyse_0: "Liste analysée : aucun cours reconnu", groupes_partiels: "Horaire validé avec des cours sans groupe",
+    analyse_0: "Liste collée : aucun cours reconnu", groupes_partiels: "Horaire validé sans choisir tous les groupes",
     api_lente: "École trop lente à répondre", api_hors_ligne: "Hors ligne", api_erreur: "Réponse de l'école en erreur" };
-  function nomEtape(v) { return NOMS_ECRAN[v] || NOMS_EVENEMENT[v] || v || "—"; }
-  function fmtDuree(s) {
-    s = +s || 0;
-    if (s < 60) return Math.round(s) + " s";
-    return Math.floor(s / 60) + " min " + Math.round(s % 60) + " s";
-  }
+  var NOMS_ECRAN = { accueil: "page d'accueil", app: "entrée de l'app", compte: "écran de connexion",
+    identite: "écran nom/prénom", ecole: "écran école", formation: "écran formation",
+    groupes: "écran groupes", horaire: "horaire" };
   function parcours() {
-    var p = donnees.parcours, corps = $("parcours-corps"), vide = $("parcours-vide");
+    var p = donnees.parcours;
+    $("parcours-vide").hidden = !!p;
+    $("parcours-corps").hidden = !p;
     if (!p) {
-      vide.hidden = false;
-      vide.textContent = "Pas encore de données. Si la table n'existe pas, recolle supabase/schema.sql dans le SQL Editor de Supabase, puis recharge.";
-      corps.hidden = true;
-      $("parcours-resume").textContent = "";
+      $("parcours-vide").textContent = "Pas encore de données de parcours. Si ça dure, recolle supabase/schema.sql dans Supabase.";
       return;
     }
-    vide.hidden = true;
     var t = p.totaux || {};
     var arrivees = +t.arrivees || 0, clics = +t.clics_connexion || 0;
     var comptes = +t.comptes || 0, connexions = +t.connexions || 0;
-    var pct = arrivees ? Math.round(comptes / arrivees * 100) : 0;
-    $("parcours-resume").textContent = arrivees
-      ? pct + " % des arrivées créent un compte" + (+t.duree_mediane_s ? " · durée médiane " + fmtDuree(t.duree_mediane_s) : "")
-      : "aucune arrivée sur la période";
-    var abandons = Math.max(0, clics - comptes - connexions);
-    var four = (p.par_fournisseur || []).map(function (f) {
-      return (f.fournisseur || "?") + " : " + nb(f.clics) + " clic" + (f.clics > 1 ? "s" : "") +
-        ", " + nb(f.comptes) + " compte" + (f.comptes > 1 ? "s" : "");
-    });
-    var det3 = [];
-    if (abandons) det3.push(abandons + " clic" + (abandons > 1 ? "s" : "") + " sans suite");
-    if (four.length) det3.push(four.join(" · "));
+    var horaires = +t.horaires || 0;
+    function tuile(l, v) { return '<div class="card tuile"><div class="l">' + l + '</div><b>' + v + "</b></div>"; }
+    $("parcours-tuiles").innerHTML =
+      tuile("Visites", nb(arrivees)) +
+      tuile("Comptes créés", nb(comptes)) +
+      tuile("Conversion", (arrivees ? Math.round(comptes / arrivees * 100) : 0) + " %") +
+      tuile("Temps médian", +t.duree_mediane_s ? fmtDuree(t.duree_mediane_s) : "—");
+    $("parcours-resume").textContent = arrivees ? Math.round(horaires / arrivees * 100) + " % jusqu'au bout" : "";
     var etapes = [
-      ["Arrivées sur le site", arrivees,
-        (+t.arrivees_accueil ? nb(t.arrivees_accueil) + " par la page d'accueil · " : "") +
-        nb(t.arrivees_app) + " dans l'app"],
-      ["Ont cliqué « se connecter »", clics, det3.join(" · ")],
-      ["Compte créé", comptes,
-        connexions ? "+ " + nb(connexions) + " connexion" + (connexions > 1 ? "s" : "") + " de comptes existants" : ""],
-      ["Identité complétée", +t.identites || 0, "prénom et nom enregistrés"],
-      ["Écran école", +t.ecole || 0, ""],
-      ["Écran formation", +t.formation || 0, ""],
-      ["Écran groupes", +t.groupes || 0, ""],
-      ["Horaire enregistré", +t.horaires || 0, "premier horaire sauvegardé"]
+      ["Visites", arrivees, "sans être connecté"],
+      ["Clic « Se connecter »", clics, ""],
+      ["Compte créé", comptes, connexions ? "+ " + pl(connexions, "connexion") + " à un compte existant" : ""],
+      ["École choisie", +t.ecole || 0, ""],
+      ["Formation choisie", +t.formation || 0, ""],
+      ["Horaire enregistré", horaires, ""]
     ];
     var max = Math.max(1, arrivees);
-    $("parcours-entonnoir").innerHTML = etapes.map(function (e, i) {
-      var avant = i ? etapes[i - 1][1] : e[1];
-      var det = [];
-      if (i) det.push((avant ? Math.round(e[1] / avant * 100) : 100) + " % de l'étape d'avant");
-      if (e[2]) det.push(e[2]);
-      return '<li><span class="nom">' + txt(e[0]) + "</span>" +
-        '<span class="val num">' + nb(e[1]) + "</span>" +
-        '<span class="barre"><i style="width:' + (e[1] / max * 100) + '%"></i></span>' +
-        '<span class="det">' + txt(det.join(" · ")) + "</span></li>";
-    }).join("");
-    var arrets = (p.pages_arret || []).slice(0, 8);
-    var maxA = Math.max.apply(null, arrets.map(function (a) { return a.n; }).concat([1]));
-    $("parcours-arrets").innerHTML = arrets.map(function (a) {
-      return '<li><span class="nom">' + txt(nomEtape(a.etape)) + "</span>" +
-        '<span class="val num">' + nb(a.n) + "</span>" +
-        '<span class="barre"><i style="width:' + (a.n / maxA * 100) + '%"></i></span>' +
-        '<span class="det">' + (arrivees ? Math.round(a.n / arrivees * 100) + " % des visites" : "") + "</span></li>";
-    }).join("") || '<li class="vide-liste">Aucune visite sur la période.</li>';
+    var html = "";
+    etapes.forEach(function (e, i) {
+      if (i) {
+        var avant = etapes[i - 1][1];
+        // Qui se connecte à un compte existant quitte l'entonnoir sans décrocher.
+        var partis = Math.max(0, avant - e[1] - (i === 2 ? connexions : 0));
+        html += '<li class="fuite' + (partis ? "" : " rien") + '">' + (partis ? "−" + nb(partis) + " ici" : "personne ne décroche") + "</li>";
+      }
+      html += '<li class="etape"><span class="n">' + (i + 1) + '</span><span class="nom">' + txt(e[0]) +
+        (e[2] ? "<small>" + txt(e[2]) + "</small>" : "") + "</span>" +
+        '<span class="val">' + nb(e[1]) + (i ? "<small>" + Math.round(e[1] / max * 100) + " %</small>" : "") + "</span>" +
+        '<span class="barre"><i style="width:' + (e[1] / max * 100) + '%"></i></span></li>';
+    });
+    $("entonnoir").innerHTML = html;
     var errs = p.erreurs || [];
     var maxE = Math.max.apply(null, errs.map(function (e) { return e.n; }).concat([1]));
-    $("parcours-erreurs").innerHTML = errs.map(function (e) {
+    $("problemes").innerHTML = errs.length ? '<li><ul class="sous-liste" style="padding:4px 0">' + errs.slice(0, 8).map(function (e) {
       var det = [];
-      if (e.ecran) det.push(nomEtape(e.ecran));
-      det.push("dernier : " + ilya(e.dernier));
+      if (e.ecran) det.push(NOMS_ECRAN[e.ecran] || e.ecran);
+      det.push("dernier " + ilya(e.dernier));
       return '<li><span class="nom">' + txt(NOMS_ERREUR[e.erreur] || e.erreur) + "</span>" +
-        '<span class="val num">' + nb(e.n) + "</span>" +
+        '<span class="val">' + nb(e.n) + "</span>" +
         '<span class="barre"><i style="width:' + (e.n / maxE * 100) + '%"></i></span>' +
         '<span class="det">' + txt(det.join(" · ")) + "</span></li>";
-    }).join("") || '<li class="vide-liste">Aucune erreur ni friction.</li>';
-    var vers = p.par_version || [];
-    $("parcours-versions").innerHTML = vers.map(function (v) {
-      var taux = v.arrivees ? Math.round(v.comptes / v.arrivees * 100) : 0;
-      return '<li><span class="nom">v' + txt(v.version) + "</span>" +
-        '<span class="val num">' + nb(v.arrivees) + "</span>" +
-        '<span class="det">' + nb(v.comptes) + " compte" + (v.comptes > 1 ? "s" : "") + " · " +
-        nb(v.horaires) + " horaire" + (v.horaires > 1 ? "s" : "") + " · " + taux + " % des visiteurs</span></li>";
-    }).join("") || '<li class="vide-liste">Aucune version enregistrée (elle arrive avec la prochaine visite).</li>';
-    corps.hidden = false;
+    }).join("") + "</ul></li>" : '<li class="vide">Aucun problème sur la période.</li>';
   }
 
-  /* ---------- Bugs & demandes : reports lus via /api/bugs (admin) ---------- */
-  var bugs = null, reqBugs = 0;
-  var vueBugs = { filtre: "tous", type: "tous", ouvert: null, menu: null };
-  var NOMS_STATUT = { nouveau: "Nouveau", en_cours: "En cours", corrige: "Corrigé" };
-  var NOMS_TYPE = { bug: "Bug", demande: "Demande" };
-  function typeDe(b) { return b.type === "demande" ? "demande" : "bug"; }
-  function bugsFiltres() {
-    if (!bugs) return [];
-    return bugs.filter(function (b) {
-      return (vueBugs.filtre === "tous" || b.statut === vueBugs.filtre) &&
-        (vueBugs.type === "tous" || typeDe(b) === vueBugs.type);
+  /* ---------- Comptes : par école, puis la liste ---------- */
+  var TRIS = {
+    visite: function (a, b) { return (b.derniere_visite || "").localeCompare(a.derniere_visite || ""); },
+    actifs: function (a, b) { return b.visites_periode - a.visites_periode || (b.derniere_visite || "").localeCompare(a.derniere_visite || ""); },
+    recents: function (a, b) { return (b.compte_cree || "").localeCompare(a.compte_cree || ""); }
+  };
+  var PAS = 30;
+  function groupesComptes() {
+    var parEcole = {}, ordre = [];
+    donnees.utilisateurs.forEach(function (u) {
+      var es = ecolesDe(u);
+      if (!es.length) es = ["_sans"];
+      es.forEach(function (e) {
+        if (!parEcole[e]) { parEcole[e] = []; ordre.push(e); }
+        parEcole[e].push(u);
+      });
     });
+    ordre.sort(function (a, b) {
+      if (a === "_sans") return 1;
+      if (b === "_sans") return -1;
+      return parEcole[b].length - parEcole[a].length;
+    });
+    return ordre.map(function (e) { return { id: e, comptes: parEcole[e] }; });
   }
-  function pucesTypes() {
-    var Tous = [["tous", "Tous"], ["bug", "Bugs"], ["demande", "Demandes"]];
-    $("bugs-types").innerHTML = Tous.map(function (f) {
-      var n = bugs ? bugs.filter(function (b) {
-        return (vueBugs.filtre === "tous" || b.statut === vueBugs.filtre) &&
-          (f[0] === "tous" || typeDe(b) === f[0]);
-      }).length : 0;
-      return '<button data-t="' + f[0] + '" aria-pressed="' + (vueBugs.type === f[0]) + '">' + f[1] +
-        "<span>" + nb(n) + "</span></button>";
-    }).join("");
+  function ligneCompte(u) {
+    var nom = nomDe(u), ouvert = vue.ouvert === u.user_id, es = ecolesDe(u);
+    var cours = u.profils.length ? u.profils.slice(0, 2).map(function (p) {
+      return '<span class="pil" title="' + txt(ecoleNom(p.ecole) + " · " + nomFormation(p.formation)) + '">' +
+        txt(p.surnom || nomFormation(p.formation)) + "</span>";
+    }).join("") + (u.profils.length > 2 ? '<span class="pil">+' + (u.profils.length - 2) + "</span>" : "")
+      : '<span class="pil vide">aucun horaire</span>';
+    var av = u.avatar
+      ? '<span class="av' + (actifSurPeriode(u) ? "" : " off") + '" aria-hidden="true" style="overflow:hidden">' +
+        '<img src="' + txt(u.avatar) + '" alt="" referrerpolicy="no-referrer" loading="lazy" data-ini="' + txt(initiales(u)) +
+        '" style="width:100%;height:100%;object-fit:cover"></span>'
+      : '<span class="av' + (actifSurPeriode(u) ? "" : " off") + '" aria-hidden="true">' + txt(initiales(u)) + "</span>";
+    var html = '<li><button class="compte" data-u="' + txt(u.user_id) + '" aria-expanded="' + ouvert + '">' + av +
+      '<span class="qui"><b><span>' + txt(nom || u.email || "—") + "</span>" +
+      (es.length > 1 ? '<span class="mini-ecoles" title="Horaires de ' + txt(es.map(ecoleNom).join(" et ")) + '">' +
+        es.length + " écoles</span>" : "") + "</b>" +
+      (nom ? "<small>" + txt(u.email) + "</small>" : "") + "</span>" +
+      '<span class="horaires">' + cours + "</span>" +
+      '<span class="cv"><b>' + nb(u.visites_periode) + "</b><small>" + txt(ilya(u.derniere_visite)) + "</small></span>" +
+      '<span class="cv-q">' + txt(ilya(u.derniere_visite)) + "</span></button>";
+    if (ouvert) {
+      html += '<div class="fiche">' +
+        (es.length > 1 ? '<div class="avert">' + ATTENTION + "<span>Horaires dans " + es.length + " écoles : " +
+          txt(es.map(ecoleNom).join(", ")) + "</span></div>" : "") + "<dl>" +
+        "<dt>Consultations</dt><dd>" + nb(u.visites_periode) + " sur " + jours + " j</dd>" +
+        "<dt>Dernière visite</dt><dd>" + txt(date(u.derniere_visite, true)) + "</dd>" +
+        "<dt>Connexion</dt><dd>" + txt(date(u.derniere_connexion, true)) + "</dd>" +
+        "<dt>Compte créé</dt><dd>" + txt(date(u.compte_cree)) + "</dd>" +
+        u.profils.map(function (p) {
+          return "<dt>" + txt(p.surnom || "Horaire") + "</dt><dd>" + txt(ecoleNom(p.ecole)) + " · " + txt(nomFormation(p.formation)) +
+            ((p.groupes || []).length ? '<br><span class="mut">' + txt(p.groupes.map(groupe).join(", ")) + "</span>" : "") + "</dd>";
+        }).join("") +
+        "<dt>ID</dt><dd><code>" + txt(u.user_id) + "</code></dd></dl></div>";
+    }
+    return html + "</li>";
   }
-  function pucesBugs() {
-    var Tous = [["tous", "Tous"], ["nouveau", "Nouveaux"], ["en_cours", "En cours"], ["corrige", "Corrigés"]];
-    $("bugs-filtres").innerHTML = Tous.map(function (f) {
-      var n = bugs ? bugs.filter(function (b) {
-        return (vueBugs.type === "tous" || typeDe(b) === vueBugs.type) &&
-          (f[0] === "tous" || b.statut === f[0]);
-      }).length : 0;
+  function entete() {
+    return '<div class="entete" aria-hidden="true"><span></span><span>Compte</span><span>Horaires</span>' +
+      "<span>Consult. " + jours + " j</span><span>Dernière visite</span></div>";
+  }
+  function listeComptes(cle, us) {
+    us = us.slice().sort(TRIS[vue.tri]);
+    var n = vue.n[cle] || PAS;
+    return entete() + '<ul class="liste">' + us.slice(0, n).map(ligneCompte).join("") + "</ul>" +
+      (us.length > n ? '<button class="lien" data-plus="' + txt(cle) + '">Afficher ' + Math.min(PAS, us.length - n) + " de plus</button>" : "");
+  }
+  function comptes() {
+    var us = donnees.utilisateurs, q = vue.q.toLowerCase().trim();
+    var groupes = groupesComptes();
+    $("comptes-resume").textContent = pl(us.length, "compte") + " · " + pl(groupes.filter(function (g) { return g.id !== "_sans"; }).length, "école");
+    if (q) {
+      var trouves = us.filter(function (u) {
+        return (u.email + " " + nomDe(u) + " " + u.profils.map(function (p) {
+          return p.formation + " " + nomFormation(p.formation) + " " + p.surnom + " " + ecoleNom(p.ecole) + " " + (p.groupes || []).join(" ");
+        }).join(" ")).toLowerCase().indexOf(q) >= 0;
+      });
+      $("groupes").innerHTML = '<li class="groupe-comptes">' + (trouves.length ? listeComptes("_q", trouves)
+        : '<p class="vide">Aucun compte ne correspond.</p>') + "</li>";
+      return;
+    }
+    $("groupes").innerHTML = groupes.map(function (g) {
+      var ouvert = !!vue.groupes[g.id];
+      var actifs = g.comptes.filter(actifSurPeriode).length;
+      var multi = g.comptes.filter(function (u) { return ecolesDe(u).length > 1; }).length;
+      var sans = g.id === "_sans";
+      var det = sans ? "comptes créés, aucun horaire" : pl(actifs, "actif") + " sur " + jours + " j";
+      var html = '<li><button class="rang" data-groupe="' + txt(g.id) + '" aria-expanded="' + ouvert + '">' +
+        (sans ? '<span class="rang-logo lettre">–</span>' : logo(g.id)) +
+        '<span class="rang-nom">' + txt(sans ? "Sans horaire" : ecoleNom(g.id)) +
+        (multi ? ' <span class="mini-ecoles" title="' + pl(multi, "compte") + ' avec des horaires dans plusieurs écoles">' +
+          nb(multi) + " multi-écoles</span>" : "") + "</span>" +
+        '<span class="rang-val">' + nb(g.comptes.length) + "<small>" + (g.comptes.length > 1 ? "comptes" : "compte") + "</small></span>" + CHEV +
+        '<span class="rang-det">' + txt(det) + "</span></button>";
+      if (ouvert) html += '<div class="groupe-comptes">' + listeComptes(g.id, g.comptes) + "</div>";
+      return html + "</li>";
+    }).join("") || '<li class="vide">Aucun compte.</li>';
+  }
+
+  /* ---------- Retours : bugs & demandes (via /api/bugs) ---------- */
+  var bugs = null, reqBugs = 0;
+  var vueBugs = { filtre: "bug", ouvert: null };
+  var NOMS_STATUT = { nouveau: "Nouveau", en_cours: "En cours", corrige: "Corrigé" };
+  var NOMS_ETAPE = { "v-compte": "Connexion", "v-identite": "Nom et prénom", "v-ecole": "Choix de l'école",
+    "v-formation": "Choix de la formation", "v-groupes": "Groupes", "v-horaire": "Horaire", dashboard: "Dashboard" };
+  var ICONES_TYPE = {
+    bug: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="14" r="6"/><path d="M12 8V5M9 5.5 12 8l3-2.5M5.5 10 3 8.5M18.5 10 21 8.5M4.5 16 2 17M19.5 16l2.5 1"/></svg>',
+    demande: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4.5 12.3c.8.7 1.5 1.6 1.5 2.7h6c0-1.1.7-2 1.5-2.7A7 7 0 0 0 12 2z"/></svg>'
+  };
+  function typeDe(b) { return b.type === "demande" ? "demande" : "bug"; }
+  // Anciens reports sans titre : le début du message, coupé à un mot.
+  function titreDe(b) {
+    if (b.titre) return b.titre;
+    var m = String(b.message || "").replace(/\s+/g, " ").trim();
+    if (m.length <= 70) return m;
+    var c = m.slice(0, 70), e = c.lastIndexOf(" ");
+    return (e > 40 ? c.slice(0, e) : c) + "…";
+  }
+  function appareil(ua) {
+    ua = String(ua || "");
+    var sys = /iPhone/.test(ua) ? "iPhone" : /iPad/.test(ua) ? "iPad" : /Android/.test(ua) ? "Android" :
+      /Mac OS X/.test(ua) ? "Mac" : /Windows/.test(ua) ? "Windows" : /Linux/.test(ua) ? "Linux" : "";
+    var nav = /Edg\//.test(ua) ? "Edge" : /Firefox\//.test(ua) ? "Firefox" : /CriOS|Chrome\//.test(ua) ? "Chrome" :
+      /Safari\//.test(ua) ? "Safari" : "";
+    return [sys, nav].filter(Boolean).join(" · ") || ua.slice(0, 60);
+  }
+  // Contexte du report sur une seule ligne discrète (qui, où, sur quoi, quand).
+  function metaDetail(b) {
+    var ctx = b.contexte || {}, m = [];
+    if (ctx.ecole || ctx.formation) m.push([ctx.ecole ? ecoleNom(ctx.ecole) : "", ctx.formation ? nomFormation(ctx.formation) : ""].filter(Boolean).join(" "));
+    if (ctx.donnee) m.push(ctx.donnee);
+    if (ctx.ua) m.push(appareil(ctx.ua) + (ctx.largeur ? " " + nb(ctx.largeur) + " px" : ""));
+    m.push(date(b.created_at, true));
+    return m;
+  }
+  function dansFiltre(b, f) {
+    if (f === "corrige") return b.statut === "corrige";
+    return b.statut !== "corrige" && typeDe(b) === f;
+  }
+  function filtresBugs() {
+    var FS = [["bug", "Bugs"], ["demande", "Demandes"], ["corrige", "Corrigés"]];
+    $("retours-filtre").innerHTML = FS.map(function (f) {
+      var n = bugs ? bugs.filter(function (b) { return dansFiltre(b, f[0]); }).length : 0;
       return '<button data-f="' + f[0] + '" aria-pressed="' + (vueBugs.filtre === f[0]) + '">' + f[1] +
         "<span>" + nb(n) + "</span></button>";
     }).join("");
   }
-  var ICONE_MENU = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' +
-    '<circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
-  var ICONE_CHECK = '<svg class="check" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
-    'stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg>';
-  var STATUTS_BUG = ["nouveau", "en_cours", "corrige"];
-  function imagesBug(b) {
-    var ims = b.images || [];
-    if (!ims.length) return "";
-    return '<div class="bug-imgs">' + ims.map(function (im, i) {
-      var href = im.url || "";
-      return href ? '<a href="' + txt(href) + '" target="_blank" rel="noopener">' +
-        '<img src="' + txt(href) + '" alt="Capture ' + (i + 1) + '" loading="lazy"></a>' : "";
-    }).join("") + "</div>";
-  }
-  function menuBug(b) {
-    return '<div class="menu-bug" role="menu" aria-label="Actions">' +
-      '<button type="button" class="menu-opt" role="menuitem" data-d="' + b.id + '" ' +
-      'aria-expanded="' + (vueBugs.ouvert === b.id) + '">Détails</button>' +
-      '<div class="menu-sep" role="separator"></div>' +
-      '<p class="menu-titre" role="presentation">Statut</p>' +
-      STATUTS_BUG.map(function (s) {
-        return '<button type="button" class="menu-opt" role="menuitemradio" aria-checked="' + (b.statut === s) + '" ' +
-          'data-s="' + s + '" data-b="' + b.id + '">' + txt(NOMS_STATUT[s]) + ICONE_CHECK + "</button>";
-      }).join("") + "</div>";
-  }
-  function ficheBug(b, t) {
-    var ctx = b.contexte || {};
-    var det = [];
-    if (ctx.ecole) det.push("École : " + ctx.ecole);
-    if (ctx.formation) det.push("Formation : " + ctx.formation);
-    if (ctx.donnee) det.push(ctx.donnee);
-    return '<div class="fiche"><dl>' +
-      "<dt>Message</dt><dd>" + txt(b.message) + "</dd>" +
-      "<dt>Type</dt><dd>" + txt(NOMS_TYPE[t]) + "</dd>" +
-      (b.email ? "<dt>Email</dt><dd>" + txt(b.email) + "</dd>" : "<dt>Email</dt><dd>— (anonyme)</dd>") +
-      "<dt>Étape</dt><dd>" + txt(b.etape || "—") + "</dd>" +
-      (det.length ? "<dt>Détails</dt><dd>" + det.map(txt).join("<br>") + "</dd>" : "") +
-      (ctx.ua ? "<dt>Appareil</dt><dd><code>" + txt(ctx.ua) + "</code></dd>" : "") +
-      "<dt>Reçu</dt><dd>" + txt(date(b.created_at, true)) + "</dd></dl></div>";
-  }
   function ligneBug(b) {
-    var t = typeDe(b);
-    var menuOuvert = vueBugs.menu === b.id;
-    var html = '<li class="bug-item" data-b="' + b.id + '">' +
-      '<div class="ligne">' +
-      '<span class="av' + (b.statut === "nouveau" ? "" : " off") + '" aria-hidden="true">' + (t === "demande" ? "💡" : "!") + "</span>" +
-      '<span class="qui"><b>' + txt(b.email || "Anonyme") + "</b>" +
-      "<small>" + txt(ilya(b.created_at)) + "</small></span>" +
-      '<span class="act"><span class="statut ' + txt(b.statut) + '">' + txt(NOMS_STATUT[b.statut] || b.statut) + "</span></span>" +
-      '<button type="button" class="bug-menu-btn" data-m="' + b.id + '" aria-label="Actions : détails et statut" ' +
-      'aria-haspopup="true" aria-expanded="' + menuOuvert + '">' + ICONE_MENU + "</button>" +
-      '<div class="bug-corps">' +
-      '<div class="bug-msg"><span class="type ' + t + '">' + txt(NOMS_TYPE[t]) + "</span>" + txt(b.message) + "</div>" +
-      imagesBug(b) + "</div></div>";
-    if (menuOuvert) html += menuBug(b);
-    if (vueBugs.ouvert === b.id) html += ficheBug(b, t);
+    var t = typeDe(b), ouvert = vueBugs.ouvert === b.id;
+    var meta = [b.email || "Anonyme", ilya(b.created_at)];
+    if (NOMS_ETAPE[b.etape]) meta.push(NOMS_ETAPE[b.etape]);
+    var html = '<li><button class="retour-l" data-b="' + b.id + '" aria-expanded="' + ouvert + '">' +
+      '<span class="ic ' + (b.statut === "corrige" ? "" : t) + '">' + ICONES_TYPE[t] + "</span>" +
+      '<span class="t">' + (b.statut === "nouveau" ? '<span class="point" aria-label="Nouveau"></span>' : "") +
+      txt(titreDe(b)) + "</span>" +
+      '<span class="m">' + txt(meta.join(" · ")) + "</span>" +
+      (b.statut === "en_cours" ? '<span class="statut en_cours">En cours</span>' : "") + CHEV + "</button>";
+    if (ouvert) {
+      var ctx = b.contexte || {};
+      var ims = (b.images || []).filter(function (im) { return im.url; });
+      html += '<div class="retour-d">' +
+        '<p class="msg">' + txt(b.message) + "</p>" +
+        (ims.length ? '<div class="imgs">' + ims.map(function (im, i) {
+          return '<a href="' + txt(im.url) + '" target="_blank" rel="noopener"><img src="' + txt(im.url) +
+            '" alt="Capture ' + (i + 1) + '" loading="lazy"></a>';
+        }).join("") + "</div>" : "") +
+        '<p class="meta-d">' + metaDetail(b).map(txt).join(" · ") + "</p>" +
+        '<div class="seg" role="group" aria-label="Statut">' + ["nouveau", "en_cours", "corrige"].map(function (s) {
+          return '<button data-s="' + s + '" data-id="' + b.id + '" aria-pressed="' + (b.statut === s) + '">' + NOMS_STATUT[s] + "</button>";
+        }).join("") + "</div></div>";
+    }
     return html + "</li>";
   }
   function rendreBugs() {
-    pucesTypes();
-    pucesBugs();
-    if (!bugs) {
-      $("bugs-resume").textContent = "chargement…";
-      $("bugs-liste").innerHTML = "";
-      return;
-    }
-    var lignes = bugsFiltres();
-    var n = bugs.filter(function (b) { return b.statut === "nouveau"; }).length;
-    var nBugs = bugs.filter(function (b) { return typeDe(b) === "bug"; }).length;
-    var nDemandes = bugs.length - nBugs;
-    $("bugs-resume").textContent = bugs.length
-      ? (n ? n + " nouveau" + (n > 1 ? "x" : "") + " · " : "") +
-        nBugs + " bug" + (nBugs > 1 ? "s" : "") + ", " + nDemandes + " demande" + (nDemandes > 1 ? "s" : "") +
-        " · " + bugs.length + " au total"
-      : "aucun report";
-    $("bugs-liste").innerHTML = lignes.map(ligneBug).join("") ||
-      '<li class="vide-liste">Aucun bug ni demande ici. Tout roule (pour l\'instant).</li>';
+    filtresBugs();
+    var nouveaux = bugs ? bugs.filter(function (b) { return b.statut === "nouveau"; }).length : 0;
+    var pastille = $("retours-pastille");
+    pastille.hidden = !nouveaux;
+    pastille.textContent = nouveaux;
+    if (donnees) communaute();
+    if (!bugs) { $("retours-liste").innerHTML = '<li class="vide">Chargement…</li>'; return; }
+    var lignes = bugs.filter(function (b) { return dansFiltre(b, vueBugs.filtre); });
+    $("retours-liste").innerHTML = lignes.map(ligneBug).join("") ||
+      '<li class="vide">' + (vueBugs.filtre === "corrige" ? "Rien de corrigé pour l'instant." : "Rien à traiter. Tout roule.") + "</li>";
   }
   function chargerBugs() {
     var id = ++reqBugs;
-    rendreBugs();
     if (!sb) return;
     sb.auth.getSession().then(function (res) {
       var session = res && res.data && res.data.session;
       if (!session || id !== reqBugs) return;
-      return fetch("api/bugs?limite=100", {
+      return fetch("api/bugs?limite=200", {
         headers: { "Authorization": "Bearer " + session.access_token }, cache: "no-store"
       }).then(function (r) { return r.json(); }).then(function (rep) {
         if (id !== reqBugs || !rep.ok) throw new Error((rep && rep.erreur) || "Erreur.");
@@ -863,67 +1077,60 @@ catch (e) { /* navigation privée */ }
     }).catch(function () {
       if (id !== reqBugs) return;
       bugs = bugs || [];
-      $("bugs-resume").textContent = "lecture impossible";
-      pucesTypes();
-      pucesBugs();
+      rendreBugs();
+      $("retours-liste").innerHTML = '<li class="vide">Lecture des retours impossible.</li>';
     });
   }
   function changerStatutBug(id, statut) {
-    if (!sb) return;
+    if (!sb || !bugs) return;
+    var b = bugs.filter(function (x) { return x.id === id; })[0];
+    if (!b || b.statut === statut) return;
+    var avant = b.statut;
+    b.statut = statut; // optimiste, annulé si le serveur refuse
+    rendreBugs();
     sb.auth.getSession().then(function (res) {
       var session = res && res.data && res.data.session;
-      if (!session) return;
+      if (!session) throw new Error("Session expirée.");
       return fetch("api/bugs?id=" + id, {
         method: "PATCH", cache: "no-store",
         headers: { "Authorization": "Bearer " + session.access_token, "Content-Type": "application/json" },
         body: JSON.stringify({ statut: statut })
       }).then(function (r) { return r.json(); }).then(function (rep) {
         if (!rep.ok) throw new Error(rep.erreur || "Erreur.");
-        if (bugs) bugs.forEach(function (b) { if (b.id === id) b.statut = statut; });
-        rendreBugs();
       });
-    }).catch(function () { /* on garde l'état affiché */ });
+    }).catch(function () { b.statut = avant; rendreBugs(); });
   }
 
   /* ---------- Alertes : plafonds atteints, purge à planifier ---------- */
   function alertes() {
-    var msgs = [];
-    var lim = donnees.limites || {};
-    var quels = [];
+    var msgs = [], lim = donnees.limites || {}, quels = [];
     if (lim.comptes) quels.push("comptes (4 000)");
     if (lim.profils) quels.push("horaires (10 000)");
-    if (lim.visites) quels.push("consultations (20 000)");
-    if (quels.length) {
-      msgs.push("Chiffres tronqués — plafond atteint : " + txt(quels.join(", ")) +
-        ". Augmente les plafonds dans api/stats.py.");
-    }
+    if (lim.visites) quels.push("consultations (40 000)");
+    if (quels.length) msgs.push("Chiffres tronqués — plafond atteint : " + txt(quels.join(", ")) + ". Augmente les plafonds dans api/stats.py.");
     var pa = donnees.plus_ancienne_absolue;
-    if (pa && !isNaN(new Date(pa))) {
-      var age = Math.floor((Date.now() - new Date(pa)) / 864e5);
-      if (age > 200) {
-        msgs.push("Table visites jamais purgée (données depuis le " + txt(date(pa)) +
-          ") : planifie <code>select public.purger_visites(180)</code> " +
-          "(pg_cron ou à la main, voir supabase/schema.sql).");
-      }
+    if (pa && !isNaN(new Date(pa)) && (Date.now() - new Date(pa)) / 864e5 > 200) {
+      msgs.push("Table visites jamais purgée (depuis le " + txt(date(pa)) + ") : planifie <code>select public.purger_visites(180)</code>.");
     }
     var pe = donnees.parcours && donnees.parcours.plus_ancien;
-    if (pe && !isNaN(new Date(pe))) {
-      var ageE = Math.floor((Date.now() - new Date(pe)) / 864e5);
-      if (ageE > 100) {
-        msgs.push("Table evenements jamais purgée (données depuis le " + txt(date(pe)) +
-          ") : planifie <code>select public.purger_evenements(90)</code> " +
-          "(pg_cron ou à la main, voir supabase/schema.sql).");
-      }
+    if (pe && !isNaN(new Date(pe)) && (Date.now() - new Date(pe)) / 864e5 > 100) {
+      msgs.push("Table evenements jamais purgée (depuis le " + txt(date(pe)) + ") : planifie <code>select public.purger_evenements(90)</code>.");
     }
-    var el = $("alerte");
-    el.hidden = !msgs.length;
-    el.innerHTML = msgs.map(function (m) { return "<div>" + m + "</div>"; }).join("");
+    $("alerte").hidden = !msgs.length;
+    $("alerte").innerHTML = msgs.map(function (m) { return "<div>" + m + "</div>"; }).join("");
+  }
+
+  function fermerBulles() {
+    document.querySelectorAll("[data-info]").forEach(function (b) {
+      b.setAttribute("aria-expanded", "false");
+      b.nextElementSibling.hidden = true;
+    });
   }
 
   function rendre() {
     var maj = new Date().toLocaleTimeString("fr-BE", { hour: "2-digit", minute: "2-digit" });
     $("sous-titre").textContent = jours + " derniers jours · à jour à " + maj;
-    kpis(); alertes(); parcours(); graphique(); formations(); puces(); comptes();
+    alertes(); consultations(); ecoles(); communaute(); parcours(); comptes(); rendreBugs();
   }
 
   /* ---------- Données ---------- */
@@ -961,98 +1168,89 @@ catch (e) { /* navigation privée */ }
   }
 
   /* ---------- Événements ---------- */
-  document.querySelectorAll(".seg button").forEach(function (b) {
-    b.addEventListener("click", function () {
-      if (!sb) return;
-      jours = +b.getAttribute("data-j");
-      document.querySelectorAll(".seg button").forEach(function (x) {
-        x.setAttribute("aria-pressed", x === b ? "true" : "false");
-      });
-      charger();
-    });
+  $("periode").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-j]");
+    if (!b || !sb) return;
+    jours = +b.getAttribute("data-j");
+    this.querySelectorAll("button").forEach(function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+    charger();
   });
   $("rafraichir").addEventListener("click", function () { if (sb) charger(); });
+  window.addEventListener("hashchange", function () { montrerOnglet(ongletDepuisAdresse(), true); });
+
   var g = $("graph");
   g.addEventListener("pointermove", survol);
   g.addEventListener("pointerdown", survol);
-  g.addEventListener("pointerleave", function (e) { if (donnees && e.pointerType === "mouse") montrer(null); });
-  $("forms-plus").addEventListener("click", function () { vue.formsTout = !vue.formsTout; formations(); });
-  $("recherche").addEventListener("input", function (e) { vue.q = e.target.value; vue.n = 40; comptes(); });
+  g.addEventListener("pointerleave", function (e) { if (e.pointerType === "mouse") montrerJour(null); });
+  document.addEventListener("pointerdown", function (e) {
+    if (donnees && !e.target.closest("#graph")) montrerJour(null);
+  });
+
+  document.addEventListener("click", function (e) {
+    var info = e.target.closest("[data-info]");
+    if (info) {
+      var ouvre = info.getAttribute("aria-expanded") !== "true";
+      fermerBulles();
+      info.setAttribute("aria-expanded", String(ouvre));
+      info.nextElementSibling.hidden = !ouvre;
+      return;
+    }
+    if (!e.target.closest(".bulle")) fermerBulles();
+  });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") fermerBulles(); });
+  // Photo de profil introuvable (lien expiré) : retour aux initiales.
+  document.addEventListener("error", function (e) {
+    var img = e.target;
+    if (img && img.tagName === "IMG" && img.hasAttribute("data-ini")) {
+      var av = img.parentNode;
+      av.removeAttribute("style");
+      av.textContent = img.getAttribute("data-ini");
+    }
+  }, true);
+
+  $("ecoles").addEventListener("click", function (e) {
+    var t = e.target.closest("button[data-tout]");
+    if (t) { var id = t.getAttribute("data-tout"); vue.formsTout[id] = !vue.formsTout[id]; ecoles(); return; }
+    var b = e.target.closest("button[data-ecole]");
+    if (!b) return;
+    var ec = b.getAttribute("data-ecole");
+    vue.ecoleOuverte = vue.ecoleOuverte === ec ? null : ec;
+    ecoles();
+  });
+  $("recherche").addEventListener("input", function (e) { vue.q = e.target.value; vue.n._q = PAS; comptes(); });
   $("tri").addEventListener("change", function (e) { vue.tri = e.target.value; comptes(); });
-  $("filtres").addEventListener("click", function (e) {
-    var b = e.target.closest("button[data-f]");
-    if (!b) return;
-    vue.filtre = b.getAttribute("data-f"); vue.n = 40;
-    puces(); comptes();
+  $("groupes").addEventListener("click", function (e) {
+    var plus = e.target.closest("button[data-plus]");
+    if (plus) { var k = plus.getAttribute("data-plus"); vue.n[k] = (vue.n[k] || PAS) + PAS; comptes(); return; }
+    var c = e.target.closest("button[data-u]");
+    if (c) { var u = c.getAttribute("data-u"); vue.ouvert = vue.ouvert === u ? null : u; comptes(); return; }
+    var gr = e.target.closest("button[data-groupe]");
+    if (gr) { var id = gr.getAttribute("data-groupe"); vue.groupes[id] = !vue.groupes[id]; comptes(); }
   });
-  $("liste").addEventListener("click", function (e) {
-    var b = e.target.closest(".ligne");
-    if (!b) return;
-    var u = b.getAttribute("data-u");
-    vue.ouvert = vue.ouvert === u ? null : u;
-    comptes();
-  });
-  $("liste-plus").addEventListener("click", function () { vue.n += 40; comptes(); });
-  $("bugs-types").addEventListener("click", function (e) {
-    var b = e.target.closest("button[data-t]");
-    if (!b) return;
-    vueBugs.type = b.getAttribute("data-t");
-    rendreBugs();
-  });
-  $("bugs-filtres").addEventListener("click", function (e) {
+
+  $("retours-filtre").addEventListener("click", function (e) {
     var b = e.target.closest("button[data-f]");
     if (!b) return;
     vueBugs.filtre = b.getAttribute("data-f");
     rendreBugs();
   });
-  $("bugs-liste").addEventListener("click", function (e) {
-    var m = e.target.closest("button[data-m]");
-    if (m) {
-      var id = +m.getAttribute("data-m");
-      vueBugs.menu = vueBugs.menu === id ? null : id;
-      rendreBugs();
-      var bouton = $("bugs-liste").querySelector('button[data-m="' + id + '"]');
-      if (bouton) bouton.focus();
-      return;
-    }
-    var det = e.target.closest("button[data-d]");
-    if (det) {
-      var idd = +det.getAttribute("data-d");
-      vueBugs.ouvert = vueBugs.ouvert === idd ? null : idd;
-      vueBugs.menu = null;
-      rendreBugs();
-      return;
-    }
-    var act = e.target.closest("button[data-s]");
-    if (act) {
-      vueBugs.menu = null;
-      rendreBugs();
-      changerStatutBug(+act.getAttribute("data-b"), act.getAttribute("data-s"));
-    }
-  });
-  // Un clic hors de la liste (ou Échap) referme le menu ⋯. En capture : le
-  // gestionnaire de la liste a déjà pu re-rendre les lignes.
-  document.addEventListener("click", function (e) {
-    if (vueBugs.menu === null) return;
-    if (e.target.closest && e.target.closest("#bugs-liste")) return;
-    vueBugs.menu = null;
+  $("retours-liste").addEventListener("click", function (e) {
+    var s = e.target.closest("button[data-s]");
+    if (s) { changerStatutBug(+s.getAttribute("data-id"), s.getAttribute("data-s")); return; }
+    var b = e.target.closest("button[data-b]");
+    if (!b) return;
+    var id = +b.getAttribute("data-b");
+    vueBugs.ouvert = vueBugs.ouvert === id ? null : id;
     rendreBugs();
-  }, true);
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape" && vueBugs.menu !== null) {
-      var id = vueBugs.menu;
-      vueBugs.menu = null;
-      rendreBugs();
-      var bouton = $("bugs-liste").querySelector('button[data-m="' + id + '"]');
-      if (bouton) bouton.focus();
-    }
   });
+
   var largeur = window.innerWidth;
   window.addEventListener("resize", function () {
     if (donnees && (largeur < 560) !== (window.innerWidth < 560)) graphique();
     largeur = window.innerWidth;
   });
 
+  montrerOnglet(ongletDepuisAdresse(), false);
   fetch("api/config", { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (rep) {
     var s = (rep && rep.supabase) || {};
     if (!s.url || !s.anonKey || !window.supabase) throw new Error("Supabase non configuré.");

@@ -58,7 +58,7 @@ ROUTES = {"/api/formations": formations.handler,
 CSP = ("default-src 'self'; "
        "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
        "style-src 'self' 'unsafe-inline'; "
-       "img-src 'self' data: blob: https://*.supabase.co; "
+       "img-src 'self' data: blob: https://*.supabase.co https://lh3.googleusercontent.com https://avatars.githubusercontent.com; "
        "font-src 'self'; "
        "connect-src 'self' https://*.supabase.co https://cdn.jsdelivr.net; "
        "frame-src blob:; "
