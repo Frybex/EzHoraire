@@ -669,9 +669,18 @@ class ClientTimeEdit:
                 if affiche == groupe or nom == groupe:
                     cible = nom
                     break
-            if cible is None:
-                raise ValueError(f"groupe introuvable : {groupe}")
-            ids = [sel["niveau_id"], sel["ids_par_nom"][cible]]
+            # Groupe lu dans la colonne « Info » (« Groupe 2 », voir
+            # _groupe_info) : ce n'est pas un objet TimeEdit, on ne peut pas
+            # le demander seul. PDF du niveau entier plutôt qu'une erreur —
+            # mais seulement pour un vrai nom de ce genre (et connu de
+            # l'horaire en mémoire, s'il y en a un) : un nom inventé
+            # ferait une adresse inédite, donc un PDF complet à chaque fois.
+            if cible is not None:
+                ids = [sel["niveau_id"], sel["ids_par_nom"][cible]]
+            else:
+                connus = (vu[1].get("groupes") or []) if vu and time.monotonic() - vu[0] < 900 else None
+                if not self._groupe_info(groupe) or (connus is not None and groupe not in connus):
+                    raise ValueError(f"groupe introuvable : {groupe}")
         lundi0 = datetime.strptime(self.premier_lundi_defaut, "%Y-%m-%d").date()
         fin = lundi0 + timedelta(days=semaine * 7 - 1)
         debut = time.monotonic()

@@ -206,6 +206,37 @@ au maximum : un changement de salle apparaît au plus tard après ça).
   l'historique du navigateur et dans le `Referer`.
 - `GET /api/pdf?ecole=heh&formation=..&groupe=..&semaine=..` : PDF officiel.
 
+### Horaires sur mesure
+
+Pour les étudiants entre deux années (cours carrés, option d'une autre
+année, réorientation) : un horaire peut réunir **1 à 6 sources** d'une
+même école (HEH, UMONS, Condorcet, ULB ; l'UCLouvain dès sa publication).
+Une source = une formation, un parcours `PAR:` ou un lien iCal, avec ses
+groupes et un rôle : **année principale** (tout est gardé, on retire des
+cours : `sans`) ou **année d'ajout** (seuls les cours cochés : `avec`).
+Entrée : la carte « Composer un horaire sur mesure » en tête de l'écran
+des formations ; les écrans formation et groupes sont réutilisés, plus le
+composeur (`v-perso`) et le choix des cours (`v-cours`).
+
+La fusion est faite dans le navigateur par `fusion.js` (fonctions pures,
+testées par `node --test test_fusion.mjs`) : cours puis groupes filtrés
+**source par source** (les noms de groupes se répètent d'une formation à
+l'autre), semaines alignées sur le lundi le plus tôt (l'UCLouvain et les
+liens iCal ont un lundi par source ; une source à plus de 26 semaines de
+la principale est écartée), séances identiques dédoublonnées entre
+sources, chevauchements signalés **entre sources** seulement. À l'ULB, un
+cours est un code UE (une séance mutualisée « A, B, C » reste tant qu'un
+de ses codes est suivi). Rien ne change côté serveur : chaque source est
+un `api/horaires` (ou `api/ical`) ordinaire, chargé par lots de 3 et gardé
+en cache comme un horaire normal. Le PDF officiel se choisit par source.
+
+Profil : `sources` (colonne jsonb de `profils`, voir `supabase/schema.sql`),
+`formation` et `groupes` vides — un ancien client ignore donc l'horaire au
+lieu d'en afficher une moitié. Tant que la base n'a pas la colonne, les
+horaires sur mesure ne sont pas poussés : ils restent sur l'appareil (une
+ligne sans ses sources reviendrait vide au pull suivant). Plan et audit
+par école : `propositions/horaire-perso/PLAN.md`.
+
 Selon la formation, l'école a un groupe par classe (BA2P Informatique),
 un groupe par cours (BA1 Droit : l'étudiant en choisit plusieurs) ou aucun
 groupe (MA1 Ingénieur industriel) : l'écran de choix gère les trois cas.
@@ -332,6 +363,8 @@ les sources. `logos/ecoles/` est déployé, `logos/da/` et `logos/ez/`
   puis horaire).
 - `demo.html` — page de démonstration (ouvre l'app en mode essai, sans
   compte).
+- `fusion.js` — fusion des horaires sur mesure (fonctions pures, chargée
+  par `index.html`) ; tests : `node --test test_fusion.mjs`.
 - `suivi.js` — mesure anonyme du parcours (arrivée → clic → compte →
   horaire) et des frictions, chargée par `index.html` ; voir le dashboard
   admin.

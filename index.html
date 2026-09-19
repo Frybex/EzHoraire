@@ -2117,6 +2117,160 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     .pdf-pages canvas { animation: none; }
     .btn-entree, .champs, .halo::before, .halo::after { transition: none; }
   }
+  /* ---------- Horaire sur mesure (fusion.js) ---------- */
+  :root { --attention: #b26a00; }
+  @media (prefers-color-scheme: dark) { :root { --attention: #f0b866; } }
+  .liste button.surmesure {
+    background: linear-gradient(180deg,
+      color-mix(in srgb, var(--accent) 10%, var(--relief-haut)),
+      color-mix(in srgb, var(--accent) 4%, var(--relief-bas)));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 34%, transparent),
+      inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  .sm-ico {
+    flex: none; width: 38px; height: 38px; border-radius: 12px;
+    display: grid; place-items: center; color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 24%, transparent);
+  }
+  .liste .surmesure .nom small, .liste button.deja .nom small {
+    display: block; margin-top: 2px; font-weight: 500; color: var(--muted); font-size: .84rem;
+  }
+  .liste button.deja { opacity: .62; cursor: default; }
+  .tag-neuf {
+    flex: none; font-size: .64rem; font-weight: 750; letter-spacing: .02em; text-transform: uppercase;
+    border-radius: 6px; padding: 2px 6px; color: var(--accent); background: var(--accent-soft);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 24%, transparent);
+  }
+  .srccard {
+    border-radius: 16px;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  .srccard + .srccard { margin-top: 8px; }
+  .srccard-ligne { display: flex; align-items: center; gap: 10px; padding: 12px 8px 12px 14px; }
+  .src-num {
+    flex: none; width: 26px; height: 26px; border-radius: 9px;
+    display: grid; place-items: center; font-size: .78rem; font-weight: 750;
+    color: var(--src, var(--accent)); font-variant-numeric: tabular-nums;
+    background: color-mix(in srgb, var(--src, var(--accent)) 13%, var(--surface));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--src, var(--accent)) 30%, transparent);
+  }
+  .src-textes { flex: 1; min-width: 0; }
+  .src-nom { display: flex; align-items: center; min-width: 0; font-weight: 650; letter-spacing: -.01em; }
+  .src-nom-txt { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .src-nom .tag-role { flex: none; margin-left: 6px; }
+  .src-detail { display: block; margin-top: 1px; color: var(--muted); font-size: .84rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .srccard .icobtn {
+    flex: none; width: 40px; height: 40px; padding: 0; border: none; border-radius: 12px;
+    display: grid; place-items: center; color: var(--muted); cursor: pointer; background: none;
+  }
+  .srccard .icobtn:hover { background: color-mix(in srgb, var(--ink) 6%, transparent); }
+  .srccard .icobtn.retire { color: var(--danger); }
+  .tag-role {
+    display: inline-flex; align-items: center; vertical-align: 1px; margin-left: 4px;
+    font-size: .64rem; font-weight: 750; letter-spacing: .02em; text-transform: uppercase;
+    border-radius: 6px; padding: 2px 6px; color: var(--accent); background: var(--accent-soft);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 24%, transparent);
+  }
+  .src-matieres { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 14px 12px 50px; margin-top: -4px; }
+  .src-matieres span {
+    font-size: .78rem; font-weight: 550; color: var(--muted);
+    border-radius: 999px; padding: 3px 9px; background: var(--creux);
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+  .src-matieres .retire::before { content: "− "; font-weight: 700; }
+  .src-matieres .retire { text-decoration: line-through; opacity: .8; }
+  .src-matieres .ajoute::before { content: "+ "; font-weight: 750; color: var(--free); }
+  .src-matieres .ajoute { color: var(--ink); }
+  .vide-src {
+    display: grid; place-items: center; gap: 6px; text-align: center;
+    border-radius: 16px; padding: 26px 20px; color: var(--muted); font-size: .92rem;
+    background: var(--creux);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre);
+  }
+  .vide-src strong { color: var(--ink); font-weight: 650; }
+  #perso-ajouter { margin-top: 10px; }
+  #perso-ajouter:disabled { opacity: .55; cursor: default; }
+  .src-rappel {
+    display: flex; align-items: center; gap: 10px; margin: 0 0 16px;
+    border-radius: 14px; padding: 10px 12px; font-size: .9rem; color: var(--muted);
+    background: var(--creux);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre);
+  }
+  .src-rappel strong { color: var(--ink); font-weight: 650; }
+  .marche { margin: 22px 0; }
+  .marche h3 { margin: 0 0 8px; font-size: .85rem; font-weight: 600; color: var(--muted); }
+  .marche ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+  .marche li { display: flex; gap: 10px; align-items: flex-start; font-size: .92rem; color: var(--muted); }
+  .marche li b { color: var(--ink); font-weight: 600; }
+  .marche .num {
+    flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
+    font-size: .72rem; font-weight: 750; color: var(--accent); background: var(--accent-soft);
+  }
+  #perso-reglages { margin-top: 22px; }
+  .cours-liste { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+  .cours-ligne {
+    width: 100%; display: flex; align-items: center; gap: 12px; text-align: left;
+    min-height: 54px; padding: 10px 14px 10px 13px; border: none; border-radius: 14px;
+    font: inherit; color: var(--muted); cursor: pointer;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    transition: color .2s, box-shadow .2s, transform .12s;
+  }
+  .cours-ligne:active { transform: scale(.99); }
+  .cours-ligne .coche {
+    position: relative; flex: none; width: 17px; height: 17px; border-radius: 50%;
+    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--muted) 55%, transparent);
+  }
+  .cours-ligne[aria-pressed="true"] {
+    color: var(--ink);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 48%, transparent),
+      inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  .cours-ligne[aria-pressed="true"] .coche { background: var(--accent); box-shadow: none; }
+  .cours-ligne[aria-pressed="true"] .coche::after {
+    content: ""; position: absolute; left: 6px; top: 3.5px; width: 3.5px; height: 7px;
+    border: solid var(--surface); border-width: 0 1.8px 1.8px 0; transform: rotate(45deg);
+  }
+  .cours-ligne .ct { flex: 1; min-width: 0; display: grid; gap: 1px; }
+  .cours-ligne .ct strong { font-weight: 600; font-size: .96rem; letter-spacing: -.01em; color: var(--ink); }
+  .cours-ligne .ct small { font-size: .8rem; color: var(--muted); }
+  .liens-cours { display: flex; gap: 8px; align-items: center; margin: -4px 0 12px; font-size: .85rem; color: var(--muted); }
+  .liens-cours button, .choc button, .sources-ligne .lien-src {
+    border: none; background: none; padding: 0; font: inherit; font-size: inherit;
+    color: var(--accent); font-weight: 650; cursor: pointer; text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .choc {
+    display: flex; gap: 11px; align-items: flex-start;
+    border-radius: 14px; padding: 12px 14px; margin: 0 0 14px; font-size: .92rem;
+    background: color-mix(in srgb, var(--attention) 9%, var(--surface));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--attention) 34%, transparent);
+  }
+  .choc[hidden] { display: none; }
+  .choc svg { flex: none; color: var(--attention); margin-top: 1px; }
+  .choc strong { display: block; font-weight: 650; letter-spacing: -.01em; }
+  .choc p { margin: 3px 0 0; color: var(--muted); font-size: .88rem; }
+  .choc p b { color: var(--ink); font-weight: 600; }
+  .choc.ok { background: var(--creux); box-shadow: inset 0 0 0 1px var(--line); }
+  .choc.ok svg { color: var(--free); }
+  .avis p { margin: 0; }
+  .avis p + p { margin-top: 8px; }
+  .sources-ligne {
+    display: flex; align-items: center; gap: 6px 12px; flex-wrap: wrap;
+    margin: 0 0 12px; padding: 0 2px; font-size: .84rem; color: var(--muted);
+  }
+  .sources-ligne[hidden] { display: none; }
+  .sources-ligne .src-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+  .sources-ligne b { color: var(--ink); font-weight: 600; }
+  .choc-tag {
+    flex: none; margin-left: 6px; font-size: .64rem; font-weight: 750; text-transform: uppercase;
+    letter-spacing: .02em; border-radius: 6px; padding: 2px 6px; color: var(--attention);
+    background: color-mix(in srgb, var(--attention) 12%, var(--surface));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--attention) 30%, transparent);
+  }
+  .ev.ev-choc { outline: 2px solid var(--attention); outline-offset: -2px; }
 </style>
 </head>
 <body>
@@ -2357,6 +2511,13 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       <button class="primaire halo" id="rech-lien-voir" type="button">Vérifier le lien</button>
       <p class="pdf-status" id="rech-lien-status" role="status"></p>
     </div>
+    <div class="src-rappel" id="formation-rappel" hidden></div>
+    <ul class="liste" id="liste-perso" hidden>
+      <li><button type="button" class="halo surmesure" id="btn-perso">
+        <span class="sm-ico" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 8 4.5-8 4.5-8-4.5z"/><path d="m4 12 8 4.5 8-4.5"/><path d="m4 16.5 8 4.5 8-4.5"/></svg></span>
+        <span class="nom">Composer un horaire sur mesure<small>Des cours de plusieurs années ou options, réunis</small></span>
+        <span class="tag-neuf">Nouveau</span></button></li>
+    </ul>
     <p class="pdf-status" id="formations-status" role="status"></p>
     <ul class="liste" id="liste-formations"></ul>
     <p class="bug-aide"><button type="button" class="lien-bug" data-bug>Aucun résultat, un souci, une idée ? Signaler</button></p>
@@ -2411,6 +2572,58 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     <p class="bug-aide"><button type="button" class="lien-bug" data-bug>Un souci, une idée ? Signaler</button></p>
   </section>
 
+  <!-- Horaire sur mesure : composeur (sources) -->
+  <section id="v-perso" hidden>
+    <h2 class="q">Ton horaire sur mesure</h2>
+    <p class="aide" id="perso-aide"></p>
+    <div id="perso-sources"></div>
+    <button class="btn-ajout halo" id="perso-ajouter" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Ajouter une année, une option, des cours</button>
+    <p class="aide" id="perso-max" hidden>Maximum atteint : 6 sources par horaire.</p>
+    <div class="marche" id="perso-marche">
+      <h3>Comment ça marche</h3>
+      <ol>
+        <li><span class="num">1</span><span><b>Ajoute ton année principale</b> : tout est coché, décoche les cours que tu ne suis pas.</span></li>
+        <li><span class="num">2</span><span><b>Ajoute une autre année ou une option</b> : coche seulement les cours que tu y suis.</span></li>
+        <li><span class="num">3</span><span><b>C'est tout</b> : chaque année reste à jour chez l'école, on fusionne pour toi.</span></li>
+      </ol>
+    </div>
+    <div class="choc" id="perso-choc" role="status" hidden></div>
+    <div id="perso-reglages" hidden>
+      <div id="perso-bloc-surnom">
+        <label class="champ-titre" for="perso-surnom">Nom de cet horaire</label>
+        <div class="champs halo">
+          <div class="champ-ligne">
+            <input class="champ" id="perso-surnom" type="text" maxlength="24" autocomplete="off" spellcheck="false"
+                   placeholder="ex. Info 2026, Cours carrés">
+          </div>
+        </div>
+        <p class="surnom-aide">Affiché dans la barre du haut pour passer d'un horaire à l'autre.</p>
+      </div>
+      <p class="theme-select-titre">Thème de cet horaire</p>
+      <div id="perso-themes"></div>
+    </div>
+    <button class="primaire halo" id="perso-valider" type="button" disabled>Voir mon horaire</button>
+    <p class="bug-aide"><button type="button" class="lien-bug" data-bug>Un souci, une idée ? Signaler</button></p>
+  </section>
+
+  <!-- Horaire sur mesure : les cours d'une source -->
+  <section id="v-cours" hidden>
+    <h2 class="q">Tes cours dans cette année</h2>
+    <div class="src-rappel" id="cours-rappel"></div>
+    <div class="modes" id="cours-role" role="tablist" aria-label="Comment prendre cette année">
+      <button type="button" role="tab" data-role="principale" aria-selected="true"><span class="mode-nom">Année principale</span></button>
+      <button type="button" role="tab" data-role="ajout" aria-selected="false"><span class="mode-nom">Cours à ajouter</span></button>
+    </div>
+    <p class="aide" id="cours-aide"></p>
+    <p class="pdf-status" id="cours-status" role="status"></p>
+    <div class="liens-cours" id="cours-liens" hidden>
+      <button type="button" id="cours-tout">Tout cocher</button><span aria-hidden="true">·</span><button type="button" id="cours-rien">Tout décocher</button>
+    </div>
+    <div class="cours-liste" id="cours-liste"></div>
+    <button class="primaire halo" id="cours-valider" type="button" hidden></button>
+    <p class="bug-aide"><button type="button" class="lien-bug" data-bug>Un souci, une idée ? Signaler</button></p>
+  </section>
+
   <!-- 4. Horaire -->
   <section id="v-horaire" hidden>
     <p class="profil-ligne" id="profil-ligne"></p>
@@ -2418,6 +2631,8 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       <span class="pill" aria-hidden="true"></span>
     </div>
     <div class="avis" id="avis" hidden></div>
+    <div class="choc" id="chocs" role="status" hidden></div>
+    <p class="sources-ligne" id="sources-ligne" hidden></p>
     <p class="pdf-status" id="horaire-status" role="status" hidden></p>
     <div id="horaire-contenu">
       <div class="week">
@@ -2601,12 +2816,13 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0" integrity="sha384-JBR+x8blGwjDRO63aHCGiZMD4VNiTR4ZUGA+N6ZKLf3zNt1fK8IBpcgPaMrxqWBp" crossorigin="anonymous"></script>
 <script src="/suivi.js"></script>
+<script src="/fusion.js"></script>
 <script>
 (function () {
   "use strict";
   /* Version du parcours, jointe aux étapes anonymes : à incrémenter à
      chaque correctif, pour comparer « avant / après » dans le dashboard. */
-  window.EZH_VERSION = "2";
+  window.EZH_VERSION = "3";
   var JOURS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
   var MOIS = ["janv.", "févr.", "mars", "avr.", "mai", "juin",
               "juil.", "août", "sept.", "oct.", "nov.", "déc."];
@@ -2820,7 +3036,8 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     try { return JSON.parse(localStorage.getItem(cle) || "null"); } catch (e) { return null; }
   }
   function ecrire(cle, valeur) {
-    try { localStorage.setItem(cle, JSON.stringify(valeur)); } catch (e) { /* plein / privé */ }
+    try { localStorage.setItem(cle, JSON.stringify(valeur)); return true; }
+    catch (e) { return false; /* plein / privé */ }
   }
   /* Lien d'abonnement personnel (ULB) : la clé de cache ne doit jamais
      contenir le lien (localStorage partagé, journaux…) — une empreinte
@@ -2837,12 +3054,32 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   function valide(d) {
     return !!(d && d.meta && d.meta.periode && d.meta.premier_lundi && d.cours && d.groupes);
   }
+  /* Horaire sur mesure : plusieurs sources (formations d'une même école)
+     fusionnées en une semaine — voir fusion.js et
+     propositions/horaire-perso/PLAN.md. Un profil sur mesure a `sources`
+     (1 à 6), `formation` vide et `groupes` vide : les groupes sont ceux de
+     chaque source. `sources` absent ou vide = horaire normal. */
+  var FUSION = window.EZH_FUSION;
+  function estPerso(p) { return !!(p && Array.isArray(p.sources) && p.sources.length); }
+  function ecoleExiste(id) { return !!ecoleDe(id); }
   function profilValide(p) {
-    if (!(p && p.id && ecoleDe(p.ecole) && p.formation && Array.isArray(p.groupes))) return false;
+    if (!(p && p.id && ecoleDe(p.ecole))) return false;
     // Lien d'abonnement (ULB) : chaîne courte uniquement, jamais un objet.
     if (p.ical != null && typeof p.ical !== "string") return false;
-    return true;
+    if (estPerso(p)) return !!(FUSION && FUSION.sourcesValides(p, ecoleExiste));
+    return !!(p.formation && Array.isArray(p.groupes));
   }
+  /* Profil sur mesure venu du stockage ou du cloud : sources nettoyées,
+     champs de l'horaire normal vidés (un ancien client ne l'affiche pas). */
+  function normaliserPerso(p) {
+    p.sources = FUSION.sourcesValides(p, ecoleExiste) || [];
+    p.formation = "";
+    p.groupes = [];
+    p.ical = "";
+    if (!p.surnom) p.surnom = SURNOM_PERSO;
+    return p;
+  }
+  var SURNOM_PERSO = "Sur mesure";
   /* Une sélection de cours « PAR:… » n'existe qu'à l'ULB et à l'UCLouvain.
      Rangée sous une autre école (HEH, UMONS), l'horaire devient
      introuvable : on la rend à la bonne école (sigles UCLouvain en
@@ -2897,6 +3134,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     profils = profils.filter(profilValide);
     profils.forEach(function (p, i) {
       p.theme = normaliserTheme(p.theme);
+      if (estPerso(p)) { normaliserPerso(p); return; }
       if (reparerEcoleParcours(p)) { p.maj = Date.now(); profilsSales = true; }
       // Groupes : espaces nettoyés. Le préfixe éventuel ('<…>…', UMONS)
       // est gardé : c'est la clé de l'école quand le nom court est ambigu
@@ -3303,19 +3541,30 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   /* ---------- Synchro des horaires (local <-> table `profils`) ----------
      Fusion par id, le dernier écrit gagne (horodatage maj / updated_at).
      Hors ligne ou sans cloud : le localStorage seul fait foi. */
+  // Colonne `sources` absente du cloud (schema.sql pas rejoué) : les
+  // horaires sur mesure restent sur l'appareil (voir pushProfils).
+  var baseSansSources = false;
   function pullProfils() {
     if (!SUPABASE_OK || !sb || !sessionSupabase || !sessionSupabase.user || !compte || compte.supabase_id !== sessionSupabase.user.id) return Promise.resolve(false);
     var uid = sessionSupabase.user.id;
     var generation = generationCompte;
-    // Base pas encore migrée (colonne `ical` absente) : on relit sans elle,
-    // la synchro reste vivante en attendant le schema.sql à jour.
-    function lire(colonnes) { return sb.from("profils").select(colonnes).eq("user_id", uid); }
-    return lire("id,surnom,ecole,formation,groupes,ical,theme,updated_at").then(function (res) {
-      if (res.error && /ical/i.test(String(res.error.message || ""))) {
-        return lire("id,surnom,ecole,formation,groupes,theme,updated_at");
-      }
-      return res;
-    }).then(function (res) {
+    // Base pas encore migrée (colonne `ical` ou `sources` absente) : on
+    // relit sans elle, la synchro reste vivante en attendant le schema.sql
+    // à jour. Les deux replis se cumulent.
+    var colonnes = ["id", "surnom", "ecole", "formation", "groupes", "ical", "sources", "theme", "updated_at"];
+    function lire() {
+      return sb.from("profils").select(colonnes.join(",")).eq("user_id", uid).then(function (res) {
+        var msg = res.error ? String(res.error.message || "") : "";
+        var manque = ["ical", "sources"].filter(function (c) {
+          return colonnes.indexOf(c) >= 0 && new RegExp(c, "i").test(msg);
+        });
+        if (!manque.length) return res;
+        if (manque.indexOf("sources") >= 0) baseSansSources = true;
+        colonnes = colonnes.filter(function (c) { return manque.indexOf(c) < 0; });
+        return lire();
+      });
+    }
+    return lire().then(function (res) {
       if (generation !== generationCompte || !sessionSupabase || !sessionSupabase.user || sessionSupabase.user.id !== uid || !compte || compte.supabase_id !== uid) return false;
       if (res.error) throw res.error;
       var parId = {}, aReecrire = false;
@@ -3329,6 +3578,10 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
                         ical: typeof l.ical === "string" ? l.ical.slice(0, 1200) : "",
                         theme: normaliserTheme(l.theme),
                         maj: Date.parse(l.updated_at) || 0 };
+        if (Array.isArray(l.sources) && l.sources.length) {
+          distant.sources = l.sources;
+          if (profilValide(distant)) normaliserPerso(distant);
+        }
         // Nom auto-généré avec l'ancien format ('.BAB1 - …', point UMONS) :
         // réparé comme en local (un choix explicite identique y survivrait aussi).
         if (distant.surnom !== surnomDefaut(l.formation) &&
@@ -3338,6 +3591,9 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
         // École faussée côté cloud : réparée ici, puis réécrite plus bas.
         if (reparerEcoleParcours(distant)) { distant.maj = Date.now(); aReecrire = true; }
         var local = parId[l.id];
+        // Ligne distante illisible (perso poussé sans `sources` par une
+        // base non migrée…) : elle ne remplace jamais l'horaire local.
+        if (!profilValide(distant)) return;
         if (!local || (distant.maj && distant.maj > (local.maj || 0))) parId[l.id] = distant;
       });
       if (aReecrire) planifierPush();
@@ -3357,25 +3613,31 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   function pushProfils() {
     if (!SUPABASE_OK || !sb || !sessionSupabase || !sessionSupabase.user || !compte || compte.supabase_id !== sessionSupabase.user.id) return Promise.resolve(false);
     var uid = sessionSupabase.user.id;
-    var lignes = profils.filter(profilValide).map(function (p) {
-      return { user_id: uid, id: p.id, surnom: p.surnom, ecole: p.ecole,
-               formation: p.formation, groupes: p.groupes,
-               ical: typeof p.ical === "string" ? p.ical.slice(0, 1200) : "",
-               theme: normaliserTheme(p.theme) };
-    });
-    if (!lignes.length) return Promise.resolve(true);
     // Base pas encore migrée : on pousse sans `ical` plutôt que d'échouer.
-    function ecrire(liste) { return sb.from("profils").upsert(liste, { onConflict: "user_id,id" }); }
-    return ecrire(lignes).then(function (res) {
-      if (res.error && /ical/i.test(String(res.error.message || ""))) {
-        return ecrire(lignes.map(function (l) {
-          var copie = {};
-          for (var k in l) if (k !== "ical") copie[k] = l[k];
-          return copie;
-        }));
-      }
-      return res;
-    }).then(function (res) {
+    // Sans colonne `sources`, les horaires sur mesure ne partent PAS (une
+    // ligne sans ses sources reviendrait vide et effacerait l'horaire
+    // local) : ils restent sur l'appareil.
+    var avecIcal = true;
+    function ecrire() {
+      var lignes = profils.filter(profilValide).filter(function (p) {
+        return !baseSansSources || !estPerso(p);
+      }).map(function (p) {
+        var l = { user_id: uid, id: p.id, surnom: p.surnom, ecole: p.ecole,
+                  formation: p.formation, groupes: p.groupes,
+                  theme: normaliserTheme(p.theme) };
+        if (avecIcal) l.ical = typeof p.ical === "string" ? p.ical.slice(0, 1200) : "";
+        if (!baseSansSources) l.sources = estPerso(p) ? p.sources : [];
+        return l;
+      });
+      if (!lignes.length) return Promise.resolve({});
+      return sb.from("profils").upsert(lignes, { onConflict: "user_id,id" }).then(function (res) {
+        var msg = res.error ? String(res.error.message || "") : "";
+        if (msg && !baseSansSources && /sources/i.test(msg)) { baseSansSources = true; rendreListeProfils(); return ecrire(); }
+        if (msg && avecIcal && /ical/i.test(msg)) { avecIcal = false; return ecrire(); }
+        return res;
+      });
+    }
+    return ecrire().then(function (res) {
       if (res.error) throw res.error;
       return true;
     });
@@ -3416,7 +3678,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
         user_id: sessionSupabase.user.id,
         profil_id: profil.id,
         ecole: profil.ecole,
-        formation: profil.formation
+        formation: estPerso(profil) ? "sur mesure" : profil.formation
       }).then(function () { /* jetable */ }, function () { /* jetable */ });
     } catch (e) { /* jetable */ }
   }
@@ -3564,6 +3826,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
 
   var DATA = null;       // horaire complet de la formation affichée
   var COURS = [];        // ses cours, filtrés selon les groupes de l'étudiant
+  var CHOCS = [];        // horaire sur mesure : chevauchements entre sources
   var LUNDI0 = null, SEMAINES = [];
   var FERIES = {};       // jours fériés / de congé de l'école : { n° de jour : true }
   var FERIES_NOMS = {};  // leur nom quand l'école en donne un (« Toussaint »)
@@ -3774,7 +4037,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     // Horaire importé d'un lien, ou école qui ne publie pas de PDF :
     // il n'y a pas de document officiel à montrer.
     var ec = profil && ecoleDe(profil.ecole);
-    if (profil && (profil.ical || (ec && ec.pdf === false))) {
+    if (profil && (profil.ical || (ec && ec.pdf === false) || (estPerso(profil) && !optionsPdfPerso().length))) {
       btn.hidden = true;
       document.getElementById("horaire-contenu").classList.remove("pdf-ouvert");
       return;
@@ -4150,13 +4413,59 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     return api(url, 95000)
       .then(function (rep) {
         if (!valide(rep.data)) throw new Error("réponse incomplète.");
-        ecrire(cleHoraire(ecole, formation, ical), rep.data);
+        var cle = cleHoraire(ecole, formation, ical);
+        if (ecrire(cle, rep.data)) delete cacheRate[cle]; else cacheRate[cle] = true;
         return rep.data;
       });
   }
+  var cacheRate = {}; // clés d'horaire que le stockage plein n'a pas pu garder
+  function memoHoraire(ecole, formation, ical) {
+    var m = lire(cleHoraire(ecole, formation, ical));
+    return valide(m) ? m : null;
+  }
+  /* Horaire d'un profil, normal ou sur mesure. memoProfil : tout de suite,
+     depuis le cache local (null si rien) ; chargerProfil : depuis l'école. */
+  function fusionPerso(p, datas) {
+    var d = FUSION.fusionner(p.sources.map(function (s, i) { return { source: s, data: datas[i] }; }));
+    d.profilId = p.id;
+    return d;
+  }
+  function memoProfil(p) {
+    if (!estPerso(p)) return memoHoraire(p.ecole, p.formation, p.ical);
+    var datas = p.sources.map(function (s) { return memoHoraire(s.ecole, s.formation, s.ical); });
+    if (!datas.some(Boolean)) return null;
+    var d = fusionPerso(p, datas);
+    d.infos.cache = true;
+    return d;
+  }
+  /* Sources par lots de 3 : une formation froide coûte ~30 appels à
+     l'école et api/horaires est limité à 12 appels / min / IP. Une source
+     en échec garde sa dernière version en cache ; sans cache, elle est
+     absente et signalée. */
+  function chargerPerso(p) {
+    var datas = [], echecs = [], erreurs = [], k = 0;
+    function suivant() {
+      if (k >= p.sources.length) return Promise.resolve();
+      var i = k++, s = p.sources[i];
+      return chargerHoraire(s.ecole, s.formation, s.ical).then(function (d) { datas[i] = d; }, function (e) {
+        echecs.push(i); erreurs.push(e);
+        datas[i] = memoHoraire(s.ecole, s.formation, s.ical);
+      }).then(suivant);
+    }
+    return Promise.all([suivant(), suivant(), suivant()]).then(function () {
+      if (!datas.some(Boolean)) throw erreurs[0] || new Error("aucune source disponible.");
+      var d = fusionPerso(p, datas);
+      d.infos.echecs = echecs.sort();
+      d.infos.horsLigneKo = p.sources.some(function (s) { return cacheRate[cleHoraire(s.ecole, s.formation, s.ical)]; });
+      return d;
+    });
+  }
+  function chargerProfil(p) {
+    return estPerso(p) ? chargerPerso(p) : chargerHoraire(p.ecole, p.formation, p.ical);
+  }
 
   /* ---------- Navigation entre les écrans ---------- */
-  var VUES = ["compte", "identite", "ecole", "formation", "groupes", "horaire"];
+  var VUES = ["compte", "identite", "ecole", "formation", "groupes", "perso", "cours", "horaire"];
   var vue = null, pile = []; // pile : écrans précédents (bouton Retour)
   function montrer(v) {
     vue = v;
@@ -4184,6 +4493,8 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     ecole: ouvrirEcoles,
     formation: ouvrirFormations,
     groupes: function () { ouvrirGroupes(choix.groupes); },
+    perso: ouvrirPerso,
+    cours: ouvrirCours,
     horaire: afficherHoraire
   };
 
@@ -4193,7 +4504,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
      les cours cochés et les groupes étaient perdus. On garde le parcours en
      cours dans localStorage et on le rouvre au démarrage. Un brouillon ne
      vit pas plus d'un jour et n'est jamais écrit depuis l'horaire. */
-  var VUES_BROUILLON = ["ecole", "formation", "groupes"];
+  var VUES_BROUILLON = ["ecole", "formation", "groupes", "perso", "cours"];
   var BROUILLON_MAX_MS = 24 * 3600 * 1000;
   function sauverBrouillon() {
     if (VUES_BROUILLON.indexOf(vue) < 0) return;
@@ -4212,6 +4523,10 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       ical: choix.ical,
       editionId: choix.editionId,
       theme: choix.theme,
+      // Horaire sur mesure en cours (sans les horaires téléchargés : ils
+      // sont déjà dans le cache local).
+      perso: choix.perso || null,
+      source: sourceSansBrut(choix.source),
       rech: {
         mode: rech.mode,
         cours: rech.cours.slice(),
@@ -4248,12 +4563,23 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       groupes: Array.isArray(d.groupes) ? d.groupes.slice() : [],
       ical: typeof d.ical === "string" && d.ical ? d.ical : null,
       editionId: edite,
-      theme: d.theme == null ? null : normaliserTheme(d.theme)
+      theme: d.theme == null ? null : normaliserTheme(d.theme),
+      perso: null,
+      source: null
     };
+    reprendrePerso(d, edite);
+    if (!choix.perso && (vueVoulue === "perso" || vueVoulue === "cours")) vueVoulue = "formation";
+    if (vueVoulue === "cours" && !(choix.source && choix.source.formation)) vueVoulue = "perso";
     if (vueVoulue === "groupes") {
       // L'horaire déjà téléchargé ressort du cache : l'écran s'ouvre même hors ligne.
       var memo = lire(cleHoraire(choix.ecole, choix.formation, choix.ical));
-      if (valide(memo)) choix.data = memo;
+      if (valide(memo)) {
+        choix.data = memo;
+        if (choix.source) {
+          choix.source.brut = memo;
+          if (!FUSION.estParcours(choix.source)) choix.data = FUSION.donneesCochees(memo, choix.source);
+        }
+      } else if (choix.source && !FUSION.estParcours(choix.source)) vueVoulue = "cours";
     }
     rech.ecole = choix.ecole;
     rech.arme = null;
@@ -4282,6 +4608,10 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
           champRech.value.replace(/\s+/g, " ").trim().length >= 2) {
         rechChercher();
       }
+    } else if (vueVoulue === "perso") {
+      ouvrirPerso();
+    } else if (vueVoulue === "cours") {
+      ouvrirCours();
     } else {
       ouvrirGroupes(choix.groupes);
     }
@@ -4611,6 +4941,9 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   }
   function ouvrirFormations() {
     montrer("formation");
+    // Retour depuis le composeur sans source en cours : on quitte le sur mesure.
+    if (choix.perso && !choix.source) choix.perso = null;
+    majEnteteSource();
     var ec = ecoleDe(choix.ecole);
     document.getElementById("formation-aide").textContent = ec.nom + " · " + ec.detail;
     var status = document.getElementById("formations-status");
@@ -4773,6 +5106,10 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     }
     var parCours = rech.mode === "cours";
     liste.innerHTML = visibles.map(function (r) {
+      if (!parCours && dejaAjoutee(r.cle, null)) {
+        return '<li><button type="button" class="halo deja" data-formation="' + txt(r.cle) + '" data-deja aria-disabled="true">' +
+          '<span class="nom">' + txt(joliFormation(r.cle)) + "<small>Déjà dans ton horaire</small></span></button></li>";
+      }
       return '<li><button type="button" class="halo" data-formation="' + txt(r.cle) + '"' +
         (parCours ? ' aria-pressed="false"' : "") + '><span class="nom">' +
         txt(joliFormation(r.cle)) + '</span><span class="chev" aria-hidden="true"></span></button></li>';
@@ -4823,7 +5160,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     choix.formation = "PAR:" + rech.cours.map(function (c) { return c.split(" · ")[0].trim(); }).sort().join(",");
     choix.data = null; choix.groupes = []; choix.ical = null;
     document.getElementById("recherche").blur();
-    aller("groupes");
+    allerApresFormation();
   }
   function rechVerifierLien() {
     var statut = document.getElementById("rech-lien-status");
@@ -4841,7 +5178,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       choix.ical = lien;
       choix.data = rep.data;
       choix.groupes = [];
-      aller("groupes");
+      allerApresFormation();
     }, function (e) {
       btn.disabled = false;
       erreur(statut, "Échec : " + e.message);
@@ -5155,6 +5492,11 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
             derniere = x.r;
             titre = '<li class="liste-titre">' + txt(x.r < RUBRIQUES.length ? RUBRIQUES[x.r][1] : "Autres") + "</li>";
           }
+          if (dejaAjoutee(x.f, null)) {
+            return titre + '<li><button type="button" class="halo deja" data-formation="' + txt(x.f) +
+                   '" data-deja aria-disabled="true"><span class="nom">' + txt(joliFormation(x.f)) +
+                   "<small>Déjà dans ton horaire</small></span></button></li>";
+          }
           return titre + '<li><button type="button" class="halo" data-formation="' + txt(x.f) + '"><span class="nom">' +
                  txt(joliFormation(x.f)) + '</span><span class="chev" aria-hidden="true"></span></button></li>';
         }).join("")
@@ -5174,7 +5516,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   });
   document.getElementById("liste-formations").addEventListener("click", function (e) {
     var b = e.target.closest("button[data-formation]");
-    if (!b) return;
+    if (!b || b.hasAttribute("data-deja")) return;
     var ec = ecoleDe(choix.ecole);
     if (ec && ec.recherche && rech.mode === "cours") { // on ajoute le cours
       rechAjouterCours(b.getAttribute("data-formation"));
@@ -5183,8 +5525,9 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     var memeFormation = choix.formation === b.getAttribute("data-formation");
     choix.formation = b.getAttribute("data-formation");
     if (!memeFormation) { choix.data = null; choix.groupes = []; }
+    choix.ical = null;
     document.getElementById("recherche").blur();
-    aller("groupes");
+    allerApresFormation();
   });
 
   /* ---------- 3. Groupe(s) (+ surnom seulement s'il y a déjà un horaire) ----------
@@ -5216,9 +5559,11 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     if (edite && edite.formation === choix.formation) {
       champSurnom.value = choix.surnomEdit != null ? choix.surnomEdit : edite.surnom;
     } else champSurnom.value = surnomDefaut(choix.formation, choix.groupes);
-    // Premier horaire : pas de nom, pas de choix, juste l'horaire.
+    // Premier horaire : pas de nom, pas de choix, juste l'horaire. Une
+    // source d'un horaire sur mesure : le nom et le thème sont au composeur.
     document.getElementById("bloc-surnom").style.display =
-      (!edite && profils.length === 0) ? "none" : "";
+      (choix.source || (!edite && profils.length === 0)) ? "none" : "";
+    document.getElementById("bloc-theme").hidden = !!choix.source;
     if (choix.theme == null) {
       choix.theme = edite
         ? normaliserTheme(edite.theme)
@@ -5234,6 +5579,10 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     chargerHoraire(choix.ecole, demande, icalDemande).then(function (data) {
       if (choix.formation !== demande || choix.ical !== icalDemande) return;
       choix.data = data;
+      if (choix.source) {
+        choix.source.brut = data; choix.source.brutFrais = true;
+        if (!FUSION.estParcours(choix.source)) choix.data = FUSION.donneesCochees(data, choix.source);
+      }
       if (vue !== "groupes") return;
       effacer(status); listerGroupes();
     }, function (e) {
@@ -5253,7 +5602,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       document.getElementById("groupes-modifiable").hidden = true;
       filtre.hidden = true;
       majAvisGroupes([]);
-      btn.hidden = false; btn.disabled = false; btn.textContent = "Voir mon horaire";
+      btn.hidden = false; btn.disabled = false; btn.textContent = choix.source ? texteValiderSource() : "Voir mon horaire";
       return;
     }
     // En modification, le rappel « tu pourras les changer plus tard » n'a
@@ -5484,6 +5833,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       btn.textContent = !n ? (aOptions ? "Tout afficher (options superposées)"
                                        : "Tout afficher, sans filtre")
         : n === 1 ? "Voir mon horaire" : "Voir mon horaire · " + n + " groupes";
+      if (choix.source && n) btn.textContent = texteValiderSource() + (n > 1 ? " · " + n + " groupes" : "");
     }
     majAvisGroupes();
     sauverBrouillon();
@@ -5514,6 +5864,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     var sel = groupes.filter(function (g) { return choix.groupes.indexOf(g) >= 0; }) // ordre de l'école
                      .map(propre).filter(Boolean);
     if (groupeObligatoire() && !sel.length) return; // garde-fou (le bouton est déjà grisé)
+    if (choix.perso && choix.source) { validerSource(sel); return; } // retour au composeur
     var surnom = document.getElementById("surnom").value.replace(/\s+/g, " ").trim() ||
                  surnomDefaut(choix.formation, sel);
     surnom = surnom.slice(0, 24);
@@ -5571,6 +5922,480 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     actualiser().catch(function () { /* garde le cache local */ });
   });
 
+  /* ---------- Horaire sur mesure : composeur et cours d'une source ----------
+     choix.perso  : l'horaire en cours de composition
+                    { editionId, ecole, sources: [...], surnom, theme, pile }
+     choix.source : la source qu'on ajoute ou qu'on modifie
+                    { index (null = nouvelle), ecole, formation, ical, role,
+                      sans, avec, groupes, surnom, brut (horaire complet) }
+     Les écrans formation et groupes sont ceux du parcours normal : ils
+     savent qu'ils travaillent pour une source quand choix.source existe. */
+  var ICONE_CALQUES = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" ' +
+    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 8 4.5-8 4.5-8-4.5z"/>' +
+    '<path d="m4 12 8 4.5 8-4.5"/><path d="m4 16.5 8 4.5 8-4.5"/></svg>';
+  function sourceSansBrut(src) {
+    if (!src) return null;
+    var c = {};
+    for (var k in src) if (k !== "brut" && k !== "brutFrais") c[k] = src[k];
+    return c;
+  }
+  function reprendrePerso(d, edite) {
+    if (!d.perso || typeof d.perso !== "object" || !Array.isArray(d.perso.sources)) return;
+    choix.perso = {
+      editionId: edite,
+      ecole: d.ecole,
+      sources: d.perso.sources.map(function (x) { return FUSION.normaliserSource(x, ecoleExiste); })
+        .filter(function (x) { return x && x.ecole === d.ecole; }).slice(0, FUSION.MAX_SOURCES),
+      surnom: typeof d.perso.surnom === "string" ? d.perso.surnom.slice(0, 24) : "",
+      theme: normaliserTheme(d.perso.theme),
+      pile: Array.isArray(d.perso.pile) ? d.perso.pile.filter(function (n) {
+        return VUES_BROUILLON.indexOf(n) >= 0 || n === "horaire";
+      }) : []
+    };
+    var s = d.source;
+    if (s && typeof s === "object" && (s.index == null || choix.perso.sources[s.index])) {
+      var liste = function (v) { return Array.isArray(v) ? v.filter(function (x) { return typeof x === "string"; }) : []; };
+      choix.source = {
+        index: s.index == null ? null : +s.index, ecole: d.ecole,
+        formation: typeof s.formation === "string" ? s.formation : null,
+        ical: typeof s.ical === "string" ? s.ical : "",
+        role: s.role === "principale" ? "principale" : "ajout",
+        sans: liste(s.sans), avec: Array.isArray(s.avec) ? liste(s.avec) : undefined,
+        groupes: liste(s.groupes), surnom: typeof s.surnom === "string" ? s.surnom : "",
+        brut: null
+      };
+      if (choix.source.formation) {
+        choix.source.brut = memoHoraire(d.ecole, choix.source.formation, choix.source.ical);
+      }
+    }
+  }
+  // Une formation déjà présente dans l'horaire sur mesure (hors celle qu'on modifie).
+  function dejaAjoutee(formation, ical) {
+    if (!choix.perso || !choix.source) return false;
+    return choix.perso.sources.some(function (s, i) {
+      return i !== choix.source.index && s.formation === formation && (s.ical || "") === (ical || "");
+    });
+  }
+  function majEnteteSource() {
+    var enSource = !!(choix.perso && choix.source);
+    document.getElementById("liste-perso").hidden = enSource || !!choix.editionId;
+    var r = document.getElementById("formation-rappel");
+    r.hidden = !enSource;
+    if (enSource) {
+      var n = choix.perso.sources.length;
+      r.innerHTML = ICONE_CALQUES.replace(/26/g, "20") + "<span>" +
+        (choix.source.index == null
+          ? "Ajout à ton horaire sur mesure" + (n ? " · <strong>" + n + " source" + (n > 1 ? "s" : "") + " déjà là</strong>" : "")
+          : "Tu remplaces <strong>" + txt(nomSource(choix.perso.sources[choix.source.index])) + "</strong>") +
+        "</span>";
+    }
+  }
+  document.getElementById("btn-perso").addEventListener("click", function () {
+    choix.perso = {
+      editionId: null, ecole: choix.ecole, sources: [], surnom: "",
+      theme: choix.theme != null ? normaliserTheme(choix.theme)
+        : (profils.length ? suggereThemeSuivant() : themeChoisiIdentite),
+      pile: null
+    };
+    choix.source = null; choix.formation = null; choix.data = null; choix.groupes = []; choix.ical = null;
+    document.getElementById("recherche").blur();
+    aller("perso");
+  });
+  /* Formation choisie (liste, niveau, codes de cours ou lien) : parcours
+     normal -> groupes ; source d'un horaire sur mesure -> ses cours. */
+  function allerApresFormation() {
+    if (!choix.perso || !choix.source) { aller("groupes"); return; }
+    if (dejaAjoutee(choix.formation, choix.ical)) {
+      erreur(document.getElementById(choix.ical ? "rech-lien-status" : "formations-status"),
+             "Cette année est déjà dans ton horaire sur mesure.");
+      return;
+    }
+    var src = choix.source;
+    var lien = choix.ical ? choix.data : null; // un lien vient d'être lu : on garde sa réponse
+    if (src.formation !== choix.formation || (src.ical || "") !== (choix.ical || "")) {
+      src.groupes = []; src.sans = []; src.avec = [];
+    }
+    src.formation = choix.formation;
+    src.ical = choix.ical || "";
+    src.brut = lien || memoHoraire(src.ecole, src.formation, src.ical);
+    src.brutFrais = !!lien;
+    choix.data = null;
+    choix.groupes = src.groupes.slice();
+    if (FUSION.estParcours(src)) {
+      // « PAR:… » : les codes choisis sont déjà la sélection de cours.
+      src.role = "ajout"; src.avec = undefined; src.sans = [];
+      choix.data = src.brut;
+      aller("groupes");
+      return;
+    }
+    aller("cours");
+  }
+  function texteValiderSource() {
+    return choix.source && choix.source.index != null ? "Enregistrer cette année" : "Ajouter à mon horaire";
+  }
+
+  /* --- Composeur --- */
+  function ouvrirPerso() {
+    montrer("perso");
+    var perso = choix.perso;
+    if (!perso) { ouvrirEcoles(); return; }
+    choix.source = null;
+    if (!perso.pile) perso.pile = pile.slice();
+    document.body.setAttribute("data-theme", String(normaliserTheme(perso.theme)));
+    var ec = ecoleDe(perso.ecole), n = perso.sources.length;
+    document.getElementById("perso-aide").textContent = n
+      ? n + " source" + (n > 1 ? "s" : "") + " de " + ec.nom + " · chacune reste à jour chez l'école."
+      : "Réunis dans une seule semaine des cours de plusieurs années ou options de " + ec.nom + ".";
+    var zone = document.getElementById("perso-sources");
+    zone.innerHTML = n ? perso.sources.map(htmlCarteSource).join("")
+      : '<div class="vide-src">' + ICONE_CALQUES + "<strong>Aucune source pour l'instant</strong>" +
+        "<span>Commence par ton année principale.</span></div>";
+    var plein = n >= FUSION.MAX_SOURCES;
+    document.getElementById("perso-ajouter").disabled = plein;
+    document.getElementById("perso-max").hidden = !plein;
+    document.getElementById("perso-marche").hidden = n >= 2;
+    document.getElementById("perso-reglages").hidden = !n;
+    document.getElementById("perso-bloc-surnom").hidden = !perso.editionId && profils.length === 0;
+    document.getElementById("perso-surnom").value = perso.surnom || "";
+    document.getElementById("perso-themes").innerHTML =
+      htmlChoixThemes(perso.theme).replace('id="edition-themes"', 'id="perso-themes-choix"');
+    var btn = document.getElementById("perso-valider");
+    btn.disabled = !n;
+    btn.textContent = !n ? "Ajoute au moins une année" : perso.editionId ? "Enregistrer" : "Voir mon horaire";
+    rendreChocsComposeur();
+  }
+  function htmlCarteSource(src, i) {
+    var couleur = COULEURS_SOURCES[i % COULEURS_SOURCES.length];
+    var grp = !src.groupes.length ? "Tous les groupes"
+      : src.groupes.length === 1 ? nomGroupe(src.groupes[0]) : src.groupes.length + " groupes";
+    var mats = "";
+    var liste = src.role === "principale" ? (src.sans || []) : (src.avec || []);
+    if (liste.length) {
+      var cls = src.role === "principale" ? "retire" : "ajoute";
+      mats = '<div class="src-matieres">' + liste.slice(0, 8).map(function (k) {
+        return '<span class="' + cls + '">' + txt(nettoyerMatiere(k)) + "</span>";
+      }).join("") + (liste.length > 8 ? "<span>+ " + (liste.length - 8) + "</span>" : "") + "</div>";
+    }
+    return '<div class="srccard"><div class="srccard-ligne">' +
+      '<span class="src-num" style="--src:' + couleur + '">' + (i + 1) + "</span>" +
+      '<span class="src-textes"><span class="src-nom"><span class="src-nom-txt">' + txt(nomSource(src)) + "</span>" +
+      (src.role === "principale" ? '<span class="tag-role">Principale</span>' : "") + "</span>" +
+      '<span class="src-detail">' + txt(grp + " · " + detailSource(src)) + "</span></span>" +
+      '<button type="button" class="icobtn" data-src-edit="' + i + '" title="Modifier les cours et les groupes" aria-label="Modifier ' +
+      txt(nomSource(src)) + '">' + ICONE_CRAYON + "</button>" +
+      '<button type="button" class="icobtn retire" data-src-retire="' + i + '" title="Retirer cette source" aria-label="Retirer ' +
+      txt(nomSource(src)) + '">' + ICONE_CORBEILLE + "</button></div>" + mats + "</div>";
+  }
+  /* Chevauchements sur toute l'année, calculés sur les horaires déjà
+     téléchargés (l'écran des cours les a mis en cache). */
+  function rendreChocsComposeur() {
+    var zone = document.getElementById("perso-choc");
+    var perso = choix.perso;
+    if (!perso || perso.sources.length < 2) { zone.hidden = true; return; }
+    var datas = perso.sources.map(function (s) { return memoHoraire(s.ecole, s.formation, s.ical); });
+    if (datas.filter(Boolean).length < 2) { zone.hidden = true; return; }
+    var fus = FUSION.fusionner(perso.sources.map(function (s, i) { return { source: s, data: datas[i] }; }));
+    var chocs = FUSION.chevauchements(fus.cours);
+    zone.hidden = false;
+    zone.classList.toggle("ok", !chocs.length);
+    if (!chocs.length) {
+      zone.innerHTML = ICONE_OK + "<div><strong>Aucun cours en double</strong><p>Tes sources s'emboîtent sans se chevaucher.</p></div>";
+      return;
+    }
+    var x = chocs[0], a = x.a, b = x.b;
+    var debut = a.debut > b.debut ? a.debut : b.debut;
+    var semaines = {};
+    chocs.forEach(function (c) { c.semaines.forEach(function (w) { semaines[w] = true; }); });
+    var nSem = Object.keys(semaines).length;
+    zone.innerHTML = ICONE_ATTENTION + "<div><strong>" +
+      txt(chocs.length === 1 ? JOURS[a.jour] + " " + fmtH(debut) + " : deux cours se chevauchent"
+                             : chocs.length + " chevauchements, sur " + nSem + " semaine" + (nSem > 1 ? "s" : "")) +
+      "</strong><p><b>" + txt(nettoyerMatiere(a.matiere)) + "</b> (" + txt(nomSource(perso.sources[a.src])) + ") et <b>" +
+      txt(nettoyerMatiere(b.matiere)) + "</b> (" + txt(nomSource(perso.sources[b.src])) + ") tombent en même temps le " +
+      JOURS[a.jour].toLowerCase() + " à " + fmtH(debut) + (chocs.length > 1 ? ", entre autres" : "") +
+      ". Tu peux garder les deux, ils s'afficheront côte à côte, ou changer de groupe.</p></div>";
+  }
+  document.getElementById("perso-ajouter").addEventListener("click", function () {
+    var perso = choix.perso;
+    if (!perso || perso.sources.length >= FUSION.MAX_SOURCES) return;
+    var aPrincipale = perso.sources.some(function (s) { return s.role === "principale"; });
+    choix.source = {
+      index: null, ecole: perso.ecole, formation: null, ical: "",
+      role: aPrincipale ? "ajout" : "principale", sans: [], avec: [], groupes: [], surnom: "", brut: null
+    };
+    choix.ecole = perso.ecole;
+    choix.formation = null; choix.data = null; choix.groupes = []; choix.ical = null;
+    aller("formation");
+  });
+  function editerSource(i) {
+    var s = choix.perso.sources[i];
+    if (!s) return;
+    choix.source = {
+      index: i, ecole: s.ecole, formation: s.formation, ical: s.ical || "", role: s.role,
+      sans: (s.sans || []).slice(), avec: s.avec ? s.avec.slice() : (FUSION.estParcours(s) ? undefined : []),
+      groupes: s.groupes.slice(), surnom: s.surnom || "",
+      brut: memoHoraire(s.ecole, s.formation, s.ical), brutFrais: false
+    };
+    choix.ecole = s.ecole;
+    choix.formation = s.formation; choix.ical = s.ical || null;
+    choix.groupes = s.groupes.slice();
+    choix.data = null;
+    if (FUSION.estParcours(s)) { choix.data = choix.source.brut; aller("groupes"); }
+    else aller("cours");
+  }
+  document.getElementById("perso-sources").addEventListener("click", function (e) {
+    var ed = e.target.closest("[data-src-edit]");
+    if (ed) { editerSource(+ed.getAttribute("data-src-edit")); return; }
+    var re = e.target.closest("[data-src-retire]");
+    if (re) {
+      choix.perso.sources.splice(+re.getAttribute("data-src-retire"), 1);
+      ouvrirPerso();
+    }
+  });
+  document.getElementById("perso-surnom").addEventListener("input", function () {
+    if (choix.perso) choix.perso.surnom = this.value;
+    sauverBrouillon();
+  });
+  document.getElementById("perso-themes").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-theme-opt]");
+    if (!b || !choix.perso) return;
+    var t = normaliserTheme(+b.getAttribute("data-theme-opt"));
+    choix.perso.theme = t;
+    majThemeSelection("perso-themes", t);
+    document.body.setAttribute("data-theme", String(t));
+    sauverBrouillon();
+  });
+  /* Source validée (écran des cours, ou écran des groupes s'il y en a) :
+     elle rejoint le composeur. Au plus une année principale : l'ancienne
+     devient une année d'ajout, ses cours gardés deviennent sa liste. */
+  function validerSource(groupes) {
+    var perso = choix.perso, src = choix.source;
+    var brute = {
+      ecole: src.ecole, formation: src.formation, ical: src.ical || "", role: src.role,
+      groupes: groupes, surnom: src.surnom || "", sans: src.sans, avec: src.avec
+    };
+    var nette = FUSION.normaliserSource(brute, ecoleExiste);
+    if (!nette) return;
+    if (nette.role === "principale") {
+      perso.sources.forEach(function (autre, i) {
+        if (i === src.index || autre.role !== "principale" || nette.role !== "principale") return;
+        var memo = memoHoraire(autre.ecole, autre.formation, autre.ical);
+        var gardes = memo ? FUSION.coursDeSource(memo).map(function (x) { return x.cle; })
+          .filter(function (k) { return (autre.sans || []).indexOf(k) < 0; }) : [];
+        if (gardes.length) {
+          autre.role = "ajout"; autre.avec = gardes; delete autre.sans;
+        } else if (src.brut) {
+          // Horaire de l'ancienne introuvable : c'est la nouvelle qui passe en ajout.
+          nette.role = "ajout";
+          nette.avec = FUSION.coursDeSource(src.brut).map(function (x) { return x.cle; })
+            .filter(function (k) { return (nette.sans || []).indexOf(k) < 0; });
+          delete nette.sans;
+        }
+      });
+    }
+    if (src.index == null) perso.sources.push(nette);
+    else perso.sources[src.index] = nette;
+    // La principale d'abord : elle sert d'ancre au calendrier (fusion.js).
+    perso.sources.sort(function (a, b) {
+      return (a.role === "principale" ? 0 : 1) - (b.role === "principale" ? 0 : 1);
+    });
+    choix.source = null;
+    choix.formation = null; choix.data = null; choix.groupes = []; choix.ical = null;
+    pile = (perso.pile || []).slice();
+    ouvrirPerso();
+  }
+  document.getElementById("perso-valider").addEventListener("click", function () {
+    var perso = choix.perso;
+    if (!perso || !perso.sources.length) return;
+    var sources = JSON.parse(JSON.stringify(perso.sources));
+    var theme = normaliserTheme(perso.theme);
+    var saisi = propre(perso.surnom || "").slice(0, 24);
+    // Une seule année, entière : c'est un horaire normal, sans fusion.
+    var s0 = sources[0];
+    var simple = sources.length === 1 && s0.role === "principale" && !(s0.sans || []).length;
+    var champs = simple
+      ? { ecole: s0.ecole, formation: s0.formation, groupes: s0.groupes.slice(), ical: s0.ical || "",
+          sources: [], surnom: saisi || surnomDefaut(s0.formation) }
+      : { ecole: perso.ecole, formation: "", groupes: [], ical: "", sources: sources, surnom: saisi || SURNOM_PERSO };
+    var premierHoraire = !perso.editionId && profils.length === 0;
+    var cible = perso.editionId ? profilParId(perso.editionId) : null;
+    if (cible) {
+      for (var k in champs) cible[k] = champs[k];
+      cible.theme = theme;
+      cible.maj = Date.now();
+      profil = cible;
+    } else {
+      champs.id = nouveauId();
+      champs.theme = theme;
+      profil = champs;
+      profils.push(profil);
+    }
+    if (simple) delete profil.sources;
+    sauverProfils();
+    if (window.EZH_SUIVI && premierHoraire) {
+      EZH_SUIVI.envoyer("horaire_ok", { details: {
+        ecole: perso.ecole, groupes: 0, ical: false, perso: !simple, sources: sources.length } });
+    }
+    effacerBrouillon();
+    choix = { ecole: null, formation: null, data: null, groupes: [], ical: null, editionId: null, theme: null, perso: null, source: null };
+    pile = [];
+    fermerPdf();
+    DATA = null;
+    var memo = memoProfil(profil);
+    if (memo) installer(memo);
+    sem = semaineCourante();
+    resetDepliage(); deplierAujourdhui();
+    afficherHoraire();
+    actualiser().catch(function (e) {
+      if (!DATA && vue === "horaire") {
+        erreur(document.getElementById("horaire-status"),
+               "Impossible de charger ton horaire : " + e.message + " Recharge la page pour réessayer.");
+      }
+    });
+  });
+  // ⋮ → Modifier d'un horaire sur mesure : le composeur, en édition.
+  // `srcIndex` : ouvre directement cette source (avis « Rechoisir »).
+  function modifierPerso(id, srcIndex) {
+    var p = profilParId(id);
+    if (!p || !estPerso(p)) return;
+    fermerEdition();
+    fermerFeuille();
+    choix = {
+      ecole: p.ecole, formation: null, data: null, groupes: [], ical: null,
+      editionId: p.id, theme: normaliserTheme(p.theme), source: null,
+      perso: { editionId: p.id, ecole: p.ecole, sources: JSON.parse(JSON.stringify(p.sources)),
+               surnom: p.surnom, theme: normaliserTheme(p.theme), pile: ["horaire"] }
+    };
+    pile = ["horaire"];
+    ouvrirPerso();
+    if (srcIndex != null && choix.perso.sources[srcIndex]) editerSource(srcIndex);
+  }
+
+  /* --- Cours d'une source : année principale (on décoche) ou cours à
+     ajouter (on coche). Liste construite sur les clés de cours de
+     fusion.js : l'intitulé exact, ou le code UE à l'ULB. --- */
+  function ouvrirCours() {
+    montrer("cours");
+    var src = choix.source;
+    if (!src || !src.formation) { ouvrirPerso(); return; }
+    document.getElementById("cours-rappel").innerHTML = ICONE_CALQUES.replace(/26/g, "20") +
+      "<span><strong>" + txt(nomSource(src)) + "</strong> · " +
+      (src.index == null ? "source " + (choix.perso.sources.length + 1) : "source " + (src.index + 1)) + "</span>";
+    var status = document.getElementById("cours-status");
+    document.getElementById("cours-liste").innerHTML = "";
+    document.getElementById("cours-liens").hidden = true;
+    document.getElementById("cours-valider").hidden = true;
+    if (src.brut) { effacer(status); listerCours(); }
+    else attente(status, "Chargement des cours de " + nomSource(src) + "…");
+    if (src.brutFrais) return;
+    chargerHoraire(src.ecole, src.formation, src.ical || null).then(function (data) {
+      if (choix.source !== src) return;
+      src.brut = data; src.brutFrais = true;
+      if (vue === "cours") { effacer(status); listerCours(); }
+    }, function (e) {
+      if (choix.source !== src || vue !== "cours" || src.brut) return;
+      erreur(status, "Échec : " + e.message + " Reviens en arrière pour réessayer.");
+    });
+  }
+  function cochee(src, cle) {
+    return src.role === "principale" ? (src.sans || []).indexOf(cle) < 0 : (src.avec || []).indexOf(cle) >= 0;
+  }
+  function listerCours() {
+    var src = choix.source;
+    var liste = FUSION.coursDeSource(src.brut);
+    var status = document.getElementById("cours-status");
+    Array.prototype.forEach.call(document.querySelectorAll("#cours-role button"), function (b) {
+      b.setAttribute("aria-selected", String(b.getAttribute("data-role") === src.role));
+    });
+    if (!liste.length) {
+      erreur(status, "Cette formation n'a encore aucun cours publié : reviens en arrière et choisis-en une autre.");
+      document.getElementById("cours-liste").innerHTML = "";
+      document.getElementById("cours-liens").hidden = true;
+      document.getElementById("cours-valider").hidden = true;
+      return;
+    }
+    if (!Array.isArray(src.avec)) src.avec = [];
+    if (!Array.isArray(src.sans)) src.sans = [];
+    document.getElementById("cours-aide").textContent = src.role === "principale"
+      ? "Tout est coché : décoche les cours que tu ne suis pas. Les cours que l'école ajoutera en cours d'année arriveront tout seuls."
+      : "Coche seulement les cours que tu suis dans cette année.";
+    document.getElementById("cours-liens").hidden = liste.length < 4;
+    document.getElementById("cours-liste").innerHTML = liste.map(function (x) {
+      var code = codeMatiere(x.cle);
+      var detail = [code, x.seances + " séance" + (x.seances > 1 ? "s" : "")].filter(Boolean).join(" · ");
+      return '<button type="button" class="cours-ligne" data-cle="' + txt(x.cle) + '" aria-pressed="' + cochee(src, x.cle) + '">' +
+        '<span class="coche" aria-hidden="true"></span><span class="ct"><strong>' + txt(nettoyerMatiere(x.cle)) +
+        "</strong><small>" + txt(detail) + "</small></span></button>";
+    }).join("");
+    majValiderCours();
+  }
+  function clesListe() { return FUSION.coursDeSource(choix.source.brut).map(function (x) { return x.cle; }); }
+  function majValiderCours() {
+    var src = choix.source, cles = clesListe();
+    var n = cles.filter(function (k) { return cochee(src, k); }).length;
+    var btn = document.getElementById("cours-valider");
+    btn.hidden = false;
+    btn.disabled = !n;
+    if (src.role === "principale") {
+      btn.textContent = !n ? "Garde au moins un cours" : n === cles.length ? "Garder toute l'année"
+        : "Garder ces " + n + " cours sur " + cles.length;
+    } else {
+      btn.textContent = !n ? "Coche au moins un cours" : n === 1 ? "Ajouter ce cours" : "Ajouter ces " + n + " cours";
+    }
+    sauverBrouillon();
+  }
+  document.getElementById("cours-role").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-role]");
+    var src = choix.source;
+    if (!b || !src || !src.brut || b.getAttribute("data-role") === src.role) return;
+    // Changer de rôle remet les cases à leur état de départ.
+    src.role = b.getAttribute("data-role");
+    src.sans = []; src.avec = [];
+    listerCours();
+  });
+  document.getElementById("cours-liste").addEventListener("click", function (e) {
+    var b = e.target.closest(".cours-ligne");
+    var src = choix.source;
+    if (!b || !src) return;
+    var cle = b.getAttribute("data-cle");
+    var liste = src.role === "principale" ? src.sans : src.avec;
+    var i = liste.indexOf(cle);
+    if (i >= 0) liste.splice(i, 1); else liste.push(cle);
+    b.setAttribute("aria-pressed", String(cochee(src, cle)));
+    majValiderCours();
+  });
+  function toutCocher(oui) {
+    var src = choix.source;
+    if (!src || !src.brut) return;
+    if (src.role === "principale") src.sans = oui ? [] : clesListe();
+    else src.avec = oui ? clesListe() : [];
+    listerCours();
+  }
+  document.getElementById("cours-tout").addEventListener("click", function () { toutCocher(true); });
+  document.getElementById("cours-rien").addEventListener("click", function () { toutCocher(false); });
+  document.getElementById("cours-valider").addEventListener("click", function () {
+    var src = choix.source;
+    if (!src || !src.brut) return;
+    // Les cours qui n'existent plus chez l'école quittent la sélection :
+    // l'étudiant vient de revoir la liste complète.
+    var cles = clesListe();
+    if (src.role === "principale") {
+      src.sans = src.sans.filter(function (k) { return cles.indexOf(k) >= 0; });
+      src.avec = undefined;
+    } else {
+      src.avec = src.avec.filter(function (k) { return cles.indexOf(k) >= 0; });
+      src.sans = [];
+    }
+    var cochees = FUSION.donneesCochees(src.brut, src);
+    if (!cochees.cours.length) return;
+    if (!cochees.groupes.length) { validerSource([]); return; }
+    choix.formation = src.formation;
+    choix.ical = src.ical || null;
+    choix.data = cochees;
+    choix.groupes = src.groupes.slice();
+    aller("groupes");
+  });
+
   /* ---------- 4. Horaire (multi-profils) ---------- */
   function appliquerTheme() {
     var t = profil && typeof profil.theme === "number" ? normaliserTheme(profil.theme) : 2;
@@ -5584,8 +6409,8 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     sauverProfils();
     fermerPdf();
     DATA = null;
-    var memo = lire(cleHoraire(profil.ecole, profil.formation, profil.ical));
-    if (valide(memo)) installer(memo);
+    var memo = memoProfil(profil);
+    if (memo) installer(memo);
     sem = semaineCourante();
     resetDepliage(); deplierAujourdhui();
     afficherHoraire();
@@ -5607,7 +6432,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     var html = '<span class="pill" aria-hidden="true"></span>';
     profils.forEach(function (p) {
       html += '<button type="button" role="tab" data-profil="' + txt(p.id) + '" aria-selected="' +
-              (p.id === profil.id) + '" title="' + txt(joliFormation(p.formation)) + '">' + txt(p.surnom) + "</button>";
+              (p.id === profil.id) + '" title="' + txt(libelleProfil(p)) + '">' + txt(p.surnom) + "</button>";
     });
     seg.innerHTML = html;
     ajusterSeg();
@@ -5660,6 +6485,14 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     parseEns(DATA.meta.feries || "[]").forEach(function (n) { FERIES[n] = true; });
     FERIES_NOMS = (DATA.meta.feries_noms && typeof DATA.meta.feries_noms === "object")
       ? DATA.meta.feries_noms : {};
+    CHOCS = [];
+    if (DATA.perso) {
+      // Déjà filtré source par source (cours, groupes) par fusion.js.
+      COURS = DATA.cours;
+      CHOCS = FUSION.chevauchements(COURS);
+      if (SEMAINES.indexOf(sem) < 0) sem = semaineCourante();
+      return;
+    }
     // Groupe enregistré sous une autre forme (préfixé ou non) que celle de
     // l'école : on reprend la forme de l'école s'il n'y a qu'un candidat.
     var repris = false;
@@ -5681,6 +6514,46 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   /* PDF du groupe s'il n'y en a qu'un. Plusieurs groupes : celui choisi
      dans la liste de la visionneuse (par défaut, toute la formation). */
   var pdfGroupe = { id: null, g: "" };
+  /* Horaire sur mesure : un PDF officiel par source (l'école n'en publie
+     qu'un par formation). Une entrée par source et par groupe choisi ;
+     pas de PDF pour un lien iCal ni pour une école qui n'en publie pas. */
+  function optionsPdfPerso() {
+    var out = [];
+    if (!profil || !estPerso(profil)) return out;
+    profil.sources.forEach(function (src, i) {
+      var ec = ecoleDe(src.ecole);
+      if (src.ical || !ec || ec.pdf === false) return;
+      // Année d'ajout : l'école ne sait faire que l'année entière. Un
+      // parcours « PAR:… » est déjà limité aux cours choisis.
+      var tout = src.role === "principale" || FUSION.estParcours(src) ? "" : " (année entière)";
+      if (src.groupes.length <= 1) {
+        out.push({ v: i + "|" + (src.groupes[0] || ""), i: i, g: src.groupes[0] || "", nom: nomSource(src) + tout });
+      } else {
+        src.groupes.forEach(function (g) {
+          out.push({ v: i + "|" + g, i: i, g: g, nom: nomSource(src) + " · " + nomGroupe(g) + tout });
+        });
+      }
+    });
+    return out;
+  }
+  function choixPdfPerso() {
+    var opts = optionsPdfPerso();
+    for (var k = 0; k < opts.length; k++) {
+      if (pdfGroupe.id === profil.id && opts[k].v === pdfGroupe.g) return opts[k];
+    }
+    return opts[0] || null;
+  }
+  // Ce que demande api/pdf : la formation de la source, et sa semaine à
+  // elle (décalée si la source a été alignée sur un autre lundi).
+  function ciblePdf() {
+    if (!estPerso(profil)) {
+      return { ecole: profil.ecole, formation: profil.formation, groupe: groupePdf(), semaine: sem };
+    }
+    var o = choixPdfPerso(), src = o ? profil.sources[o.i] : null;
+    if (!src) return null;
+    var delta = (DATA && DATA.infos && DATA.infos.deltas && DATA.infos.deltas[o.i]) || 0;
+    return { ecole: src.ecole, formation: src.formation, groupe: o.g, semaine: sem - delta };
+  }
   function groupePdf() {
     if (profil.groupes.length === 1) return profil.groupes[0];
     if (pdfGroupe.id === profil.id && profil.groupes.indexOf(pdfGroupe.g) >= 0) return pdfGroupe.g;
@@ -5689,6 +6562,22 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   function majChoixPdf() {
     var bloc = document.getElementById("pdf-choix");
     var avisChoix = document.getElementById("pdf-choix-avis");
+    if (profil && estPerso(profil)) {
+      var opts = optionsPdfPerso(), actuel = choixPdfPerso();
+      bloc.hidden = opts.length < 2;
+      var selP = document.getElementById("pdf-groupe");
+      selP.innerHTML = opts.map(function (o) {
+        return '<option value="' + txt(o.v) + '">' + txt(o.nom) + "</option>";
+      }).join("");
+      if (actuel) selP.value = actuel.v;
+      if (avisChoix) {
+        var srcPdf = actuel && profil.sources[actuel.i];
+        var ajout = !!srcPdf && srcPdf.role !== "principale" && !FUSION.estParcours(srcPdf);
+        avisChoix.hidden = !ajout;
+        if (ajout) avisChoix.textContent = "L'école publie le PDF de l'année entière : tes cours y sont mêlés aux autres.";
+      }
+      return;
+    }
     var multi = !!(profil && profil.groupes.length > 1);
     bloc.hidden = !multi;
     if (!multi) { if (avisChoix) avisChoix.hidden = true; return; }
@@ -5720,7 +6609,8 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     rendreSeg();
     rendreAvatar();
     var multi = profils.length > 1;
-    var ligne = (multi ? profil.surnom + " · " : "") + joliFormation(profil.formation) + (profil.groupes.length
+    var ligne = estPerso(profil) ? (multi ? profil.surnom + " · " : "") + libelleProfil(profil)
+      : (multi ? profil.surnom + " · " : "") + joliFormation(profil.formation) + (profil.groupes.length
       ? " · " + (profil.groupes.length === 1 ? nomGroupe(profil.groupes[0]) : profil.groupes.length + " groupes")
       : "");
     var pl = document.getElementById("profil-ligne");
@@ -5757,6 +6647,36 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     return (midi ? "Pause midi · " : "Pause · ") + fmtH(finPrec) + " – " + fmtH(debutSuiv);
   }
 
+  /* Groupes choisis dont dépend une séance : ceux de sa source pour un
+     horaire sur mesure. Un seul groupe choisi = inutile de le répéter. */
+  function groupesChoisisDe(c) {
+    if (estPerso(profil) && profil.sources[c.src]) return profil.sources[c.src].groupes;
+    return profil.groupes;
+  }
+  var COULEURS_SOURCES = ["#1d4fd7", "#0e8655", "#d14d8a", "#b26a00", "#7a4fd1", "#0e7c86"];
+  function nomSource(src) {
+    if (!src) return "";
+    if (src.surnom) return src.surnom;
+    if (src.ical) return "Mon horaire (lien)";
+    return joliFormation(src.formation);
+  }
+  function detailSource(src) {
+    if (FUSION.estParcours(src)) return "cours choisis";
+    if (src.role === "principale") {
+      return src.sans && src.sans.length
+        ? "année principale, " + src.sans.length + " cours retiré" + (src.sans.length > 1 ? "s" : "")
+        : "année entière";
+    }
+    var n = (src.avec || []).length;
+    return n + " cours ajouté" + (n > 1 ? "s" : "");
+  }
+  // Séances en conflit la semaine `s` (horaire sur mesure).
+  function chocsSemaine(s) {
+    return CHOCS.filter(function (x) { return x.semaines.indexOf(s) >= 0; });
+  }
+  function enConflit(c, s) {
+    return CHOCS.some(function (x) { return (x.a === c || x.b === c) && x.semaines.indexOf(s) >= 0; });
+  }
   function detailJour(cours, jour) {
     var html = '<div><div class="box"><ol>';
     // Un seul cours dans le jour (téléphone) : déroulé d'office et non
@@ -5766,19 +6686,25 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       var c = cours[i];
       var cle = jour + ":" + i;
       var estOuvert = seul || !!coursOuverts[cle];
-      html += '<li class="c' + (estOuvert ? " open" : "") + (seul ? " seul" : "") + '">';
+      var choc = !!DATA.perso && enConflit(c, sem);
+      html += '<li class="c' + (estOuvert ? " open" : "") + (seul ? " seul" : "") + (choc ? " li-choc" : "") + '">';
       html += '<button class="cbtn" data-cle="' + cle + '" aria-expanded="' + estOuvert + '"' + (seul ? " disabled" : "") + ">" +
               '<span class="h">' + txt(fmtH(c.debut)) + " – " + txt(fmtH(c.fin)) + "</span>" +
               '<span class="cpoint" style="' + styleCours(c.matiere) + '" aria-hidden="true"></span>' +
               '<span class="m">' + txt(nettoyerMatiere(c.matiere || "Cours")) + "</span>" +
+              (choc ? '<span class="choc-tag">Chevauche</span>' : "") +
               (seul ? "" : '<span class="minichev" aria-hidden="true"></span>') + "</button>";
       var sub = "";
       if (codeMatiere(c.matiere)) sub += '<div><span class="k">Code : </span>' + txt(codeMatiere(c.matiere)) + "</div>";
       if (c.profs) sub += '<div><span class="k">Prof : </span>' + txt(c.profs) + "</div>";
       sub += '<div><span class="k">Salle : </span>' +
              (c.salles ? txt(c.salles.replace(/, ([^,]*)$/, " et $1")) : '<span class="nc">non communiquée</span>') + "</div>";
-      if (c.groupes.length && profil.groupes.length !== 1) {
+      if (c.groupes.length && groupesChoisisDe(c).length !== 1) {
         sub += '<div><span class="k">Groupe : </span>' + txt(c.groupes.map(nomGroupe).join(", ")) + "</div>";
+      }
+      if (DATA.perso) {
+        var noms = (c.srcs || [c.src]).map(function (i) { return nomSource(profil.sources[i]); }).filter(Boolean);
+        if (noms.length) sub += '<div class="src"><span class="k">Source : </span>' + txt(noms.join(" et ")) + "</div>";
       }
       html += '<div class="csub"><div><div class="csub-in">' + sub + "</div></div></div>";
       html += "</li>";
@@ -5798,9 +6724,11 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       return;
     }
     // Groupes choisis qui n'existent plus chez l'école : on prévient.
-    var perdus = profil.groupes.filter(function (g) { return !groupeDans(DATA.groupes, g); });
+    var perdus = DATA.perso ? [] : profil.groupes.filter(function (g) { return !groupeDans(DATA.groupes, g); });
     var avis = document.getElementById("avis");
     avis.hidden = !perdus.length;
+    if (DATA.perso) rendreAvisPerso(avis);
+    rendreChocs();
     if (perdus.length) {
       avis.innerHTML = (perdus.length === profil.groupes.length
         ? "Tes groupes n'apparaissent plus dans l'horaire de l'école."
@@ -5866,6 +6794,96 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     rendreCal();
     rendreInfos();
   }
+
+  /* Horaire sur mesure : ce qui ne va pas, source par source (école en
+     panne, groupes ou cours disparus, horaire d'une autre année). */
+  function rendreAvisPerso(avis) {
+    var inf = DATA.infos || {}, lignes = [];
+    function nom(i) { return "« " + txt(nomSource(profil.sources[i])) + " »"; }
+    (inf.manquantes || []).forEach(function (i) {
+      lignes.push("L'horaire de " + nom(i) + " n'a pas pu être chargé : ses cours manquent. " +
+        '<button type="button" data-avis="reessayer">Réessayer</button>');
+    });
+    (inf.echecs || []).filter(function (i) { return (inf.manquantes || []).indexOf(i) < 0; }).forEach(function (i) {
+      lignes.push("L'horaire de " + nom(i) + " n'a pas pu être mis à jour : dernière version affichée. " +
+        '<button type="button" data-avis="reessayer">Réessayer</button>');
+    });
+    (inf.ecartees || []).forEach(function (i) {
+      lignes.push(nom(i) + " n'est pas l'horaire de cette année : il n'est pas affiché. " +
+        '<button type="button" data-avis="modifier">Modifier</button>');
+    });
+    (inf.perdus || []).forEach(function (x) {
+      lignes.push("Certains groupes de " + nom(x.i) + " n'apparaissent plus (" +
+        txt(x.groupes.map(nomGroupe).join(", ")) + "). " +
+        '<button type="button" data-avis="source" data-src="' + x.i + '">Rechoisir</button>');
+    });
+    (inf.disparus || []).forEach(function (x) {
+      var noms = x.cles.map(function (k) { return "« " + txt(nettoyerMatiere(k)) + " »"; });
+      lignes.push((noms.length > 1 ? "Les cours " + noms.join(", ") + " n'apparaissent" : "Le cours " + noms[0] + " n'apparaît") +
+        " plus dans " + nom(x.i) + ". " +
+        '<button type="button" data-avis="source" data-src="' + x.i + '">Rechoisir les cours</button>');
+    });
+    if (inf.horsLigneKo) lignes.push("Mémoire de l'appareil pleine : cet horaire ne sera pas disponible hors ligne.");
+    avis.hidden = !lignes.length;
+    avis.innerHTML = lignes.map(function (l) { return "<p>" + l + "</p>"; }).join("");
+  }
+  document.getElementById("avis").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-avis]");
+    if (!b || !profil || !estPerso(profil)) return;
+    var act = b.getAttribute("data-avis");
+    if (act === "reessayer") {
+      b.disabled = true;
+      actualiser().catch(function () { b.disabled = false; });
+    } else if (act === "modifier") {
+      modifierPerso(profil.id);
+    } else if (act === "source") {
+      modifierPerso(profil.id, +b.getAttribute("data-src"));
+    }
+  });
+  /* Bandeau des chevauchements de la semaine + ligne des sources. */
+  function rendreChocs() {
+    var zone = document.getElementById("chocs");
+    var ligne = document.getElementById("sources-ligne");
+    if (!DATA || !DATA.perso) { zone.hidden = true; ligne.hidden = true; return; }
+    ligne.hidden = false;
+    ligne.innerHTML = profil.sources.map(function (src, i) {
+      return '<span><span class="src-dot" style="background:' + COULEURS_SOURCES[i % COULEURS_SOURCES.length] +
+        '"></span><b>' + txt(nomSource(src)) + "</b> · " + txt(detailSource(src)) + "</span>";
+    }).join("") + '<button type="button" class="lien-src" id="sources-modifier">Modifier</button>';
+    var chocs = chocsSemaine(sem);
+    zone.hidden = !chocs.length;
+    if (!chocs.length) { zone.innerHTML = ""; return; }
+    var x = chocs[0];
+    var a = x.a, b = x.b;
+    var debut = a.debut > b.debut ? a.debut : b.debut;
+    var titre = chocs.length === 1
+      ? JOURS[a.jour] + " " + fmtH(debut) + " : deux cours se chevauchent"
+      : chocs.length + " chevauchements cette semaine";
+    zone.innerHTML = ICONE_ATTENTION + "<div><strong>" + txt(titre) + "</strong><p><b>" +
+      txt(nettoyerMatiere(a.matiere)) + "</b> (" + txt(nomSource(profil.sources[a.src])) + ") et <b>" +
+      txt(nettoyerMatiere(b.matiere)) + "</b> (" + txt(nomSource(profil.sources[b.src])) + ")" +
+      (chocs.length > 1 ? ", entre autres," : "") +
+      " tombent en même temps " + (chocs.length === 1 ? "" : "le " + JOURS[a.jour].toLowerCase() + " ") +
+      "à " + fmtH(debut) + ". Garde les deux ou change de groupe. " +
+      '<button type="button" data-voir-jour="' + a.jour + '">Voir ' + JOURS[a.jour].toLowerCase() + "</button></p></div>";
+  }
+  var ICONE_ATTENTION = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ' +
+    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5 2.8 19.5a1.5 1.5 0 0 0 1.3 2.2h15.8a1.5 1.5 0 0 0 1.3-2.2z"/>' +
+    '<path d="M12 9.5v5M12 18h.01"/></svg>';
+  var ICONE_OK = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.8 2.8L16 10"/></svg>';
+  document.getElementById("chocs").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-voir-jour]");
+    if (!b) return;
+    var j = +b.getAttribute("data-voir-jour");
+    joursOuverts[j] = true;
+    rendre();
+    var btnJour = document.querySelector('#jours .day > button[data-jour="' + j + '"]');
+    calerDansEcran(btnJour && btnJour.closest ? btnJour.closest(".day") : btnJour, true);
+  });
+  document.getElementById("sources-ligne").addEventListener("click", function (e) {
+    if (e.target.closest("#sources-modifier") && profil && estPerso(profil)) modifierPerso(profil.id);
+  });
 
   /* ---------- Grille de la semaine (ordinateur) ----------
      Chaque cours est placé selon ses heures ; la journée tient dans la
@@ -5967,6 +6985,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
         var c = x.c, a = mins(c.debut), b = Math.min(mins(c.fin), fin);
         var i = evCal.push(c) - 1;
         corps += '<button type="button" class="ev' + (b - a < 75 ? " court" : "") +
+          (DATA.perso && enConflit(c, sem) ? " ev-choc" : "") +
           (mins(c.fin) > fin ? " coupe" : "") + '" data-ev="' + i + '"' +
           ' style="' + styleCours(c.matiere) + ";--t:" + pc(a) + ";--d:" + (pc(b) - pc(a)) +
           ";--l:" + (x.k / x.n) + ";--w:" + (1 / x.n) + '">' +
@@ -6001,7 +7020,12 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     var d = "";
     d += "<dt>Salle</dt><dd>" + (c.salles ? txt(c.salles.replace(/, ([^,]*)$/, " et $1")) : '<span class="nc">non communiquée</span>') + "</dd>";
     if (c.profs) d += "<dt>Prof</dt><dd>" + txt(c.profs) + "</dd>";
-    if (c.groupes.length && profil.groupes.length !== 1) d += "<dt>Groupe</dt><dd>" + txt(c.groupes.map(nomGroupe).join(", ")) + "</dd>";
+    if (c.groupes.length && groupesChoisisDe(c).length !== 1) d += "<dt>Groupe</dt><dd>" + txt(c.groupes.map(nomGroupe).join(", ")) + "</dd>";
+    if (DATA && DATA.perso) {
+      var nomsSrc = (c.srcs || [c.src]).map(function (i) { return nomSource(profil.sources[i]); }).filter(Boolean);
+      if (nomsSrc.length) d += "<dt>Source</dt><dd>" + txt(nomsSrc.join(" et ")) + "</dd>";
+      if (enConflit(c, sem)) d += '<dt>Attention</dt><dd>Chevauche un cours d\'une autre source</dd>';
+    }
     var date = dateSemJour(sem, c.jour);
     var tc = couleurCours(c.matiere);
     pop.style.setProperty("--h", tc.h);
@@ -6047,7 +7071,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   });
   /* Version visible en pied de page : permet de vérifier que le
      téléphone affiche bien la dernière version (raccourci iOS). */
-  var VERSION_APP = "27";
+  var VERSION_APP = "28";
   function rendreInfos() {
     if (!DATA || !profil) return;
     var sansProfs = DATA.cours.length && !DATA.cours.some(function (c) { return c.profs; });
@@ -6064,9 +7088,18 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
      alors qu'on n'a encore rien personnalisé. */
   function estRenomme(p) {
     if (!p) return false;
+    if (estPerso(p)) return true; // pas de nom officiel : le nom choisi fait foi
     return propre(p.surnom || "").slice(0, 24) !== surnomDefaut(p.formation);
   }
+  function libelleProfil(p) {
+    if (!estPerso(p)) return joliFormation(p.formation);
+    return "Sur mesure · " + p.sources.length + " source" + (p.sources.length > 1 ? "s" : "");
+  }
   function texteGroupe(p) {
+    if (estPerso(p)) {
+      var noms = p.sources.map(nomSource);
+      return "Sur mesure · " + (noms.length > 2 ? noms.length + " sources" : noms.join(" + "));
+    }
     if (!p.groupes.length) return "Tous les cours";
     if (p.groupes.length === 1) return nomGroupe(p.groupes[0]);
     return p.groupes.length + " groupes";
@@ -6086,6 +7119,16 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   function rendreListeProfils() {
     var zone = document.getElementById("liste-profils");
     if (!zone) return;
+    var note = document.getElementById("note-perso-local");
+    var local = baseSansSources && profils.some(estPerso);
+    if (local && !note) {
+      note = document.createElement("p");
+      note.id = "note-perso-local";
+      note.className = "aide";
+      note.textContent = "Tes horaires sur mesure restent sur cet appareil : la base du compte n'est pas encore à jour.";
+      zone.parentNode.insertBefore(note, zone.nextSibling);
+    }
+    if (note) note.hidden = !local;
     var plusieurs = profils.length > 1;
     zone.classList.toggle("plusieurs", plusieurs);
     zone.innerHTML = profils.map(function (p) {
@@ -6254,6 +7297,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   function modifierProfil(id) {
     var p = profilParId(id);
     if (!p) return;
+    if (estPerso(p)) { modifierPerso(p.id); return; }
     var noms = p.groupes.map(nomGroupe).join(" · ");
     var titreGroupes = p.groupes.length === 1 ? "1 groupe" : texteGroupe(p);
     var detailGroupes = p.groupes.length ? noms : "Toutes les séances s'affichent.";
@@ -6316,7 +7360,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   function supprimerProfil(id) {
     var p = profilParId(id);
     if (!p) return;
-    var nom = estRenomme(p) ? p.surnom : joliFormation(p.formation);
+    var nom = estRenomme(p) ? p.surnom : libelleProfil(p);
     demanderConfirmation({
       titre: "Supprimer cet horaire ?",
       message: "Supprimer l'horaire <strong>« " + txt(nom) + " »</strong> de cet appareil" +
@@ -6336,8 +7380,8 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       fermerPdf();
       DATA = null;
       if (profil) {
-        var memo = lire(cleHoraire(profil.ecole, profil.formation, profil.ical));
-        if (valide(memo)) installer(memo);
+        var memo = memoProfil(profil);
+        if (memo) installer(memo);
         sem = semaineCourante();
         resetDepliage(); deplierAujourdhui();
         afficherHoraire();
@@ -6526,7 +7570,10 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   // Hauteur du PDF mesurée au repos (zoom 1), par horaire : elle calibre
   // la réserve de place affichée pendant le chargement suivant, pour que
   // le cadrage tombe juste (ni vide béant, ni PDF coupé).
-  function cleHauteurPdf() { return "ezh_pdf_h:" + profil.ecole + ":" + profil.formation; }
+  function cleHauteurPdf() {
+    var c = ciblePdf();
+    return "ezh_pdf_h:" + profil.ecole + ":" + (c ? c.formation : profil.formation);
+  }
   function memoriserHauteurPdf() {
     try {
       if (!profil || !pdfPagesEl || !pdfPagesEl.isConnected) return;
@@ -6668,10 +7715,13 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     statutPdfAttente(status);
     calerPdf(); // un seul cadrage, immédiat : rien ne bouge après
     pdfSurveillerMain(); // un geste annule la correction finale
-    fetch("api/pdf?ecole=" + encodeURIComponent(profil.ecole) +
-          "&formation=" + encodeURIComponent(profil.formation) +
-          "&groupe=" + encodeURIComponent(groupePdf()) +
-          "&semaine=" + encodeURIComponent(sem), { cache: "no-store" })
+    var cible = ciblePdf();
+    (cible && cible.semaine >= 1
+      ? fetch("api/pdf?ecole=" + encodeURIComponent(cible.ecole) +
+          "&formation=" + encodeURIComponent(cible.formation) +
+          "&groupe=" + encodeURIComponent(cible.groupe) +
+          "&semaine=" + encodeURIComponent(cible.semaine), { cache: "no-store" })
+      : Promise.reject(new Error("pas de PDF de cette année pour cette semaine.")))
       .then(function (r) {
         if (!r.ok) {
           return r.text().then(function (msg) {
@@ -6976,6 +8026,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   function changerGroupe(id, surnom, theme) {
     var p = id ? profilParId(id) : profil;
     if (!p) return;
+    if (estPerso(p)) { modifierPerso(p.id); return; }
     var actif = profil && profil.id === p.id;
     var data = null;
     if (actif && DATA) data = DATA;
@@ -7321,16 +8372,20 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
      Une réponse plus ancienne que ce qui est affiché est ignorée : deux
      requêtes qui se croisent ne peuvent pas faire revenir en arrière. */
   function empreinte(d) {
-    return JSON.stringify([d.cours, d.groupes, d.meta.periode, d.meta.premier_lundi, d.meta.feries]);
+    return JSON.stringify([d.cours, d.groupes, d.meta.periode, d.meta.premier_lundi, d.meta.feries, d.infos || null]);
   }
   var derniereMaj = 0;
   function actualiser() {
     if (!profil) return Promise.resolve(false);
     derniereMaj = Date.now();
     var p = profil;
-    return chargerHoraire(p.ecole, p.formation, p.ical).then(function (data) {
+    return chargerProfil(p).then(function (data) {
       if (profil !== p) return false; // profil changé entre-temps
-      if (DATA && DATA.formation === data.formation && data.meta.ts < DATA.meta.ts) return false;
+      // Un horaire sur mesure a une formation vide : on compare le profil.
+      var meme = DATA && (DATA.perso || data.perso
+        ? DATA.profilId === data.profilId
+        : DATA.formation === data.formation);
+      if (meme && data.meta.ts < DATA.meta.ts) return false;
       var premier = !DATA;
       var change = premier || empreinte(data) !== empreinte(DATA);
       if (!change) { DATA = data; rendreInfos(); return false; }
@@ -7416,8 +8471,8 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
      Ouvre le dernier horaire revu (connecté par défaut) : le cache local
      s'affiche tout de suite, puis actualiser() va chercher l'école. */
   function demarrerHoraire() {
-    var memo = lire(cleHoraire(profil.ecole, profil.formation, profil.ical));
-    if (valide(memo)) {
+    var memo = memoProfil(profil);
+    if (memo) {
       installer(memo);
       sem = semaineCourante();
       deplierAujourdhui();

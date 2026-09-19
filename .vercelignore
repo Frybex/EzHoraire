@@ -46,3 +46,6 @@ capture-*.png
 
 # Démo locale : pose des horaires de test puis ouvre ?essai=1 (localhost only)
 demo.html
+
+# Tests Node du moteur sur mesure : pas à servir en ligne.
+/test_*.mjs

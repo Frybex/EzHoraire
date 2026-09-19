@@ -152,11 +152,18 @@ def _cle_formation(ecole, formation):
     que le même panier dans un ordre différent compte comme une seule
     formation. Affiche la forme canonique triée."""
     eco = (ecole or "").strip()
-    form = (formation or "").strip()
+    # Horaire sur mesure : pas de formation unique (visites : « sur mesure »).
+    form = (formation or "").strip() or "sur mesure"
     if form.startswith("PAR:"):
         codes = sorted({c.strip().upper() for c in form[4:].split(",") if c.strip()})
         form = "PAR:" + ",".join(codes)
     return "%s\x00%s" % (eco, form), eco, form
+
+
+def _texte_sur_mesure(sources):
+    """« sur mesure (3 sources) » pour un horaire composé de plusieurs formations."""
+    n = len(sources) if isinstance(sources, list) else 0
+    return "sur mesure (%d source%s)" % (n, "s" if n > 1 else "") if n else ""
 
 
 def _dedoublonner(visites):
@@ -257,9 +264,16 @@ class handler(BaseHTTPRequestHandler):
             comptes_tronques = page > 20
 
             # Cours suivis.
-            profils = _get_pagine(
-                base, "/rest/v1/profils?select=user_id,id,surnom,ecole,formation,groupes,updated_at",
-                h_svc, 10000) or []
+            # `sources` (horaires sur mesure) : relu sans elle tant que la
+            # base n'a pas rejoué schema.sql.
+            try:
+                profils = _get_pagine(
+                    base, "/rest/v1/profils?select=user_id,id,surnom,ecole,formation,groupes,sources,updated_at",
+                    h_svc, 10000) or []
+            except Exception:  # noqa: BLE001 - colonne absente
+                profils = _get_pagine(
+                    base, "/rest/v1/profils?select=user_id,id,surnom,ecole,formation,groupes,updated_at",
+                    h_svc, 10000) or []
             profils_tronques = len(profils) >= 10000
 
             # Consultations sur la période ET la précédente (même durée),
@@ -385,7 +399,7 @@ class handler(BaseHTTPRequestHandler):
                 "derniere_connexion": c.get("last_sign_in_at") or "",
                 "profils": [{
                     "surnom": p.get("surnom") or "", "ecole": p.get("ecole") or "",
-                    "formation": p.get("formation") or "",
+                    "formation": p.get("formation") or _texte_sur_mesure(p.get("sources")),
                     "groupes": p.get("groupes") or []} for p in profs],
                 "visites_periode": stats["total"],
                 "visites_7j": j7,

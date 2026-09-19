@@ -19,6 +19,7 @@ create table if not exists public.profils (
   formation  text        not null default '',
   groupes    jsonb       not null default '[]'::jsonb,
   ical       text        not null default '', -- lien d'abonnement perso (ULB), vide sinon
+  sources    jsonb       not null default '[]'::jsonb, -- horaire sur mesure (fusion.js), vide sinon
   theme      smallint    not null default 2, -- 2: Bleu, 1: Vert, 3: Rose
   updated_at timestamptz not null default now(),
   primary key (user_id, id)
@@ -31,6 +32,7 @@ create table if not exists public.profils (
 -- tout le fichier s'arrête.
 alter table public.profils add column if not exists ical  text     not null default '';
 alter table public.profils add column if not exists theme smallint not null default 2;
+alter table public.profils add column if not exists sources jsonb not null default '[]'::jsonb;
 
 -- Horodatage auto (l'app s'en sert pour fusionner local <-> cloud).
 create or replace function public.toucher_updated_at()
@@ -68,7 +70,10 @@ create policy "profils_delete_propres" on public.profils
 -- Bornes sur profils : l'app écrit via la clé anon (RLS), un client
 -- trafiqué pourrait y stocker n'importe quoi (volume, dashboard
 -- pollué). Mêmes bornes que l'app : surnom 24, ecole 24, formation
--- 200, lien d'abonnement 1200, id 120, theme 1/2/3, groupes < 8 ko.
+-- 200, lien d'abonnement 1200, id 120, theme 1/2/3, groupes < 8 ko,
+-- sources : liste de 6 au plus, < 20 ko. Le `case` protège
+-- jsonb_array_length (erreur, et non faux, sur un objet : PostgreSQL ne
+-- garantit pas l'ordre d'évaluation d'un `and`).
 -- Rejouable : la contrainte est recréée à chaque passage (les bases
 -- d'avant la colonne `ical` reçoivent la borne au passage).
 -- ---------------------------------------------------------------
@@ -85,6 +90,9 @@ begin
     and char_length(ical) <= 1200
     and theme in (1, 2, 3)
     and octet_length(groupes::text) <= 8000
+    and case when jsonb_typeof(sources) = 'array'
+             then jsonb_array_length(sources) <= 6 else false end
+    and octet_length(sources::text) <= 20000
   );
 end
 $$;
