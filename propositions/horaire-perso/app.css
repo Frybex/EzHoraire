@@ -1,0 +1,2074 @@
+  :root {
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --ink: #17191d;
+    --muted: #626977;
+    --line: #e4e7ec;
+    --accent: #2456e0;
+    --accent-soft: rgba(36, 86, 224, .09);
+    --wash: rgba(36, 86, 224, 0);
+    --free: #18794e;
+    --seg-track: #e8eaef;
+    --shadow: 0 16px 40px -24px rgba(23, 32, 68, .28);
+    --radius: 14px;
+    --danger: #d42a3c;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #101216;
+      --surface: #171a20;
+      --ink: #f0f3f7;
+      --muted: #98a1b1;
+      --line: #262b34;
+      --accent: #8ba6ff;
+      --accent-soft: rgba(139, 166, 255, .13);
+      --wash: rgba(139, 166, 255, 0);
+      --free: #5fce96;
+      --seg-track: #20252e;
+      --shadow: 0 18px 44px -20px rgba(0, 0, 0, .75);
+      --danger: #ff6b7a;
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  /* Pas de zoom du navigateur (pincement) sur la page : un pincement
+     à côté du PDF zoomerait tout le site au lieu du PDF (qui a son
+     propre zoom) et créerait des écrans de vide. pan-x pan-y garde le
+     défilement tactile mais coupe le pincement et le double-toucher. */
+  html, body { touch-action: pan-x pan-y; }
+  button, a { touch-action: manipulation; }
+  body {
+    /* Relief premium : dégradé vertical + reflet d'1 px en haut ; creux =
+       surfaces gravées (champs, pistes). Calculés depuis --bg pour suivre
+       la couleur de l'horaire en cours. */
+    --relief-haut: color-mix(in srgb, var(--bg), #fff 78%);
+    --relief-bas: color-mix(in srgb, var(--bg), #fff 44%);
+    --reflet: rgba(255, 255, 255, .9);
+    --ombre-btn: 0 1px 2px rgba(23, 32, 68, .06), 0 2px 8px -4px rgba(23, 32, 68, .08);
+    --creux: color-mix(in srgb, var(--bg), #fff 60%);
+    --creux-ombre: rgba(23, 32, 68, .07);
+    --feuille: color-mix(in srgb, var(--bg), #fff 66%);
+    margin: 0; color: var(--ink);
+    background-color: var(--bg);
+    background-image: radial-gradient(110% 34% at 50% -6%, var(--wash), transparent 70%);
+    background-repeat: no-repeat;
+    /* Prévisualisation du thème : quand on touche une couleur, le fond
+       et les accents suivent en douceur pour montrer ce que ça donne. */
+    transition: background-color .25s ease;
+    font-family: var(--font); font-size: 17px; line-height: 1.45;
+  }
+  @media (prefers-color-scheme: dark) {
+    body {
+      --relief-haut: color-mix(in srgb, var(--bg), #fff 7%);
+      --relief-bas: color-mix(in srgb, var(--bg), #fff 2.5%);
+      --reflet: rgba(255, 255, 255, .06);
+      --ombre-btn: 0 1px 2px rgba(0, 0, 0, .4), 0 4px 12px -6px rgba(0, 0, 0, .6);
+      --creux: color-mix(in srgb, var(--bg), #000 26%);
+      --creux-ombre: rgba(0, 0, 0, .4);
+      --feuille: color-mix(in srgb, var(--bg), #fff 4%);
+    }
+  }
+  .wrap { max-width: 620px; margin: 0 auto; padding: 20px 16px 48px; }
+
+  [hidden] { display: none !important; }
+
+  /* Barre du haut : retour à gauche, titre au centre, profil à droite */
+  .topbar {
+    position: relative; display: flex; align-items: center; justify-content: center;
+    min-height: 44px; margin: 2px 0 14px;
+  }
+  .title {
+    font-size: 1.05rem; font-weight: 700; letter-spacing: -.01em;
+    text-align: center; margin: 0; user-select: none;
+  }
+  .title span { color: var(--accent); }
+  /* Le logo est un bouton : un appui relance l'app (barre d'accent en haut). */
+  .title button {
+    border: none; background: none; font: inherit; color: inherit;
+    padding: 0 8px; min-height: 44px; cursor: pointer;
+    transition: transform .12s;
+  }
+  .title button:active { transform: scale(.96); }
+  .topbar .gauche, .topbar .droite {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    border: none; background: none; font: inherit; cursor: pointer;
+    min-height: 44px; padding: 0 6px;
+  }
+  /* Retour : petite pastille en relief, comme les autres boutons. */
+  .topbar .gauche {
+    left: 0; min-height: 36px; padding: 0 14px 0 11px; border-radius: 999px;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas)); color: var(--ink);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    font-size: .9rem; font-weight: 600;
+  }
+  .topbar .droite {
+    right: 0; width: 40px; height: 40px; min-height: 0; padding: 0; border-radius: 50%;
+    display: grid; place-items: center; color: var(--ink);
+    background: var(--creux);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre);
+    font-weight: 700; font-size: .95rem;
+  }
+
+  /* Choix de l'école, de la formation et des groupes */
+  /* Écrans de choix (identité, école, formation, groupe) : même langage
+     que la connexion. Titre fort, cartes en relief, champs en creux. */
+  .q {
+    margin: 10px 0 22px; font-size: clamp(2rem, 8.6vw, 2.4rem); font-weight: 750;
+    line-height: 1.04; letter-spacing: -.045em; text-wrap: balance;
+  }
+  .aide { color: var(--muted); margin: -10px 0 22px; font-size: .95rem; }
+  /* Progression : un trait par étape, remplis jusqu'à l'étape en cours. */
+  .etapes { display: flex; gap: 6px; margin: 8px 0 18px; }
+  .etapes span { width: 26px; height: 4px; border-radius: 999px; background: var(--line); }
+  .etapes span.on { background: var(--ink); }
+  .liste { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .liste button {
+    overflow: hidden; width: 100%; min-height: 60px; padding: 14px 16px;
+    display: flex; align-items: center; gap: 14px; text-align: left;
+    border: none; border-radius: 16px; font: inherit; color: var(--ink); cursor: pointer;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    transition: transform .12s;
+  }
+  .liste button:active { transform: scale(.985); }
+  .liste button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .liste .nom { flex: 1; min-width: 0; font-weight: 600; letter-spacing: -.01em; }
+  .liste .nom small { display: block; margin-top: 2px; color: var(--muted); font-weight: 400; font-size: .85rem; letter-spacing: 0; }
+  .liste .chev { transform: rotate(-45deg); margin: 0 4px 0 0; opacity: .55; }
+  .liste mark { background: none; color: var(--accent); font-weight: 700; }
+  .liste li.empty { padding: 28px 10px; }
+  .liste li.liste-titre {
+    margin: 14px 2px 2px; color: var(--muted); font-size: .8rem; font-weight: 650;
+    letter-spacing: .04em; text-transform: uppercase;
+  }
+  .liste li.liste-titre:first-child { margin-top: 0; }
+  /* Sigle / Logo de l'école, dans un carré. */
+  .sigle {
+    flex: none; display: grid; place-items: center; width: 48px; height: 48px; border-radius: 12px;
+    background: var(--creux); box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre);
+    font-size: .8rem; font-weight: 750; letter-spacing: .02em;
+    overflow: hidden; box-sizing: border-box;
+  }
+  .sigle.sigle-logo {
+    background: #ffffff;
+    width: 68px; /* les logos d'école sont des bannières larges (2,5:1) */
+    padding: 6px;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .08), 0 2px 6px rgba(0, 0, 0, .05);
+  }
+  .sigle.sigle-logo img,
+  .sigle.sigle-logo svg {
+    /* Les logos d'école sont des SVG sans dimensions propres : on les borne
+       par max-* et la grille du badge les centre. (width/height 100% avec
+       object-fit: contain laissait le monogramme carré de l'ULB collé à
+       gauche, faute de taille intrinsèque exploitable.) */
+    width: auto; height: auto;
+    max-width: 100%; max-height: 100%;
+    display: block;
+  }
+  .sigle.sigle-logo .sigle-txt {
+    display: none;
+  }
+  @media (prefers-color-scheme: dark) {
+    .sigle.sigle-logo {
+      background: #ffffff;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .15), 0 2px 8px rgba(0, 0, 0, .35);
+    }
+  }
+  .recherche-bloc { margin: 0 0 14px; }
+  /* Groupes : pastilles en relief, une coche se remplit quand on choisit. */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 26px; }
+  /* Pastilles rangées par cours (une ligne par cours ou option) : l'étudiant
+     voit tout de suite à quelle matière appartient chaque groupe. */
+  .section-groupe { margin: 0 0 22px; }
+  .section-groupe .chips { margin: 0; }
+  .section-titre {
+    margin: 0 0 8px 2px; color: var(--muted); font-size: .85rem; font-weight: 600;
+  }
+  .chips-avis { margin: -8px 2px 22px; }
+  /* Étape groupe : rassure sur le choix — il se rechange plus tard, sans
+     refaire l'horaire (fenêtre Modifier, dans Mes horaires). */
+  .groupes-note { margin: -12px 2px 24px; }
+  /* Options : une ligne par option, avec les cours qu'elle contient. */
+  .options-liste { display: grid; gap: 8px; }
+  /* Écran des groupes : les sections s'empilent (jamais côte à côte), avec
+     de l'air entre elles, et le titre du groupe ressort. Les options
+     reprennent le style « pastilles » des groupes, pas des barres. */
+  #v-groupes #chips {
+    display: flex; flex-direction: column; align-items: stretch;
+    gap: 26px; margin: 0 0 26px;
+  }
+  #v-groupes .section-groupe { margin: 0; }
+  #v-groupes .section-titre {
+    margin: 0 0 10px 2px; color: var(--ink);
+    font-size: .95rem; font-weight: 700; letter-spacing: -.01em;
+  }
+  #v-groupes .options-liste { display: flex; flex-wrap: wrap; gap: 8px; }
+  #v-groupes .chip.chip-option { display: inline-flex; width: auto; max-width: 100%; }
+  .chip.chip-option {
+    display: flex; width: 100%; min-height: 52px; padding: 9px 16px 9px 13px;
+    border-radius: 16px; text-align: left;
+  }
+  .chip-textes { display: grid; gap: 2px; min-width: 0; }
+  .chip-textes small {
+    font-size: .78rem; font-weight: 450; line-height: 1.3; opacity: .8;
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+  }
+  .chip {
+    display: inline-flex; align-items: center; gap: 9px;
+    min-height: 44px; padding: 0 16px 0 13px; border: none; border-radius: 999px;
+    font: inherit; font-size: .95rem; font-weight: 550; color: var(--muted); cursor: pointer;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    transition: color .2s, box-shadow .2s, transform .12s;
+  }
+  .chip .coche {
+    position: relative; flex: none; width: 17px; height: 17px; border-radius: 50%;
+    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--muted) 55%, transparent);
+    transition: background .2s, box-shadow .2s;
+  }
+  .chip[aria-pressed="true"] {
+    color: var(--ink);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 42%, transparent), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  .chip[aria-pressed="true"] .coche { background: var(--ink); box-shadow: none; }
+  .chip[aria-pressed="true"] .coche::after {
+    content: ""; position: absolute; left: 6px; top: 3.5px; width: 3.5px; height: 7px;
+    border: solid var(--bg); border-width: 0 1.8px 1.8px 0; transform: rotate(45deg);
+  }
+  .chip:active { transform: scale(.97); }
+  .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  /* Onglets du choix ULB : par niveau, par codes de cours, lien perso. */
+  .modes { display: flex; gap: 6px; margin: 14px 0 12px; flex-wrap: wrap; }
+  .modes button {
+    position: relative;
+    min-height: 40px; padding: 0 14px; border: none; border-radius: 12px;
+    font: inherit; font-size: .88rem; font-weight: 600; color: var(--muted); cursor: pointer;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet);
+    transition: color .2s, box-shadow .2s;
+  }
+  .modes button[aria-selected="true"] {
+    color: var(--ink);
+    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--ink) 42%, transparent), inset 0 1px 0 var(--reflet);
+  }
+  .modes button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  /* Petite capsule posée au-dessus d'un élément : « Recommandé » sur un
+     onglet de recherche, « Bêta » sur une école encore peu éprouvée. */
+  .mode-tag, .ecole-tag {
+    position: absolute; padding: 2px 7px; border-radius: 999px;
+    font-size: .6rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+    color: var(--accent); background: color-mix(in srgb, var(--accent) 13%, var(--surface));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 32%, transparent);
+    pointer-events: none; white-space: nowrap;
+  }
+  .mode-tag { top: -11px; right: 4px; }
+  /* La carte de l'école a `overflow: hidden` : la capsule se pose DANS le
+     bouton (elle fait ainsi partie de ce qu'un lecteur d'écran annonce),
+     en haut à droite, au-dessus du chevron. */
+  .liste button { position: relative; }
+  .ecole-tag { top: 7px; right: 12px; }
+  /* Cours choisis : code en tête, intitulé en dessous, une seule ligne
+     (les intitulés ULB sont longs : on coupe proprement au lieu d'empiler). */
+  #rech-cours-chips .chip { max-width: 100%; }
+  #rech-cours-chips .chip-textes { max-width: 100%; }
+  #rech-cours-chips .chip-textes > span,
+  #rech-cours-chips .chip-textes small {
+    max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  #rech-cours-chips .chip-textes small { font-size: .74rem; font-weight: 450; opacity: .75; }
+  /* Retrait à confirmer : même relief que les autres pastilles, teinté
+     danger (comme la confirmation de l'app), pas d'aplat rouge. */
+  .chip.chip-suppr,
+  .chip.chip-suppr:hover { /* le survol desktop ne doit pas repasser le texte en noir */
+    color: var(--danger);
+    background: linear-gradient(180deg,
+      color-mix(in srgb, var(--danger) 7%, var(--relief-haut)),
+      color-mix(in srgb, var(--danger) 13%, var(--relief-bas)));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 40%, transparent),
+                inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  .chip.chip-suppr .coche {
+    background: color-mix(in srgb, var(--danger) 13%, transparent);
+    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--danger) 55%, transparent);
+  }
+  /* Croix dessinée au centre exact du rond (deux traits + 45°). */
+  .chip.chip-suppr .coche::after {
+    content: ""; position: absolute; left: 50%; top: 50%;
+    width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; border: none;
+    background:
+      linear-gradient(var(--danger), var(--danger)) center / 9px 1.6px no-repeat,
+      linear-gradient(var(--danger), var(--danger)) center / 1.6px 9px no-repeat;
+    transform: rotate(45deg);
+  }
+  #rech-cours { margin: 2px 0 12px; }
+  /* Import d'une liste de cours : bloc replié, dans le creux des autres. */
+  #rech-import {
+    margin: 0 0 14px; padding: 0 14px 18px; border-radius: 14px;
+    background: var(--creux); box-shadow: inset 0 0 0 1px var(--line);
+  }
+  /* Fermé : juste le titre, pas de vide en dessous. */
+  #rech-import:not([open]) { padding-bottom: 0; }
+  #rech-import:not([open]) > summary { padding: 8px 0; }
+  #rech-import > summary {
+    cursor: pointer; padding: 12px 0; list-style: none;
+    font-size: .92rem; font-weight: 600; color: var(--ink);
+  }
+  #rech-import > summary::-webkit-details-marker { display: none; }
+  #rech-import > summary::after { content: " ▾"; color: var(--muted); }
+  #rech-import[open] > summary::after { content: " ▴"; }
+  #rech-import[open] > summary { margin-bottom: 10px; }
+  /* Repli du texte lu / collé : discret, mais là pour corriger. */
+  #rech-texte { margin: 4px 0 0; }
+  #rech-texte > summary {
+    cursor: pointer; padding: 6px 0; list-style: none;
+    font-size: .84rem; font-weight: 600; color: var(--muted);
+  }
+  #rech-texte > summary::-webkit-details-marker { display: none; }
+  #rech-texte > summary::after { content: " ▾"; }
+  #rech-texte[open] > summary::after { content: " ▴"; }
+  #rech-texte[open] > summary { margin-bottom: 8px; }
+  #rech-import .import-ligne { display: flex; gap: 10px; align-items: flex-end; }
+  #rech-import textarea {
+    flex: 1 1 auto; min-width: 0; min-height: 96px; resize: none;
+    overflow-y: hidden; /* agrandi par le script ; style de repli discret ci-dessous */
+    scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--muted) 42%, transparent) transparent;
+    border: none; border-radius: 14px; padding: 12px 14px; font: inherit;
+    font-size: .9rem; line-height: 1.45; color: var(--ink);
+    /* Même relief que les boutons : le champ se lit comme « on écrit ici ». */
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  #rech-import textarea:focus {
+    outline: none;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent),
+      inset 0 1px 0 var(--reflet), var(--ombre-btn),
+      0 0 0 4px color-mix(in srgb, var(--accent) 8%, transparent);
+  }
+  #rech-import #rech-import-voir {
+    position: static; flex: none; width: auto; min-width: 0; height: 54px; padding: 0 20px;
+    border-radius: 14px; white-space: nowrap;
+  }
+  @media (max-width: 560px) {
+    #rech-import .import-ligne { flex-direction: column; align-items: stretch; }
+    #rech-import #rech-import-voir { width: 100%; }
+  }
+
+  #rech-import textarea::-webkit-scrollbar { width: 8px; }
+  #rech-import textarea::-webkit-scrollbar-track { background: transparent; }
+  #rech-import textarea::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--muted) 40%, transparent); border-radius: 999px;
+  }
+  #rech-import.depot-sur {
+    background: color-mix(in srgb, var(--accent) 7%, var(--creux));
+    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 55%, transparent);
+  }
+  #rech-import.depot-sur .capture-bouton { color: var(--accent); }
+  #rech-import .capture { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 10px; }
+  #rech-import .capture-bouton {
+    display: inline-flex; align-items: center; gap: 8px;
+    min-height: 40px; padding: 0 14px; border-radius: 12px;
+    font-size: .9rem; font-weight: 600; color: var(--ink); cursor: pointer;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  #rech-import .capture-bouton:active { transform: scale(.98); }
+  #rech-import .capture-aide { font-size: .82rem; color: var(--muted); }
+  #rech-import-status { margin: 8px 0 10px; }
+  #rech-import-doutes .doute { margin: 0 0 12px; }
+  #rech-import-doutes .prop { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 0; }
+  #rech-cours .chips { margin: 6px 0 8px; }
+  #rech-lien .champs { margin-bottom: 12px; }
+  /* Bouton d'action des étapes : relief, collé en bas tant qu'on défile. */
+  .primaire {
+    position: sticky; bottom: calc(14px + env(safe-area-inset-bottom)); z-index: 5;
+    overflow: hidden; display: block; width: 100%; height: 54px; border: none; border-radius: 16px;
+    font: inherit; font-size: 1rem; font-weight: 650; letter-spacing: -.01em; color: var(--ink); cursor: pointer;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn),
+      0 14px 34px -14px rgba(0, 0, 0, .45);
+    transition: transform .12s;
+  }
+  .primaire:active { transform: scale(.98); }
+  .primaire:disabled { opacity: .45; cursor: not-allowed; box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet); }
+
+  /* Horaire : rappel du profil sous le titre */
+  .profil-ligne {
+    text-align: center; color: var(--muted); font-size: .9rem; margin: -8px 0 10px;
+  }
+
+  /* Couleur par horaire (3 couleurs autorisées : Bleu / Vert / Rose).
+     Le fond et la piste du sélecteur sont teintés : on sait d'un
+     coup d'œil sur quel cours on est. */
+  body[data-theme="0"],
+  body[data-theme="2"] {
+    --accent: #1d4fd7;
+    --accent-soft: rgba(29, 79, 215, .09);
+    --wash: rgba(29, 79, 215, .09);
+    --bg: #eaf0fa;
+    --seg-track: #dbe4f5;
+  }
+  body[data-theme="1"] {
+    --accent: #0e8655;
+    --accent-soft: rgba(14, 134, 85, .10);
+    --wash: rgba(14, 134, 85, .10);
+    --bg: #ebf2ec;
+    --seg-track: #dce8de;
+  }
+  body[data-theme="3"] {
+    --accent: #d14d8a;
+    --accent-soft: rgba(209, 77, 138, .12);
+    --wash: rgba(209, 77, 138, .13);
+    --bg: #fdf1f6;
+    --seg-track: #f9e0ec;
+  }
+  @media (prefers-color-scheme: dark) {
+    body[data-theme="0"],
+    body[data-theme="2"] {
+      --accent: #8ba6ff;
+      --accent-soft: rgba(139, 166, 255, .14);
+      --wash: rgba(139, 166, 255, .10);
+      --bg: #0d1322;
+      --seg-track: #1c2436;
+    }
+    body[data-theme="1"] {
+      --accent: #4cc38a;
+      --accent-soft: rgba(76, 195, 138, .14);
+      --wash: rgba(76, 195, 138, .10);
+      --bg: #0c1411;
+      --seg-track: #1a231e;
+    }
+    body[data-theme="3"] {
+      --accent: #ffa8d0;
+      --accent-soft: rgba(255, 168, 208, .16);
+      --wash: rgba(255, 168, 208, .14);
+      --bg: #24141d;
+      --seg-track: #3a2330;
+    }
+  }
+
+  /* Barre de sélection des horaires (un onglet par surnom, façon
+     Horairelm). N surnoms dynamiques : la pastille glisse sur l'onglet
+     actif. Au-delà de 4, défilement horizontal. */
+  /* Sélecteur d'horaires : piste en creux, pastille en relief. */
+  .seg {
+    --n: 1; --idx: 0;
+    position: relative; display: grid;
+    grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+    background: var(--creux);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre);
+    border-radius: 999px; padding: 4px; margin: 0 0 14px;
+    max-width: 100%; overflow-x: auto; scrollbar-width: none;
+  }
+  .seg::-webkit-scrollbar { display: none; }
+  .seg .pill {
+    position: absolute; top: 4px; bottom: 4px; left: 4px;
+    width: calc((100% - 8px) / var(--n)); border-radius: 999px;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    transform: translateX(calc(var(--idx) * 100%));
+    transition: transform .3s cubic-bezier(.16,1,.3,1);
+    pointer-events: none;
+  }
+  /* Mode défilant (4 horaires et plus, jusqu'à 10) : chaque onglet prend
+     la largeur de son nom, on glisse du doigt. Safari ignore le padding de
+     fin d'un conteneur flex défilant : le ::after sert de marge droite pour
+     que le dernier onglet actif ne colle pas au bord. Un fondu signale
+     qu'il reste des noms cachés à gauche ou à droite. */
+  .seg.defile {
+    display: flex; scroll-snap-type: x proximity; scroll-padding: 0 4px;
+    -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain;
+  }
+  .seg.defile::after { content: ""; flex: 0 0 4px; }
+  .seg.defile.suite-d { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+    mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent); }
+  .seg.defile.suite-g { -webkit-mask-image: linear-gradient(90deg, transparent, #000 28px);
+    mask-image: linear-gradient(90deg, transparent, #000 28px); }
+  .seg.defile.suite-g.suite-d {
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 28px, #000 calc(100% - 28px), transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 28px, #000 calc(100% - 28px), transparent); }
+  .seg.defile .pill { display: none; }
+  .seg button {
+    position: relative; z-index: 1; border: none; background: none;
+    font: inherit; font-size: 1rem; font-weight: 550; color: var(--muted);
+    padding: 10px 8px; border-radius: 999px; cursor: pointer; min-height: 46px;
+    min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    transition: color .2s;
+  }
+  .seg.defile button { flex: 1 0 auto; padding-left: 18px; padding-right: 18px; scroll-snap-align: start; }
+  .seg button[aria-selected="true"] { color: var(--ink); font-weight: 650; }
+  .seg.defile button[aria-selected="true"] {
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  .seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  /* Surnom + couleur (étape 3) et libellés de champs. */
+  #bloc-surnom { margin: 0 0 22px; }
+  .champ-titre, .theme-select-titre, #bloc-theme > label {
+    display: block; margin: 0 0 8px 2px; color: var(--muted); font-size: .85rem; font-weight: 600;
+  }
+  .surnom-aide { color: var(--muted); font-size: .85rem; margin: 8px 2px 0; }
+  .theme-select-bloc { margin: 22px 0 26px; }
+  #bloc-theme { margin: 0 0 26px; }
+  .choix-themes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .theme-opt {
+    display: flex; align-items: center; justify-content: center; gap: 9px;
+    height: 46px; border: none; border-radius: 14px;
+    font: inherit; font-size: .92rem; font-weight: 600; color: var(--muted); cursor: pointer;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    transition: color .2s, box-shadow .2s, transform .12s;
+  }
+  .theme-opt:active { transform: scale(.97); }
+  .theme-opt:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .theme-opt .theme-pastille { width: 12px; height: 12px; border-radius: 50%; flex: none; transition: box-shadow .2s; }
+  .theme-opt[aria-checked="true"] {
+    color: var(--ink);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 42%, transparent), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  .theme-opt[aria-checked="true"] .theme-pastille {
+    box-shadow: 0 0 0 2.5px var(--relief-haut), 0 0 0 4px color-mix(in srgb, var(--ink) 50%, transparent);
+  }
+
+  /* Réglages : cartes d'horaires en relief, menus ⋮ en popover ancré. */
+  #liste-profils { display: flex; flex-direction: column; gap: 8px; margin: 10px 0; }
+  .pcard {
+    position: relative; border-radius: 16px;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  .pcard.actif {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 40%, transparent), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  .pcard.menu-ouvert { z-index: 20; }
+  .pcard-ligne { display: flex; align-items: center; gap: 4px; padding: 4px 6px 4px 16px; }
+  .pcard-main {
+    flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; text-align: left;
+    border: none; background: none; color: var(--ink); font: inherit; padding: 12px 0; cursor: pointer;
+  }
+  .pt-point { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .pt-textes { min-width: 0; flex: 1; }
+  .pt-nom { display: block; font-weight: 650; letter-spacing: -.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pt-detail { display: block; margin-top: 1px; color: var(--muted); font-size: .84rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dots {
+    flex: none; display: grid; place-items: center; width: 40px; height: 40px;
+    border: none; border-radius: 12px; background: none; color: var(--muted); cursor: pointer;
+    transition: background .15s, color .15s;
+  }
+  .dots:hover, .dots[aria-expanded="true"] { color: var(--ink); background: color-mix(in srgb, var(--ink) 8%, transparent); }
+  .dots:focus-visible { outline: 2px solid var(--accent); outline-offset: 0; }
+  /* Déplacer un horaire : on attrape la carte n'importe où (sauf le ⋮) et
+     on la fait glisser. Sur téléphone, il faut un appui long pour que le
+     geste démarre : un simple défilement ne bouge rien. */
+  #liste-profils.plusieurs .pcard { cursor: grab; }
+  .pcard.drag {
+    z-index: 25; cursor: grabbing; transition: none !important;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 22%, transparent),
+      0 18px 36px -14px rgba(0, 0, 0, .45), var(--ombre-btn);
+  }
+  #liste-profils.geste .pcard:not(.drag) { transition: transform .18s cubic-bezier(.16,1,.3,1); }
+  body.drag-carte { user-select: none; -webkit-user-select: none; }
+  /* Popover : naît du ⋮ (origine en haut à droite), vers le haut s'il
+     n'a pas la place en dessous. */
+  .ppop {
+    position: absolute; top: calc(100% + 6px); right: 6px; z-index: 30;
+    min-width: 214px; padding: 6px; border-radius: 16px;
+    background: var(--relief-haut); color: var(--ink);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet),
+      0 20px 44px -14px rgba(0, 0, 0, .5), 0 2px 6px rgba(0, 0, 0, .12);
+    transform-origin: top right;
+  }
+  .ppop:not([hidden]) { animation: pop-apparait .2s cubic-bezier(.16,1,.3,1); }
+  @keyframes pop-apparait {
+    from { opacity: 0; transform: scale(.92) translateY(-4px); }
+    to { opacity: 1; transform: none; }
+  }
+  .ppop.haut { top: auto; bottom: calc(100% + 6px); transform-origin: bottom right; }
+  .ppop.haut:not([hidden]) { animation-name: pop-apparait-haut; }
+  @keyframes pop-apparait-haut {
+    from { opacity: 0; transform: scale(.92) translateY(4px); }
+    to { opacity: 1; transform: none; }
+  }
+  .pop-act {
+    display: flex; align-items: center; gap: 12px; width: 100%; padding: 11px 12px;
+    border: none; border-radius: 10px; background: none; color: inherit; text-align: left;
+    font: inherit; font-size: .93rem; font-weight: 550; cursor: pointer; transition: background .12s;
+  }
+  .pop-act svg { flex: none; color: var(--muted); }
+  .pop-act:hover, .pop-act:focus-visible { background: color-mix(in srgb, var(--ink) 7%, transparent); outline: none; }
+  .pop-act.danger-txt, .pop-act.danger-txt svg { color: var(--danger); }
+  .pop-act.danger-txt:hover, .pop-act.danger-txt:focus-visible { background: color-mix(in srgb, var(--danger) 12%, transparent); }
+  #reg-compte { position: relative; }
+  #menu-compte { right: 0; }
+
+  /* Mode essai (?essai=1, origines locales) : un repère discret en haut. */
+  #essai-badge {
+    position: fixed; top: max(8px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%);
+    z-index: 50; margin: 0; padding: 4px 12px; border-radius: 999px;
+    font-size: .72rem; font-weight: 600; color: var(--muted);
+    background: var(--surface); box-shadow: inset 0 0 0 1px var(--line), var(--ombre-btn);
+    pointer-events: none; white-space: nowrap;
+  }
+  /* Connexion (écran d'entrée). Téléphone : titre, aperçu d'une semaine
+     (qui s'efface vers le bas), puis Google / GitHub côte à côte et
+     l'email. Ordinateur : formulaire à gauche, aperçu en grand à droite.
+     L'aperçu reprend la grille de l'horaire : on voit tout de suite ce
+     qu'on va obtenir. */
+  #v-compte { --sur-accent: #fff; display: flex; flex-direction: column; padding-top: 6px; }
+  @media (prefers-color-scheme: dark) { #v-compte { --sur-accent: #0b1020; } }
+  .entree { display: contents; }
+  .entree-titre {
+    order: 0; margin: 4px 0 20px;
+    font-size: clamp(2.1rem, 9.4vw, 2.6rem); font-weight: 750; line-height: 1.02; letter-spacing: -.045em;
+    text-wrap: balance;
+  }
+  /* 2ᵉ ligne du titre (« pratiques et lisibles. ») : reste d'un seul
+     tenant sur ordinateur, retour à la ligne normal sur téléphone.
+     « lisibles. » reprend le bleu du site. */
+  .entree-titre em { font-style: normal; color: var(--accent); }
+  @media (min-width: 1024px) {
+    .entree-titre .nobr { white-space: nowrap; }
+  }
+  .entree > :not(.entree-titre) { order: 2; }
+  /* Même langage pour tout le formulaire : surfaces en léger relief
+     (tokens --relief-* définis dans :root) et halo qui suit le pointeur
+     (--mx / --my posés en JS sur chaque .halo). */
+  /* :where : ne prend pas le pas sur un position: sticky (.primaire). */
+  :where(.halo) { position: relative; }
+  .halo { isolation: isolate; }
+  .halo::before, .halo::after {
+    content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    opacity: 0; transition: opacity .25s;
+  }
+  .halo::before {
+    z-index: -1;
+    background: radial-gradient(180px circle at var(--mx, 50%) var(--my, 50%),
+      color-mix(in srgb, var(--ink) 7%, transparent), transparent 70%);
+  }
+  .halo::after {
+    z-index: 2; padding: 1px;
+    background: radial-gradient(110px circle at var(--mx, 50%) var(--my, 50%),
+      color-mix(in srgb, var(--ink) 50%, transparent), transparent 75%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .halo:hover::before, .halo:hover::after { opacity: 1; }
+  }
+
+  .fournisseurs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .fournisseurs button {
+    overflow: hidden;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    height: 52px; border: none; border-radius: 14px;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas)); color: var(--ink);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    font: inherit; font-size: 1rem; font-weight: 600; letter-spacing: -.01em; cursor: pointer;
+    transition: transform .12s;
+  }
+  .fournisseurs button svg { flex: none; }
+  .fournisseurs button:active, .btn-entree:active { transform: scale(.98); }
+  .fournisseurs button.charge { pointer-events: none; }
+  .fournisseurs button.charge svg { display: none; }
+  .fournisseurs button.charge .tourne { display: block; }
+  /* Rond de chargement (boutons de connexion). */
+  .tourne {
+    display: none; flex: none; width: 18px; height: 18px; border-radius: 50%;
+    border: 2px solid color-mix(in srgb, currentColor 22%, transparent); border-top-color: currentColor;
+    animation: tourne .7s linear infinite;
+  }
+  @keyframes tourne { to { transform: rotate(360deg); } }
+  .email-sep { text-align: center; color: var(--muted); font-size: .85rem; margin: 20px 0; }
+  /* Choix email : se connecter ou créer un compte (même rail que l'app). */
+  #seg-auth { margin: 0 0 12px; }
+
+  /* Email + mot de passe dans un seul bloc gravé (légèrement en creux),
+     séparés par un filet. Le bloc s'éclaire quand on y écrit. */
+  .champs {
+    border-radius: 16px; background: var(--creux);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre), 0 1px 0 var(--reflet);
+    transition: box-shadow .25s;
+  }
+  .champs:focus-within {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 30%, transparent),
+      inset 0 1px 3px var(--creux-ombre), 0 0 0 4px color-mix(in srgb, var(--ink) 6%, transparent);
+  }
+  .champ-ligne { position: relative; display: flex; align-items: center; height: 54px; padding-left: 16px; }
+  .champ-ligne + .champ-ligne::before {
+    content: ""; position: absolute; top: 0; left: 16px; right: 16px; height: 1px; background: var(--line);
+  }
+  .champ-ico { flex: none; color: var(--muted); opacity: .75; transition: color .2s, opacity .2s; }
+  .champ-ligne:focus-within .champ-ico { color: var(--ink); opacity: 1; }
+  /* Échec de connexion : les icônes du bloc passent en rouge avec lui
+     (le contour rouge vient de .champs.erreur, comme dans l'édition). */
+  #champs-login.erreur .champ-ico { color: var(--danger); opacity: 1; }
+  .champ {
+    flex: 1; min-width: 0; height: 100%; padding: 0 16px 0 0; border: none; border-radius: 0;
+    background: none; color: var(--ink); outline: none;
+    font: inherit; font-size: 16px; letter-spacing: -.005em; -webkit-appearance: none; appearance: none;
+  }
+  .champ-ico + .champ { padding-left: 12px; }
+  .champ::placeholder { color: var(--muted); opacity: .85; }
+  /* Chrome ne repeint pas le fond des champs pré-remplis. */
+  .champ:-webkit-autofill { -webkit-text-fill-color: var(--ink); transition: background-color 600000s 0s; }
+  #mdp { padding-right: 4px; }
+  #voir-mdp {
+    flex: none; width: 44px; height: 44px; margin-right: 5px;
+    display: grid; place-items: center; border: none; border-radius: 11px;
+    background: none; color: var(--muted); cursor: pointer; transition: color .15s;
+  }
+  #voir-mdp:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  #voir-mdp[aria-pressed="true"] { color: var(--ink); }
+  #voir-mdp[aria-pressed="true"] .barre-oeil { display: none; }
+
+  /* Bouton Continuer : même relief que Google / GitHub, texte discret. */
+  .btn-entree {
+    overflow: hidden;
+    display: grid; place-items: center;
+    width: 100%; height: 52px; margin-top: 12px; border: none; border-radius: 14px;
+    background-color: var(--relief-haut);
+    background-image: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    color: var(--muted);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    font: inherit; font-size: 1rem; font-weight: 600; letter-spacing: -.01em; cursor: pointer;
+    transition: color .2s, transform .12s;
+  }
+  .btn-entree > * { grid-area: 1 / 1; }
+  .btn-entree .tourne { position: static; }
+  .btn-entree.charge { pointer-events: none; }
+  .btn-entree.charge .be-lib { visibility: hidden; }
+  .btn-entree.charge .tourne { display: block; }
+  /* Seul le texte s'allume quand l'email et le mot de passe sont valables. */
+  .btn-entree.pret { color: var(--ink); }
+  /* Mot de passe oublié : simple lien grisé sous Continuer (comptes
+     email), caché jusqu'au premier échec de connexion. */
+  .oublie {
+    display: block; margin: 14px auto 0; border: none; background: none;
+    font: inherit; font-size: .9rem; font-weight: 600; color: var(--muted); cursor: pointer;
+    min-height: 44px; padding: 0 12px;
+  }
+  .oublie[hidden] { display: none; }
+  .oublie:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .piege { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+  #identite-status { padding: 10px 10px 0; }
+  #bloc-reset .champ-titre { text-align: center; margin-bottom: 10px; }
+  @media (hover: hover) and (pointer: fine) {
+    .btn-entree:hover { color: var(--ink); }
+    .oublie:hover { color: var(--ink); }
+  }
+  #auth-status { margin-top: 4px; padding: 12px 6px 0; font-size: .9rem; }
+  /* Erreur de connexion : message en rouge, comme les champs. */
+  #auth-status.erreur { color: var(--danger); }
+  #v-compte .surnom-aide { text-align: center; }
+  #v-identite .recherche { margin-bottom: 10px; }
+
+  /* Aperçu : même anatomie que .cal / .ev (couleurs par teinte), en
+     miniature. Téléphone : 3 jours, coupé vers 13 h par un fondu. */
+  .apercu {
+    order: 1; position: relative; margin: 0 0 22px; height: clamp(160px, 28vh, 250px); overflow: hidden;
+    padding: 12px 12px 0; border-radius: 20px;
+    background: var(--surface); box-shadow: inset 0 0 0 1px var(--line);
+    -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent);
+    mask-image: linear-gradient(to bottom, #000 55%, transparent);
+    user-select: none; -webkit-user-select: none; pointer-events: none;
+  }
+  .apercu {
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    padding-left: 0; isolation: isolate;
+  }
+  .ap-tete, .ap-corps { display: grid; grid-template-columns: 34px repeat(3, minmax(0, 1fr)); column-gap: 6px; }
+  .ap-jour:nth-child(n+5), .ap-col:nth-child(n+5) { display: none; }
+  .ap-tete { padding: 0 0 10px; }
+  .ap-jour { display: flex; align-items: center; gap: 6px; padding: 0 4px; min-width: 0; }
+  .ap-jour span { color: var(--muted); font-size: .72rem; font-weight: 650; letter-spacing: .04em; }
+  .ap-jour strong {
+    display: grid; place-items: center; min-width: 26px; height: 26px; border-radius: 999px;
+    font-size: 1.05rem; font-weight: 600; letter-spacing: -.03em; font-variant-numeric: tabular-nums;
+  }
+  .ap-jour.today span, .ap-jour.today strong { color: var(--accent); }
+  .ap-corps { height: 330px; }
+  .ap-heures { position: relative; }
+  .ap-heures span {
+    position: absolute; right: 6px; transform: translateY(-50%);
+    color: var(--muted); font-size: .64rem; font-variant-numeric: tabular-nums;
+  }
+  .ap-col { position: relative; border-radius: 10px; }
+  /* Comme la vraie grille : seule la ligne de 13h (pause de midi),
+     raccordée d'un jour à l'autre. */
+  .ap-col::after {
+    content: ""; position: absolute; z-index: -1; left: -3px; right: -3px; top: 50%;
+    height: 1px; background: var(--line);
+  }
+  /* Aujourd'hui : carte surélevée qui englobe l'en-tête et la colonne.
+     42px = date (26) + écart (10) + débord (6). */
+  .ap-col.today::after { left: 3px; right: 3px; background: color-mix(in srgb, var(--accent) 22%, var(--line)); }
+  .ap-col.today::before {
+    content: ""; position: absolute; z-index: -1;
+    top: -42px; bottom: -8px; left: -3px; right: -3px; border-radius: 14px;
+    background: var(--surface);
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, var(--line)),
+      inset 0 1px 0 var(--reflet),
+      0 18px 40px -18px rgba(15, 20, 40, .35),
+      0 2px 6px -2px rgba(15, 20, 40, .1);
+  }
+  .ap-ev {
+    position: absolute; left: 1px; right: 2px; overflow: hidden;
+    top: calc(var(--t) * 1% + 1px); height: calc(var(--d) * 1% - 3px);
+    display: flex; flex-direction: column; gap: 1px; padding: 5px 7px; border-radius: 10px;
+    background: hsl(var(--h) 58% 95%); color: hsl(var(--h) 28% 23%);
+    animation: ap-pose .6s cubic-bezier(.16,1,.3,1) both;
+    animation-delay: calc(120ms + var(--i, 0) * 45ms);
+  }
+  .ap-ev b, .ap-ev i, .ap-ev u, .ap-ev em { display: block; font-style: normal; text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* Même hiérarchie que .ev : titre > salle (centrée dans l'espace libre)
+     > bas de case (prof à gauche, horaires à droite). */
+  .ap-ev b { font-size: .72rem; font-weight: 650; letter-spacing: -.005em; flex-shrink: 0; }
+  .ap-ev i { font-size: .66rem; font-weight: 600; opacity: .85; flex-grow: 1; display: grid; align-content: center; }
+  .ap-ev .ap-eb { display: flex; align-items: baseline; gap: 6px; margin-top: auto; }
+  .ap-ev u { flex: 1 1 auto; min-width: 0; font-size: .64rem; opacity: .8; }
+  .ap-ev em { flex: none; margin-left: auto; font-size: .62rem; font-weight: 500; opacity: .8; font-variant-numeric: tabular-nums; }
+  /* Colonne étroite : le prof cède la place aux horaires. */
+  .ap-col { container: apcol / inline-size; }
+  .ap-ev u { display: none; }
+  @container apcol (min-width: 160px) { .ap-ev u { display: block; } }
+  /* Jour sans cours : colonne rayée + « Pas de cours ». Le texte passe à
+     la ligne et la pastille ne dépasse jamais la colonne, pour rester
+     centrée même sur les colonnes les plus étroites. */
+  .ap-libre {
+    position: absolute; inset: 0; border-radius: 10px; overflow: hidden;
+    display: grid; place-items: center; padding: 6px; color: var(--muted); text-align: center;
+    background: repeating-linear-gradient(-45deg, transparent 0 15px,
+      color-mix(in srgb, var(--muted) 13%, transparent) 15px 16.2px);
+  }
+  .ap-libre p { margin: 0; max-width: 100%; padding: 6px 10px; border-radius: 12px; background: var(--relief-haut); }
+  .today .ap-libre p { background: var(--surface); }
+  .ap-libre strong { font-size: .9rem; font-weight: 650; letter-spacing: -.01em; text-wrap: balance; }
+  @keyframes ap-pose {
+    from { opacity: 0; transform: translateY(8px) scale(.97); }
+    to { opacity: 1; transform: none; }
+  }
+  @media (prefers-color-scheme: dark) {
+    .ap-ev {
+      background: hsl(var(--h) 19% 17%); color: #eef2f8;
+    }
+    .ap-col.today::before { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, var(--line)), inset 0 1px 0 var(--reflet), 0 18px 40px -18px rgba(0, 0, 0, .8); }
+  }
+  /* Petit écran (iPhone SE…) : le formulaire passe avant l'aperçu. */
+  @media (max-width: 1023px) and (max-height: 640px) { .apercu { display: none; } }
+
+  /* Réglages : qui je suis + mes horaires. */
+  .reg-compte { display: flex; align-items: center; gap: 14px; margin: 6px 0 4px; }
+  .reg-compte .avatar.grand {
+    width: 52px; height: 52px; flex: none; border-radius: 50%;
+    display: grid; place-items: center;
+    background: var(--creux); color: var(--ink);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre);
+    font-weight: 700; font-size: 1.05rem; letter-spacing: -.01em;
+  }
+  .reg-qui { flex: 1; min-width: 0; }
+  .reg-qui strong {
+    display: block; font-size: 1.05rem; letter-spacing: -.015em;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .reg-qui > span {
+    display: flex; align-items: center; gap: 6px;
+    color: var(--muted); font-size: .85rem; min-width: 0;
+  }
+  .reg-qui .reg-f-logo { flex: none; display: inline-flex; }
+  .reg-qui .reg-f-logo svg { display: block; }
+  .reg-qui .reg-f-contact {
+    min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .reg-section { margin-top: 22px !important; }
+  #avatar-init { font-weight: 700; font-size: .95rem; }
+  .avis {
+    background: var(--creux); border-radius: 14px; padding: 12px 14px;
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre);
+    margin: 0 0 14px; font-size: .92rem;
+  }
+  .avis button {
+    border: none; background: none; color: var(--accent); font: inherit;
+    font-weight: 650; padding: 0; cursor: pointer; text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  /* Semaine : flèches de chaque côté du titre, bouton « Cette semaine »
+     centré juste en dessous. Il garde sa place quand il est caché (classe
+     .cache) : rien ne se décale. */
+  .week { display: flex; flex-wrap: wrap; align-items: center; column-gap: 10px; row-gap: 0; padding: 2px 0 6px; }
+  /* Saut de ligne invisible : « Cette semaine » passe seul sur sa
+     propre ligne, sous le titre. Hauteur nulle et aucun espacement
+     vertical ajouté : les marges existantes sont inchangées. */
+  .week::after { content: ""; flex-basis: 100%; height: 0; order: 3; }
+  .week button.nav {
+    flex: none; display: grid; place-items: center; width: 42px; height: 42px;
+    border: none; border-radius: 999px; color: var(--ink); padding: 0;
+    font: inherit; cursor: pointer;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    transition: opacity .15s, transform .12s;
+  }
+  .week button.nav svg { display: block; }
+  .week button.nav:disabled { opacity: .3; cursor: default; box-shadow: inset 0 0 0 1px var(--line); }
+  .week button.nav:not(:disabled):active { transform: scale(.94); }
+  .week .cur { flex: 1; min-width: 0; text-align: center; }
+  .week .cur strong { display: block; font-size: 1.05rem; font-weight: 700; letter-spacing: -.02em; }
+  .week .cur span { font-size: .86rem; color: var(--muted); }
+  .thisweek {
+    order: 4;
+    display: block; margin: 0 auto 10px; height: 36px; padding: 0 16px;
+    border: none; border-radius: 999px; color: var(--ink);
+    font: inherit; font-size: .88rem; font-weight: 600; cursor: pointer;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    transition: opacity .25s, transform .25s;
+  }
+  .thisweek.cache { opacity: 0; transform: scale(.94); pointer-events: none; }
+
+  /* Liste des jours : une carte par jour, pas de filets. */
+  .days { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .day {
+    border-radius: 16px;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    /* Ancre pour le recentrage auto à l'ouverture : la carte se cale
+       un peu sous le haut de l'écran, jamais collée au bord. */
+    scroll-margin-top: 12px;
+  }
+  .day.today {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 50%, transparent),
+      inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  .day > button {
+    width: 100%; border: none; background: none; font: inherit; color: inherit;
+    display: flex; align-items: center; gap: 12px; text-align: left;
+    padding: 14px 14px; min-height: 62px; cursor: pointer; border-radius: 16px;
+  }
+  .day > button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: transparent; flex: none; }
+  .day.today .dot { background: var(--accent); }
+  .dname { flex: none; min-width: 112px; }
+  .dname strong { display: block; font-size: 1.02rem; font-weight: 600; letter-spacing: -.01em; }
+  .dname span { font-size: .85rem; color: var(--muted); }
+  .dsum {
+    margin-left: auto; font-size: .96rem; color: var(--muted);
+    font-variant-numeric: tabular-nums; white-space: nowrap; letter-spacing: -.01em;
+  }
+  .dsum.busy { color: var(--ink); font-weight: 600; }
+  .dsum.free { color: var(--free); font-weight: 550; }
+  .dsum.ferie {
+    color: var(--accent); font-weight: 650;
+    max-width: 46%; overflow: hidden; text-overflow: ellipsis;
+  }
+  .chev {
+    flex: none; width: 9px; height: 9px; margin: 0 4px 0 2px;
+    border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted);
+    transform: rotate(45deg); transition: transform .25s cubic-bezier(.16,1,.3,1), border-color .25s;
+  }
+  .day.open .chev { transform: rotate(225deg); border-color: var(--ink); }
+  .day.today .dname strong { font-weight: 700; }
+
+  /* Détail d'un jour : bloc gravé à l'intérieur de la carte. */
+  .detail {
+    display: grid; grid-template-rows: 0fr; opacity: 0;
+    transition: grid-template-rows .32s cubic-bezier(.16,1,.3,1), opacity .25s;
+  }
+  .day.open .detail { grid-template-rows: 1fr; opacity: 1; }
+  .detail > div { overflow: hidden; }
+  .detail .box {
+    margin: 0 10px 10px; padding: 2px 14px 6px; border: none; border-radius: 13px;
+    background: var(--creux);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre);
+  }
+  .detail ol { list-style: none; margin: 0; padding: 0; }
+  .detail li.c { padding: 0; }
+  .cbtn {
+    width: 100%; border: none; background: none; font: inherit; color: inherit;
+    display: flex; gap: 10px; align-items: center; text-align: left;
+    padding: 11px 0; cursor: pointer;
+  }
+  /* Pastille de couleur : même repère que sur la grille d'ordinateur. */
+  .cpoint {
+    flex: none; width: 8px; height: 8px; border-radius: 50%;
+    background: hsl(var(--h) calc(52% - var(--v) * 10%) calc(52% + var(--v) * 7%));
+  }
+  .cbtn .h {
+    flex: none; min-width: 106px;
+    font-variant-numeric: tabular-nums; color: var(--muted); font-size: .88rem;
+  }
+  .cbtn .m { font-weight: 550; font-size: .96rem; flex: 1; min-width: 0; }
+  .minichev {
+    flex: none; width: 7px; height: 7px; align-self: center;
+    border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted);
+    transform: rotate(45deg); transition: transform .25s cubic-bezier(.16,1,.3,1), border-color .25s;
+  }
+  li.c.open .minichev { transform: rotate(225deg); border-color: var(--ink); }
+  /* Jour à un seul cours (téléphone) : déjà déroulé et non refermable
+     (trop petit à taper sinon) — pas de chevron, curseur neutre. */
+  li.c.seul .cbtn { cursor: default; }
+  li.c.seul .cbtn:disabled { opacity: 1; color: inherit; }
+  li.c.seul .minichev { display: none; }
+  /* Sous-détail du cours : prof + salle */
+  .csub {
+    display: grid; grid-template-rows: 0fr; opacity: 0;
+    transition: grid-template-rows .28s cubic-bezier(.16,1,.3,1), opacity .22s;
+  }
+  li.c.open .csub { grid-template-rows: 1fr; opacity: 1; }
+  .csub > div { overflow: hidden; }
+  .csub-in { padding: 0 0 12px 124px; font-size: .86rem; }
+  .csub-in div { padding: 1px 0; }
+  .csub-in .k { color: var(--muted); }
+  .csub-in .nc { color: var(--muted); font-style: italic; }
+  /* Pause : filets symétriques de part et d'autre du texte. */
+  .detail li.p {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 0; color: var(--muted);
+    font-size: .78rem; font-weight: 600; letter-spacing: .02em; white-space: nowrap;
+  }
+  .detail li.p::before, .detail li.p::after {
+    content: ""; flex: 1; height: 1px; background: var(--line);
+  }
+
+  .empty {
+    text-align: center; color: var(--muted); padding: 34px 10px; font-size: 1rem;
+  }
+
+  /* PDF officiel de la semaine */
+  .official {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    margin: 18px 0 0; width: 100%; height: 52px; border: none; border-radius: 16px;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    color: var(--ink); font: inherit; font-size: .96rem; font-weight: 600;
+    cursor: pointer; text-decoration: none; transition: transform .12s;
+  }
+  .official:active { transform: scale(.99); }
+  .official:disabled { opacity: .6; cursor: wait; }
+
+  /* Visionneuse PDF intégrée, juste sous le bouton, à la largeur de l'écran.
+     Le PDF se zoome sur place, isolé du reste du site. */
+  #pdf-zone { margin: 12px -16px 0; }
+  #pdf-zone[hidden] { display: none; }
+  /* Téléphone, pendant le chargement uniquement (.attente) : la zone
+     réserve d'emblée la place du futur PDF (environ une page) et le
+     texte d'attente est centré dedans, au futur centre du PDF. Dès que
+     le contenu arrive, la réserve saute et la page se termine juste
+     sous le PDF : aucun vide en dessous où pincer à côté. Ordinateur :
+     le panneau latéral garde ses propres dimensions (règle bureau). */
+  @media (max-width: 1023px) {
+    #pdf-zone.attente {
+      min-height: 68vh; min-height: 68dvh;
+      display: flex; flex-direction: column;
+    }
+    #pdf-zone.attente > .pdf-status { margin: auto; }
+  }
+  /* Texte d'attente : un reflet balaie les lettres de gauche à droite,
+     en boucle jusqu'à l'arrivée du PDF, puis le texte disparaît.
+     Fluide même pendant le téléchargement : uniquement des transform,
+     animés par la carte graphique (aucun repeint image par image).
+     Une copie claire du texte est vue à travers une fenêtre adoucie qui
+     glisse ; la copie glisse en sens inverse et reste donc immobile.
+     La fenêtre a la largeur exacte du texte et va à vitesse constante :
+     la lumière entre sur la première lettre dès qu'elle quitte la
+     dernière, sans aucun temps mort entre deux passages. */
+  .pdf-status {
+    overflow: hidden;
+    margin: 0; padding: 18px 10px; text-align: center;
+    font-size: .95rem; font-weight: 600; color: var(--muted);
+  }
+  .pdf-status.erreur { color: var(--ink); }
+  /* Plusieurs groupes : le PDF officiel est celui d'un groupe (ou de toute
+     la formation, toutes options superposées) : l'étudiant choisit. */
+  .pdf-choix {
+    display: flex; align-items: center; gap: 10px; margin: 0 16px 10px;
+    color: var(--muted); font-size: .9rem; font-weight: 600;
+  }
+  .pdf-choix select {
+    flex: 1; min-width: 0; height: 40px; padding: 0 12px; border: none; border-radius: 12px;
+    font: inherit; font-weight: 550; color: var(--ink);
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet);
+  }
+  /* Plusieurs groupes et « Toute la formation » choisi : le PDF officiel
+     superpose tous les groupes, vite illisible. On le dit une fois, sous
+     la liste, pour inviter à choisir son groupe. */
+  .pdf-choix-avis { margin: 0 16px 10px; color: var(--muted); font-size: .82rem; }
+  .pdf-texte { position: relative; display: inline-block; }
+  .pdf-reflet, .pdf-reflet > span {
+    position: absolute; inset: 0;
+    will-change: transform;
+    animation: pdf-reflet 1.3s linear infinite;
+  }
+  .pdf-reflet {
+    overflow: hidden; pointer-events: none;
+    -webkit-mask-image: linear-gradient(90deg, transparent 36%, #000 50%, transparent 64%);
+    mask-image: linear-gradient(90deg, transparent 36%, #000 50%, transparent 64%);
+  }
+  .pdf-reflet > span { color: var(--ink); animation-name: pdf-reflet-inverse; }
+  /* ±64 % : la bande (36–64 % de la fenêtre) est tout juste hors du
+     texte aux deux extrémités, donc le saut de boucle est invisible. */
+  @keyframes pdf-reflet {
+    from { transform: translateX(-64%); }
+    to { transform: translateX(64%); }
+  }
+  @keyframes pdf-reflet-inverse {
+    from { transform: translateX(64%); }
+    to { transform: translateX(-64%); }
+  }
+  .pdf-frame {
+    display: block; width: 100%; height: 72vh; min-height: 420px;
+    border: none; background: var(--creux);
+    box-shadow: inset 0 1px 0 var(--line), inset 0 -1px 0 var(--line);
+  }
+  /* Le zoom agrandit réellement le PDF (largeur ET hauteur) : la hauteur
+     suit le zoom, la page défile verticalement comme d'habitude et seul
+     le débord horizontal défile dans le cadre. Le pincement est capturé :
+     seul le PDF zoome, jamais le site. */
+  .pdf-apercu { position: relative; overflow-anchor: none; }
+  .pdf-pince {
+    overflow-x: auto; overflow-y: hidden;
+    touch-action: pan-x pan-y; overscroll-behavior-x: contain;
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+    scrollbar-width: none;
+  }
+  .pdf-pince::-webkit-scrollbar { display: none; }
+  /* Pages rendues en images : 100 % de largeur au repos, entièrement
+     visibles, rien n'est coupé. Le zoom élargit ce bloc (200 %, 300 %…). */
+  .pdf-pages { width: 100%; margin: 0 auto; background: var(--creux); }
+  .pdf-pages canvas { display: block; width: 100%; height: auto; background: #fff; animation: pdf-page .35s ease-out both; }
+  @keyframes pdf-page { from { opacity: 0; } to { opacity: 1; } }
+  .pdf-pages canvas + canvas { margin-top: 10px; }
+  /* Bouton flottant pour revenir à la taille normale : collé en bas de
+     l'écran tant que le PDF zoomé est visible, masqué au repos. */
+  .pdf-dezoom {
+    position: sticky; bottom: calc(16px + env(safe-area-inset-bottom));
+    display: block; width: fit-content; margin: -58px auto 16px; padding: 11px 18px;
+    border: none; border-radius: 999px;
+    background: var(--relief-haut); color: var(--ink);
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), 0 10px 26px -10px rgba(0, 0, 0, .5);
+    font: inherit; font-size: .9rem; font-weight: 600; cursor: pointer;
+    opacity: 0; transform: translateY(8px) scale(.96); pointer-events: none;
+    transition: opacity .2s ease, transform .2s ease;
+  }
+  .pdf-dezoom.visible { opacity: 1; transform: none; pointer-events: auto; }
+  .pdf-astuce {
+    margin: 0; padding: 10px 16px 0; text-align: center;
+    font-size: .85rem; color: var(--muted);
+  }
+  /* Pied de page : « Mis à jour… » et « Confidentialité » côte à côte,
+     séparés d'un point — empilés, ils prenaient deux lignes pour rien.
+     Sur ordinateur (voir plus bas), ils s'écartent aux deux bords. */
+  footer {
+    display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline;
+    gap: 4px 10px; text-align: center; color: var(--muted); font-size: .8rem; margin-top: 18px;
+  }
+  footer p { margin: 0; }
+  footer a { color: var(--muted); }
+  /* Le point de séparation disparaît quand les deux passent à la ligne
+     (il ne pendrait au bout de nulle part) ou en vue ordinateur. */
+  footer .sep { opacity: .55; }
+  /* Tant que « Mis à jour… » est vide (horaire pas encore chargé), le
+     point ne doit pas flotter tout seul devant « Confidentialité ». */
+  footer #maj:empty + .sep { display: none; }
+
+  /* Réglages sur téléphone : feuille qui monte du bas, fond assombri,
+     se ferme en glissant vers le bas (attrapable de n'importe où, le fond
+     ne défile pas pendant le geste). */
+  #feuille {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+    background: var(--feuille); color: var(--ink);
+    border-radius: 26px 26px 0 0; padding: 4px 18px calc(18px + env(safe-area-inset-bottom));
+    box-shadow: inset 0 1px 0 var(--reflet), 0 0 0 1px var(--line), 0 -24px 60px -24px rgba(0, 0, 0, .5);
+    font-size: .95rem;
+    transform: translateY(105%); visibility: hidden;
+    transition: transform .38s cubic-bezier(.16,1,.3,1), visibility 0s linear .38s;
+    touch-action: none;
+    overscroll-behavior: contain;
+    user-select: none; -webkit-user-select: none;
+  }
+  #feuille button { user-select: none; -webkit-user-select: none; }
+  body.sheet-ouverte { overflow: hidden; }
+  body::after {
+    content: ""; position: fixed; inset: 0; z-index: 45; pointer-events: none;
+    background: rgba(6, 8, 12, .42); opacity: 0; transition: opacity .3s;
+  }
+  body.sheet-ouverte::after { opacity: 1; }
+  #feuille.visible {
+    transform: translateY(0); visibility: visible;
+    transition: transform .38s cubic-bezier(.16,1,.3,1);
+  }
+  #feuille.dragging { transition: none; }
+  .grabber-zone { padding: 10px 0 10px; touch-action: none; cursor: grab; }
+  .grabber {
+    display: block; width: 40px; height: 5px; border-radius: 999px;
+    background: color-mix(in srgb, var(--ink) 18%, transparent); margin: 0 auto;
+  }
+  #feuille h2 { margin: 0 0 2px 2px; color: var(--muted); font-size: .85rem; font-weight: 600; }
+  #feuille p { margin: 6px 0; color: var(--muted); }
+  .btn-ajout {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; height: 52px; border: none; border-radius: 16px;
+    font: inherit; font-size: .95rem; font-weight: 600; color: var(--ink); cursor: pointer;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    transition: transform .12s;
+  }
+  .btn-ajout svg { color: var(--muted); }
+  .btn-ajout:active { transform: scale(.98); }
+
+  /* Signaler (bug ou demande) : coccinelle discrète dans l'en-tête de la
+     feuille, à côté du ⋮ du compte (#btn-bug-compte) ; lien du pied de page et
+     petits liens de chaque étape, à côté du reste. */
+  .lien-pied {
+    border: none; background: none; padding: 0; font: inherit; font-size: inherit;
+    color: var(--muted); text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
+  }
+  /* Parcours de création : petit lien discret sous chaque étape, pour les
+     comptes pas encore créés (anonymes : pas d'email demandé). */
+  .bug-aide { margin: 14px 0 0; text-align: center; }
+  .lien-bug {
+    border: none; background: none; padding: 8px 12px; font: inherit;
+    font-size: .85rem; color: var(--muted); text-decoration: underline;
+    text-underline-offset: 3px; cursor: pointer;
+  }
+
+  /* Fenêtre de signalement : rail Bug / Demande (même .seg que les
+     horaires : piste en creux, pastille en relief), email (lecture seule),
+     grande zone de texte, trombone pour les captures, aperçu des images. */
+  #boite-bug { text-align: left; }
+  #boite-bug h3 { margin-bottom: 4px; }
+  #bug-rail { margin: 0 0 14px; }
+  #bug-rail button {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 44px; font-size: .95rem;
+  }
+  #bug-rail button svg { flex: none; }
+  .bug-email {
+    margin: 0 0 12px; font-size: .85rem; color: var(--muted);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .bug-email strong { color: var(--ink); font-weight: 650; }
+  #bug-sujet {
+    display: block; width: 100%; margin-bottom: 14px;
+    border: none; border-radius: 13px; padding: 12px 14px;
+    font: inherit; font-size: 1rem; line-height: 1.3; color: var(--ink);
+    background: var(--creux);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre);
+  }
+  #bug-sujet:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  #bug-message {
+    width: 100%; min-height: 130px; resize: none;
+    border: none; border-radius: 13px; padding: 12px 14px;
+    font: inherit; font-size: .95rem; line-height: 1.5; color: var(--ink);
+    background: var(--creux);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre);
+  }
+  #bug-message:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .bug-ligne {
+    display: flex; align-items: center; gap: 10px; margin-top: 10px;
+  }
+  .bug-trombone {
+    flex: none; display: inline-flex; align-items: center; gap: 8px;
+    min-height: 44px; padding: 0 16px; border-radius: 999px;
+    font: inherit; font-size: .88rem; font-weight: 600; color: var(--ink); cursor: pointer;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  .bug-trombone:active { transform: scale(.96); }
+  .bug-compte { font-size: .82rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  #bug-apercus { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  #bug-apercus:empty { display: none; }
+  .bug-apercu {
+    position: relative; width: 76px; height: 76px; border-radius: 12px; overflow: hidden;
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+  .bug-apercu img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .bug-apercu button {
+    position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; padding: 0;
+    border: none; border-radius: 50%; cursor: pointer;
+    background: rgba(6, 8, 12, .65); color: #fff;
+    display: grid; place-items: center;
+  }
+  #bug-status { margin: 10px 0 0; font-size: .88rem; min-height: 1.3em; }
+  #bug-status.erreur { color: var(--danger); }
+  #bug-status.ok { color: var(--free); }
+  #bug-envoyer[disabled] { opacity: .55; cursor: default; }
+
+  /* Fenêtres (confirmation, modification) : voile flouté + carte en
+     relief, même langage que le reste. Elles apparaissent en montant
+     légèrement et repartent en fondu. */
+  .voile {
+    position: fixed; inset: 0; z-index: 100;
+    display: grid; place-items: center; padding: 20px;
+    background: rgba(6, 8, 12, .45);
+    -webkit-backdrop-filter: blur(12px) saturate(120%); backdrop-filter: blur(12px) saturate(120%);
+    overscroll-behavior: contain;
+  }
+  .voile:not([hidden]) { animation: voile-apparait .22s ease-out; }
+  .voile.sortie { animation: voile-part .18s ease-in forwards; }
+  @keyframes voile-apparait { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes voile-part { to { opacity: 0; } }
+  body.confirm-ouverte { overflow: hidden; }
+  .boite {
+    width: min(420px, 100%); margin: 0; padding: 24px 20px 18px;
+    background: var(--feuille); color: var(--ink); border-radius: 26px;
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), 0 40px 90px -30px rgba(0, 0, 0, .6);
+  }
+  .voile:not([hidden]) .boite { animation: boite-apparait .34s cubic-bezier(.16,1,.3,1); }
+  .voile.sortie .boite { animation: boite-part .18s ease-in forwards; }
+  @keyframes boite-apparait {
+    from { opacity: 0; transform: translateY(14px) scale(.96); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes boite-part { to { opacity: 0; transform: translateY(8px) scale(.98); } }
+  .boite h3 { margin: 0 0 18px; font-size: 1.25rem; font-weight: 750; letter-spacing: -.025em; }
+  .boite-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 22px; }
+  .boite-actions button {
+    height: 50px; border: none; border-radius: 14px;
+    font: inherit; font-size: .98rem; font-weight: 650; cursor: pointer;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    transition: color .15s, transform .12s;
+  }
+  .boite-actions button:active { transform: scale(.98); }
+  .boite-actions button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .btn-sec { color: var(--muted); }
+  .btn-sec:hover { color: var(--ink); }
+  .btn-prim { color: var(--ink); }
+  /* Confirmation : centrée, icône + message ; l'action risquée en rouge. */
+  #boite-confirm { text-align: center; padding-top: 28px; }
+  #confirm-icone {
+    width: 52px; height: 52px; margin: 0 auto 14px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: color-mix(in srgb, var(--danger) 13%, transparent); color: var(--danger);
+  }
+  #boite-confirm.info #confirm-icone {
+    background: var(--creux); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line);
+  }
+  #boite-confirm h3 { margin-bottom: 8px; }
+  #confirm-msg { margin: 0; color: var(--muted); font-size: .95rem; line-height: 1.5; }
+  #confirm-msg strong { color: var(--ink); font-weight: 650; }
+  #confirm-oui {
+    color: var(--danger);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 38%, transparent), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  #boite-confirm.info #confirm-oui {
+    color: var(--ink);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  /* Modification : en haut sur téléphone (le clavier occupe le bas). */
+  #voile-edition { place-items: start center; padding-top: max(20px, 9vh); }
+  @media (min-width: 1024px) { #voile-edition { place-items: center; padding-top: 20px; } }
+  .boite .champs + .champ-titre, .boite .champs + .choix-themes { margin-top: 18px; }
+  .boite .surnom-aide + .champ-titre { margin-top: 18px; }
+  .boite .champ-titre + .choix-themes { margin-top: 0; }
+  .champs.erreur { box-shadow: inset 0 0 0 1px var(--danger), inset 0 1px 3px var(--creux-ombre), 0 0 0 4px color-mix(in srgb, var(--danger) 14%, transparent); }
+  .edition-details {
+    margin: 18px 0 0; padding: 6px 14px; border-radius: 14px;
+    background: var(--creux); box-shadow: inset 0 0 0 1px var(--line); font-size: .88rem;
+  }
+  .edition-details div { display: flex; justify-content: space-between; gap: 16px; padding: 7px 0; }
+  .edition-details dt { color: var(--muted); flex: none; }
+  .edition-details dd { margin: 0; min-width: 0; text-align: right; font-weight: 550; overflow-wrap: anywhere; }
+  /* Ligne « Tes groupes » de la fenêtre Modifier : un vrai bouton, au
+     relief des cartes — on touche pour rouvrir l'écran de choix des
+     groupes, l'horaire se réaffiche ensuite avec la nouvelle sélection. */
+  .edition-groupes {
+    display: flex; align-items: center; justify-content: space-between; gap: 14px;
+    width: 100%; padding: 12px 14px; border: none; border-radius: 14px;
+    font: inherit; color: var(--ink); text-align: left; cursor: pointer;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    transition: transform .12s;
+  }
+  .edition-groupes:active { transform: scale(.985); }
+  .edition-groupes:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .eg-textes { display: grid; gap: 2px; min-width: 0; }
+  .eg-textes strong { font-weight: 650; letter-spacing: -.01em; }
+  .eg-textes small {
+    color: var(--muted); font-size: .82rem; line-height: 1.3;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .eg-act { flex: none; display: inline-flex; align-items: center; gap: 6px; color: var(--accent); font-size: .9rem; font-weight: 650; }
+
+  /* Rechargement visible (< 1 s) : barre fine + contenu qui s'efface,
+     puis les jours réapparaissent en cascade sur la nouvelle page */
+  #barre-recharge {
+    position: fixed; top: env(safe-area-inset-top, 0); left: 0; right: 0;
+    height: 3px; z-index: 60; pointer-events: none;
+    background: var(--accent); border-radius: 0 3px 3px 0;
+    transform-origin: left; transform: scaleX(0); opacity: 0;
+  }
+  body.depart #barre-recharge {
+    opacity: 1; transform: scaleX(.85);
+    transition: transform .26s cubic-bezier(.3,.7,.4,1);
+  }
+  body.arrivee #barre-recharge { animation: barre-fin .4s ease-out; }
+  @keyframes barre-fin {
+    0% { opacity: 1; transform: scaleX(.85); }
+    55% { opacity: 1; transform: scaleX(1); }
+    100% { opacity: 0; transform: scaleX(1); }
+  }
+  .week, .thisweek, .days { transition: opacity .22s ease, transform .22s ease; }
+  body.depart .week, body.depart .thisweek, body.depart .days {
+    opacity: .3; transform: translateY(-4px);
+  }
+  body.arrivee .week, body.arrivee .days > li {
+    animation: apparait .32s cubic-bezier(.16,1,.3,1) both;
+  }
+  body.arrivee .days > li:nth-child(2) { animation-delay: .03s; }
+  body.arrivee .days > li:nth-child(3) { animation-delay: .06s; }
+  body.arrivee .days > li:nth-child(4) { animation-delay: .09s; }
+  body.arrivee .days > li:nth-child(5) { animation-delay: .12s; }
+  body.arrivee .days > li:nth-child(6) { animation-delay: .15s; }
+  body.arrivee .days > li:nth-child(n+7) { animation-delay: .18s; }
+  @keyframes apparait {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  /* Éléments propres à l'ordinateur : absents sur téléphone. */
+  .cal, .pdf-tete, .moi-txt, #pop, .official svg { display: none; }
+  .avatar { display: grid; place-items: center; }
+
+  /* ================= Ordinateur =================
+     Une vraie app de bureau : barre fixe en haut, semaine en grille
+     horaire qui tient dans l'écran, PDF dans un panneau latéral avec ses
+     propres outils de zoom. Le téléphone garde sa vue en liste. */
+  @media (min-width: 1024px) {
+    body { font-size: 15px; }
+    .wrap { max-width: 1560px; padding: 0 32px 24px; }
+    button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    /* Barre du haut : invisible, le dégradé du fond part du tout haut
+       du site comme s'il n'y avait pas de header (aucun fond, aucun flou). */
+    .topbar {
+      position: sticky; top: 0; z-index: 30;
+      justify-content: flex-start; gap: 14px;
+      min-height: 72px; margin: 0 -32px; padding: 0 32px;
+      background: transparent;
+      -webkit-backdrop-filter: none; backdrop-filter: none;
+      -webkit-mask-image: none;
+      mask-image: none;
+    }
+    .title { font-size: 1.12rem; letter-spacing: -.02em; }
+    .topbar .gauche, .topbar .droite { position: static; transform: none; }
+    .topbar .gauche {
+      order: 1; min-height: 34px; padding: 0 14px 0 11px;
+      font-size: .88rem;
+    }
+    .topbar .droite {
+      order: 2; margin-left: auto; width: 40px; height: 40px; padding: 0;
+      display: grid; place-items: center; border-radius: 50%; border: none;
+      font-size: .95rem; font-weight: 700; transition: opacity .15s, transform .15s;
+    }
+    .topbar .droite:hover { opacity: .85; transform: scale(1.04); }
+    .topbar .droite:active { transform: scale(.96); }
+    .moi-txt { display: none; }
+    .topbar .droite .avatar svg { width: 18px; height: 18px; }
+
+    /* Choix de l'école, de la formation et des groupes */
+    #v-compte, #v-identite, #v-ecole, #v-formation, #v-groupes { max-width: 880px; margin: 0 auto; padding: 64px 0 40px; }
+
+    /* Connexion : formulaire à gauche, semaine type à droite, le tout
+       centré dans la hauteur de la fenêtre. */
+    #v-compte {
+      display: grid; align-items: center; column-gap: clamp(48px, 6vw, 96px);
+      grid-template-columns: minmax(360px, 460px) minmax(0, 1fr);
+      max-width: 1200px; padding: 24px 0 48px;
+      min-height: calc(100vh - 96px); min-height: calc(100dvh - 96px);
+    }
+    .entree { display: block; }
+    .entree-titre { margin: 0 0 36px; font-size: 3.1rem; }
+    .apercu {
+      margin: 0; height: min(560px, calc(100dvh - 180px)); padding: 18px 18px 0;
+      border-radius: 28px; box-shadow: inset 0 0 0 1px var(--line), var(--shadow);
+      -webkit-mask-image: linear-gradient(to bottom, #000 72%, transparent);
+      mask-image: linear-gradient(to bottom, #000 72%, transparent);
+    }
+    .apercu { padding: 16px 18px 0 0; }
+    .ap-tete, .ap-corps { grid-template-columns: 50px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); column-gap: 8px; }
+    .ap-jour:nth-child(n+5) { display: flex; }
+    .ap-col:nth-child(n+5) { display: block; }
+    .ap-tete { padding-bottom: 14px; }
+    .ap-jour { gap: 8px; padding: 0 8px; }
+    .ap-jour span { font-size: .76rem; }
+    .ap-jour strong { min-width: 32px; height: 32px; font-size: 1.25rem; }
+    .ap-corps { height: 600px; }
+    .ap-heures span { right: 10px; font-size: .72rem; }
+    .ap-col::after { left: -4px; right: -4px; }
+    /* 54px = date (32) + écart (14) + débord (8). */
+    .ap-col.today::before { top: -54px; bottom: -12px; left: -4px; right: -4px; border-radius: 18px; }
+    .ap-ev { gap: 2px; padding: 7px 10px; border-radius: 11px; }
+    .ap-ev b { font-size: .82rem; white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+    .ap-ev i { font-size: .76rem; }
+    .ap-ev u { font-size: .72rem; }
+    .ap-ev em { font-size: .7rem; }
+    .ap-libre { border-radius: 12px; }
+    .ap-libre p { padding: 7px 10px; border-radius: 14px; }
+    .ap-libre strong { font-size: .95rem; }
+    /* Colonnes très étroites (fenêtre juste au-dessus de 1024 px) : on
+       réduit pour garder « Pas de cours » sur deux lignes centrées. */
+    @container apcol (max-width: 96px) {
+      .ap-libre { padding: 4px; }
+      .ap-libre p { padding: 5px 8px; }
+      .ap-libre strong { font-size: .72rem; }
+    }
+    .etapes { margin: 0 0 22px; }
+    .q { font-size: 3.4rem; margin: 0 0 16px; }
+    .aide { font-size: 1.05rem; margin: -6px 0 32px; max-width: 60ch; }
+    .liste { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    #liste-ecoles { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+    .liste li.empty { grid-column: 1 / -1; }
+    .liste button { height: 100%; min-height: 64px; padding: 16px 18px; }
+    #liste-ecoles button { padding: 18px 20px; }
+    #liste-ecoles .nom { font-size: 1.08rem; }
+    .liste .chev { opacity: 0; transition: opacity .18s; }
+    .liste button:hover .chev { opacity: .9; }
+    .chips { gap: 10px; margin-bottom: 34px; }
+    .chip:hover, .theme-opt:hover { color: var(--ink); }
+    .primaire { width: fit-content; min-width: 240px; margin-left: auto; padding: 0 32px; bottom: 24px; }
+    #v-identite { max-width: 560px; }
+    /* Horaire : barre d'outils, grille de la semaine, panneau PDF */
+    .profil-ligne { display: none; }
+    #seg { max-width: 560px; margin-bottom: 16px; }
+    #v-horaire .seg { max-width: 560px; }
+    #horaire-contenu {
+      display: grid; column-gap: 10px; row-gap: 18px;
+      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      grid-template-areas: "week pdfbtn" "cal cal" "foot foot";
+      /* 170px = barre du haut (72) + sélecteur d'horaire (~54 + 16 de marge)
+         + marge basse de page (~24) : sans ça le bas de la grille dépasse
+         de la fenêtre et le pied de page (« Mis à jour… ») est coupé. */
+      height: calc(100vh - 170px);
+      height: calc(100dvh - 170px);
+      min-height: 480px; padding-top: 8px;
+    }
+    #horaire-contenu.pdf-ouvert {
+      grid-template-columns: minmax(0, 1fr) auto minmax(400px, 46%);
+      grid-template-areas: "week pdfbtn pdf" "cal cal pdf" "foot foot pdf";
+    }
+    .pdf-ouvert .cal-jour small { display: none; }
+    .pdf-ouvert .week .cur span { display: none; }
+    #horaire-contenu.pdf-ouvert #pdf-zone { margin-left: 14px; }
+    /* Barre d'outils : titre + « Cette semaine » à gauche, flèches à
+       droite collées au bouton PDF. Quand « Cette semaine » est caché
+       (sur la bonne semaine), il garde sa place à gauche : les flèches
+       et le PDF ne bougent pas, aucun trou au milieu. */
+    .week { grid-area: week; flex-wrap: nowrap; justify-content: flex-start; gap: 6px; padding: 0; }
+    .week::after { display: none; }
+    .week .cur {
+      order: -1; text-align: left;
+      display: flex; align-items: baseline; gap: 14px; min-width: 0;
+    }
+    .week #sem-prec { order: 1; margin-left: auto; }
+    .week #sem-suiv { order: 2; }
+    .week .cur strong { display: inline; font-size: 2.1rem; font-weight: 700; letter-spacing: -.045em; }
+    .week .cur span { font-size: 1rem; white-space: nowrap; }
+    .week button.nav, .thisweek, .official {
+      height: 40px; border-radius: 999px; border: none; color: var(--ink);
+      background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+      box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+      transition: color .15s, opacity .15s, transform .12s;
+    }
+    .week button.nav { width: 40px; padding: 0; }
+    .week button.nav:not(:disabled):hover, .thisweek:hover, .official:hover { color: var(--ink); transform: translateY(-1px); }
+    .week button.nav:disabled { opacity: .3; transform: none; }
+    .thisweek {
+      order: 0; align-self: center;
+      margin: 0 0 0 10px; padding: 0 18px; font-size: .9rem;
+    }
+    .thisweek.cache { opacity: 0; transform: scale(.96); pointer-events: none; }
+    .official {
+      grid-area: pdfbtn; align-self: center; width: auto; margin: 0; padding: 0 18px 0 15px;
+      display: flex; gap: 8px; font-size: .9rem;
+    }
+    .official svg { display: block; color: var(--muted); }
+    .official .sm { display: none; }
+    .official[aria-expanded="true"] {
+      color: var(--ink);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 40%, transparent), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    }
+    /* Ordinateur : « Mis à jour… » à gauche de l'horaire, « Confidentialité »
+       à droite, sur la même ligne — un de chaque côté, jamais empilés. */
+    footer {
+      grid-area: foot; margin: 0; text-align: left;
+      flex-wrap: nowrap; justify-content: space-between; gap: 16px;
+    }
+    footer .sep { display: none; }
+
+    /* Grille de la semaine */
+    .days { display: none; }
+    .cal {
+      grid-area: cal; display: flex; flex-direction: column; min-height: 0;
+      padding: 16px 18px 18px 0; border-radius: 24px;
+      background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+      box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    }
+    .cal-tete, .cal-corps {
+      display: grid; column-gap: 8px;
+      /* --cols vient de rendreCal : la colonne du jour est un peu plus large,
+         pour compenser l'effet « plus étroit » de sa carte blanche. */
+      grid-template-columns: 58px var(--cols, repeat(var(--n), minmax(0, 1fr)));
+    }
+    .cal-tete { padding-bottom: 14px; }
+    .cal-jour { display: flex; align-items: center; gap: 8px; padding: 0 8px; min-width: 0; }
+    .cal-jour span {
+      color: var(--muted); font-size: .76rem; font-weight: 650; letter-spacing: .04em;
+    }
+    .cal-jour strong {
+      display: grid; place-items: center; min-width: 34px; height: 34px; border-radius: 999px;
+      font-size: 1.3rem; font-weight: 600; letter-spacing: -.03em; font-variant-numeric: tabular-nums;
+    }
+    .cal-jour.today span { color: var(--accent); }
+    .cal-jour.today strong { color: var(--accent); }
+    .cal-jour small {
+      margin-left: auto; color: var(--muted); font-size: .76rem;
+      font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .cal-jour small.libre { color: var(--free); }
+    .cal-jour small.ferie {
+      color: var(--accent); font-weight: 600;
+      max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .cal-corps { flex: 1; min-height: 0; }
+    .cal-heures { position: relative; }
+    .cal-heures span {
+      position: absolute; right: 12px; transform: translateY(-50%);
+      color: var(--muted); font-size: .72rem; font-variant-numeric: tabular-nums;
+    }
+    .cal-col {
+      position: relative; border-radius: 12px;
+    }
+    /* Pause de midi : un trait à 13h (--pause vient de rendreCal) qui
+       déborde de 4px de chaque côté, pour se raccorder au jour voisin à
+       travers l'espace entre colonnes, y compris sous les rayures d'un
+       jour sans cours. z-index -1 : sous les cours,
+       mais peint après la carte d'aujourd'hui, donc par-dessus elle. */
+    .cal-col::after {
+      content: ""; position: absolute; z-index: -1; pointer-events: none;
+      left: -4px; right: -4px; top: var(--pause, 50%); height: 1px; background: var(--line);
+    }
+    /* Aujourd'hui : une carte surélevée qui englobe l'en-tête et la colonne,
+       et déborde légèrement du cadre en haut et en bas. La semaine reste
+       un seul bloc (les jours suivants ne sont pas isolés) : c'est le jour
+       qui « sort » du cadre, pas le cadre qui se coupe.
+       Géométrie : 72px = marge haute de .cal (16) + date (34) + écart
+       sous l'en-tête (14) + débord (8) ; 26px = marge basse (18) + débord. */
+    .cal { isolation: isolate; }
+    /* Sur la carte d'aujourd'hui, la ligne de 13h s'arrête avant les
+       bords (petit espace de chaque côté, comme les lignes sur mobile) :
+       elle ne touche plus le contour de la carte. */
+    .cal-col.today::after {
+      background: color-mix(in srgb, var(--accent) 22%, var(--line));
+      left: 3px; right: 3px;
+    }
+    .cal-col.today::before {
+      content: ""; position: absolute; z-index: -1;
+      top: -72px; bottom: -26px; left: -4px; right: -4px; border-radius: 18px;
+      background: var(--surface);
+      box-shadow:
+        inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, var(--line)),
+        inset 0 1px 0 var(--reflet),
+        0 18px 40px -18px rgba(15, 20, 40, .35),
+        0 2px 6px -2px rgba(15, 20, 40, .1);
+    }
+    /* Jour sans cours : colonne rayée (code habituel des agendas pour
+       « rien ici »), sans carte ni bord pour ne pas passer pour un cours.
+       Férié : rayures et texte à la couleur du thème ; simple jour
+       libre : « Pas de cours » en gris neutre. */
+    .cal-libre {
+      --rayure: color-mix(in srgb, var(--muted) 13%, transparent);
+      position: absolute; inset: 0; border-radius: 12px; overflow: hidden;
+      display: grid; place-items: center;
+      color: var(--muted); text-align: center;
+    }
+    /* Rayures : un dégradé répété à angle fixe, sans tuiles mises à
+       l'échelle. Chaque trait est la translation exacte du précédent
+       (32 px pile horizontalement, soit un nombre entier de pixels) :
+       tous sont rendus pareil, fins partout — sans l'effet « certains
+       traits plus épais » des tuiles `round` aux largeurs fractionnaires.
+       Le calque reste centré sur la ligne de 13h pour que celle-ci
+       tombe dans un intervalle, jamais sur une pointe de rayure. */
+    .cal-libre::before {
+      content: ""; position: absolute; left: 0; right: 0;
+      top: calc(var(--pause, 50%) - 1616px); height: 3232px; pointer-events: none;
+      background: repeating-linear-gradient(45deg,
+        transparent 0 calc(32px / 1.41421356 - 1.2px),
+        var(--rayure) calc(32px / 1.41421356 - 1.2px) calc(32px / 1.41421356));
+    }
+    .cal-libre p {
+      position: relative; margin: 0; padding: 8px 16px; border-radius: 14px; background: var(--relief-haut);
+    }
+    .today .cal-libre p { background: var(--surface); }
+    .cal-libre strong { font-size: 1.05rem; font-weight: 650; letter-spacing: -.01em; }
+    .cal-libre.ferie { --rayure: color-mix(in srgb, var(--accent) 18%, transparent); }
+    .cal-libre.ferie strong { color: var(--accent); }
+    /* Cours : fond mat teinté (une couleur par
+       intitulé, jamais deux intitulés avec la même — voir preparerCouleurs). */
+    .ev {
+      position: absolute; overflow: hidden;
+      top: calc(var(--t) * 1% + 1px); height: calc(var(--d) * 1% - 3px);
+      left: calc(var(--l) * 100% + 1px); width: calc(var(--w) * 100% - 3px);
+      display: flex; flex-direction: column; gap: 2px;
+      padding: 7px 10px; border: none; border-radius: 11px; text-align: left; cursor: pointer;
+      font: inherit;
+      background: hsl(var(--h) calc(58% - var(--v) * 15%) calc(95% - var(--v) * 2%));
+      color: hsl(var(--h) 28% 23%);
+      transition: transform .16s cubic-bezier(.16,1,.3,1), box-shadow .16s;
+      isolation: isolate; /* le fond reste un calque derrière, jamais devant le texte */
+    }
+    /* Le texte peint toujours au-dessus du bloc coloré. */
+    .ev span { position: relative; z-index: 1; }
+    .ev:hover, .ev.actif {
+      z-index: 2; transform: translateY(-1px);
+      box-shadow: 0 12px 26px -14px rgba(15, 20, 40, .5);
+    }
+    .ev.actif {
+      box-shadow:
+        0 0 0 1.5px hsl(var(--h) calc(45% - var(--v) * 10%) calc(52% + var(--v) * 6%)),
+        0 12px 26px -14px rgba(15, 20, 40, .5);
+    }
+    .ev .et {
+      font-size: .82rem; font-weight: 650; line-height: 1.25; letter-spacing: -.005em;
+      display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden;
+      flex-shrink: 0; /* jamais écrasé : c'est la salle qui cède la place */
+    }
+    /* Nombre de lignes du titre selon la hauteur réelle de la case : le
+       titre, la salle et le bas de case tiennent toujours sans se
+       chevaucher, même quand la journée est longue. */
+    .ev { container: ev / size; }
+    @container ev (max-height: 84px) { .ev .et { -webkit-line-clamp: 2; } }
+    @container ev (max-height: 66px) { .ev .et { -webkit-line-clamp: 1; } }
+    /* Séance qui dépasse la grille (tard le soir) : bord bas pointillé. */
+    .ev.coupe { border-bottom-left-radius: 3px; border-bottom-right-radius: 3px; }
+    .ev.coupe::after {
+      content: ""; position: absolute; left: 8px; right: 8px; bottom: 2px;
+      border-bottom: 2px dotted currentColor; opacity: .3;
+    }
+    /* Hiérarchie de lecture : titre > salle > bas de case (prof + horaires).
+       Les formats s'identifient seuls (code de salle, nom, heures en « h ») :
+       pas de libellés répétés sur chaque case, seule la typo distingue
+       les niveaux. Le bas de case est poussé en bas (margin-top: auto) :
+       quand une petite case déborde, c'est lui qui saute en premier.
+       La salle absorbe l'espace libre restant (flex-grow) avec son texte
+       centré verticalement : elle se retrouve à mi-chemin entre le titre
+       et la rangée prof/heures. Sans espace libre, elle reste collée
+       sous le titre comme avant. */
+    .ev .es {
+      font-size: .78rem; font-weight: 600; opacity: .85; line-height: 1.25;
+      /* La zone de salle garde toute la place libre et reste centrée
+         verticalement (grille + align-content) ; c'est le texte à
+         l'intérieur qui est borné. Un max-height sur la zone
+         l'empêcherait de grandir : la salle remonterait sous le titre au
+         lieu de rester au milieu. La zone est un conteneur de taille :
+         selon la hauteur réellement disponible, le texte passe à deux
+         lignes ou retombe à une ligne avec « … » (jamais de ligne coupée
+         en plein milieu). */
+      flex-grow: 1; display: grid; align-content: center; overflow: hidden;
+      container: salle / size;
+    }
+    .ev .es > span {
+      display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+      white-space: normal; overflow-wrap: anywhere; overflow: hidden;
+    }
+    @container salle (max-height: 33px) { .ev .es > span { -webkit-line-clamp: 1; } }
+    .ev .ep { font-size: .74rem; opacity: .8; }
+    .ev .eh { font-size: .72rem; font-weight: 500; opacity: .8; font-variant-numeric: tabular-nums; }
+    /* Bas de case : prof à gauche, horaires calés en bas à droite sur la
+       même ligne. Ça rend une ligne au titre, qui n'est plus coupé quand
+       la colonne est étroite. Sans prof, les horaires restent à droite. */
+    .ev .eb { display: flex; align-items: baseline; gap: 8px; margin-top: auto; }
+    .ev .eb .ep { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ev .eb .eh { flex: none; margin-left: auto; white-space: nowrap; }
+    /* Case courte (< 75 min) : la rangée redevient transparente pour
+       garder la ligne titre + salle + prof d'avant. */
+    .ev.court .eb { display: contents; }
+    .ev.court { flex-direction: row; align-items: baseline; gap: 8px; padding-top: 4px; }
+    .ev.court .et { -webkit-line-clamp: 1; flex: 1; min-width: 0; }
+    .ev.court .es { flex: none; max-width: 36%; min-width: 0; font-size: .74rem; display: block; overflow: hidden; }
+    .ev.court .es > span { -webkit-line-clamp: 1; }
+    .ev.court .ep { flex: none; max-width: 32%; min-width: 0; }
+    /* En ligne courte, les horaires sautent en premier (la position dans
+       la grille + la bulle les donnent) ; sans salle ni prof, on garde
+       les horaires plutôt qu'un titre seul. Mais sans prof (l'UMONS n'en
+       publie jamais), la salle seule ne doit pas les chasser : les
+       horaires restent dès qu'il n'y a pas de prof à afficher. */
+    .ev.court .eh { display: none; }
+    .ev.court:not(:has(.ep)) .eh { display: block; flex: none; }
+    /* Colonne étroite (fenêtre ~1024px, semaine de 6 jours…) : la hauteur
+       des cases ne change pas, donc on resserre le texte plutôt que de le
+       couper — piloté par la largeur réelle de la colonne. En compact,
+       titre 3 lignes + salle + prof/heures tiennent dans une case de 2h. */
+    .cal-col { container: col / inline-size; }
+    @container col (max-width: 175px) {
+      .ev { padding: 4px 8px; gap: 1px; }
+      .ev .et { font-size: .78rem; line-height: 1.2; }
+      .ev .es { font-size: .7rem; }
+      .ev .eb { gap: 6px; }
+      .ev .eb .ep { font-size: .7rem; }
+      .ev .eb .eh { font-size: .68rem; }
+    }
+
+    /* Détail d'un cours, en bulle flottante */
+    #pop {
+      display: block; position: fixed; z-index: 40; width: 320px;
+      padding: 20px 22px; border-radius: 20px;
+      background: var(--relief-haut); color: var(--ink);
+      box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), 0 28px 60px -24px rgba(0, 0, 0, .5);
+      opacity: 0; visibility: hidden; transform: translateY(4px) scale(.98);
+      transition: opacity .16s, transform .2s cubic-bezier(.16,1,.3,1), visibility 0s linear .2s;
+    }
+    #pop.visible { opacity: 1; visibility: visible; transform: none; transition: opacity .16s, transform .2s cubic-bezier(.16,1,.3,1); }
+    #pop .pt { display: flex; gap: 10px; align-items: baseline; margin: 0 0 4px; font-size: 1.08rem; font-weight: 700; letter-spacing: -.015em; line-height: 1.3; }
+    #pop .pt::before {
+      content: ""; flex: none; width: 10px; height: 10px; border-radius: 3px;
+      background: hsl(var(--h) calc(52% - var(--v) * 12%) calc(52% + var(--v) * 7%)); transform: translateY(-1px);
+    }
+    #pop .ph { margin: 0 0 0 20px; color: var(--muted); font-size: .9rem; font-variant-numeric: tabular-nums; }
+    #pop dl { display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; margin: 16px 0 0 20px; font-size: .88rem; }
+    #pop dt { color: var(--muted); }
+    #pop dd { margin: 0; }
+    #pop .nc { color: var(--muted); font-style: italic; }
+
+    /* Panneau PDF */
+    #pdf-zone {
+      grid-area: pdf; margin: 0; min-height: 0; overflow: hidden;
+      display: flex; flex-direction: column;
+      border-radius: 24px;
+      background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+      box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    }
+    .pdf-tete { display: flex; align-items: center; gap: 12px; padding: 12px 12px 12px 20px; }
+    .pdf-titre { flex: 1; min-width: 0; line-height: 1.25; }
+    .pdf-titre strong { display: block; font-size: .95rem; letter-spacing: -.01em; }
+    .pdf-titre span { color: var(--muted); font-size: .8rem; }
+    .pdf-outils {
+      display: flex; align-items: center; gap: 2px; padding: 3px; border-radius: 999px;
+      background: var(--creux); box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre);
+    }
+    .pdf-outil {
+      display: grid; place-items: center; min-width: 32px; height: 32px; padding: 0 8px;
+      border: none; border-radius: 999px; background: none; color: var(--ink);
+      font: inherit; font-size: .82rem; font-weight: 600; cursor: pointer; text-decoration: none;
+      font-variant-numeric: tabular-nums; transition: background .15s;
+    }
+    .pdf-outil:hover:not(:disabled) {
+      background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+      box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet);
+    }
+    .pdf-outil:disabled { opacity: .35; cursor: default; }
+    #pdf-niveau { min-width: 58px; }
+    .pdf-fermer {
+      width: 38px; height: 38px; color: var(--muted);
+      background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+      box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    }
+    .pdf-fermer:hover { color: var(--ink); }
+    #pdf-zone .pdf-status { margin: auto 0; }
+    .pdf-apercu { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+    .pdf-pince {
+      flex: 1; min-height: 0; overflow: auto;
+      background: var(--creux); box-shadow: inset 0 1px 3px var(--creux-ombre); scrollbar-width: thin;
+      -webkit-user-select: auto; user-select: auto;
+    }
+    .pdf-pince::-webkit-scrollbar { display: block; width: 10px; height: 10px; }
+    .pdf-pince::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--muted) 45%, transparent); border-radius: 10px; border: 2px solid transparent; background-clip: padding-box; }
+    .pdf-pages { padding: 18px; }
+    .pdf-pages canvas { border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,.08), 0 8px 24px -12px rgba(0,0,0,.25); }
+    .pdf-pages canvas + canvas { border-top: none; margin-top: 14px; }
+    .pdf-pages:has(.pdf-frame) { height: 100%; padding: 0; }
+    .pdf-frame { height: 100%; min-height: 0; border: none; box-shadow: none; }
+    .pdf-dezoom { display: none; }
+    .pdf-astuce { padding: 10px 16px 12px; font-size: .78rem; }
+
+    /* Réglages : menu déroulant sous le profil */
+    #feuille {
+      left: auto; right: 32px; top: 76px; bottom: auto; width: 380px;
+      padding: 18px 18px 16px; border-radius: 24px;
+      box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), 0 30px 70px -24px rgba(0, 0, 0, .55);
+      transform: translateY(-6px) scale(.98); transform-origin: top right; opacity: 0;
+      transition: transform .22s cubic-bezier(.16,1,.3,1), opacity .16s, visibility 0s linear .22s;
+      touch-action: auto; user-select: auto; -webkit-user-select: auto;
+    }
+    #feuille.visible { transform: none; opacity: 1; transition: transform .22s cubic-bezier(.16,1,.3,1), opacity .16s; }
+    .grabber-zone { display: none; }
+    body.sheet-ouverte { overflow: auto; }
+    body::after { display: none; }
+  }
+  @media (min-width: 1024px) and (prefers-color-scheme: dark) {
+    .ev {
+      background: hsl(var(--h) calc(19% + var(--v) * 7%) calc(17% + var(--v) * 2%));
+      color: #eef2f8;
+    }
+    .ev:hover, .ev.actif {
+      box-shadow: 0 12px 26px -14px rgba(0, 0, 0, .8);
+    }
+    .ev.actif {
+      box-shadow:
+        0 0 0 1.5px hsl(var(--h) calc(45% - var(--v) * 8%) calc(62% + var(--v) * 5%)),
+        0 12px 26px -14px rgba(0, 0, 0, .8);
+    }
+    .ev .es, .ev .ep, .ev .eh { color: #eef2f8; }
+    .pdf-pages canvas { box-shadow: 0 8px 24px -12px rgba(0,0,0,.8); }
+  }
+
+  /* ---------- Apparence (feuille) : sous le compte, au-dessus des horaires ---------- */
+  .reg-apparence { position: relative; display: flex; align-items: center; gap: 12px; margin: 14px 0 0; }
+  .ra-label { display: inline-flex; align-items: center; gap: 8px; flex: 1; min-width: 0;
+    color: var(--muted); font-size: .85rem; font-weight: 600; }
+  .ra-label svg { flex: none; }
+  .ra-bouton {
+    display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 8px 0 12px;
+    border: none; border-radius: 999px; cursor: pointer;
+    font: inherit; font-size: .9rem; font-weight: 600; color: var(--ink);
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  .ra-bouton:active { transform: scale(.97); }
+  .ra-bouton:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .ra-bouton .ra-icone { display: inline-flex; color: var(--muted); }
+  .ra-bouton .ra-chev { color: var(--muted); transition: transform .2s; }
+  .ra-bouton[aria-expanded="true"] .ra-chev { transform: rotate(180deg); }
+  .ra-menu { left: 0; right: 0; }
+  .ra-opt[aria-selected="true"] { font-weight: 700; }
+  .ra-opt .ra-check { margin-left: auto; visibility: hidden; flex: none; }
+  .ra-opt[aria-selected="true"] .ra-check { visibility: visible; }
+
+  /* ---------- Apparence forcée : Clair / Sombre (Système = réglage de l'OS) ---------- */
+  html[data-apparence="clair"] { color-scheme: light; }
+  html[data-apparence="sombre"] { color-scheme: dark; }
+  html[data-apparence="clair"] {
+    --bg: #f4f5f7; --surface: #ffffff; --ink: #17191d; --muted: #626977;
+    --line: #e4e7ec; --accent: #2456e0; --accent-soft: rgba(36, 86, 224, .09);
+    --wash: rgba(36, 86, 224, 0); --free: #18794e; --seg-track: #e8eaef;
+    --shadow: 0 16px 40px -24px rgba(23, 32, 68, .28); --danger: #d42a3c;
+  }
+  html[data-apparence="sombre"] {
+    --bg: #101216; --surface: #171a20; --ink: #f0f3f7; --muted: #98a1b1;
+    --line: #262b34; --accent: #8ba6ff; --accent-soft: rgba(139, 166, 255, .13);
+    --wash: rgba(139, 166, 255, 0); --free: #5fce96; --seg-track: #20252e;
+    --shadow: 0 18px 44px -20px rgba(0, 0, 0, .75); --danger: #ff6b7a;
+  }
+  html[data-apparence="clair"] body {
+    --relief-haut: color-mix(in srgb, var(--bg), #fff 78%);
+    --relief-bas: color-mix(in srgb, var(--bg), #fff 44%);
+    --reflet: rgba(255, 255, 255, .9);
+    --ombre-btn: 0 1px 2px rgba(23, 32, 68, .06), 0 2px 8px -4px rgba(23, 32, 68, .08);
+    --creux: color-mix(in srgb, var(--bg), #fff 60%);
+    --creux-ombre: rgba(23, 32, 68, .07);
+    --feuille: color-mix(in srgb, var(--bg), #fff 66%);
+  }
+  html[data-apparence="sombre"] body {
+    --relief-haut: color-mix(in srgb, var(--bg), #fff 7%);
+    --relief-bas: color-mix(in srgb, var(--bg), #fff 2.5%);
+    --reflet: rgba(255, 255, 255, .06);
+    --ombre-btn: 0 1px 2px rgba(0, 0, 0, .4), 0 4px 12px -6px rgba(0, 0, 0, .6);
+    --creux: color-mix(in srgb, var(--bg), #000 26%);
+    --creux-ombre: rgba(0, 0, 0, .4);
+    --feuille: color-mix(in srgb, var(--bg), #fff 4%);
+  }
+  html[data-apparence="clair"] body[data-theme="0"],
+  html[data-apparence="clair"] body[data-theme="2"] {
+    --accent: #1d4fd7; --accent-soft: rgba(29, 79, 215, .09); --wash: rgba(29, 79, 215, .09);
+    --bg: #eaf0fa; --seg-track: #dbe4f5;
+  }
+  html[data-apparence="clair"] body[data-theme="1"] {
+    --accent: #0e8655; --accent-soft: rgba(14, 134, 85, .10); --wash: rgba(14, 134, 85, .10);
+    --bg: #ebf2ec; --seg-track: #dce8de;
+  }
+  html[data-apparence="clair"] body[data-theme="3"] {
+    --accent: #d14d8a; --accent-soft: rgba(209, 77, 138, .12); --wash: rgba(209, 77, 138, .13);
+    --bg: #fdf1f6; --seg-track: #f9e0ec;
+  }
+  html[data-apparence="sombre"] body[data-theme="0"],
+  html[data-apparence="sombre"] body[data-theme="2"] {
+    --accent: #8ba6ff; --accent-soft: rgba(139, 166, 255, .14); --wash: rgba(139, 166, 255, .10);
+    --bg: #0d1322; --seg-track: #1c2436;
+  }
+  html[data-apparence="sombre"] body[data-theme="1"] {
+    --accent: #4cc38a; --accent-soft: rgba(76, 195, 138, .14); --wash: rgba(76, 195, 138, .10);
+    --bg: #0c1411; --seg-track: #1a231e;
+  }
+  html[data-apparence="sombre"] body[data-theme="3"] {
+    --accent: #ffa8d0; --accent-soft: rgba(255, 168, 208, .16); --wash: rgba(255, 168, 208, .14);
+    --bg: #24141d; --seg-track: #3a2330;
+  }
+  html[data-apparence="clair"] .sigle.sigle-logo {
+    background: #ffffff;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .08), 0 2px 6px rgba(0, 0, 0, .05);
+  }
+  html[data-apparence="sombre"] .sigle.sigle-logo {
+    background: #ffffff;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .15), 0 2px 8px rgba(0, 0, 0, .35);
+  }
+  html[data-apparence="clair"] #v-compte { --sur-accent: #fff; }
+  html[data-apparence="sombre"] #v-compte { --sur-accent: #0b1020; }
+  html[data-apparence="clair"] .ap-ev {
+    background: hsl(var(--h) 58% 95%); color: hsl(var(--h) 28% 23%);
+  }
+  html[data-apparence="sombre"] .ap-ev {
+    background: hsl(var(--h) 19% 17%); color: #eef2f8;
+  }
+  html[data-apparence="clair"] .ap-col.today::before {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, var(--line)), inset 0 1px 0 var(--reflet),
+      0 18px 40px -18px rgba(15, 20, 40, .35), 0 2px 6px -2px rgba(15, 20, 40, .1);
+  }
+  html[data-apparence="sombre"] .ap-col.today::before {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, var(--line)), inset 0 1px 0 var(--reflet),
+      0 18px 40px -18px rgba(0, 0, 0, .8);
+  }
+  @media (min-width: 1024px) {
+    html[data-apparence="clair"] .ev {
+      background: hsl(var(--h) calc(58% - var(--v) * 15%) calc(95% - var(--v) * 2%));
+      color: hsl(var(--h) 28% 23%);
+    }
+    html[data-apparence="clair"] .ev:hover, html[data-apparence="clair"] .ev.actif {
+      box-shadow: 0 12px 26px -14px rgba(15, 20, 40, .5);
+    }
+    html[data-apparence="clair"] .ev.actif {
+      box-shadow: 0 0 0 1.5px hsl(var(--h) calc(45% - var(--v) * 10%) calc(52% + var(--v) * 6%)),
+        0 12px 26px -14px rgba(15, 20, 40, .5);
+    }
+    html[data-apparence="clair"] .ev .es, html[data-apparence="clair"] .ev .ep,
+    html[data-apparence="clair"] .ev .eh { color: inherit; }
+    html[data-apparence="sombre"] .ev {
+      background: hsl(var(--h) calc(19% + var(--v) * 7%) calc(17% + var(--v) * 2%));
+      color: #eef2f8;
+    }
+    html[data-apparence="sombre"] .ev:hover, html[data-apparence="sombre"] .ev.actif {
+      box-shadow: 0 12px 26px -14px rgba(0, 0, 0, .8);
+    }
+    html[data-apparence="sombre"] .ev.actif {
+      box-shadow: 0 0 0 1.5px hsl(var(--h) calc(45% - var(--v) * 8%) calc(62% + var(--v) * 5%)),
+        0 12px 26px -14px rgba(0, 0, 0, .8);
+    }
+    html[data-apparence="sombre"] .ev .es, html[data-apparence="sombre"] .ev .ep,
+    html[data-apparence="sombre"] .ev .eh { color: #eef2f8; }
+    html[data-apparence="clair"] .pdf-pages canvas {
+      box-shadow: 0 1px 2px rgba(0,0,0,.08), 0 8px 24px -12px rgba(0,0,0,.25);
+    }
+    html[data-apparence="sombre"] .pdf-pages canvas {
+      box-shadow: 0 8px 24px -12px rgba(0,0,0,.8);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ev, #pop, .liste button { transition: none; }
+    .chev, .minichev, .detail, .csub,
+    .week, .thisweek, .days, #feuille { transition: none; }
+    .ppop:not([hidden]) { animation: none; }
+    .voile:not([hidden]), .voile:not([hidden]) .boite, .voile.sortie, .voile.sortie .boite { animation: none; }
+    .ppop:not([hidden]), .ppop.haut:not([hidden]) { animation: none; }
+    #feuille, #feuille.visible, body::after { transition: none; }
+    body.arrivee .week, body.arrivee .days > li, body.arrivee #barre-recharge { animation: none; }
+    .pdf-reflet { display: none; }
+    .pdf-dezoom { transition: none; }
+    .ap-ev { animation: none; }
+    .pdf-pages canvas { animation: none; }
+    .btn-entree, .champs, .halo::before, .halo::after { transition: none; }
+  }

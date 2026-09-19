@@ -1,0 +1,157 @@
+/* Styles propres à la maquette « horaire sur mesure ».
+   app.css est l'extrait fidèle du <style> de index.html : tout ce qui est
+   ci-dessous n'existe pas encore dans l'app, c'est la partie à discuter. */
+
+:root {
+  --attention: #b26a00;
+  --attention-soft: rgba(178, 106, 0, .10);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --attention: #f0b866;
+    --attention-soft: rgba(240, 184, 102, .14);
+  }
+}
+
+/* ---------- Pastilles d'état (Nouveau, Sur mesure, source) ---------- */
+.tag-neuf, .tag-perso, .src-badge {
+  flex: none; display: inline-flex; align-items: center;
+  font-size: .68rem; font-weight: 750; letter-spacing: .02em;
+  text-transform: uppercase; border-radius: 7px; padding: 3px 7px;
+  background: var(--accent-soft); color: var(--accent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 26%, transparent);
+}
+.tag-perso { background: color-mix(in srgb, var(--accent) 14%, var(--surface)); }
+.src-badge {
+  font-size: .66rem; padding: 2px 6px; color: var(--muted);
+  background: var(--creux); box-shadow: inset 0 0 0 1px var(--line);
+}
+
+/* ---------- Carte d'entrée « sur mesure », en tête des formations ---------- */
+.liste button.surmesure {
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--accent) 10%, var(--relief-haut)),
+    color-mix(in srgb, var(--accent) 4%, var(--relief-bas)));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 34%, transparent),
+    inset 0 1px 0 var(--reflet), var(--ombre-btn);
+}
+.sm-ico {
+  flex: none; width: 38px; height: 38px; border-radius: 12px;
+  display: grid; place-items: center; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 24%, transparent);
+}
+.liste .surmesure .nom small { display: block; margin-top: 2px; font-weight: 500; color: var(--muted); font-size: .84rem; }
+.liste button.deja { opacity: .62; }
+.liste button.deja .nom small { display: block; margin-top: 2px; font-weight: 500; color: var(--muted); font-size: .84rem; }
+
+/* ---------- Cartes de source (composeur + fenêtre Modifier) ---------- */
+.srccard {
+  border-radius: 16px;
+  background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+  box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+}
+.srccard + .srccard { margin-top: 8px; }
+.srccard-ligne { display: flex; align-items: center; gap: 10px; padding: 12px 8px 12px 14px; }
+.src-num {
+  flex: none; width: 26px; height: 26px; border-radius: 9px;
+  display: grid; place-items: center; font-size: .78rem; font-weight: 750;
+  color: var(--src, var(--accent)); font-variant-numeric: tabular-nums;
+  background: color-mix(in srgb, var(--src, var(--accent)) 13%, var(--surface));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--src, var(--accent)) 30%, transparent);
+}
+.src-textes { flex: 1; min-width: 0; }
+.src-nom { display: block; font-weight: 650; letter-spacing: -.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.src-detail { display: block; margin-top: 1px; color: var(--muted); font-size: .84rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.srccard .icobtn {
+  flex: none; width: 40px; height: 40px; padding: 0; border: none; border-radius: 12px;
+  display: grid; place-items: center; color: var(--muted); cursor: pointer; background: none;
+}
+.srccard .icobtn:hover { background: color-mix(in srgb, var(--ink) 6%, transparent); }
+.srccard .icobtn.retire { color: var(--danger); }
+.srccard .icobtn.retire:hover { background: color-mix(in srgb, var(--danger) 10%, transparent); }
+
+/* Liste vide : cadre gravé, discret. */
+.vide-src {
+  display: grid; place-items: center; gap: 6px; text-align: center;
+  border-radius: 16px; padding: 26px 20px; color: var(--muted); font-size: .92rem;
+  background: var(--creux);
+  box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre);
+}
+.vide-src svg { color: var(--muted); opacity: .8; }
+.vide-src strong { color: var(--ink); font-weight: 650; }
+
+/* Blocs nom + thème (les vraies règles sont sur #bloc-surnom / #bloc-theme) */
+.bloc-surnom { margin: 0 0 22px; }
+.bloc-theme { margin: 0 0 26px; }
+
+/* En-tête du composeur */
+.perso-compte {
+  display: flex; align-items: center; gap: 8px; margin: 0 0 14px;
+  color: var(--muted); font-size: .88rem;
+}
+.perso-compte strong { color: var(--ink); font-weight: 650; }
+
+/* Rappel de la source en cours d'ajout */
+.src-rappel {
+  display: flex; align-items: center; gap: 10px; margin: 0 0 16px;
+  border-radius: 14px; padding: 10px 12px; font-size: .9rem; color: var(--muted);
+  background: var(--creux);
+  box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre);
+}
+.src-rappel .src-textes { flex: 1; }
+
+/* Comment ça marche : 3 étapes numérotées */
+.marche { margin: 22px 0 0; }
+.marche h3 { margin: 0 0 8px; font-size: .85rem; font-weight: 600; color: var(--muted); }
+.marche ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.marche li { display: flex; gap: 10px; align-items: flex-start; font-size: .92rem; color: var(--muted); }
+.marche li b { color: var(--ink); font-weight: 600; }
+.marche .num {
+  flex: none; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
+  font-size: .72rem; font-weight: 750; color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+/* ---------- Alerte de chevauchement ---------- */
+.choc {
+  display: flex; gap: 11px; align-items: flex-start;
+  border-radius: 14px; padding: 12px 14px; margin: 0 0 16px; font-size: .92rem;
+  background: color-mix(in srgb, var(--attention) 9%, var(--surface));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--attention) 34%, transparent);
+}
+.choc svg { flex: none; color: var(--attention); margin-top: 1px; }
+.choc strong { display: block; font-weight: 650; letter-spacing: -.01em; }
+.choc p { margin: 3px 0 0; color: var(--muted); font-size: .88rem; }
+.choc p b { color: var(--ink); font-weight: 600; }
+.choc.ok { background: var(--creux); box-shadow: inset 0 0 0 1px var(--line); }
+.choc.ok svg { color: var(--free); }
+
+/* ---------- Bandeau des sources sous la semaine ---------- */
+.sources-ligne {
+  display: flex; align-items: center; gap: 6px 10px; flex-wrap: wrap;
+  margin: 0 0 12px; padding: 0 2px; font-size: .84rem; color: var(--muted);
+}
+.sources-ligne .src-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+.sources-ligne b { color: var(--ink); font-weight: 600; }
+.sources-ligne .lien-src {
+  border: none; background: none; padding: 0; font: inherit; font-size: inherit;
+  color: var(--accent); font-weight: 650; cursor: pointer; text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Chevauchement dans le déroulé d'un jour */
+.li-choc .cbtn .m { color: var(--ink); }
+.cfin { flex: none; display: inline-flex; align-items: center; gap: 5px; }
+.choc-tag {
+  flex: none; font-size: .64rem; font-weight: 750; text-transform: uppercase;
+  letter-spacing: .02em; border-radius: 6px; padding: 2px 6px;
+  color: var(--attention);
+  background: color-mix(in srgb, var(--attention) 12%, var(--surface));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--attention) 30%, transparent);
+}
+.csub .src { color: var(--muted); }
+
+/* PDF officiel : choix de la source (une formation = un PDF) */
+.pdf-source-note { margin: 2px 0 0; font-size: .84rem; color: var(--muted); }

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EzHoraire — maquette bureau « horaire sur mesure »</title>
+<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="maquette.css">
+<style>
+  /* Vue ordinateur : le composeur à gauche, la semaine fusionnée à droite,
+     mise à jour au fil des sources. */
+  .bureau { display: grid; grid-template-columns: 430px minmax(0, 1fr); gap: 34px; align-items: start; margin-top: 6px; }
+  .panneau {
+    border-radius: 18px; padding: 20px 20px 22px;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  .panneau .q { margin: 0 0 10px; font-size: 1.6rem; }
+  .panneau .aide { margin: 0 0 18px; font-size: .9rem; }
+  .panneau .bloc-surnom { margin: 18px 0 16px; }
+  .panneau .bloc-theme { margin: 0 0 18px; }
+  .apercu-tete { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 10px; }
+  .apercu-tete .q { margin: 0; font-size: 1.5rem; }
+  .cal-col .ev.choc { box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--attention) 55%, transparent); }
+  /* Hors app, .cal n'a pas de hauteur de grille : on lui en donne une. */
+  .cal { height: 690px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <button class="gauche" type="button">‹ Retour</button>
+    <h1 class="title"><button type="button">Ez<span>Horaire</span></button></h1>
+    <button class="droite" type="button" aria-label="Réglages"><span class="avatar"><span>CB</span></span></button>
+  </div>
+
+  <div class="bureau">
+    <!-- Colonne de gauche : le composeur -->
+    <div class="panneau">
+      <h2 class="q">Ton horaire sur mesure</h2>
+      <p class="aide">Réunis les cours de plusieurs années, options ou cours isolés : tout s'affiche dans une seule semaine.</p>
+      <p class="perso-compte"><strong>2 sources ajoutées</strong> · aperçu à droite</p>
+
+      <div class="srccard">
+        <div class="srccard-ligne">
+          <span class="src-num" style="--src:#1d4fd7">1</span>
+          <span class="src-textes"><span class="src-nom">BA2 Informatique</span><span class="src-detail">Groupe B</span></span>
+          <button class="icobtn" type="button" title="Modifier les groupes"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg></button>
+          <button class="icobtn retire" type="button" title="Retirer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 4h4M7 7l1 13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-13"/></svg></button>
+        </div>
+      </div>
+      <div class="srccard">
+        <div class="srccard-ligne">
+          <span class="src-num" style="--src:#0e8655">2</span>
+          <span class="src-textes"><span class="src-nom">BA1 Informatique</span><span class="src-detail">Groupe A · cours carrés</span></span>
+          <button class="icobtn" type="button" title="Modifier les groupes"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg></button>
+          <button class="icobtn retire" type="button" title="Retirer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 4h4M7 7l1 13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-13"/></svg></button>
+        </div>
+      </div>
+      <button class="btn-ajout halo" type="button" style="margin-top:10px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        Ajouter une année, une option, des cours
+      </button>
+
+      <div class="choc" style="margin-top:16px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5 2.8 19.5a1.5 1.5 0 0 0 1.3 2.2h15.8a1.5 1.5 0 0 0 1.3-2.2z"/><path d="M12 9.5v5M12 18h.01"/></svg>
+        <div>
+          <strong>Mardi 10h45 : deux cours se chevauchent</strong>
+          <p><b>Analyse TP</b> (BA1) et <b>Anglais</b> (BA2) tombent en même temps. Ils s'affichent côte à côte dans la grille.</p>
+        </div>
+      </div>
+
+      <div class="bloc-surnom">
+        <label class="champ-titre">Nom de cet horaire</label>
+        <div class="champs halo"><div class="champ-ligne"><input class="champ" type="text" value="Info 2026"></div></div>
+      </div>
+      <div class="bloc-theme">
+        <p class="theme-select-titre">Thème de cet horaire</p>
+        <div class="choix-themes">
+          <button type="button" class="theme-opt" aria-checked="true"><span class="theme-pastille" style="background:#1d4fd7"></span><span>Bleu</span></button>
+          <button type="button" class="theme-opt" aria-checked="false"><span class="theme-pastille" style="background:#0e8655"></span><span>Vert</span></button>
+          <button type="button" class="theme-opt" aria-checked="false"><span class="theme-pastille" style="background:#d14d8a"></span><span>Rose</span></button>
+        </div>
+      </div>
+      <button class="primaire halo" type="button" style="width:100%">Voir mon horaire</button>
+    </div>
+
+    <!-- Colonne de droite : la semaine fusionnée -->
+    <div>
+      <div class="apercu-tete">
+        <div>
+          <h2 class="q">Semaine 47</h2>
+          <span class="aide" style="margin:0">16 – 20 nov. 2026 · <b>Info 2026</b></span>
+        </div>
+        <div class="seg" role="tablist" style="--n:2;--idx:1;max-width:260px">
+          <span class="pill" aria-hidden="true"></span>
+          <button type="button" role="tab" aria-selected="false">Droit</button>
+          <button type="button" role="tab" aria-selected="true">Info 2026</button>
+        </div>
+      </div>
+      <p class="sources-ligne">
+        <span><span class="src-dot" style="background:#1d4fd7"></span><b>BA2 Informatique</b></span>
+        <span><span class="src-dot" style="background:#0e8655"></span><b>BA1 Informatique</b> (cours carrés)</span>
+        <button type="button" class="lien-src">Modifier</button>
+      </p>
+
+      <div class="cal" style="--n:5;--cols:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);--pause:50%">
+        <div class="cal-tete">
+          <div></div>
+          <div class="cal-jour"><span>Lun</span><strong>16</strong><small>8h30 – 12h45</small></div>
+          <div class="cal-jour"><span>Mar</span><strong>17</strong><small>8h30 – 12h45</small></div>
+          <div class="cal-jour"><span>Mer</span><strong>18</strong><small>9h00 – 15h15</small></div>
+          <div class="cal-jour"><span>Jeu</span><strong>19</strong><small>8h30 – 17h00</small></div>
+          <div class="cal-jour"><span>Ven</span><strong>20</strong><small>10h45 – 15h15</small></div>
+        </div>
+        <div class="cal-corps">
+          <div class="cal-heures" aria-hidden="true">
+            <span style="top:0%">8h</span><span style="top:10%">9h</span><span style="top:20%">10h</span>
+            <span style="top:30%">11h</span><span style="top:40%">12h</span><span style="top:50%">13h</span>
+            <span style="top:60%">14h</span><span style="top:70%">15h</span><span style="top:80%">16h</span>
+            <span style="top:90%">17h</span><span style="top:100%">18h</span>
+          </div>
+
+          <div class="cal-col">
+            <button type="button" class="ev" style="--h:152;--v:0;--t:5;--d:20;--l:0;--w:1">
+              <span class="et">Analyse</span><span class="es"><span>A.204</span></span>
+              <span class="eb"><span class="ep">Mme Leroy</span><span class="eh">8h30 – 10h30</span></span></button>
+            <button type="button" class="ev" style="--h:18;--v:0;--t:27.5;--d:20;--l:0;--w:1">
+              <span class="et">Réseaux</span><span class="es"><span>A.018</span></span>
+              <span class="eb"><span class="ep">Mme Lambert</span><span class="eh">10h45 – 12h45</span></span></button>
+          </div>
+
+          <div class="cal-col">
+            <button type="button" class="ev" style="--h:221;--v:0;--t:5;--d:20;--l:0;--w:1">
+              <span class="et">Algorithmique</span><span class="es"><span>A.204</span></span>
+              <span class="eb"><span class="ep">M. Dupont</span><span class="eh">8h30 – 10h30</span></span></button>
+            <button type="button" class="ev choc" style="--h:152;--v:0;--t:27.5;--d:20;--l:0;--w:.5">
+              <span class="et">Analyse TP</span><span class="es"><span>L2.11</span></span>
+              <span class="eb"><span class="ep">Mme Leroy</span><span class="eh">10h45 – 12h45</span></span></button>
+            <button type="button" class="ev choc" style="--h:332;--v:0;--t:27.5;--d:20;--l:.5;--w:.5">
+              <span class="et">Anglais</span><span class="es"><span>C.301</span></span>
+              <span class="eb"><span class="ep">Mme Smith</span><span class="eh">10h45 – 12h45</span></span></button>
+          </div>
+
+          <div class="cal-col">
+            <button type="button" class="ev" style="--h:40;--v:0;--t:57.5;--d:15;--l:0;--w:1">
+              <span class="et">Bases de données</span><span class="es"><span>L2.11</span></span>
+              <span class="eb"><span class="ep">M. Janssens</span><span class="eh">13h45 – 15h15</span></span></button>
+            <button type="button" class="ev" style="--h:262;--v:0;--t:10;--d:30;--l:0;--w:1">
+              <span class="et">Cybersécurité</span><span class="es"><span>C.301</span></span>
+              <span class="eb"><span class="ep">M. Peeters</span><span class="eh">9h00 – 12h00</span></span></button>
+          </div>
+
+          <div class="cal-col">
+            <button type="button" class="ev" style="--h:292;--v:0;--t:5;--d:20;--l:0;--w:1">
+              <span class="et">Systèmes</span><span class="es"><span>A.204</span></span>
+              <span class="eb"><span class="ep">M. Janssens</span><span class="eh">8h30 – 10h30</span></span></button>
+            <button type="button" class="ev" style="--h:190;--v:0;--t:60;--d:30;--l:0;--w:1">
+              <span class="et">Projet</span><span class="es"><span>L1.02</span></span>
+              <span class="eb"><span class="ep">Mme Dubois</span><span class="eh">14h00 – 17h00</span></span></button>
+          </div>
+
+          <div class="cal-col">
+            <button type="button" class="ev" style="--h:152;--v:0;--t:27.5;--d:20;--l:0;--w:1">
+              <span class="et">Analyse</span><span class="es"><span>L2.11</span></span>
+              <span class="eb"><span class="ep">Mme Leroy</span><span class="eh">10h45 – 12h45</span></span></button>
+            <button type="button" class="ev" style="--h:332;--v:0;--t:57.5;--d:15;--l:0;--w:1">
+              <span class="et">Anglais</span><span class="es"><span>C.301</span></span>
+              <span class="eb"><span class="ep">Mme Smith</span><span class="eh">13h45 – 15h15</span></span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
