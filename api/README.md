@@ -22,6 +22,7 @@ api/
 │   ├── heh.py       HEH — Haute École en Hainaut       → moteur hyperplanning
 │   ├── umons.py     UMONS — Université de Mons         → moteur hyperplanning
 │   ├── condorcet.py Condorcet — Haute École de la Province de Hainaut → moteur hyperplanning
+│   ├── helb.py      HELB — Haute École libre de Bruxelles Ilya Prigogine → moteur hyperplanning
 │   ├── ulb.py       ULB — Université libre de Bruxelles→ moteur timeedit
 │   └── ucl.py       UCLouvain (en test, EZH_UCL=1)     → moteur propre
 │

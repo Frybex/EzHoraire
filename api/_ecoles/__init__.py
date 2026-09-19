@@ -1,10 +1,10 @@
 """Écoles prises en charge et petites aides HTTP communes aux points d'entrée.
 
 Un fichier par école, à côté de celui-ci : heh.py, umons.py, condorcet.py,
-ulb.py, ucl.py. Chacun n'est qu'une configuration — l'adresse de l'école,
-son nom, sa rentrée — posée sur un moteur de `_moteurs/`
-(hyperplanning.py pour la HEH, l'UMONS et Condorcet, timeedit.py pour
-l'ULB). Une école sans moteur commun (ucl.py) écrit le sien dans son
+helb.py, ulb.py, ucl.py. Chacun n'est qu'une configuration — l'adresse de
+l'école, son nom, sa rentrée — posée sur un moteur de `_moteurs/`
+(hyperplanning.py pour la HEH, l'UMONS, Condorcet et la HELB, timeedit.py
+pour l'ULB). Une école sans moteur commun (ucl.py) écrit le sien dans son
 propre fichier.
 
 Ajouter une école : un module ici qui expose NOM, formations(), horaire()
@@ -29,6 +29,7 @@ if ICI not in sys.path:
 from . import heh  # noqa: E402
 from . import umons  # noqa: E402
 from . import condorcet  # noqa: E402
+from . import helb  # noqa: E402
 from . import ulb  # noqa: E402
 
 # L'UCLouvain est développé mais pas encore publié : il n'est exposé
@@ -39,6 +40,7 @@ ECOLES = {
     "heh": heh,
     "umons": umons,
     "condorcet": condorcet,
+    "helb": helb,
     "ulb": ulb,
 }
 if os.environ.get("EZH_UCL") == "1":

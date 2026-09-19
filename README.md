@@ -30,15 +30,16 @@ saturé, rail de couleur à gauche, texte neutre.
 
 Écoles prises en charge : **HEH** (HEH Planning), **UMONS** (UMONS Planning,
 espace invités public), **Condorcet** (Condorcet Planning, espace invités
-public), **ULB** (TimeEdit, vue publique « je n'ai pas encore d'ULBID ») et
-**UCLouvain** (Mon horaire, en test — voir plus bas). Objectif : la plupart
-des universités et hautes écoles belges, puis les applications iOS et
-Android, et les comptes (Google, GitHub, email).
+public), **HELB** (HELB Planning, espace invités public), **ULB** (TimeEdit,
+vue publique « je n'ai pas encore d'ULBID ») et **UCLouvain** (Mon horaire,
+en test — voir plus bas). Objectif : la plupart des universités et hautes
+écoles belges, puis les applications iOS et Android, et les comptes
+(Google, GitHub, email).
 
-L'UMONS, Condorcet et l'ULB, branchées récemment, portent une étiquette
-**Bêta** sur l'écran des écoles (`beta: true` dans `ECOLES`, `index.html`) :
-elles n'ont pas encore vu une année entière. À retirer quand elles auront
-tenu une rentrée.
+L'UMONS, Condorcet, la HELB et l'ULB, branchées récemment, portent une
+étiquette **Bêta** sur l'écran des écoles (`beta: true` dans `ECOLES`,
+`index.html`) : elles n'ont pas encore vu une année entière. À retirer
+quand elles auront tenu une rentrée.
 
 Une école peut être codée sans être publiée : elle est enregistrée dans
 `api/_ecoles/__init__.py` derrière `EZH_UCL=1` et l'app ne la propose que si
@@ -210,7 +211,8 @@ au maximum : un changement de salle apparaît au plus tard après ça).
 
 Pour les étudiants entre deux années (cours carrés, option d'une autre
 année, réorientation) : un horaire peut réunir **1 à 6 sources** d'une
-même école (HEH, UMONS, Condorcet, ULB ; l'UCLouvain dès sa publication).
+même école (HEH, UMONS, Condorcet, HELB, ULB ; l'UCLouvain dès sa
+publication).
 Une source = une formation, un parcours `PAR:` ou un lien iCal, avec ses
 groupes et un rôle : **année principale** (tout est gardé, on retire des
 cours : `sans`) ou **année d'ajout** (seuls les cours cochés : `avec`).
@@ -318,6 +320,17 @@ séances de soutien, pas des formations diplômantes) et la recherche
 comprend leurs abréviations (« bac 1 », « option », « AESI »,
 « St-Ghislain »…).
 
+Spécificités HELB (78 cursus, espace invités Hyperplanning) : l'école
+publie son planning sous un dossier d'année
+(`planning.helb-prigogine.be/2026-2027` — à changer dans `BASE`,
+`api/_ecoles/helb.py`, à chaque rentrée) et parle le protocole
+« moderne » d'Hyperplanning, celui de la version 2024 : corps
+`numeroOrdre` / `nom` / `donneesSec`, signature `_Signature_`. C'est le
+même moteur que la HEH, l'UMONS et Condorcet, en mode `protocole="moderne"`
+(le classique reste le défaut). Les intitulés sont des sigles (« IODA B1 »,
+« SI 3 », « SF 2 », « KINE 1T ») : la recherche les complète en clair
+(« informatique », « soins infirmiers », « sage-femme », « kiné »…).
+
 Protection de l'école, en quatre couches :
 
 1. **Le cache partagé de l'hébergeur** (`s-maxage` : 15 min pour un
@@ -334,9 +347,9 @@ Protection de l'école, en quatre couches :
    6 imports. Un import cherche jusqu'à 25 fois chez l'école, d'où sa
    limite plus basse.
 4. **Le fusible par instance** : 120 sessions / min chez Hyperplanning
-   (HEH, UMONS, Condorcet), 400 appels / min chez TimeEdit (ULB), 300 chez
-   l'UCLouvain. Au-delà, l'app répond « réessaie dans une minute » au lieu
-   d'insister.
+   (HEH, UMONS, Condorcet, HELB), 400 appels / min chez TimeEdit (ULB), 300
+   chez l'UCLouvain. Au-delà, l'app répond « réessaie dans une minute » au
+   lieu d'insister.
 
 Les couches 2 à 4 sont propres à chaque instance serverless : c'est la
 couche 1 qui fait le gros du travail. À la rentrée, si l'école se plaint
@@ -388,7 +401,7 @@ les sources. `logos/ecoles/` est déployé, `logos/da/` et `logos/ez/`
   les **points d'entrée** à la racine (`formations.py`, `horaires.py`,
   `recherche.py`, `ical.py`, `importer.py`, `pdf.py`, `config.py`,
   `stats.py`), les **écoles** dans `api/_ecoles/` (un fichier par école :
-  `heh.py`, `umons.py`, `condorcet.py`, `ulb.py`, `ucl.py`, plus
+  `heh.py`, `umons.py`, `condorcet.py`, `helb.py`, `ulb.py`, `ucl.py`, plus
   `__init__.py` qui tient le registre et les aides HTTP), et les **moteurs**
   partagés dans `api/_moteurs/` (`hyperplanning.py`, `timeedit.py`,
   `ical.py`, `import_liste.py`, `typesafe.py`).
@@ -430,9 +443,10 @@ vercel --prod --yes
 
 À la rentrée prochaine : adapter `BASE` (`hehplanning2026`) dans
 `api/_ecoles/heh.py`, `BASE` (`hplanning2026`) + `PREMIER_LUNDI_DEFAUT` dans
-`api/_ecoles/umons.py`, et `BASE` (`horaires2026`) +
-`PREMIER_LUNDI_DEFAUT` dans `api/_ecoles/condorcet.py`. Sans ça, l'école
-concernée répond « L'école ne répond pas correctement » partout. Pour
-l'ULB : `PREMIER_LUNDI_DEFAUT` et `ANNEE` (`202627`) dans
+`api/_ecoles/umons.py`, `BASE` (`horaires2026`) +
+`PREMIER_LUNDI_DEFAUT` dans `api/_ecoles/condorcet.py`, et `BASE`
+(`.../2026-2027`) + `PREMIER_LUNDI_DEFAUT` dans `api/_ecoles/helb.py`.
+Sans ça, l'école concernée répond « L'école ne répond pas correctement »
+partout. Pour l'ULB : `PREMIER_LUNDI_DEFAUT` et `ANNEE` (`202627`) dans
 `api/_ecoles/ulb.py` (le reste — vues publiques `sid`, fin de fenêtre —
 TimeEdit s'en occupe).

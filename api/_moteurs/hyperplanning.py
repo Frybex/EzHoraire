@@ -1,6 +1,11 @@
 """Moteur commun pour les écoles utilisant Pronote Campus / Hyperplanning (espace invités).
 
-Utilisé par _ecoles/heh.py, _ecoles/umons.py et _ecoles/condorcet.py.
+Utilisé par _ecoles/heh.py, _ecoles/umons.py, _ecoles/condorcet.py et
+_ecoles/helb.py. Deux protocoles cohabitent : le classique (clés
+`no`/`id`/`dataSec`, signature `Signature`) et le moderne arrivé avec
+Hyperplanning 2024 (clés `numeroOrdre`/`nom`/`donneesSec`, signature
+`_Signature_`), parlé notamment par la HELB. Le constructeur le détecte
+dans la page d'accueil, ou `protocole="moderne"` le fixe.
 """
 import base64
 import collections
@@ -15,6 +20,7 @@ from datetime import datetime, timedelta, timezone
 import requests
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad
+from urllib.parse import urlparse
 
 UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/126.0 Safari/537.36")
@@ -169,6 +175,15 @@ def journal(code, quoi, ec, debut, **details):
           f'duree={time.monotonic() - debut:.1f}s', flush=True)
 
 
+def _origine(base):
+    """'https://hote/chemin' -> 'https://hote' (en-tête Origin valide).
+
+    L'adresse d'une école peut porter un chemin (HELB : /2026-2027) ; un
+    Origin avec chemin n'existe pas dans un navigateur."""
+    parties = urlparse(base)
+    return f"{parties.scheme}://{parties.netloc}"
+
+
 def maintenant():
     """Heure de Bruxelles, même sur un serveur en UTC."""
     try:
@@ -183,7 +198,8 @@ def maintenant():
 class HP:
     """Mini-client pour l'API 'appelfonction' de l'espace invités."""
 
-    def __init__(self, base, timeout, default_premier_lundi="2026-09-14", default_places_par_jour=48):
+    def __init__(self, base, timeout, default_premier_lundi="2026-09-14",
+                 default_places_par_jour=48, protocole="auto"):
         self.base = base.rstrip("/")
         self.timeout = timeout
         self.default_premier_lundi = default_premier_lundi
@@ -191,20 +207,30 @@ class HP:
         self.appels = 1  # le GET ci-dessous ; chaque call() ajoute le sien
         self.s = requests.Session()
         self.s.headers.update({"User-Agent": UA, "Content-Type": "application/json",
-                               "Referer": self.base + "/invite?fd=1", "Origin": self.base})
+                               "Referer": self.base + "/invite?fd=1",
+                               "Origin": _origine(self.base)})
         r = self.s.get(self.base + "/invite?fd=1", timeout=timeout)
-        m = re.search(r'Start \(\{"a":(\d+),\"b\":(\d+),\"c\":\"([^\"]+)\",\"i\":(\d+)\}', r.text)
+        # Deux écritures du Start selon la version d'Hyperplanning : clés
+        # citées (HEH, UMONS, Condorcet) ou non (HELB) — d'où les guillemets
+        # optionnels. L'écriture dit aussi quel protocole parle l'école.
+        m = re.search(r"""Start \(\{\s*["']?a["']?\s*:\s*(\d+)\s*,\s*["']?b["']?\s*:\s*(\d+)\s*,"""
+                      r"""\s*["']?c["']?\s*:\s*["']([^"']+)["']\s*,\s*["']?i["']?\s*:\s*["']?(\d+)""",
+                      r.text)
         if not m:
             raise RuntimeError("page d'accueil inattendue (Start introuvable)")
+        self.v2 = protocole == "moderne" or (protocole == "auto" and '"a"' not in m.group(0))
         self.genre, self.sess = int(m.group(1)), int(m.group(4))
         self.key = b""
         self.iv = os.urandom(16)
         uuid = base64.b64encode(self.iv).decode()
         self.params = self.call("FonctionParametres",
-                                {"data": {"ModeJeton": False, "Uuid": uuid, "identifiantNav": ""}},
+                                charge={"ModeJeton": False, "Uuid": uuid,
+                                        "identifiantNav": None if self.v2 else ""},
                                 ordre=1, raw_iv=True)
         self.ordre = 3
-        self.dpu = self.call("DemandeParametreUtilisateur", {"data": {}})
+        self.dpu = self.call("DemandeParametreUtilisateur",
+                             charge=None if self.v2 else {},
+                             signature={"Onglet": ""} if self.v2 else None)
         self._formations = None
         self._infos = {}
 
@@ -214,10 +240,25 @@ class HP:
         v = hashlib.md5(iv).digest() if len(iv) > 0 else bytes(16)
         return AES.new(k, AES.MODE_CBC, v).encrypt(pad(str(num).encode(), 16)).hex()
 
-    def call(self, fid, datasec, ordre=None, raw_iv=False):
+    def call(self, fid, charge=None, signature=None, ordre=None, raw_iv=False):
+        """Appelle une fonction de l'espace invités et rend son `data`.
+
+        Deux protocoles : le classique (`no`/`id`/`dataSec`, signature
+        `Signature`) et le moderne, arrivé avec Hyperplanning 2024
+        (`numeroOrdre`/`nom`/`donneesSec`, signature `_Signature_`), que
+        parle la HELB. Le `no` (numéro d'ordre) est chiffré pareil dans les
+        deux ; seul son nom change."""
         no = self.enc(self.ordre if ordre is None else ordre, raw_iv)
         url = f"{self.base}/appelfonction/{self.genre}/{self.sess}/{no}"
-        body = {"session": self.sess, "no": no, "id": fid, "dataSec": datasec}
+        enveloppe = {}
+        if signature is not None:
+            enveloppe["_Signature_" if self.v2 else "Signature"] = signature
+        if charge is not None:
+            enveloppe["donnees" if self.v2 else "data"] = charge
+        if self.v2:
+            body = {"session": self.sess, "numeroOrdre": no, "nom": fid, "donneesSec": enveloppe}
+        else:
+            body = {"session": self.sess, "no": no, "id": fid, "dataSec": enveloppe}
         self.appels += 1
         r = self.s.post(url, json=body, timeout=self.timeout)
         r.raise_for_status()
@@ -225,14 +266,24 @@ class HP:
             j = r.json()
         except ValueError:
             raise RuntimeError(f"{fid} : réponse vide") from None
-        if "dataSec" not in j:
-            raise RuntimeError(f"{fid} : réponse inattendue {str(j)[:150]}")
-        sig = (j.get("dataSec") or {}).get("Signature") or {}
-        if sig.get("Erreur"):
-            raise RuntimeError(f"{fid} : {sig.get('MessageErreur')}")
+        if self.v2:
+            erreur = j.get("Erreur")
+            if erreur:
+                titre = erreur.get("Titre") if isinstance(erreur, dict) else str(erreur)
+                raise RuntimeError(f"{fid} : {titre or erreur}")
+            if "donneesSec" not in j:
+                raise RuntimeError(f"{fid} : réponse inattendue {str(j)[:150]}")
+            data = (j.get("donneesSec") or {}).get("donnees") or {}
+        else:
+            if "dataSec" not in j:
+                raise RuntimeError(f"{fid} : réponse inattendue {str(j)[:150]}")
+            sig = (j.get("dataSec") or {}).get("Signature") or {}
+            if sig.get("Erreur"):
+                raise RuntimeError(f"{fid} : {sig.get('MessageErreur')}")
+            data = (j.get("dataSec") or {}).get("data") or {}
         if ordre is None:
             self.ordre += 2
-        return j
+        return data
 
     # --- Données de base ---
 
@@ -240,7 +291,7 @@ class HP:
         """Créneaux du jour. L'UMONS en publie jusqu'à 01h00 : passé minuit,
         les heures continuent ('00h15' -> '24h15'), sinon une séance du
         soir finirait avant d'avoir commencé."""
-        liste = self.dpu["dataSec"]["data"]["Horaire"]["ListeHeures"]
+        liste = self.dpu["Horaire"]["ListeHeures"]
         out, jour, prec = [], 0, -1
         for h in liste:
             if not h.get("Debut"):
@@ -283,12 +334,12 @@ class HP:
     def formations(self):
         if self._formations is None:
             r = self.call("FonctionRenvoyerListeDeRessource",
-                          {"Signature": {"Onglet": ONGLET},
-                           "data": {"GenreRessource": 1, "GenreRecherche": 1,
-                                    "AvecPublicationForcee": False, "NomRessource": "*",
-                                    "PourEmail": False, "PourRessource": False,
-                                    "filtresRessource": []}})
-            self._formations = r["dataSec"]["data"]["ListeRessources"]["Liste"]
+                          signature={"Onglet": ONGLET},
+                          charge={"GenreRessource": 1, "GenreRecherche": 1,
+                                  "AvecPublicationForcee": False, "NomRessource": "*",
+                                  "PourEmail": False, "PourRessource": False,
+                                  "filtresRessource": []})
+            self._formations = r["ListeRessources"]["Liste"]
         return self._formations
 
     def formation(self, nom):
@@ -329,11 +380,9 @@ class HP:
 
     def domaine(self, ress, filtre="[0,6..7]"):
         sig = {"Onglet": ONGLET, "listeRecherche": [ress]}
-        r = self.call("FonctionDomaineDePresence",
-                      {"Signature": sig,
-                       "data": {"FiltreRessources": {"_T": 26, "V": filtre},
-                                "AvecCalendrier": False}})
-        return r["dataSec"]["data"]
+        return self.call("FonctionDomaineDePresence", signature=sig,
+                         charge={"FiltreRessources": {"_T": 26, "V": filtre},
+                                 "AvecCalendrier": False})
 
     def edt(self, ress, domaine, filtre="[0,2,6..8]"):
         sig = {"Onglet": ONGLET, "listeRecherche": [ress]}
@@ -343,8 +392,7 @@ class HP:
                 "AvecDomainePere": False, "filterPlagesHoraires": False,
                 "ignorerCoursAnnules": False, "avecInfosAppel": False,
                 "Domaine": {"_T": 8, "V": domaine}}
-        r = self.call("FonctionEmploiDuTemps", {"Signature": sig, "data": data})
-        return r["dataSec"]["data"]
+        return self.call("FonctionEmploiDuTemps", signature=sig, charge=data)
 
     def pdf(self, ress, semaine, periode):
         self.edt(ress, f"[{semaine}]")
@@ -358,11 +406,17 @@ class HP:
                 "domaineConsultation": {"_T": 8, "V": periode},
                 "verifierPublicationMatiere": True, "afficherSemaineVide": False,
                 "seulementHorairesUtiles": False}
-        r = self.call("GenerationPDF", {"Signature": {"Onglet": ONGLET, "listeRecherche": [ress]},
-                                        "data": data})
-        url = r["dataSec"]["data"]["url"]["V"]
+        r = self.call("GenerationPDF", signature={"Onglet": ONGLET, "listeRecherche": [ress]},
+                      charge=data)
+        url = r["url"]["V"]
+        # L'adresse vient de l'école : on ne la suit que si elle reste sur
+        # son hôte, et sans redirection (une école compromise pourrait
+        # sinon faire tirer le serveur vers une adresse interne).
+        cible = f"{self.base}/{url}"
+        if urlparse(cible).hostname != urlparse(self.base).hostname:
+            raise RuntimeError("GenerationPDF : adresse de PDF hors de l'école")
         self.appels += 1
-        f = self.s.get(f"{self.base}/{url}", timeout=self.timeout)
+        f = self.s.get(cible, timeout=self.timeout, allow_redirects=False)
         f.raise_for_status()
         if not f.content.startswith(b"%PDF"):
             raise RuntimeError("GenerationPDF : l'école n'a pas renvoyé de PDF")
@@ -409,13 +463,16 @@ class ClientHyperplanning:
     """Fournit les méthodes formations(), horaire(), pdf_semaine() pour une école."""
 
     def __init__(self, base, nom, source, premier_lundi_defaut="2026-09-14",
-                 places_par_jour_defaut=48, code="ecole"):
+                 places_par_jour_defaut=48, code="ecole", protocole="auto"):
         self.base = base.rstrip("/")
         self.nom = nom
         self.source = source
         self.premier_lundi_defaut = premier_lundi_defaut
         self.places_par_jour_defaut = places_par_jour_defaut
         self.code = code
+        if protocole not in ("auto", "classique", "moderne"):
+            raise ValueError(f"protocole inconnu : {protocole}")
+        self.protocole = protocole
         self._memo_data = {}
         self._sessions = collections.deque()  # horodatages des sessions ouvertes
         self._verrou = threading.Lock()        # sessions ouvertes depuis plusieurs fils
@@ -432,7 +489,8 @@ class ClientHyperplanning:
             if len(self._sessions) >= SESSIONS_PAR_MINUTE:
                 raise Surcharge("Trop de demandes en peu de temps : réessaie dans une minute.")
             self._sessions.append(maintenant)
-        return HP(self.base, timeout, self.premier_lundi_defaut, self.places_par_jour_defaut)
+        return HP(self.base, timeout, self.premier_lundi_defaut,
+                  self.places_par_jour_defaut, protocole=self.protocole)
 
     def _memo(self, cle, duree, calcul):
         vu = self._memo_data.get(cle)

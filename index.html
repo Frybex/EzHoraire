@@ -8,21 +8,21 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="EzHoraire">
-<title>EzHoraire — Horaire étudiant HEH, UMONS, Condorcet, ULB, UCLouvain</title>
-<meta name="description" content="Horaire de cours étudiant en Belgique : HEH, UMONS, Condorcet, ULB et UCLouvain, lisible sur téléphone et à jour à chaque visite. Gratuit, sans pub.">
+<title>EzHoraire — Horaire étudiant HEH, UMONS, Condorcet, HELB, ULB, UCLouvain</title>
+<meta name="description" content="Horaire de cours étudiant en Belgique : HEH, UMONS, Condorcet, HELB, ULB et UCLouvain, lisible sur téléphone et à jour à chaque visite. Gratuit, sans pub.">
 <link rel="canonical" href="https://www.ezhoraire.be/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="EzHoraire">
 <meta property="og:locale" content="fr_BE">
 <meta property="og:url" content="https://www.ezhoraire.be/">
-<meta property="og:title" content="EzHoraire — Horaire étudiant HEH, UMONS, Condorcet, ULB, UCLouvain">
-<meta property="og:description" content="Ton horaire de cours en Belgique, clair sur téléphone et à jour à chaque visite. HEH, UMONS, Condorcet, ULB, UCLouvain. Gratuit, sans pub.">
+<meta property="og:title" content="EzHoraire — Horaire étudiant HEH, UMONS, Condorcet, HELB, ULB, UCLouvain">
+<meta property="og:description" content="Ton horaire de cours en Belgique, clair sur téléphone et à jour à chaque visite. HEH, UMONS, Condorcet, HELB, ULB, UCLouvain. Gratuit, sans pub.">
 <meta property="og:image" content="https://www.ezhoraire.be/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="EzHoraire : une semaine de cours affichée en cases de couleur.">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="EzHoraire — Horaire étudiant HEH, UMONS, Condorcet, ULB, UCLouvain">
+<meta name="twitter:title" content="EzHoraire — Horaire étudiant HEH, UMONS, Condorcet, HELB, ULB, UCLouvain">
 <meta name="twitter:description" content="Ton horaire de cours en Belgique, clair sur téléphone et à jour à chaque visite. Gratuit, sans pub.">
 <meta name="twitter:image" content="https://www.ezhoraire.be/og-image.png">
 <meta name="twitter:image:alt" content="EzHoraire : une semaine de cours affichée en cases de couleur.">
@@ -1567,7 +1567,9 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     .aide { font-size: 1.05rem; margin: -6px 0 32px; max-width: 60ch; }
     .liste { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
     #liste-ecoles { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
-    .liste li.empty { grid-column: 1 / -1; }
+    .liste li.empty, .liste li.liste-titre { grid-column: 1 / -1; }
+    /* « Composer » sur une seule colonne pleine largeur : pas de trou à droite. */
+    #liste-perso { grid-template-columns: minmax(0, 1fr); }
     .liste button { height: 100%; min-height: 64px; padding: 16px 18px; }
     #liste-ecoles button { padding: 18px 20px; }
     #liste-ecoles .nom { font-size: 1.08rem; }
@@ -2136,6 +2138,10 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   .liste .surmesure .nom small, .liste button.deja .nom small {
     display: block; margin-top: 2px; font-weight: 500; color: var(--muted); font-size: .84rem;
   }
+  /* Carte « Composer » : de l'air avec la liste des formations en dessous,
+     pour ne pas coller au titre de rubrique. */
+  #liste-perso { margin: 0 0 20px; }
+  #perso-valider { margin-top: 18px; }
   .liste button.deja { opacity: .62; cursor: default; }
   .tag-neuf {
     flex: none; font-size: .64rem; font-weight: 750; letter-spacing: .02em; text-transform: uppercase;
@@ -2514,7 +2520,6 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     <div class="src-rappel" id="formation-rappel" hidden></div>
     <ul class="liste" id="liste-perso" hidden>
       <li><button type="button" class="halo surmesure" id="btn-perso">
-        <span class="sm-ico" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 8 4.5-8 4.5-8-4.5z"/><path d="m4 12 8 4.5 8-4.5"/><path d="m4 16.5 8 4.5 8-4.5"/></svg></span>
         <span class="nom">Composer un horaire sur mesure<small>Des cours de plusieurs années ou options, réunis</small></span>
         <span class="tag-neuf">Nouveau</span></button></li>
     </ul>
@@ -2822,7 +2827,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   "use strict";
   /* Version du parcours, jointe aux étapes anonymes : à incrémenter à
      chaque correctif, pour comparer « avant / après » dans le dashboard. */
-  window.EZH_VERSION = "3";
+  window.EZH_VERSION = "4";
   var JOURS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
   var MOIS = ["janv.", "févr.", "mars", "avr.", "mai", "juin",
               "juil.", "août", "sept.", "oct.", "nov.", "déc."];
@@ -2833,6 +2838,8 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     { id: "umons", nom: "UMONS", detail: "Université de Mons · Mons, Charleroi", logo: "logos/ecoles/umons.svg", beta: true },
     { id: "condorcet", nom: "Condorcet", detail: "Haute École de la Province de Hainaut · Mons, Charleroi, Tournai…",
       logo: "logos/ecoles/condorcet.svg", beta: true },
+    { id: "helb", nom: "HELB", detail: "Haute École libre de Bruxelles Ilya Prigogine · Bruxelles",
+      logo: "logos/ecoles/helb.svg", beta: true },
     { id: "ulb", nom: "ULB", detail: "Université libre de Bruxelles · Bruxelles, Charleroi", logo: "logos/ecoles/ulb.svg", recherche: true, beta: true },
     { id: "ucl", nom: "UCLouvain", detail: "Université catholique de Louvain · Louvain-la-Neuve, Bruxelles, Mons…",
       logo: "logos/ecoles/ucl.svg", recherche: true, pdf: false, beta: true }
@@ -2845,7 +2852,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
      Tant qu'il n'a pas répondu, on reste sur les écoles sûres — une école
      développée mais pas encore ouverte (l'UCLouvain, voir EZH_UCL côté
      api/) ne doit jamais apparaître par défaut. */
-  var ECOLES_ACTIVES = ["heh", "umons", "condorcet", "ulb"];
+  var ECOLES_ACTIVES = ["heh", "umons", "condorcet", "helb", "ulb"];
   function ecoleActive(id) { return ECOLES_ACTIVES.indexOf(id) >= 0; }
 
   /* Libellés des écoles « recherche » (pas de liste complète à
@@ -5429,6 +5436,25 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     [/\bmlz\b/g, " morlanwelz "],
     [/\bst-(?=[a-z])/g, " saint "],
     [/\(ch\)/g, " charleroi "],
+    // HELB : sigles de cursus (« IODA B1 », « SF 2 », « OPTI 1 », « KINE 1T »…).
+    [/\bioda\b/g, " informatique developpement applications "],
+    [/\bsf\b/g, " sage-femme "],
+    [/\bsi\b/g, " soins infirmiers "],
+    [/\bopti?\b/g, " optometrie optique "],
+    [/\bopto\b/g, " optometrie optique "],
+    [/\bortho\b/g, " orthoptie "],
+    [/\bkine\b/g, " kinesitherapie kine "],
+    [/\bergo\b/g, " ergotherapie "],
+    [/\bhbd\b/g, " hygiene bucco-dentaire "],
+    [/\bpodo\b/g, " podologie "],
+    [/\bpsychomot\b/g, " psychomotricite "],
+    [/\bmsi\b/g, " sciences infirmieres "],
+    [/\bfm\b/g, " facility management "],
+    [/\brp\b/g, " relations publiques "],
+    [/\bphoto\b/g, " photographie "],
+    [/\bscom\b/g, " communication "],
+    [/\bas\b/g, " assistant social "],
+    [/\btim\b/g, " technologue imagerie medicale "],
     [/\bfs\b/g, " finalite specialisee "],
     [/\bfd\b/g, " finalite didactique "],
     [/\bfa\b/g, " finalite approfondie "]
@@ -5460,8 +5486,19 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     [/^(heh|hephc|namur|tournai|marcinelle|morlanwelz)\b/, "Formation des enseignants (hautes écoles partenaires)"],
     [/^b[1-9]-activites/, "Activités d'aide à la réussite"]
   ];
-  function rubrique(f) {
+  /* La HELB abrège tout (« IODA B1 », « SI 3 », « KINE 1T »…) : le niveau
+     est dans le sigle, pas au début. Règles à elle, appliquées seulement
+     quand c'est son tour : ailleurs, « HEH Mons - B1 - Section 2 » (UMONS)
+     doit garder sa rubrique « hautes écoles partenaires ». */
+  function rubriqueHelb(n) {
+    if (/ b[1-4]( |$)/.test(n) || / (1t|2t|3t|4t)$/.test(n) ||
+        /^(si|sf|opti|tim) [1-4]$/.test(n)) return 0;  // bacheliers (blocs)
+    if (/ m[1-2]( |$)/.test(n)) return 1;             // masters
+    return RUBRIQUES.length;                          // spécialisations, formations continues
+  }
+  function rubrique(f, ecole) {
     var n = sansAccents(joliFormation(f));
+    if (ecole === "helb") return rubriqueHelb(n);
     for (var i = 0; i < RUBRIQUES.length; i++) if (RUBRIQUES[i][0].test(n)) return i;
     return RUBRIQUES.length;
   }
@@ -5475,7 +5512,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       return mots.every(function (m) { return n.indexOf(m) >= 0; });
     });
     if (avecRubriques) {
-      trouvees = trouvees.map(function (f, i) { return { f: f, r: rubrique(f), i: i }; })
+      trouvees = trouvees.map(function (f, i) { return { f: f, r: rubrique(f, choix.ecole), i: i }; })
         .sort(function (a, b) {
           if (a.r !== b.r) return a.r - b.r;
           var c = collateur ? collateur.compare(joliFormation(a.f), joliFormation(b.f)) : 0;
