@@ -228,7 +228,7 @@
         <span class="src-badge">Déjà ajouté</span>
       </button>
     </li>
-    <li><button type="button" data-va="ajoutgroupes"><span class="nom">BA1 Informatique</span><span class="chev" aria-hidden="true"></span></button></li>
+    <li><button type="button" data-va="source-annee"><span class="nom">BA1 Informatique</span><span class="chev" aria-hidden="true"></span></button></li>
     <li><button type="button"><span class="nom">BA3 Informatique</span><span class="chev" aria-hidden="true"></span></button></li>
     <li><button type="button"><span class="nom">BA3 Informatique — option Cybersécurité</span><span class="chev" aria-hidden="true"></span></button></li>
     <li><button type="button"><span class="nom">BA1 Droit</span><span class="chev" aria-hidden="true"></span></button></li>
@@ -236,27 +236,118 @@
 </section>
 
 <!-- ══════════════════════════════════════════════════════════════════
-     5. Groupes de la source en cours d'ajout
+     5. Toute l'année ou seulement certains cours (cours carrés)
      ══════════════════════════════════════════════════════════════════ -->
-<section data-ecran="ajoutgroupes" hidden>
+<section data-ecran="source" hidden>
   <div class="topbar">
-    <button class="gauche" type="button" data-va="ajout">‹ Retour</button>
+    <button class="gauche" type="button" data-va="retour-source">‹ Retour</button>
     <h1 class="title"><button type="button">Ez<span>Horaire</span></button></h1>
   </div>
   <p class="etapes"><span class="on"></span><span class="on"></span><span class="on"></span></p>
-  <h2 class="q">Ton groupe</h2>
+  <h2 class="q">Les cours de cette année</h2>
   <div class="src-rappel">
     <span class="src-num" style="--src:#0e8655">2</span>
-    <span class="src-textes"><span class="src-nom">BA1 Informatique</span><span class="src-detail">cours carrés — 2 cours à repasser</span></span>
+    <span class="src-textes"><span class="src-nom">BA1 Informatique</span><span class="src-detail">dans ton horaire sur mesure</span></span>
     <span class="tag-neuf">Source 2</span>
   </div>
-  <p class="aide">Coche les groupes que tu suis dans cette année. Tu pourras les changer plus tard, sans refaire l'horaire.</p>
-  <div class="chips">
-    <button type="button" class="chip" aria-pressed="true"><span class="coche" aria-hidden="true"></span>Groupe A</button>
-    <button type="button" class="chip" aria-pressed="false"><span class="coche" aria-hidden="true"></span>Groupe B</button>
-    <button type="button" class="chip" aria-pressed="false"><span class="coche" aria-hidden="true"></span>Groupe C</button>
+  <p class="aide">Prends toute l'année, ou seulement les cours que tu repasses : le reste de ta semaine vient de BA2.</p>
+  <div class="seg" role="tablist" aria-label="Comment suivre cette année" style="--n:2;--idx:1">
+    <span class="pill" aria-hidden="true"></span>
+    <button type="button" role="tab" data-source-mode="annee" aria-selected="false">Toute l'année</button>
+    <button type="button" role="tab" data-source-mode="cours" aria-selected="true">Certains cours</button>
   </div>
-  <p class="aide chips-avis" role="status">1 groupe coché : les cours de cette année s'ajoutent à ton horaire.</p>
+
+  <div data-source-panneau="annee" hidden>
+    <div class="source-resume">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5z"/><path d="m3.5 12.5 8.5 4.7 8.5-4.7"/><path d="m3.5 16.5 8.5 4.7 8.5-4.7"/></svg>
+      <div>
+        <strong>Tous les cours de BA1 Informatique</strong>
+        <p>Tu régleras tes groupes juste après, comme pour un horaire normal.</p>
+      </div>
+    </div>
+    <button class="primaire halo" type="button" data-va="ajoutgroupes">Choisir mes groupes</button>
+  </div>
+
+  <div data-source-panneau="cours">
+    <p class="aide" style="margin-top:-4px">Coche les cours que tu suis dans cette année. Les autres ne s'afficheront pas.</p>
+    <div class="cours-liste">
+      <button type="button" class="cours-ligne" aria-pressed="true">
+        <span class="coche" aria-hidden="true"></span>
+        <span class="ct"><strong>Analyse</strong><small>2 séances par semaine · CM + TP</small></span>
+        <span class="src-badge">MAT1101</span>
+      </button>
+      <button type="button" class="cours-ligne" aria-pressed="true">
+        <span class="coche" aria-hidden="true"></span>
+        <span class="ct"><strong>Mathématiques discrètes</strong><small>1 séance par semaine · CM</small></span>
+        <span class="src-badge">MAT1102</span>
+      </button>
+      <button type="button" class="cours-ligne" aria-pressed="true">
+        <span class="coche" aria-hidden="true"></span>
+        <span class="ct"><strong>Systèmes</strong><small>2 séances par semaine · CM + labo</small></span>
+        <span class="src-badge">INF1103</span>
+      </button>
+      <button type="button" class="cours-ligne" aria-pressed="false">
+        <span class="coche" aria-hidden="true"></span>
+        <span class="ct"><strong>Algorithmique</strong><small>3 séances par semaine · CM + TP</small></span>
+        <span class="src-badge">INF1101</span>
+      </button>
+      <button type="button" class="cours-ligne" aria-pressed="false">
+        <span class="coche" aria-hidden="true"></span>
+        <span class="ct"><strong>Structures de données</strong><small>2 séances par semaine · CM + TP</small></span>
+        <span class="src-badge">INF1102</span>
+      </button>
+      <button type="button" class="cours-ligne" aria-pressed="false">
+        <span class="coche" aria-hidden="true"></span>
+        <span class="ct"><strong>Anglais I</strong><small>1 séance par semaine · CM</small></span>
+        <span class="src-badge">LAN1101</span>
+      </button>
+    </div>
+    <p class="aide" id="cours-compte">3 cours cochés sur 6</p>
+    <button class="primaire halo" type="button" data-va="ajoutgroupes">Ajouter ces 3 cours</button>
+  </div>
+  <p class="bug-aide"><button type="button" class="lien-bug">Un cours manque, un souci ? Signaler</button></p>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     6. Groupes de la source en cours d'ajout
+     ══════════════════════════════════════════════════════════════════ -->
+<section data-ecran="ajoutgroupes" hidden>
+  <div class="topbar">
+    <button class="gauche" type="button" data-va="source-cours">‹ Retour</button>
+    <h1 class="title"><button type="button">Ez<span>Horaire</span></button></h1>
+  </div>
+  <p class="etapes"><span class="on"></span><span class="on"></span><span class="on"></span></p>
+  <h2 class="q">Tes groupes</h2>
+  <div class="src-rappel">
+    <span class="src-num" style="--src:#0e8655">2</span>
+    <span class="src-textes"><span class="src-nom">BA1 Informatique</span><span class="src-detail">3 cours choisis</span></span>
+    <span class="tag-neuf">Source 2</span>
+  </div>
+  <p class="aide">Un groupe pour chacun des cours cochés. Tu pourras les changer plus tard, sans refaire l'horaire.</p>
+  <div class="chips">
+    <div class="section-groupe">
+      <p class="section-titre">Analyse</p>
+      <div class="chips">
+        <button type="button" class="chip" aria-pressed="true"><span class="coche" aria-hidden="true"></span>Groupe A</button>
+        <button type="button" class="chip" aria-pressed="false"><span class="coche" aria-hidden="true"></span>Groupe B</button>
+      </div>
+    </div>
+    <div class="section-groupe">
+      <p class="section-titre">Mathématiques discrètes</p>
+      <div class="chips">
+        <button type="button" class="chip" aria-pressed="true"><span class="coche" aria-hidden="true"></span>Groupe A</button>
+        <button type="button" class="chip" aria-pressed="false"><span class="coche" aria-hidden="true"></span>Groupe B</button>
+      </div>
+    </div>
+    <div class="section-groupe">
+      <p class="section-titre">Systèmes</p>
+      <div class="chips">
+        <button type="button" class="chip" aria-pressed="true"><span class="coche" aria-hidden="true"></span>Groupe A</button>
+        <button type="button" class="chip" aria-pressed="false"><span class="coche" aria-hidden="true"></span>Groupe B</button>
+      </div>
+    </div>
+  </div>
+  <p class="aide chips-avis" role="status">3 groupes cochés : les cours de ces 3 matières rejoignent ta semaine.</p>
   <button class="primaire halo" type="button" data-valider-source>Ajouter cette année à mon horaire</button>
 </section>
 
@@ -281,10 +372,11 @@
   <div class="srccard">
     <div class="srccard-ligne">
       <span class="src-num" style="--src:#0e8655">2</span>
-      <span class="src-textes"><span class="src-nom">BA1 Informatique</span><span class="src-detail">Groupe A · cours carrés</span></span>
-      <button class="icobtn" type="button" title="Modifier les groupes"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg></button>
+      <span class="src-textes"><span class="src-nom">BA1 Informatique</span><span class="src-detail">3 cours choisis</span></span>
+      <button class="icobtn" type="button" title="Modifier les cours et les groupes"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg></button>
       <button class="icobtn retire" type="button" title="Retirer cette source"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 4h4M7 7l1 13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-13"/></svg></button>
     </div>
+    <div class="src-matieres"><span>Analyse</span><span>Mathématiques discrètes</span><span>Systèmes</span></div>
   </div>
   <button class="btn-ajout halo" type="button" data-va="ajout" style="margin-top:10px">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
@@ -335,10 +427,11 @@
   <div class="srccard">
     <div class="srccard-ligne">
       <span class="src-num" style="--src:#0e8655">2</span>
-      <span class="src-textes"><span class="src-nom">BA1 Informatique</span><span class="src-detail">Groupe A · cours carrés</span></span>
-      <button class="icobtn" type="button" title="Modifier les groupes"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg></button>
+      <span class="src-textes"><span class="src-nom">BA1 Informatique</span><span class="src-detail">3 cours choisis</span></span>
+      <button class="icobtn" type="button" title="Modifier les cours et les groupes"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg></button>
       <button class="icobtn retire" type="button" title="Retirer cette source"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 4h4M7 7l1 13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-13"/></svg></button>
     </div>
+    <div class="src-matieres"><span>Analyse</span><span>Mathématiques discrètes</span><span>Systèmes</span></div>
   </div>
   <div class="srccard">
     <div class="srccard-ligne">
@@ -404,7 +497,7 @@
   </div>
   <p class="sources-ligne">
     <span><span class="src-dot" style="background:#1d4fd7"></span><b>BA2 Informatique</b></span>
-    <span><span class="src-dot" style="background:#0e8655"></span><b>BA1 Informatique</b> (cours carrés)</span>
+    <span><span class="src-dot" style="background:#0e8655"></span><b>BA1 Informatique</b> · 3 cours</span>
     <span><span class="src-dot" style="background:#b0568f"></span><b>Option Cybersécurité</b></span>
     <button type="button" class="lien-src" data-va="modifier">Modifier</button>
   </p>
@@ -485,10 +578,11 @@
       <div class="srccard">
         <div class="srccard-ligne">
           <span class="src-num" style="--src:#0e8655">2</span>
-          <span class="src-textes"><span class="src-nom">BA1 Informatique</span><span class="src-detail">Groupe A · cours carrés</span></span>
-          <button class="icobtn" type="button" title="Modifier les groupes"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg></button>
+          <span class="src-textes"><span class="src-nom">BA1 Informatique</span><span class="src-detail">3 cours choisis</span></span>
+          <button class="icobtn" type="button" title="Modifier les cours et les groupes"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg></button>
           <button class="icobtn retire" type="button" title="Retirer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 4h4M7 7l1 13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-13"/></svg></button>
         </div>
+        <div class="src-matieres"><span>Analyse</span><span>Mathématiques discrètes</span><span>Systèmes</span></div>
       </div>
       <div class="srccard">
         <div class="srccard-ligne">

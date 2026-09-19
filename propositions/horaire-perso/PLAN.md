@@ -26,13 +26,15 @@ TP de BA1 qui tombe en même temps qu'Anglais de BA2, par exemple).
 
 **Objectif** : composer **un** horaire à partir de **plusieurs sources**,
 affiché exactement comme un horaire normal, mis à jour par l'école, avec
-les chevauchements signalés.
+les chevauchements signalés. Le cas type qui guide toute la maquette :
+**3 cours de BA1, le reste de BA2** (cours carrés), plus, si besoin, une
+option d'une autre année.
 
 ## 2. Périmètre (v1)
 
-Une **source** = une formation d'une école + ses groupes, c'est-à-dire
-l'unité que l'appait déjà savoir charger (`api/horaires`, ou `api/ical`
-pour un lien personnel).
+Une **source** = une formation d'une école + ses groupes, éventuellement
+réduite à **certains cours** (c'est-à-dire l'unité que l'app sait déjà
+charger : `api/horaires`, ou `api/ical` pour un lien personnel).
 
 - 2 à 6 sources, **d'une même école** en v1 (HEH, UMONS, Condorcet, ULB,
   UCLouvain). Les semaines d'une même école partent du même lundi et
@@ -105,7 +107,7 @@ Nouvelle vue `v-perso` (même langage que `v-groupes`) :
 
 ### 3.4 Ajouter une source
 
-![Ajout d'une source : liste des formations de la même école](./05-ajouter-annee.png)
+![Ajout d'une source : liste des formations de la même école](./04-ajouter-annee.png)
 
 - Réemploi **exact** de l'écran de formation (`ouvrirFormations()`,
   `index.html:4612`) : même recherche, mêmes rubriques, mêmes listes
@@ -116,24 +118,68 @@ Nouvelle vue `v-perso` (même langage que `v-groupes`) :
 - L'école est fixée par la 1re source ; l'écran ne propose que cette
   école en v1 (l'en-tête le rappelle).
 
-![Groupes de la source en cours d'ajout](./06-groupes-source.png)
+### 3.5 Toute l'année, ou seulement certains cours
+
+C'est le cœur du cas « 3 cours de BA1, le reste de BA2 ». Une fois la
+formation choisie, un rail à deux positions décide de la granularité de la
+source (même composant `.seg` que partout dans l'app) :
+
+![Mode « Toute l'année » : la source entière](./05-source-annee.png)
+
+- **Toute l'année** (défaut, un tap de plus seulement pour ceux qui
+  personnalisent) : « Tous les cours de BA1 Informatique » →
+  « Choisir mes groupes », puis le composeur.
+- Si la formation n'a pas de groupes, on va directement au composeur.
+
+![Mode « Certains cours » : 3 cours sur 6 cochés](./06-source-cours.png)
+
+- **Certains cours** : la liste des cours de l'année (matière, rythme,
+  code), une pastille à cocher par cours, un compteur vivant
+  (« 3 cours cochés sur 6 ») et un bouton qui dit le nombre
+  (« Ajouter ces 3 cours »). Zéro cours coché ⇒ bouton désactivé
+  (« Coche au moins un cours »).
+- Les matières cochées sont mémorisées dans la source
+  (`source.matieres`) ; les séances des autres matières sont écartées de
+  la fusion (`c.matiere ∈ matieres`), y compris les séances de type
+  « toute la formation » qui, sinon, restent toujours visibles.
+- Une matière absente de la liste un jour (intitulé changé par l'école) :
+  elle est signalée dans le composeur comme les groupes disparus, avec
+  « Rechoisir les cours ».
+- Pour l'ULB et l'UCLouvain, le mode « Certains cours » est **déjà plus
+  simple** : le sélecteur par codes (`rech.cours`,
+  `rechVoirCours()` `index.html:4819`) construit un `PAR:CODE1,CODE2` ;
+  il devient une source comme une autre, et le rail sert alors à choisir
+  entre un programme entier (`SINF11BA`) et une liste de codes.
+- Deux entrées possibles, à trancher (§9) : le rail dans l'écran des
+  cours (proposé, zéro clic de plus au quotidien) ou un écran dédié
+  « Comment veux-tu suivre cette année ? » (un clic de plus pour tout le
+  monde, mais le choix est plus visible).
+
+### 3.6 Groupes de la source
+
+![Groupes, un par cours coché](./07-groupes-source.png)
 
 - Réemploi de l'écran de groupes (`ouvrirGroupes()` `index.html:5197`,
   `listerGroupes()` `index.html:5245`) : sections par cours, options,
   filtre au-delà de 20 groupes, même règle « au moins une sélection
   au-delà de 8 groupes » (`groupeObligatoire()`, `index.html:5464`).
+- **Seuls les cours cochés** apparaissent : ici Analyse, Mathématiques
+  discrètes et Systèmes, chacun avec son groupe. C'est exactement la
+  réalité des écoles Hyperplanning (HEH, UMONS, Condorcet), où les
+  groupes sont par cours.
 - Le rappel de source est répété en haut (pastille 2, nom, badge
   « Source 2 ») pour ne jamais perdre de vue quelle année on règle.
 - Bouton final : **« Ajouter cette année à mon horaire »** (au lieu de
   « Voir mon horaire ») → retour au composeur.
 
-### 3.5 Composeur — sources et chevauchements
+### 3.7 Composeur — sources et chevauchements
 
-![Composeur avec 2 sources et l'alerte de chevauchement](./07-composeur-chevauchement.png)
+![Composeur : BA2 entière + BA1 en 3 cours, et l'alerte de chevauchement](./09-composeur-3-cours.png)
 
 - Une **carte par source** (`srccard`) : pastille numérotée colorée, nom
   de la source (modifiable plus tard), détail (`Groupe B`,
-  `Groupe A · cours carrés`, `option annuelle`…), crayon (groupes) et
+  `3 cours choisis`, `option annuelle`…), **les cours retenus en
+  pastilles** quand il y a une sélection, crayon (cours et groupes) et
   corbeille (retirer).
 - Sous les sources, le bouton **« Ajouter une année, une option, des
   cours »**.
@@ -145,44 +191,48 @@ Nouvelle vue `v-perso` (même langage que `v-groupes`) :
   `index.html:6166`).
 - Bouton principal **« Voir mon horaire »**.
 
-![Composeur avec 3 sources, aucun conflit](./08-composeur-3-sources.png)
+![Composeur avec une source de plus (option), aucun conflit](./10-composeur-3-sources.png)
 
 - Quand tout est clair : bandeau vert « Aucun cours en double ».
 - Le compteur « 3 sources ajoutées » suit le nombre réel.
+- Le composeur d'une source seule (première année posée) :
 
-### 3.6 L'horaire fusionné
+![Composeur à une source](./08-composeur-1-source.png)
 
-![La semaine fusionnée, bandeau de chevauchement et pastilles de source](./09-horaire-fusionne.png)
+### 3.8 L'horaire fusionné
+
+![La semaine fusionnée, bandeau de chevauchement et pastilles de source](./11-horaire-fusionne.png)
 
 - **Exactement la même semaine** qu'un horaire normal : `rendre()`,
   `jours`, `cal`, couleurs par intitulé (`preparerCouleurs()`,
   `index.html:5883`).
 - Sous la navigation de semaine, la **ligne des sources** : une pastille
-  de couleur par source, son nom, et le lien **Modifier**.
+  de couleur par source, son nom (« BA1 Informatique · 3 cours »), et le
+  lien **Modifier**.
 - Bandeau de chevauchement en haut, avec **« Voir mardi »** qui ouvre le
   jour concerné.
 - En multi-horaires, la barre `seg` du haut reprend le surnom (« Info
   2026 ») comme aujourd'hui.
 
-![Mardi ouvert : les cours des deux sources, repère « Chevauche »](./10-horaire-mardi.png)
+![Mardi ouvert : les cours des deux sources, repère « Chevauche »](./12-horaire-mardi.png)
 
 - Dans le déroulé d'un jour, chaque cours d'un horaire sur mesure gagne
-  une ligne **« Source : BA1 Informatique · Groupe A »** dans son détail
-  (là où un horaire normal affiche le groupe) : on sait toujours d'où
-  vient la séance.
+  une ligne **« Source : BA1 Informatique · 3 cours choisis »** dans son
+  détail (là où un horaire normal affiche le groupe) : on sait toujours
+  d'où vient la séance.
 - Les deux cours en conflit portent un repère **Chevauche** ambre (sur
   ordinateur, ils sont côte à côte dans la grille, comme deux cours d'un
   même groupe le font déjà via `couloirs()` `index.html:5906`).
 
-![Vue ordinateur : le composeur à gauche, la semaine fusionnée à droite](./13-bureau.png)
+![Vue ordinateur : le composeur à gauche, la semaine fusionnée à droite](./15-bureau.png)
 
 - Sur ordinateur (≥ 1024 px), le composeur peut vivre **à côté** de
   l'aperçu : on voit la semaine se remplir à chaque source ajoutée. Les
   cours en conflit sont cernés d'ambre dans la grille.
 
-### 3.7 PDF officiel
+### 3.9 PDF officiel
 
-![PDF officiel : le sélecteur de source](./11-pdf-par-source.png)
+![PDF officiel : le sélecteur de source](./13-pdf-par-source.png)
 
 - Un horaire sur mesure n'a pas de PDF unique : le bouton devient
   **« PDF officiel »** avec un **sélecteur de source** (comme le
@@ -191,9 +241,9 @@ Nouvelle vue `v-perso` (même langage que `v-groupes`) :
   l'entrée correspondante est absente du sélecteur ; si aucune source n'a
   de PDF, le bouton est masqué (`majBoutonPdf()` `index.html:3772`).
 
-### 3.8 Modifier
+### 3.10 Modifier
 
-![Fenêtre Modifier d'un horaire sur mesure](./12-modifier.png)
+![Fenêtre Modifier d'un horaire sur mesure](./14-modifier.png)
 
 - `⋮ → Modifier` (`modifierProfil()` `index.html:6254`) : un horaire sur
   mesure ouvre le **composeur en édition** plutôt que la fenêtre simple,
@@ -229,23 +279,28 @@ absorbe l'usage — un horaire sur mesure à 3 sources ne coûte au plus que
    c.groupes.some(g => groupeDans(sel, g))`, `index.html:5675`). C'est ce
    qui règle la collision des noms de groupes entre formations : chaque
    source filtre chez elle.
-2. **Alignement des semaines** : si `meta.premier_lundi` diffère, on
+2. **Cours de la source** : si `source.matieres` est renseigné (mode
+   « Certains cours »), ne garder que ces matières — **avant** le filtre
+   des groupes, et y compris les séances sans groupe (« toute la
+   formation ») qui seraient gardées sinon. Comparaison sur
+   `c.matiere` nettoyé (`nettoyerMatiere()` `index.html:5423`).
+3. **Alignement des semaines** : si `meta.premier_lundi` diffère, on
    décale les numéros de semaine de la source de `delta` semaines
    entières (positif ou négatif) ; si l'écart n'est pas un nombre entier
    de semaines (cas tordu), la source est **écartée** avec un avis
    « Cette année ne suit pas le même calendrier : ajoute-la dans un
    horaire séparé. » Les fériés sont décalés pareil (`FERIES` est indexé
    en jours depuis le premier lundi, `numJour()` `index.html:3584`).
-3. **Dédoublonnage** : une séance identique donnée par deux sources
+4. **Dédoublonnage** : une séance identique donnée par deux sources
    (cours mutualisé) devient une seule séance, semaines fusionnées. Clé :
    `(matiere, jour, debut, fin, salles, profs)` — même esprit que le
    regroupement d'Hyperplanning (`api/_moteurs/hyperplanning.py:574`),
    appliqué entre sources. La source affichée est la première (la plus
    « principale »).
-4. **Métadonnées** : `premier_lundi` de référence = celui de la première
+5. **Métadonnées** : `premier_lundi` de référence = celui de la première
    source ; `periode` = union des semaines ; `feries` = union ;
    `ts` = le plus récent.
-5. **Couleurs** : `preparerCouleurs()` sur tous les intitulés fusionnés,
+6. **Couleurs** : `preparerCouleurs()` sur tous les intitulés fusionnés,
    triés — deux intitulés différents n'ont jamais la même couleur, et un
    même cours garde la même couleur d'une source à l'autre. (Effet de
    bord assumé : ajouter une source peut redistribuer des couleurs, comme
@@ -295,15 +350,20 @@ Proposition — un champ `sources` optionnel, **rien d'autre ne bouge** :
   "formation": "", "groupes": [],
   "sources": [
     { "ecole": "heh", "formation": "BA2 Informatique",
-      "groupes": ["Groupe B"], "ical": "", "surnom": "" },
+      "groupes": ["Groupe B"], "ical": "", "surnom": "", "matieres": [] },
     { "ecole": "heh", "formation": "BA1 Informatique",
-      "groupes": ["Groupe A"], "ical": "", "surnom": "Cours carrés" }
+      "groupes": ["Groupe A"], "ical": "", "surnom": "Cours carrés",
+      "matieres": ["Analyse", "Mathématiques discrètes", "Systèmes"] }
   ] }
 ```
 
 - `sources` absent ou vide ⇒ horaire normal, tout le code actuel
   fonctionne tel quel (c'est la garantie de non-régression).
 - `surnom` par source : optionnel, défaut = `joliFormation(formation)`.
+- `matieres` : liste vide = toute l'année ; sinon seules ces matières
+  sont reprises (mode « Certains cours »). On stocke l'intitulé exact de
+  l'école, pas un index : le jour où l'école renomme un cours, on peut le
+  dire et le réparer.
 - `sources.length` entre 2 et 6. Une seule source n'est pas un perso :
   c'est un horaire normal.
 - `ecole` reste rempli (école unique en v1) : tris, PDF, stats et tri de
@@ -367,9 +427,13 @@ Tout tient dans `index.html` ; l'API ne bouge pas.
    l'écran formation et l'écran groupes reçoivent un « contexte source »
    (variable `choix.source` : null = parcours normal, objet = ajout à un
    perso), ce qui évite de dupliquer les écrans existants.
+   **Sélection de cours** : `choisirCoursSource()` (rail Toute l'année /
+   Certains cours + liste cochable, alimentée par `data.cours` groupés par
+   `nettoyerMatiere()`), résultat dans `choix.source.matieres`.
 3. **Fusion** : `chargerPerso(p)`, `fusionner(p, liste)`,
    `alignerSemaines(data, delta)`, `dedoublonner(cours)`,
-   `chevauchements(cours)`.
+   `chevauchements(cours)`, et le filtre `c.matiere ∈ source.matieres`
+   appliqué avant le filtre des groupes.
 4. **Affichage** : `installer()` (`5654`) accepte le résultat fusionné ;
    `afficherHoraire()` (`5716`) affiche « n sources » ; `detailJour()`
    (`5760`) ajoute la ligne Source ; `rendre()` (`5793`) gère les groupes
@@ -402,6 +466,7 @@ Tout tient dans `index.html` ; l'API ne bouge pas.
 | Une source ne répond plus chez l'école | Les autres s'affichent ; bandeau « L'horaire de BA1 n'a pas pu être mis à jour » + bouton Réessayer. Le cache local sert de filet. |
 | Hors ligne, aucune source en cache | Message actuel d'échec de chargement (`horaire-status`). |
 | Groupe disparu chez une source | Avis « Certains groupes de BA1 n'apparaissent plus » + « Rechoisir » qui ouvre cette source. |
+| Matière cochée disparue (cours renommé) | Avis « Le cours “Analyse” n'apparaît plus dans BA1 » + « Rechoisir les cours » ; la matière est gardée pour ne pas perdre le choix si c'est un hoquet de l'école. |
 | Source déjà ajoutée | Impossible à re-choisir (« Déjà ajouté »). |
 | Plus de 6 sources | Le bouton Ajouter est désactivé avec « Maximum atteint ». |
 | Chevauchements | Signalés, jamais bloquants. |
@@ -415,16 +480,17 @@ Tout tient dans `index.html` ; l'API ne bouge pas.
 |---|---|---|
 | 0 | Maquettes + plan (ce dossier) | fait |
 | 1 | Modèle `sources`, `profilValide`, brouillon, schéma Supabase, repli base non migrée | 0,5–1 j |
-| 2 | Composeur (vue, cartes, ajout/retrait, réemploi formation + groupes en contexte source) | 1–1,5 j |
-| 3 | Fusion (alignement, dédoublonnage, `DATA`, affichage semaine, lignes de source) | 1–1,5 j |
+| 2 | Composeur (vue, cartes, ajout/retrait, sélection de cours, réemploi formation + groupes en contexte source) | 1,5–2 j |
+| 3 | Fusion (matières, alignement, dédoublonnage, `DATA`, affichage semaine, lignes de source) | 1–1,5 j |
 | 4 | Chevauchements (calcul, bandeau, repères, grille bureau) | 0,5 j |
 | 5 | Édition, PDF par source, carte Réglages | 0,5–1 j |
 | 6 | Finitions : stats, suivi, aide, README, messages d'erreur, recette multi-écoles | 0,5–1 j |
 
 Recette minimale avant de publier (chaque école HEH / UMONS / Condorcet /
-ULB / UCLouvain) : 2 sources sans conflit, 2 sources avec conflit, un
-groupe perdu, une source en panne, hors ligne, PDF, édition, suppression,
-et un horaire normal **inchangé**.
+ULB / UCLouvain) : 2 sources sans conflit, 2 sources avec conflit, une
+source en année entière, une source en 3 cours, un groupe perdu, une
+matière renommée, une source en panne, hors ligne, PDF, édition,
+suppression, et un horaire normal **inchangé**.
 
 ## 9. Questions ouvertes
 
@@ -436,17 +502,24 @@ et un horaire normal **inchangé**.
    message ?
 3. **Nom affiché** : « sur mesure » (proposé, court), « personnalisé »,
    « assemblage » ? Il apparaît dans la carte, le tag et l'aide.
-4. **Fonctions pures dans `fusion.js` + test Node** (proposé), ou tout
+4. **Sélection de cours** : rail dans l'écran des cours (proposé, aucun
+   clic de plus pour « toute l'année ») ou écran dédié « Comment veux-tu
+   suivre cette année ? » (choix plus visible, un clic de plus) ?
+   Et : cocher des **matières** (proposé, lisible) ou des **codes de
+   cours** quand l'école en publie (HEH/UMONS en ont dans `matiere`) ?
+5. **Fonctions pures dans `fusion.js` + test Node** (proposé), ou tout
    dans `index.html` et recette manuelle ?
-5. **Couleur de la pastille de source** : trois teintes fixes (bleu,
+6. **Couleur de la pastille de source** : trois teintes fixes (bleu,
    vert, rose — proposé, cohérentes avec les thèmes), ou dérivées de
    `premier_lundi`/de l'ordre ?
-6. **Le bandeau de chevauchement** doit-il rester visible en permanence
+7. **Le bandeau de chevauchement** doit-il rester visible en permanence
    dans la semaine, ou seulement dans le déroulé du jour concerné ?
-7. **Cours libres** (ajouter un cours qui n'est pas au catalogue) : v2,
+8. **Cours libres** (ajouter un cours qui n'est pas au catalogue) : v2,
    ou il faut déjà prévoir le modèle ?
-8. **Un lien iCal perso comme source** : on l'autorise dès la v1 (coût
+9. **Un lien iCal perso comme source** : on l'autorise dès la v1 (coût
    quasi nul) ou on le cache pour ne pas compliquer le composeur ?
+10. **Le sélecteur de matière doit-il proposer « Tout cocher »** pour une
+    année entière « presque » complète (ex. tout sauf un cours) ?
 
 ---
 
@@ -454,8 +527,9 @@ et un horaire normal **inchangé**.
 
 - `maquette.html` — prototype **cliquable** (téléphone) : Réglages →
   Ajouter un horaire → formation → carte sur mesure → ajout d'une année →
-  groupes → composeur → semaine. Navigation aussi par ancre :
-  `#reglages`, `#formation`, `#composer0`, `#composer`, `#ajout`,
+  toute l'année ou certains cours → groupes → composeur → semaine.
+  Navigation aussi par ancre : `#reglages`, `#formation`, `#composer0`,
+  `#composer`, `#ajout`, `#source-annee`, `#source-cours`,
   `#ajoutgroupes`, `#composer2`, `#composer3`, `#horaire`, `#detail`,
   `#pdf`, `#modifier`.
 - `maquette-bureau.html` — variante ordinateur (composeur + semaine
@@ -463,9 +537,9 @@ et un horaire normal **inchangé**.
 - `app.css` — copie fidèle du `<style>` de `index.html` (fichier extrait,
   pas retapé) : les maquettes utilisent les vrais composants.
 - `maquette.css` — uniquement les styles nouveaux (cartes de source,
-  bandeau de chevauchement, badges).
+  sélecteur de cours, bandeau de chevauchement, badges).
 - `maquette.js` — routeur d'écrans et rendu de la semaine de démo.
-- `01…13-*.png` — captures de ce document.
+- `01…15-*.png` — captures de ce document.
 
 Pour ouvrir la maquette : `python3 serve.py` (ou
 `python3 -m http.server 8917`) puis
