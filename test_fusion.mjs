@@ -149,3 +149,16 @@ test("ensembles", () => {
   assert.deepEqual(F.parseEns("[1..3,5]"), [1, 2, 3, 5]);
   assert.equal(F.formatEns([]), "[]");
 });
+
+test("nouvelles semaines : l'école allonge sa période par tranches", () => {
+  // La HEH commence par [1..14] puis publie la suite.
+  assert.deepEqual(F.nouvellesSemaines("[1..14]", "[1..20]"), [15, 16, 17, 18, 19, 20]);
+  assert.deepEqual(F.nouvellesSemaines("[1..14]", "[1..14]"), []);
+  // Trou de congés : la semaine 15 n'est pas publiée, on ne l'annonce pas.
+  assert.deepEqual(F.nouvellesSemaines("[1..14]", "[1..14,16..18]"), [16, 17, 18]);
+  // Semaine isolée comblée après coup.
+  assert.deepEqual(F.nouvellesSemaines("[1..14,16]", "[1..16]"), [15]);
+  // Période vue absente (premier passage) ou vide : rien à annoncer.
+  assert.deepEqual(F.nouvellesSemaines(null, "[1..14]"), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]);
+  assert.deepEqual(F.nouvellesSemaines("[1..14]", "[]"), []);
+});

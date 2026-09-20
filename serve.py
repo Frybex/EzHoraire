@@ -32,6 +32,8 @@ os.environ.setdefault("EZH_UCL", "1")
 
 import formations  # noqa: E402
 import horaires  # noqa: E402
+import export  # noqa: E402
+import abonnement  # noqa: E402
 import ical  # noqa: E402
 import importer  # noqa: E402
 import pdf  # noqa: E402
@@ -43,6 +45,8 @@ import bugs  # noqa: E402
 PORT_DEFAUT = 8902
 ROUTES = {"/api/formations": formations.handler,
           "/api/horaires": horaires.handler,
+          "/api/export": export.handler,
+          "/api/abonnement": abonnement.handler,
           "/api/recherche": recherche.handler,
           "/api/ical": ical.handler,
           "/api/importer": importer.handler,

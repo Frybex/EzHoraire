@@ -21,6 +21,23 @@ droite ouvre les **Réglages** (identité, déconnexion, mes horaires).
 L'horaire se met à jour tout seul à chaque ouverture : recharger la page
 suffit, il n'y a aucun bouton d'actualisation.
 
+Chaque horaire s'ajoute à l'agenda du téléphone (menu ⋮ d'une carte →
+**Exporter**), par **abonnement** : le téléphone rappelle un flux
+`/api/abonnement` tout seul, donc l'horaire reste à jour sans réexporter
+(nouvelle semaine, salle changée, séance annulée). Deux choix :
+**Tout l'horaire** (1 calendrier, une couleur) ou **Cours par cours**
+(1 calendrier par cours, avec la couleur du cours — le flux la porte via
+`X-APPLE-CALENDAR-COLOR`, lue automatiquement par ICSx5 sur Android et
+proposée par Apple à l'abonnement). Le jeton du flux est signé (HMAC) :
+l'adresse ne montre ni la formation ni le lien personnel, et rien n'est
+stocké côté serveur. Un horaire sur mesure (fusion de plusieurs sources)
+n'a pas d'équivalent côté serveur : il garde le fichier `.ics` local.
+Les titres sont « pro » : `CODE · Intitulé · Type`, sans emoji — les
+agendas colorent par calendrier, jamais par événement (la propriété
+`COLOR` de la RFC 7986 est ignorée à l'import, et un emoji est annoncé par
+les lecteurs d'écran). La salle vit dans `LOCATION`, pas dans le titre (la
+vue Mois d'iOS n'en montre que ~10 caractères).
+
 Couleurs des cours : un intitulé = une couleur. Les matières de la
 formation sont triées par ordre alphabétique puis réparties sur une
 palette sobre (`preparerCouleurs()`), donc deux intitulés différents
@@ -239,6 +256,21 @@ horaires sur mesure ne sont pas poussés : ils restent sur l'appareil (une
 ligne sans ses sources reviendrait vide au pull suivant). Plan et audit
 par école : `propositions/horaire-perso/PLAN.md`.
 
+**Semaines publiées par tranches.** Une école ne publie pas toute l'année
+d'un coup : la HEH commence par `[1..14]`, puis allonge. Chaque appareil
+retient, par horaire, la période servie par l'école (`connue`) et celle
+déjà annoncée (`vue`) dans `ezh_semaines` — local, rien dans le cloud. Quand l'école va plus loin, un bandeau « Nouvelles semaines
+disponibles » annonce les semaines ajoutées (elles s'affichent de toute
+façon : la période vient de l'école à chaque ouverture). Un horaire normal
+les affiche déjà ; un horaire sur mesure aussi, mais ses années d'ajout
+gardent leur sélection `avec` : les nouvelles matières n'y entrent pas
+toutes seules, donc le bandeau propose « Modifier mon horaire » (ou
+« Composer un horaire sur mesure » pour qui n'en a pas). « Voir la semaine »
+saute à la première semaine publiée, et une pastille signale l'onglet de
+l'horaire concerné quand il n'est pas affiché. L'alerte n'est montrée
+qu'une fois : la première ouverture qui suit la publication la consomme
+(inutile de cliquer OK), un rechargement ne la remontre pas.
+
 Selon la formation, l'école a un groupe par classe (BA2P Informatique),
 un groupe par cours (BA1 Droit : l'étudiant en choisit plusieurs) ou aucun
 groupe (MA1 Ingénieur industriel) : l'écran de choix gère les trois cas.
@@ -378,6 +410,10 @@ les sources. `logos/ecoles/` est déployé, `logos/da/` et `logos/ez/`
   compte).
 - `fusion.js` — fusion des horaires sur mesure (fonctions pures, chargée
   par `index.html`) ; tests : `node --test test_fusion.mjs`.
+- `export_ics.js` — export d'un horaire vers une application d'agenda
+  (fichier iCalendar fabriqué sur l'appareil, sans serveur ; fonctions
+  pures, chargée par `index.html`) ; tests : `node --test
+  test_export_ics.mjs`.
 - `suivi.js` — mesure anonyme du parcours (arrivée → clic → compte →
   horaire) et des frictions, chargée par `index.html` ; voir le dashboard
   admin.
@@ -399,12 +435,13 @@ les sources. `logos/ecoles/` est déployé, `logos/da/` et `logos/ez/`
   dossier non déployé, c'est un modèle, pas une page du site).
 - `api/` — le serveur, rangé en trois étages (détail : `api/README.md`) :
   les **points d'entrée** à la racine (`formations.py`, `horaires.py`,
-  `recherche.py`, `ical.py`, `importer.py`, `pdf.py`, `config.py`,
-  `stats.py`), les **écoles** dans `api/_ecoles/` (un fichier par école :
-  `heh.py`, `umons.py`, `condorcet.py`, `helb.py`, `ulb.py`, `ucl.py`, plus
-  `__init__.py` qui tient le registre et les aides HTTP), et les **moteurs**
-  partagés dans `api/_moteurs/` (`hyperplanning.py`, `timeedit.py`,
-  `ical.py`, `import_liste.py`, `typesafe.py`).
+  `export.py`, `recherche.py`, `ical.py`, `importer.py`, `pdf.py`,
+  `config.py`, `stats.py`), les **écoles** dans `api/_ecoles/` (un fichier
+  par école : `heh.py`, `umons.py`, `condorcet.py`, `helb.py`, `ulb.py`,
+  `ucl.py`, plus `__init__.py` qui tient le registre et les aides HTTP), et
+  les **moteurs** partagés dans `api/_moteurs/` (`hyperplanning.py`,
+  `timeedit.py`, `ical.py`, `export_ics.py`, `import_liste.py`,
+  `typesafe.py`).
 - `serve.py` — serveur local avec la même API (http://localhost:8902).
 
 Chercher quelque chose qui touche une école précise ? Tout ce qui lui est

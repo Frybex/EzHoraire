@@ -346,32 +346,17 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     transform: rotate(45deg);
   }
   #rech-cours { margin: 2px 0 12px; }
-  /* Import d'une liste de cours : bloc replié, dans le creux des autres. */
+  /* Import d'une liste de cours : bloc toujours ouvert, dans le creux des autres. */
   #rech-import {
     margin: 0 0 14px; padding: 0 14px 18px; border-radius: 14px;
     background: var(--creux); box-shadow: inset 0 0 0 1px var(--line);
   }
-  /* Fermé : juste le titre, pas de vide en dessous. */
-  #rech-import:not([open]) { padding-bottom: 0; }
-  #rech-import:not([open]) > summary { padding: 8px 0; }
-  #rech-import > summary {
-    cursor: pointer; padding: 12px 0; list-style: none;
+  #rech-import > .rech-import-titre {
+    padding: 12px 0; margin: 0 0 10px;
     font-size: .92rem; font-weight: 600; color: var(--ink);
   }
-  #rech-import > summary::-webkit-details-marker { display: none; }
-  #rech-import > summary::after { content: " ▾"; color: var(--muted); }
-  #rech-import[open] > summary::after { content: " ▴"; }
-  #rech-import[open] > summary { margin-bottom: 10px; }
-  /* Repli du texte lu / collé : discret, mais là pour corriger. */
-  #rech-texte { margin: 4px 0 0; }
-  #rech-texte > summary {
-    cursor: pointer; padding: 6px 0; list-style: none;
-    font-size: .84rem; font-weight: 600; color: var(--muted);
-  }
-  #rech-texte > summary::-webkit-details-marker { display: none; }
-  #rech-texte > summary::after { content: " ▾"; }
-  #rech-texte[open] > summary::after { content: " ▴"; }
-  #rech-texte[open] > summary { margin-bottom: 8px; }
+  /* Zone texte en arrière-plan : remplie par la capture, jamais affichée. */
+  #rech-texte[hidden] { display: none; }
   #rech-import .import-ligne { display: flex; gap: 10px; align-items: flex-end; }
   #rech-import textarea {
     flex: 1 1 auto; min-width: 0; min-height: 96px; resize: none;
@@ -514,13 +499,16 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     transition: transform .3s cubic-bezier(.16,1,.3,1);
     pointer-events: none;
   }
-  /* Mode défilant (4 horaires et plus, jusqu'à 10) : chaque onglet prend
-     la largeur de son nom, on glisse du doigt. Safari ignore le padding de
-     fin d'un conteneur flex défilant : le ::after sert de marge droite pour
-     que le dernier onglet actif ne colle pas au bord. Un fondu signale
-     qu'il reste des noms cachés à gauche ou à droite. */
+  /* Mode défilant (noms longs ou beaucoup d'horaires, jusqu'à 10) :
+     chaque onglet prend la largeur de son nom, on glisse du doigt.
+     Safari ignore le padding de fin d'un conteneur flex défilant : le
+     padding droit est donc à 0 et le ::after sert de marge droite, pour
+     que les deux extrémités du rail restent symétriques (4 px à gauche
+     comme à droite). Un fondu signale qu'il reste des noms cachés à
+     gauche ou à droite. */
   .seg.defile {
     display: flex; scroll-snap-type: x proximity; scroll-padding: 0 4px;
+    padding: 4px 0 4px 4px;
     -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain;
   }
   .seg.defile::after { content: ""; flex: 0 0 4px; }
@@ -546,6 +534,12 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
   }
   .seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  /* Un horaire a des semaines publiées depuis la dernière visite : une
+     pastille discrète, l'explication est dans son bandeau. */
+  .seg button.neuf::after {
+    content: ""; position: absolute; top: 9px; right: 9px; width: 7px; height: 7px;
+    border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 2px var(--surface);
+  }
   /* Surnom + couleur (étape 3) et libellés de champs. */
   #bloc-surnom { margin: 0 0 22px; }
   .champ-titre, .theme-select-titre, #bloc-theme > label {
@@ -1348,6 +1342,10 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   .voile {
     position: fixed; inset: 0; z-index: 100;
     display: grid; place-items: center; padding: 20px;
+    /* Colonne explicite : sans elle, la piste « auto » se cale sur le
+       contenu le plus large (un titre nowrap) et la fenêtre déborde à
+       droite. minmax(0, 1fr) borne la largeur à la place disponible. */
+    grid-template-columns: minmax(0, 1fr);
     background: rgba(6, 8, 12, .45);
     -webkit-backdrop-filter: blur(12px) saturate(120%); backdrop-filter: blur(12px) saturate(120%);
     overscroll-behavior: contain;
@@ -1407,6 +1405,67 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   /* Modification : en haut sur téléphone (le clavier occupe le bas). */
   #voile-edition { place-items: start center; padding-top: max(20px, 9vh); }
   @media (min-width: 1024px) { #voile-edition { place-items: center; padding-top: 20px; } }
+  /* Ajouter à l'agenda : deux abonnements possibles (tout l'horaire, ou
+     cours par cours), puis la liste des cours avec leur couleur. */
+  .export-nom { margin: 0 0 12px; font-weight: 650; }
+  .export-aide { margin: 0 0 10px; color: var(--muted); font-size: .9rem; line-height: 1.5; }
+  .export-status { margin: 14px 0 0; color: var(--muted); font-size: .9rem; line-height: 1.5; }
+  .export-status.ok { color: var(--free); }
+  .export-status.erreur { color: var(--danger); }
+  #export-choix { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .export-option {
+    display: block; width: 100%; padding: 14px 16px; border: none; border-radius: 16px;
+    text-align: left; font: inherit; color: var(--ink); cursor: pointer;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    transition: transform .12s;
+  }
+  .export-option:active { transform: scale(.98); }
+  .export-option:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .export-option:disabled { opacity: .5; cursor: default; }
+  .export-option strong { display: block; font-size: .98rem; font-weight: 650; }
+  .export-option small { display: block; margin-top: 2px; color: var(--muted); font-size: .84rem; }
+  .export-couleur { margin: 8px 0 2px; padding: 10px 12px; border-radius: 14px;
+    background: var(--creux); box-shadow: inset 0 0 0 1px var(--line); }
+  .ec-section { margin: 14px 0 6px; color: var(--muted); font-size: .82rem; font-weight: 650; }
+  .export-vide { margin: 6px 0 0; color: var(--muted); font-size: .9rem; }
+  .ec-swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+  .ec-swatch { width: 28px; height: 28px; padding: 0; border: none; border-radius: 50%;
+    cursor: pointer; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .14); transition: transform .12s; }
+  .ec-swatch:active { transform: scale(.94); }
+  .ec-swatch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .ec-swatch[aria-checked="true"] {
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .2), 0 0 0 2px var(--feuille), 0 0 0 4px var(--accent); }
+  #export-liste { margin-top: 2px; }
+  /* minmax(0, 1fr) : sans lui, la colonne se cale sur le texte le plus
+     long (nowrap) et déborde de la fenêtre. */
+  #export-cours { max-height: 46vh; overflow: auto; display: grid;
+    grid-template-columns: minmax(0, 1fr); gap: 6px; padding: 2px; }
+  .export-cours-ligne {
+    display: flex; align-items: center; gap: 10px; width: 100%; padding: 11px 12px;
+    border: none; border-radius: 12px; font: inherit; color: var(--ink); text-align: left;
+    cursor: pointer; background: var(--creux); box-shadow: inset 0 0 0 1px var(--line);
+  }
+  .export-cours-ligne:active { transform: scale(.99); }
+  .export-cours-ligne:disabled { opacity: .55; cursor: default; }
+  .export-cours-ligne:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .ec-point { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+  .ec-nom { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 550; }
+  /* Un vrai bouton dans la ligne (et non du texte) : relief des autres. */
+  .ec-act {
+    flex: none; display: inline-flex; align-items: center; gap: 5px;
+    padding: 7px 13px; border-radius: 999px; font-size: .85rem; font-weight: 650;
+    color: var(--ink);
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  .ec-act.fait { color: var(--free); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--free) 35%, transparent); }
+  #boite-export .boite-actions button { height: auto; min-height: 50px; padding: 8px 10px; line-height: 1.2; }
+  /* Un seul bouton (écran de choix) : il prend toute la largeur. */
+  #boite-export .boite-actions.seule { grid-template-columns: 1fr; }
+  /* Sur mesure : seul export possible, un lien discret sous les boutons. */
+  .export-repli { margin: 12px 0 0; text-align: center; }
+  .export-repli .lien-pied { padding: 6px; }
   .boite .champs + .champ-titre, .boite .champs + .choix-themes { margin-top: 18px; }
   .boite .surnom-aide + .champ-titre { margin-top: 18px; }
   .boite .champ-titre + .choix-themes { margin-top: 0; }
@@ -2261,6 +2320,13 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   .choc p b { color: var(--ink); font-weight: 600; }
   .choc.ok { background: var(--creux); box-shadow: inset 0 0 0 1px var(--line); }
   .choc.ok svg { color: var(--free); }
+  /* « Nouvelles semaines » : même bandeau que les chevauchements, à la
+     couleur de l'accent (une information, pas un avertissement). */
+  .choc.neuf {
+    background: color-mix(in srgb, var(--accent) 9%, var(--surface));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 34%, transparent);
+  }
+  .choc.neuf svg { color: var(--accent); }
   .avis p { margin: 0; }
   .avis p + p { margin-top: 8px; }
   .sources-ligne {
@@ -2480,8 +2546,8 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       </div>
     </div>
     <div id="rech-cours" hidden>
-      <details id="rech-import" open>
-        <summary>Importer une liste de cours</summary>
+      <div id="rech-import">
+        <p class="rech-import-titre">Importer une liste de cours</p>
         <div class="capture">
           <label class="capture-bouton halo" for="rech-capture-fichier">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="3"/><circle cx="12" cy="13" r="3.4"/><path d="M8.5 6 10 3.5h4L15.5 6"/></svg>
@@ -2492,15 +2558,12 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
         </div>
         <p class="pdf-status" id="rech-import-status" role="status" hidden></p>
         <div id="rech-import-doutes" hidden></div>
-        <details id="rech-texte">
-          <summary>Voir ou coller le texte</summary>
-          <div class="import-ligne">
-            <textarea id="rech-import-texte" rows="4" spellcheck="false"
-                      placeholder=""></textarea>
-            <button class="primaire halo" id="rech-import-voir" type="button">Analyser la liste</button>
-          </div>
-        </details>
-      </details>
+        <div id="rech-texte" hidden>
+          <textarea id="rech-import-texte" rows="4" spellcheck="false" tabindex="-1" aria-hidden="true"
+                    placeholder="" hidden></textarea>
+          <button class="primaire halo" id="rech-import-voir" type="button" hidden tabindex="-1">Analyser la liste</button>
+        </div>
+      </div>
       <div class="chips" id="rech-cours-chips"></div>
       <p class="aide" id="rech-cours-vide">Aucun cours choisi. Cherche un code (DROIC2001) ou un intitulé, puis touche le cours pour l'ajouter.</p>
       <button class="primaire halo" id="rech-cours-voir" type="button" disabled>Voir mon horaire</button>
@@ -2637,6 +2700,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     </div>
     <div class="avis" id="avis" hidden></div>
     <div class="choc" id="chocs" role="status" hidden></div>
+    <div class="choc neuf" id="semaines-avis" role="status" hidden></div>
     <p class="sources-ligne" id="sources-ligne" hidden></p>
     <p class="pdf-status" id="horaire-status" role="status" hidden></p>
     <div id="horaire-contenu">
@@ -2773,6 +2837,48 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   </form>
 </div>
 
+<!-- Ajouter l'horaire à l'agenda : un abonnement servi par /api/abonnement,
+     que le téléphone rappelle tout seul (l'horaire reste à jour sans
+     réexporter). « Tout l'horaire » = 1 calendrier, une couleur ;
+     « Cours par cours » = 1 calendrier par cours, chacun sa couleur. -->
+<div class="voile" id="voile-export" hidden>
+  <div class="boite" id="boite-export" role="dialog" aria-modal="true" aria-labelledby="export-titre">
+    <h3 id="export-titre">Ajouter à mon agenda</h3>
+    <p class="export-nom" id="export-nom"></p>
+    <div id="export-choix">
+      <button type="button" class="export-option halo" id="export-tout">
+        <span class="eo-textes"><strong>Tout l'horaire d'un coup</strong>
+        <small>1 calendrier, une seule couleur</small></span>
+      </button>
+      <button type="button" class="export-option halo" id="export-par-cours">
+        <span class="eo-textes"><strong>Cours par cours</strong>
+        <small>Chaque cours à sa couleur</small></span>
+      </button>
+    </div>
+    <div id="export-couleur-vue" hidden>
+      <p class="export-aide">Choisis la couleur du calendrier : tu la retrouveras dans ton agenda.</p>
+      <div class="export-couleur" id="export-couleur">
+        <div class="ec-swatches" id="export-swatches" role="radiogroup" aria-label="Couleur du calendrier"></div>
+      </div>
+    </div>
+    <div id="export-liste" hidden>
+      <p class="export-aide" id="export-liste-aide"></p>
+      <div id="export-cours"></div>
+      <div id="export-ajoutes" hidden>
+        <p class="ec-section">Déjà ajoutés</p>
+        <div id="export-cours-ajoutes"></div>
+      </div>
+    </div>
+    <p class="export-status" id="export-status" role="status"></p>
+    <div class="boite-actions seule" id="export-actions">
+      <button type="button" class="btn-sec" id="export-retour" hidden>Retour</button>
+      <button type="button" class="btn-prim halo" id="export-ajouter" hidden>Ajouter</button>
+      <button type="button" class="btn-sec" id="export-annuler">Fermer</button>
+    </div>
+    <p class="export-repli" id="export-repli" hidden><button type="button" class="lien-pied" id="export-fichier">Télécharger le fichier (.ics)</button></p>
+  </div>
+</div>
+
 <!-- Report de bug ou demande : rail Bug / Demande en haut, email du
      compte (lecture seule), grande zone de texte, trombone pour 1 à 3
      captures. Ouvert depuis la feuille, le pied de page ou chaque étape
@@ -2822,12 +2928,13 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0" integrity="sha384-JBR+x8blGwjDRO63aHCGiZMD4VNiTR4ZUGA+N6ZKLf3zNt1fK8IBpcgPaMrxqWBp" crossorigin="anonymous"></script>
 <script src="/suivi.js"></script>
 <script src="/fusion.js"></script>
+<script src="/export_ics.js"></script>
 <script>
 (function () {
   "use strict";
   /* Version du parcours, jointe aux étapes anonymes : à incrémenter à
      chaque correctif, pour comparer « avant / après » dans le dashboard. */
-  window.EZH_VERSION = "4";
+  window.EZH_VERSION = "5";
   var JOURS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
   var MOIS = ["janv.", "févr.", "mars", "avr.", "mai", "juin",
               "juil.", "août", "sept.", "oct.", "nov.", "déc."];
@@ -3067,6 +3174,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
      (1 à 6), `formation` vide et `groupes` vide : les groupes sont ceux de
      chaque source. `sources` absent ou vide = horaire normal. */
   var FUSION = window.EZH_FUSION;
+  var EXPORT_ICS = window.EZH_EXPORT_ICS;
   function estPerso(p) { return !!(p && Array.isArray(p.sources) && p.sources.length); }
   function ecoleExiste(id) { return !!ecoleDe(id); }
   function profilValide(p) {
@@ -3087,6 +3195,44 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     return p;
   }
   var SURNOM_PERSO = "Sur mesure";
+  /* Alerte « nouvelles semaines » : l'école publie son année par tranches
+     (la HEH commence par [1..14], puis allonge). Par horaire, on retient
+     la période connue (la dernière servie par l'école) et la période vue
+     (déjà annoncée), dans `ezh_semaines` — local à l'appareil, l'alerte
+     n'a pas à voyager. Première ouverture d'un horaire : vue = connue,
+     donc aucune alerte (tout y est « nouveau » sans l'être). Une fois
+     l'alerte montrée, elle est consommée (`vue` = `connue`) : seule la
+     première ouverture après la publication la voit. Un horaire supprimé
+     efface son entrée (`oublierSemaines`). */
+  var CLE_SEMAINES = "ezh_semaines";
+  function etatSemaines(id) {
+    var m = lire(CLE_SEMAINES);
+    return (m && m[id]) || null;
+  }
+  function retenirSemaines(id, periode) {
+    if (!id || !periode) return;
+    var m = lire(CLE_SEMAINES) || {}, e = m[id];
+    if (!e) m[id] = { vue: periode, connue: periode };
+    else e.connue = periode;
+    ecrire(CLE_SEMAINES, m);
+  }
+  function semainesARevoir(id) {
+    var e = etatSemaines(id);
+    return e && typeof e.vue === "string" && typeof e.connue === "string"
+      ? FUSION.nouvellesSemaines(e.vue, e.connue) : [];
+  }
+  function marquerSemainesVues(id) {
+    var m = lire(CLE_SEMAINES) || {}, e = m[id];
+    if (!e) return;
+    e.vue = e.connue;
+    ecrire(CLE_SEMAINES, m);
+  }
+  function oublierSemaines(id) {
+    var m = lire(CLE_SEMAINES) || {};
+    if (m[id] == null) return;
+    delete m[id];
+    ecrire(CLE_SEMAINES, m);
+  }
   /* Une sélection de cours « PAR:… » n'existe qu'à l'ULB et à l'UCLouvain.
      Rangée sous une autre école (HEH, UMONS), l'horaire devient
      introuvable : on la rend à la bonne école (sigles UCLouvain en
@@ -3534,6 +3680,13 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     if (!demarrageFini) return p;
     return p.then(function () {
       if (generation !== generationCompte || !compte || compte.supabase_id !== user.id) return;
+      // Même compte, création en cours à l'écran : SIGNED_IN est juste
+      // réémis au retour sur l'onglet — on reste où on est, brouillon
+      // intact, au lieu de renvoyer vers l'horaire (tout serait à refaire).
+      if (precId === user.id && creationEnCours()) {
+        planifierPropositionPwa();
+        return;
+      }
       pile = [];
       if (compte.nom && compte.prenom) {
         if (profil) demarrerHoraire();
@@ -3834,6 +3987,8 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   var DATA = null;       // horaire complet de la formation affichée
   var COURS = [];        // ses cours, filtrés selon les groupes de l'étudiant
   var CHOCS = [];        // horaire sur mesure : chevauchements entre sources
+  var NOUVELLES_SEMAINES = []; // semaines publiées depuis la dernière visite
+  var ALERTES_SEMAINES = {}; // profils déjà alertés depuis l'ouverture de la page
   var LUNDI0 = null, SEMAINES = [];
   var FERIES = {};       // jours fériés / de congé de l'école : { n° de jour : true }
   var FERIES_NOMS = {};  // leur nom quand l'école en donne un (« Toussaint »)
@@ -4627,6 +4782,15 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch (e) { /* jetable */ }
     return true;
   }
+  /* Création d'horaire à l'écran, avec son brouillon gardé : supabase-js
+     réémet SIGNED_IN à chaque retour sur l'onglet, et ce signal ne doit
+     pas rerouter vers l'horaire (voir retourOAuth) — sinon la progression
+     est effacée et l'étudiant doit tout recommencer. */
+  function creationEnCours() {
+    if (VUES_BROUILLON.indexOf(vue) < 0) return false;
+    var d = lire(CLE_BROUILLON);
+    return !!(d && d.v === 1 && d.vue === vue);
+  }
 
   /* ---------- 0. Connexion + identité (avant tout) ---------- */
   function ouvrirCompte() {
@@ -4913,6 +5077,18 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     rech.resultats = [];
     pile = ["horaire"];
     ouvrirEcoles();
+  }
+  /* Compose un nouvel horaire sur mesure depuis l'horaire affiché (bandeau
+     « nouvelles semaines ») : on part de son école et l'écran des
+     formations ouvre la carte « Composer un horaire sur mesure ». */
+  function demarrerPerso() {
+    fermerFeuille();
+    choix = {
+      ecole: (profil && profil.ecole) || "heh", formation: null, data: null,
+      groupes: [], ical: null, editionId: null, theme: suggereThemeSuivant()
+    };
+    pile = ["horaire"];
+    aller("formation");
   }
   function ouvrirEcoles() {
     montrer("ecole");
@@ -5212,7 +5388,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   var OCR_LANGUES = "https://cdn.jsdelivr.net/gh/naptha/tessdata@gh-pages/4.0.0_fast";
   function rechAjusterChamp() {
     var zone = document.getElementById("rech-import-texte");
-    if (!zone || vue !== "formation") return;
+    if (!zone || zone.hidden || vue !== "formation") return;
     var max = Math.round(window.innerHeight * 0.42);
     zone.style.height = "auto";
     var voulu = Math.min(zone.scrollHeight + 2, max);
@@ -5271,16 +5447,6 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       if (window.EZH_SUIVI) EZH_SUIVI.friction("capture_echec");
     });
   }
-  document.getElementById("rech-import").addEventListener("toggle", function () {
-    if (this.open) rechAjusterChamp();
-  });
-  document.getElementById("rech-import-texte").addEventListener("input", function () {
-    rechAjusterChamp();
-    sauverBrouillon();
-  });
-  document.getElementById("rech-import-texte").addEventListener("paste", function () {
-    setTimeout(rechAjusterChamp, 0);
-  });
   window.addEventListener("resize", rechAjusterChamp);
   (function () {
     // Glisser-déposer une capture sur le bloc (enfants compris) : compteur
@@ -5311,7 +5477,6 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
         erreur(document.getElementById("rech-import-status"), "Aucune image dans ce dépôt.");
         return;
       }
-      if (!bloc.open) bloc.open = true;
       rechLireCapture(fichiers[0], "depot");
     });
   })();
@@ -5319,10 +5484,11 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     if (this.files && this.files[0]) rechLireCapture(this.files[0], "fichier");
     this.value = "";
   });
-  // Coller une image (⌘V / Ctrl+V) quand le bloc d'import est ouvert.
+  // Coller une image (⌘V / Ctrl+V) quand le bloc d'import est affiché.
   document.addEventListener("paste", function (e) {
     var bloc = document.getElementById("rech-import");
-    if (!bloc || !bloc.open || vue !== "formation") return;
+    if (!bloc || vue !== "formation") return;
+    if (document.getElementById("rech-cours").hidden) return;
     var items = (e.clipboardData && e.clipboardData.items) || [];
     for (var i = 0; i < items.length; i++) {
       if (items[i].type && items[i].type.indexOf("image/") === 0) {
@@ -5340,13 +5506,13 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       else erreur(statut, "Colle d'abord ta liste de cours.");
       return;
     }
-    btn.disabled = true;
+    if (btn) btn.disabled = true;
     attente(statut, "Vérification des cours…");
     // En POST : la liste de cours d'un étudiant n'a rien à faire dans une
     // adresse (journaux, historique, Referer).
     api("api/importer", 60000, { ecole: choix.ecole, liste: texte })
       .then(function (rep) {
-        btn.disabled = false;
+        if (btn) btn.disabled = false;
         var d = rep.data || {};
         (d.cours || []).forEach(function (c) {
           if (c.cle && rech.cours.indexOf(c.cle) < 0) rech.cours.push(c.cle);
@@ -5382,7 +5548,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
           : (depuisCapture ? "Aucun cours reconnu sur cette capture." : "Aucun cours reconnu : vérifie la liste collée.");
         sauverBrouillon();
       }, function (e) {
-        btn.disabled = false;
+        if (btn) btn.disabled = false;
         erreur(statut, "Échec : " + e.message);
       });
   }
@@ -6465,27 +6631,35 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     for (var i = 0; i < profils.length; i++) if (profils[i].id === profil.id) idx = i;
     seg.style.setProperty("--n", Math.max(1, profils.length));
     seg.style.setProperty("--idx", idx);
-    seg.classList.toggle("defile", profils.length >= 4);
+    seg.classList.remove("defile");
     var html = '<span class="pill" aria-hidden="true"></span>';
     profils.forEach(function (p) {
-      html += '<button type="button" role="tab" data-profil="' + txt(p.id) + '" aria-selected="' +
+      var neuf = semainesARevoir(p.id).length > 0;
+      html += '<button type="button"' + (neuf ? ' class="neuf"' : "") + ' role="tab" data-profil="' + txt(p.id) + '" aria-selected="' +
               (p.id === profil.id) + '" title="' + txt(libelleProfil(p)) + '">' + txt(p.surnom) + "</button>";
     });
     seg.innerHTML = html;
     ajusterSeg();
   }
-  // Noms longs (formations UMONS) : si un onglet coupe son nom, la barre
-  // passe en mode défilant, où chaque onglet prend la largeur de son nom.
+  // Noms longs (formations UMONS) ou beaucoup d'horaires : si un onglet
+  // coupe son nom, la barre passe en mode défilant, où chaque onglet
+  // prend la largeur de son nom. Sinon elle reste en grille, avec la
+  // pastille qui glisse — les deux extrémités du rail sont alors
+  // parfaitement symétriques.
   function ajusterSeg() {
     var seg = document.getElementById("seg");
     if (seg.hidden || !profils) return;
-    if (profils.length < 4) {
-      seg.classList.remove("defile");
-      var coupe = Array.prototype.some.call(seg.querySelectorAll("button"), function (b) {
-        return b.scrollWidth > b.clientWidth + 1;
-      });
-      seg.classList.toggle("defile", coupe);
+    if (seg.classList.contains("defile")) {
+      // Déjà en mode défilant : n'y rester que si le contenu déborde
+      // vraiment. Le ::after (4 px) crée un mini-dépassement artificiel,
+      // d'où la tolérance de 5 px.
+      if (seg.scrollWidth <= seg.clientWidth + 5) seg.classList.remove("defile");
+      else { montrerOngletActif(seg); return; }
     }
+    var coupe = Array.prototype.some.call(seg.querySelectorAll("button"), function (b) {
+      return b.scrollWidth > b.clientWidth + 1;
+    });
+    seg.classList.toggle("defile", coupe);
     montrerOngletActif(seg);
   }
   // Mode défilant : l'onglet actif est ramené dans la zone visible (centré
@@ -6503,7 +6677,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     var defile = seg.classList.contains("defile");
     var max = seg.scrollWidth - seg.clientWidth;
     seg.classList.toggle("suite-g", defile && seg.scrollLeft > 2);
-    seg.classList.toggle("suite-d", defile && seg.scrollLeft < max - 2);
+    seg.classList.toggle("suite-d", defile && max > 5 && seg.scrollLeft < max - 2);
   }
   window.addEventListener("resize", ajusterSeg);
   document.getElementById("seg").addEventListener("scroll", function () {
@@ -6518,6 +6692,27 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     preparerCouleurs(data && data.cours);
     LUNDI0 = parseDate(DATA.meta.premier_lundi);
     SEMAINES = parseEns(DATA.meta.periode).sort(function (a, b) { return a - b; });
+    // Nouvelles semaines depuis la dernière visite de CET horaire (voir
+    // `ezh_semaines`) : c'est la période fusionnée qui fait foi, donc le
+    // bandeau reste juste pour un horaire sur mesure aussi. L'alerte est
+    // consommée dès qu'elle est montrée (`marquerSemainesVues`) : seule la
+    // première ouverture qui suit la publication la voit, un rechargement
+    // ne la remontre pas. `ALERTES_SEMAINES` garde le bandeau pour la
+    // visite en cours : un second passage (cache puis école) peut l'allonger
+    // si l'école publie plus, sans jamais le consommer deux fois.
+    NOUVELLES_SEMAINES = [];
+    if (profil) {
+      retenirSemaines(profil.id, DATA.meta.periode);
+      var nouvelles = semainesARevoir(profil.id);
+      if (nouvelles.length) {
+        var deja = ALERTES_SEMAINES[profil.id] || [];
+        ALERTES_SEMAINES[profil.id] = deja.concat(nouvelles.filter(function (w) {
+          return deja.indexOf(w) < 0;
+        })).sort(function (a, b) { return a - b; });
+        marquerSemainesVues(profil.id); // vue une fois = consommée
+      }
+      NOUVELLES_SEMAINES = ALERTES_SEMAINES[profil.id] || [];
+    }
     FERIES = {};
     parseEns(DATA.meta.feries || "[]").forEach(function (n) { FERIES[n] = true; });
     FERIES_NOMS = (DATA.meta.feries_noms && typeof DATA.meta.feries_noms === "object")
@@ -6756,6 +6951,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   function rendre() {
     if (!SEMAINES.length) {
       document.getElementById("horaire-contenu").hidden = true;
+      rendreSemaines();
       erreur(document.getElementById("horaire-status"), "L'école n'a encore publié aucune semaine pour cette formation.");
       rendreInfos();
       return;
@@ -6766,6 +6962,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     avis.hidden = !perdus.length;
     if (DATA.perso) rendreAvisPerso(avis);
     rendreChocs();
+    rendreSemaines();
     if (perdus.length) {
       avis.innerHTML = (perdus.length === profil.groupes.length
         ? "Tes groupes n'apparaissent plus dans l'horaire de l'école."
@@ -6875,6 +7072,80 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       modifierPerso(profil.id);
     } else if (act === "source") {
       modifierPerso(profil.id, +b.getAttribute("data-src"));
+    }
+  });
+  /* Bandeau « nouvelles semaines » : l'école a allongé sa période depuis
+     la dernière visite. Un horaire normal les affiche déjà ; un horaire
+     sur mesure aussi, mais ses années d'ajout ne se complètent pas toutes
+     seules (la sélection `avec` est figée au moment du choix) : on invite
+     donc à rouvrir le composeur. */
+  function semainesEnClair(nombres) {
+    var t = nombres.slice().sort(function (a, b) { return a - b; });
+    var morceaux = [], i = 0;
+    while (i < t.length) {
+      var j = i;
+      while (j + 1 < t.length && t[j + 1] === t[j] + 1) j++;
+      morceaux.push(j > i ? t[i] + " à " + t[j] : String(t[i]));
+      i = j + 1;
+    }
+    if (morceaux.length < 2) return morceaux[0] || "";
+    return morceaux.slice(0, -1).join(", ") + " et " + morceaux[morceaux.length - 1];
+  }
+  function rendreSemaines() {
+    var zone = document.getElementById("semaines-avis");
+    if (!zone) return;
+    var nouv = NOUVELLES_SEMAINES;
+    if (!nouv.length || !DATA || !profil || vue !== "horaire") {
+      zone.hidden = true;
+      zone.innerHTML = "";
+      return;
+    }
+    var singulier = nouv.length === 1;
+    var quand = (singulier ? "la semaine " : "les semaines ") + semainesEnClair(nouv);
+    var texte;
+    if (estPerso(profil)) {
+      var ajouts = profil.sources.filter(function (s) {
+        return s.role !== "principale" && !FUSION.estParcours(s);
+      });
+      texte = "L'école a publié " + quand + ". Ton horaire sur mesure les affiche déjà.";
+      if (ajouts.length) {
+        var noms = ajouts.slice(0, 2).map(function (s) { return "« " + txt(nomSource(s)) + " »"; });
+        texte += " Les cours que tu as cochés dans " + noms.join(" et ") +
+          (ajouts.length > 2 ? " (entre autres)" : "") +
+          " ne se complètent pas tout seuls : vérifie s'il y a de nouvelles matières à ajouter.";
+      }
+    } else {
+      texte = "L'école a publié " + quand + ". Ton horaire les affiche déjà. " +
+        "Un cours d'une autre année à ajouter ? C'est le moment de composer un horaire sur mesure.";
+    }
+    zone.innerHTML = ICONE_CALENDRIER + "<div><strong>" +
+      txt(singulier ? "Nouvelle semaine disponible" : "Nouvelles semaines disponibles") + "</strong>" +
+      "<p>" + texte + ' <button type="button" data-sem="voir">Voir la semaine ' + nouv[0] + "</button> · " +
+      (estPerso(profil)
+        ? '<button type="button" data-sem="modifier">Modifier mon horaire</button>'
+        : '<button type="button" data-sem="composer">Composer un horaire sur mesure</button>') +
+      ' · <button type="button" data-sem="ok">OK</button></p></div>';
+    zone.hidden = false;
+  }
+  document.getElementById("semaines-avis").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-sem]");
+    if (!b || !profil || !NOUVELLES_SEMAINES.length) return;
+    var act = b.getAttribute("data-sem");
+    var premiere = NOUVELLES_SEMAINES[0];
+    NOUVELLES_SEMAINES = []; // l'alerte est déjà consommée (voir installer)
+    delete ALERTES_SEMAINES[profil.id]; // ne revient pas dans cette visite
+    rendreSeg(); // la pastille de l'onglet part avec le bandeau
+    if (act === "voir") {
+      if (SEMAINES.indexOf(premiere) >= 0) sem = premiere;
+      rendre();
+      var w = document.querySelector(".week");
+      if (w && w.scrollIntoView) w.scrollIntoView({ block: "start", behavior: sansAnim ? "auto" : "smooth" });
+    } else if (act === "modifier") {
+      modifierPerso(profil.id);
+    } else if (act === "composer") {
+      demarrerPerso();
+    } else {
+      rendre();
     }
   });
   /* Bandeau des chevauchements de la semaine + ligne des sources. */
@@ -7088,14 +7359,14 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     if (popSource === b) fermerPop(); else ouvrirPop(b);
   });
   document.addEventListener("click", function (e) {
-    if (confirmationOuverte() || editionOuverte() || bugOuvert()) return;
+    if (confirmationOuverte() || editionOuverte() || bugOuvert() || exportOuvert()) return;
     if (popSource && !pop.contains(e.target) && !e.target.closest(".ev")) fermerPop();
     if (feuille.classList.contains("visible") && !feuille.contains(e.target) && !e.target.closest("#btn-moi")) fermerFeuille();
   });
   window.addEventListener("resize", fermerPop);
   /* Raccourcis clavier (ordinateur) : ← → semaines, + − zoom du PDF. */
   document.addEventListener("keydown", function (e) {
-    if (confirmationOuverte() || editionOuverte() || bugOuvert()) return;
+    if (confirmationOuverte() || editionOuverte() || bugOuvert() || exportOuvert()) return;
     if (vue !== "horaire" || e.metaKey || e.ctrlKey || e.altKey) return;
     if (e.target.closest && e.target.closest("input, textarea, select")) return;
     if (feuille.classList.contains("visible")) return;
@@ -7108,7 +7379,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   });
   /* Version visible en pied de page : permet de vérifier que le
      téléphone affiche bien la dernière version (raccourci iOS). */
-  var VERSION_APP = "28";
+  var VERSION_APP = "38";
   function rendreInfos() {
     if (!DATA || !profil) return;
     var sansProfs = DATA.cours.length && !DATA.cours.some(function (c) { return c.profs; });
@@ -7148,8 +7419,12 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg>';
   var ICONE_CORBEILLE = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ' +
     'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 4h4M7 7l1 13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-13"/></svg>';
-  /* Cartes des horaires. Le ⋮ n'ouvre qu'un menu (Modifier / Supprimer) ;
-     la modification elle-même se fait dans une fenêtre (ouvrirEdition).
+  var ICONE_CALENDRIER = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ' +
+    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/>' +
+    '<path d="M8 3v4M16 3v4M3 10h18M12 13v5M9.5 15.5 12 18l2.5-2.5"/></svg>';
+  /* Cartes des horaires. Le ⋮ n'ouvre qu'un menu (Modifier / Exporter /
+     Supprimer) ; la modification elle-même se fait dans une fenêtre
+     (ouvrirEdition).
      Avec plusieurs horaires, on attrape la carte pour la faire glisser
      (sauf le ⋮) : l'ordre est celui du tableau `profils`, donc aussi celui
      du sélecteur de la semaine. */
@@ -7186,6 +7461,8 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
           ? '<div class="ppop" role="menu">' +
             '<button type="button" class="pop-act" role="menuitem" data-act="modifier" data-id="' + txt(p.id) + '">' +
             ICONE_CRAYON + "Modifier</button>" +
+            '<button type="button" class="pop-act" role="menuitem" data-act="exporter" data-id="' + txt(p.id) + '">' +
+            ICONE_CALENDRIER + "Exporter</button>" +
             '<button type="button" class="pop-act danger-txt" role="menuitem" data-act="supprimer" data-id="' + txt(p.id) + '">' +
             ICONE_CORBEILLE + "Supprimer</button></div>"
           : "") +
@@ -7394,6 +7671,376 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       }
     });
   }
+  /* ---------- Ajouter l'horaire à l'agenda ----------
+     Le ⋮ d'une carte propose « Exporter ». Deux abonnements possibles,
+     servis par /api/abonnement : le téléphone rappelle le flux tout seul,
+     donc l'horaire reste à jour sans réexporter.
+       • Tout l'horaire : un calendrier, une seule couleur ;
+       • Cours par cours : un calendrier par cours, avec la couleur du
+         cours dans l'app (le flux la porte : ICSx5 la lit, Apple la
+         propose à l'abonnement).
+     Rien n'est stocké côté serveur : le jeton signé décrit l'horaire à
+     servir. Un horaire sur mesure (fusion de plusieurs sources) n'a pas
+     d'équivalent côté serveur : il garde le fichier local. */
+  var exportCarte = null;   // { p, data, liens } de l'export ouvert
+  var exportJeton = 0;      // invalide un chargement si la fenêtre est fermée
+  function exportOuvert() { return !document.getElementById("voile-export").hidden; }
+  /* Cours du profil : pour un horaire sur mesure, la fusion les a déjà
+     filtrés ; sinon on garde ceux des groupes choisis (mêmes règles que
+     l'affichage). */
+  function coursDuProfil(p, data) {
+    if (data.perso) return data.cours;
+    var sel = p.groupes || [];
+    return data.cours.filter(function (c) {
+      if (!sel.length || !c.groupes.length) return true;
+      return c.groupes.some(function (g) { return groupeDans(sel, g); });
+    });
+  }
+  function donneesExport(p) {
+    if (profil && profil.id === p.id && DATA) return Promise.resolve(DATA);
+    var memo = memoProfil(p);
+    if (memo) return Promise.resolve(memo);
+    return chargerProfil(p);
+  }
+  function nomExport(p) {
+    return propre(estRenomme(p) ? p.surnom : libelleProfil(p)) || "Mon horaire";
+  }
+  function resumeExport(p, data) {
+    var vues = {}, seances = 0;
+    coursDuProfil(p, data).forEach(function (c) {
+      seances += (c.semaines || []).length;
+      (c.semaines || []).forEach(function (s) { vues[s] = true; });
+    });
+    var n = Object.keys(vues).length;
+    return n + " semaine" + (n > 1 ? "s" : "") + " · " + seances + " séance" + (seances > 1 ? "s" : "");
+  }
+  /* Couleur d'un cours en hexadécimal : même teinte que la palette de
+     l'app, en ton moyen (une couleur d'agenda doit rester lisible). */
+  function hslHex(h, s, l) {
+    function f(n) {
+      var k = (n + h / 30) % 12, a = s * Math.min(l, 1 - l);
+      var v = l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+      return Math.round(255 * v).toString(16).padStart(2, "0");
+    }
+    return "#" + f(0) + f(8) + f(4);
+  }
+  function couleurCoursHex(matiere) {
+    var t = couleurCours(matiere);
+    return hslHex(t.h, Math.max(0.45, 0.62 - t.v * 0.08), (46 + t.v * 3) / 100);
+  }
+  /* Adresse d'abonnement (fabriquée et signée par le serveur) : le cours
+     vide = tout l'horaire. */
+  function lienAbonnement(p, cours, couleur, nom) {
+    var q = [
+      "action=lien",
+      "ecole=" + encodeURIComponent(p.ical ? "" : (p.ecole || "")),
+      "formation=" + encodeURIComponent(p.ical ? "" : (p.formation || "")),
+      "groupes=" + encodeURIComponent(p.ical ? "" : (p.groupes || []).join("|")),
+      "ical=" + encodeURIComponent(p.ical || ""),
+      "cours=" + encodeURIComponent(cours || ""),
+      "couleur=" + encodeURIComponent(couleur || ""),
+      "nom=" + encodeURIComponent(nom || nomExport(p)),
+      "uid=" + encodeURIComponent(p.id || "")
+    ];
+    return "api/abonnement?" + q.join("&");
+  }
+  function demanderLien(p, cours, couleur, nom) {
+    return fetch(lienAbonnement(p, cours, couleur, nom), { cache: "no-store" })
+      .then(function (r) {
+        return r.json().then(function (rep) {
+          if (!r.ok || !rep || !rep.url) throw new Error((rep && rep.erreur) || ("erreur " + r.status));
+          return rep.url;
+        });
+      });
+  }
+  /* Ouvre l'abonnement : sur iPhone, webcal:// ouvre directement la boîte
+     « S'abonner » de Calendrier (nom + couleur). Ailleurs, l'adresse est
+     ouverte telle quelle (ICSx5 sur Android, Calendrier sur macOS). */
+  function ouvrirAbonnement(url) {
+    var a = document.createElement("a");
+    a.href = estIOS() ? url.replace(/^https?:\/\//, "webcal://") : url;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+  /* Pastille + titre d'un cours, comme dans l'horaire. */
+  function listeCoursExport(p, data) {
+    var vus = {}, out = [];
+    coursDuProfil(p, data).forEach(function (c) {
+      var m = propre(c.matiere) || "Cours";
+      if (vus[m]) return;
+      vus[m] = true;
+      out.push({
+        matiere: m,
+        titre: EXPORT_ICS.titreEvenement({ matiere: m, type: c.type || "" }),
+        couleur: couleurCoursHex(m)
+      });
+    });
+    out.sort(function (a, b) { return a.titre.localeCompare(b.titre, "fr"); });
+    return out;
+  }
+  /* Horaire sur mesure : le .ics est fabriqué sur l'appareil (le serveur
+     ne sait pas fusionner plusieurs sources). */
+  function construireExport(p, data) {
+    var cours = coursDuProfil(p, data).map(function (c) {
+      return {
+        jour: c.jour, debut: c.debut, fin: c.fin,
+        matiere: c.matiere || "Cours",
+        type: c.type || "",
+        profs: c.profs || "",
+        salles: c.salles || "",
+        groupes: estPerso(p) || (p.groupes || []).length !== 1 ? (c.groupes || []) : [],
+        semaines: c.semaines || []
+      };
+    });
+    return EXPORT_ICS.construire({
+      nom: nomExport(p),
+      premierLundi: data.meta.premier_lundi,
+      cours: cours
+    }, { uid: p.id });
+  }
+  function telechargerExport(contenu, nom) {
+    var blob = new Blob([contenu], { type: "text/calendar" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = nom;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    // La révocation attend : sur mobile, le téléchargement démarre après
+    // le clic, un retrait immédiat l'annulerait sans erreur.
+    setTimeout(function () { try { URL.revokeObjectURL(url); } catch (e) { /* jetable */ } }, 30000);
+  }
+  /* Palette de l'agenda : les mêmes teintes que les cours, en ton moyen.
+     La couleur du thème de l'horaire est présélectionnée. */
+  var PALETTE_AGENDA = TEINTES.map(function (h) { return hslHex(h, 0.62, 0.46); });
+  /* Prépare le lien « tout l'horaire » : le tap doit ouvrir Calendrier
+     sans attente (une requête au moment du tap risquerait d'être bloquée
+     comme pop-up). Refaite quand la couleur change. */
+  function preparerLienTout(p) {
+    if (!exportCarte) return;
+    var couleur = exportCarte.couleur;
+    exportCarte.liens.tout = null;
+    demanderLien(p, "", couleur, nomExport(p)).then(function (url) {
+      if (exportCarte && exportCarte.couleur === couleur) exportCarte.liens.tout = url;
+    }, function () { /* le clic réessaiera */ });
+  }
+  function rendreSwatches() {
+    var zone = document.getElementById("export-swatches");
+    var choisi = exportCarte && exportCarte.couleur;
+    zone.innerHTML = PALETTE_AGENDA.map(function (c) {
+      return '<button type="button" class="ec-swatch" data-couleur="' + txt(c) + '" role="radio" aria-checked="' +
+        (c === choisi ? "true" : "false") + '" aria-label="Couleur ' + txt(c) + '" style="background:' + txt(c) + '"></button>';
+    }).join("");
+  }
+  document.getElementById("export-swatches").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-couleur]");
+    if (!b || !exportCarte) return;
+    exportCarte.couleur = b.getAttribute("data-couleur");
+    preparerLienTout(exportCarte.p);
+    var opts = this.querySelectorAll("[data-couleur]");
+    for (var i = 0; i < opts.length; i++) {
+      opts[i].setAttribute("aria-checked", opts[i] === b ? "true" : "false");
+    }
+  });
+  var ICONE_CHECK = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+    'stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg>';
+  var ICONE_PLUS = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+    'stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+  function statutExport(texte, genre) {
+    var el = document.getElementById("export-status");
+    el.className = "export-status" + (genre ? " " + genre : "");
+    el.textContent = texte || "";
+  }
+  function montrerExport(vue) {
+    document.getElementById("export-choix").hidden = vue !== "choix";
+    document.getElementById("export-couleur-vue").hidden = vue !== "couleur";
+    document.getElementById("export-liste").hidden = vue !== "liste";
+    var retour = document.getElementById("export-retour");
+    var ajouter = document.getElementById("export-ajouter");
+    retour.hidden = vue === "choix";
+    ajouter.hidden = vue !== "couleur";
+    // Vue couleur : Retour + Ajouter suffisent (sinon trois boutons se chevauchent).
+    document.getElementById("export-annuler").hidden = vue === "couleur";
+    document.getElementById("export-actions").classList.toggle("seule", vue === "choix");
+    statutExport("");
+  }
+  /* Une ligne de cours : pastille + titre + bouton. `fait` = déjà ajouté
+     (le bouton passe au vert, et la ligne descend dans « Déjà ajoutés » —
+     on ne peut pas savoir avec certitude que l'abonnement a été confirmé
+     dans Calendrier, donc on peut toujours recommencer). */
+  function ligneCours(c, fait) {
+    return '<button type="button" class="export-cours-ligne" data-matiere="' + txt(c.matiere) + '">' +
+      '<span class="ec-point" style="background:' + txt(c.couleur) + '"></span>' +
+      '<span class="ec-nom">' + txt(c.titre) + "</span>" +
+      '<span class="ec-act' + (fait ? " fait" : "") + '">' +
+      (fait ? ICONE_CHECK + "Ajouté" : "Ajouter") + "</span></button>";
+  }
+  function rendreListeCours() {
+    if (!exportCarte || !exportCarte.data) return;
+    var liste = listeCoursExport(exportCarte.p, exportCarte.data);
+    var aFaire = liste.filter(function (c) { return !exportCarte.ajoutes[c.matiere]; });
+    var faits = liste.filter(function (c) { return exportCarte.ajoutes[c.matiere]; });
+    document.getElementById("export-cours").innerHTML = aFaire.map(function (c) {
+      return ligneCours(c, false);
+    }).join("") || '<p class="export-vide">Tous les cours sont ajoutés.</p>';
+    document.getElementById("export-ajoutes").hidden = !faits.length;
+    document.getElementById("export-cours-ajoutes").innerHTML = faits.map(function (c) {
+      return ligneCours(c, true);
+    }).join("");
+    document.getElementById("export-liste-aide").textContent = faits.length
+      ? "Il reste " + aFaire.length + " cours à ajouter — " + faits.length + " déjà ajouté" + (faits.length > 1 ? "s" : "") + "."
+      : "Chaque cours crée son calendrier, à sa couleur — " + liste.length + " au total.";
+  }
+  function exporterProfil(id) {
+    var p = profilParId(id);
+    if (!p) return;
+    fermerMenus();
+    var jeton = ++exportJeton;
+    exportCarte = { p: p, data: null, liens: {}, ajoutes: {}, couleur: PALETTE_AGENDA[Math.max(0, THEMES.map(function (t) {
+      return t.id;
+    }).indexOf(normaliserTheme(p.theme)))] || PALETTE_AGENDA[0] };
+    document.getElementById("export-titre").textContent = "Ajouter à mon agenda";
+    document.getElementById("export-nom").textContent = nomExport(p);
+    document.getElementById("export-annuler").hidden = false;
+    document.getElementById("export-repli").hidden = true;
+    montrerExport("choix");
+    var tout = document.getElementById("export-tout");
+    var parCours = document.getElementById("export-par-cours");
+    tout.disabled = true;
+    parCours.disabled = true;
+    statutExport("Préparation de l'horaire…");
+    document.getElementById("voile-export").hidden = false;
+    document.body.classList.add("confirm-ouverte");
+    setTimeout(function () {
+      try { document.getElementById("export-annuler").focus(); } catch (e) { /* jetable */ }
+    }, 30);
+    donneesExport(p).then(function (data) {
+      if (jeton !== exportJeton || !exportCarte) return;
+      if (!coursDuProfil(p, data).length) {
+        statutExport("Aucun cours à exporter pour cet horaire.");
+        return;
+      }
+      exportCarte.data = data;
+      var perso = estPerso(p);
+      document.getElementById("export-nom").textContent =
+        nomExport(p) + " · " + resumeExport(p, data);
+      if (perso) {
+        // Sur mesure : la fusion n'existe pas côté serveur.
+        tout.disabled = true;
+        parCours.disabled = true;
+        document.getElementById("export-repli").hidden = false;
+        statutExport("Les horaires sur mesure ne sont pas encore disponibles en abonnement : télécharge le fichier.", "");
+        return;
+      }
+      tout.disabled = false;
+      parCours.disabled = false;
+      statutExport("");
+      // Prépare le lien « tout l'horaire » (le clic doit ouvrir sans attente).
+      preparerLienTout(p);
+    }, function (e) {
+      if (jeton !== exportJeton || !exportCarte) return;
+      statutExport("Impossible de préparer l'horaire" +
+        (e && e.message ? " (" + String(e.message).slice(0, 120) + ")" : "") +
+        ". Réessaie dans un instant.", "erreur");
+    });
+  }
+  // « Tout l'horaire d'un coup » : on demande la couleur, puis Ajouter.
+  document.getElementById("export-tout").addEventListener("click", function () {
+    if (!exportCarte || !exportCarte.data) return;
+    rendreSwatches();
+    preparerLienTout(exportCarte.p);
+    montrerExport("couleur");
+  });
+  document.getElementById("export-ajouter").addEventListener("click", function () {
+    if (!exportCarte || !exportCarte.data) return;
+    var p = exportCarte.p, self = this;
+    self.disabled = true;
+    statutExport("Préparation de l'abonnement…");
+    var lien = exportCarte.liens.tout
+      ? Promise.resolve(exportCarte.liens.tout)
+      : demanderLien(p, "", exportCarte.couleur, nomExport(p));
+    lien.then(function (url) {
+      if (!exportCarte) return;
+      exportCarte.liens.tout = url;
+      self.disabled = false;
+      statutExport("Calendrier s'ouvre : confirme l'abonnement.", "ok");
+      ouvrirAbonnement(url);
+    }, function (e) {
+      self.disabled = false;
+      statutExport("Impossible de créer l'abonnement" +
+        (e && e.message ? " (" + String(e.message).slice(0, 120) + ")" : "") + ".", "erreur");
+    });
+  });
+  document.getElementById("export-par-cours").addEventListener("click", function () {
+    if (!exportCarte || !exportCarte.data) return;
+    var p = exportCarte.p;
+    rendreListeCours();
+    montrerExport("liste");
+    // Prépare les liens pendant que la liste s'affiche : le tap ouvre sans attente.
+    var jeton = exportJeton;
+    listeCoursExport(p, exportCarte.data).forEach(function (c) {
+      demanderLien(p, c.matiere, c.couleur, c.titre).then(function (url) {
+        if (jeton !== exportJeton || !exportCarte) return;
+        exportCarte.liens[c.matiere] = url;
+      }, function () { /* le clic réessaiera */ });
+    });
+  });
+  document.getElementById("export-cours").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-matiere]");
+    if (!b || !exportCarte || !exportCarte.data) return;
+    var p = exportCarte.p, m = b.getAttribute("data-matiere");
+    var c = null;
+    listeCoursExport(p, exportCarte.data).forEach(function (x) { if (x.matiere === m) c = x; });
+    if (!c) return;
+    exportCarte.ajoutes[m] = true;
+    rendreListeCours();
+    b.disabled = true;
+    statutExport("Préparation de « " + c.titre + " »…");
+    var lien = exportCarte.liens[m] ? Promise.resolve(exportCarte.liens[m]) : demanderLien(p, c.matiere, c.couleur, c.titre);
+    lien.then(function (url) {
+      if (!exportCarte) return;
+      exportCarte.liens[m] = url;
+      b.disabled = false;
+      statutExport("Calendrier s'ouvre : confirme — sa couleur est déjà proposée.", "ok");
+      ouvrirAbonnement(url);
+    }, function (err) {
+      if (exportCarte) delete exportCarte.ajoutes[m];
+      rendreListeCours();
+      statutExport("Impossible de créer l'abonnement" +
+        (err && err.message ? " (" + String(err.message).slice(0, 120) + ")" : "") + ".", "erreur");
+    });
+  });
+  document.getElementById("export-retour").addEventListener("click", function () {
+    montrerExport("choix");
+  });
+  function fermerExport() {
+    exportJeton++;
+    exportCarte = null;
+    var voile = document.getElementById("voile-export");
+    if (voile.hidden) return;
+    voile.hidden = true;
+    document.body.classList.remove("confirm-ouverte");
+  }
+  document.getElementById("export-annuler").addEventListener("click", fermerExport);
+  // Sur mesure : le fichier .ics reste le seul export (rien à servir).
+  document.getElementById("export-fichier").addEventListener("click", function () {
+    if (!exportCarte || !exportCarte.data) return;
+    try {
+      var p = exportCarte.p;
+      telechargerExport(construireExport(p, exportCarte.data), EXPORT_ICS.nomFichier(nomExport(p)));
+      statutExport("Fichier téléchargé. Ouvre-le pour l'ajouter à ton agenda.", "ok");
+    } catch (e) {
+      statutExport("L'export a échoué. Réessaie dans un instant.", "erreur");
+    }
+  });
+  document.getElementById("voile-export").addEventListener("click", function (e) {
+    e.stopPropagation(); // un clic dans la fenêtre ne ferme pas les réglages derrière
+    if (e.target === this) fermerExport();
+  });
   function supprimerProfil(id) {
     var p = profilParId(id);
     if (!p) return;
@@ -7410,6 +8057,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       var idx = profils.indexOf(p);
       if (idx >= 0) profils.splice(idx, 1);
       supprimerProfilDistant(id); // efface aussi la ligne cloud, si connecté
+      oublierSemaines(id);        // et la mémoire des semaines vues
       if (profil && profil.id === id) profil = profils[Math.min(idx, profils.length - 1)] || null;
       carteOuverte = null;
       sauverProfils();
@@ -7563,6 +8211,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     if (a) {
       var id = a.getAttribute("data-id"), act = a.getAttribute("data-act");
       if (act === "modifier") modifierProfil(id);
+      else if (act === "exporter") exporterProfil(id);
       else if (act === "supprimer") { fermerMenus(); supprimerProfil(id); }
       return;
     }
@@ -8020,6 +8669,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   });
   document.addEventListener("keydown", function (e) {
     if (e.key !== "Escape") return;
+    if (exportOuvert()) { fermerExport(); return; }
     if (bugOuvert()) { fermerBug(); return; }
     if (confirmationOuverte() || editionOuverte()) return;
     if (dragCarte) { dragTermine(false); return; } // Échap repose la carte

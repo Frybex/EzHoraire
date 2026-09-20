@@ -113,6 +113,10 @@ def repondre_texte(h, statut, message, cache="no-store"):
 _DEBIT_MAX = {
     "formations": (60, 60.0),  # liste légère : 60 / min / IP
     "horaires": (12, 60.0),    # ~50 appels école chacun : 12 / min / IP
+    "export": (12, 60.0),      # même coût que horaires (l'école est relue)
+    # Abonnement : le téléphone rappelle le flux tout seul (un par cours,
+    # jusqu'à ~25 par étudiant) — large, mais borné par IP.
+    "abonnement": (60, 60.0),
     "pdf": (12, 60.0),         # session + génération : 12 / min / IP
     "recherche": (40, 60.0),   # recherche en direct (niveaux, cours) : 40 / min / IP
     "ical": (12, 60.0),        # lien d'abonnement personnel : 12 / min / IP

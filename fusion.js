@@ -119,6 +119,16 @@
     });
     return out;
   }
+  /* Numéros de semaine publiés par l'école qu'on n'a pas encore vus
+     (`connues` et `periode` sont des ensembles au format de l'API).
+     Sert à l'alerte « nouvelles semaines disponibles » : l'école publie
+     l'année par tranches (la HEH commence par [1..14], puis allonge). */
+  function nouvellesSemaines(connues, periode) {
+    var vues = parseEns(connues == null ? "[]" : connues);
+    return parseEns(periode == null ? "[]" : periode).filter(function (w) {
+      return vues.indexOf(w) < 0;
+    }).sort(function (a, b) { return a - b; });
+  }
   function formatEns(nombres) {
     var t = nombres.slice().sort(function (a, b) { return a - b; })
       .filter(function (n, i, arr) { return i === 0 || n !== arr[i - 1]; });
@@ -339,6 +349,7 @@
     donneesCochees: donneesCochees,
     parseEns: parseEns,
     formatEns: formatEns,
+    nouvellesSemaines: nouvellesSemaines,
     fusionner: fusionner,
     chevauchements: chevauchements,
     normaliserSource: normaliserSource,

@@ -8,6 +8,7 @@ et nulle part ailleurs.
 api/
 ├── formations.py   GET /api/formations?ecole=…            liste des formations
 ├── horaires.py     GET /api/horaires?ecole=…&formation=…  horaire complet
+├── export.py       GET /api/export?ecole=…&formation=…    horaire en .ics (Calendrier iPhone)
 ├── recherche.py    GET /api/recherche?ecole=…&genre=…&q=… recherche en direct
 ├── ical.py         GET /api/ical?lien=…                   horaire d'un lien perso
 ├── importer.py     POST /api/importer (corps JSON)        liste collée → cours
@@ -30,6 +31,7 @@ api/
     ├── hyperplanning.py  Pronote Campus / Hyperplanning : session, décodage, PDF
     ├── timeedit.py       TimeEdit (vue publique) : objets, réservations, PDF
     ├── ical.py           flux iCalendar d'un lien d'abonnement → format des écoles
+    ├── export_ics.py     horaire → fichier .ics (miroir de export_ics.js)
     ├── import_liste.py   liste de cours collée → codes du catalogue
     └── typesafe.py       Jev : les lignes floues d'un import (clé serveur)
 ```
