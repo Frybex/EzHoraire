@@ -21,6 +21,13 @@ droite ouvre les **Réglages** (identité, déconnexion, mes horaires).
 L'horaire se met à jour tout seul à chaque ouverture : recharger la page
 suffit, il n'y a aucun bouton d'actualisation.
 
+La semaine affichée à l'ouverture est celle du jour ; le week-end, elle
+passe toute seule à la suivante dès que le dernier cours de la semaine en
+cours est passé — samedi pour une semaine du lundi au vendredi, dimanche
+quand il y a cours le samedi, lundi quand il y a cours le dimanche (voir
+`semaine.js`). Dès qu'on choisit une semaine soi-même (flèches, bandeau),
+l'horaire n'avance plus tout seul jusqu'à « Cette semaine ».
+
 Chaque horaire s'ajoute à l'agenda du téléphone (menu ⋮ d'une carte →
 **Exporter**), par **abonnement** : le téléphone rappelle un flux
 `/api/abonnement` tout seul, donc l'horaire reste à jour sans réexporter
@@ -408,6 +415,10 @@ les sources. `logos/ecoles/` est déployé, `logos/da/` et `logos/ez/`
   puis horaire).
 - `demo.html` — page de démonstration (ouvre l'app en mode essai, sans
   compte).
+- `semaine.js` — semaine affichée d'office : celle du jour, passée à la
+  suivante le week-end une fois le dernier cours de la semaine en cours
+  (fonctions pures, chargée par `index.html`) ; tests : `node --test
+  test_semaine.mjs`.
 - `fusion.js` — fusion des horaires sur mesure (fonctions pures, chargée
   par `index.html`) ; tests : `node --test test_fusion.mjs`.
 - `export_ics.js` — export d'un horaire vers une application d'agenda

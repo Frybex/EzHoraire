@@ -2929,6 +2929,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
 <script src="/suivi.js"></script>
 <script src="/fusion.js"></script>
 <script src="/export_ics.js"></script>
+<script src="/semaine.js"></script>
 <script>
 (function () {
   "use strict";
@@ -3175,6 +3176,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
      chaque source. `sources` absent ou vide = horaire normal. */
   var FUSION = window.EZH_FUSION;
   var EXPORT_ICS = window.EZH_EXPORT_ICS;
+  var SEMAINE = window.EZH_SEMAINE;
   function estPerso(p) { return !!(p && Array.isArray(p.sources) && p.sources.length); }
   function ecoleExiste(id) { return !!ecoleDe(id); }
   function profilValide(p) {
@@ -3995,7 +3997,9 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   var sem = 1;
   // Faux dès que l'utilisateur a choisi une semaine (flèches, bandeau) :
   // tous les horaires restent alors sur la même semaine. Vrai de nouveau
-  // avec « Cette semaine » ou tant qu'il n'a jamais navigué.
+  // avec « Cette semaine » ou tant qu'il n'a jamais navigué — et tant
+  // qu'il est vrai, chaque installation (ouverture, retour sur l'onglet)
+  // repose la semaine d'office : un week-end qui passe bascule tout seul.
   var semaineAuto = true;
 
   function parseDate(iso) {
@@ -4030,20 +4034,13 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     });
     return out;
   }
+  // Semaine à afficher d'office : celle de la date du jour, sauf une fois
+  // la semaine de cours terminée — l'app passe à la suivante le week-end,
+  // dès le samedi quand le dernier cours est le vendredi, dès le dimanche
+  // quand il est le samedi, et le lundi quand il est le dimanche. La règle
+  // vit dans semaine.js (test_semaine.mjs).
   function semaineCourante() {
-    if (!SEMAINES.length) return 1;
-    var auj = new Date(); auj.setHours(0, 0, 0, 0);
-    // arrondi, pas plancher : deux minuits encadrant le changement d'heure
-    // sont séparés de 23 h ou 25 h par jour calendaire, le plancher
-    // reculerait alors d'un jour (donc parfois d'une semaine pile un lundi).
-    var diff = Math.round((auj - LUNDI0) / 86400000);
-    var s = Math.floor(diff / 7) + 1;
-    if (s <= SEMAINES[0]) return SEMAINES[0];
-    if (s >= SEMAINES[SEMAINES.length - 1]) return SEMAINES[SEMAINES.length - 1];
-    if (SEMAINES.indexOf(s) >= 0) return s;
-    // Semaine « trou » non publiée par l'école (congés…) : la publiée suivante.
-    for (var i = 0; i < SEMAINES.length; i++) if (SEMAINES[i] > s) return SEMAINES[i];
-    return SEMAINES[SEMAINES.length - 1];
+    return SEMAINE.semaineAffichee(LUNDI0, SEMAINES, COURS, new Date());
   }
   // Clé d'un groupe : le nom renvoyé par l'API, espaces nettoyés (l'école
   // les double parfois).
@@ -6726,7 +6723,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       // Déjà filtré source par source (cours, groupes) par fusion.js.
       COURS = DATA.cours;
       CHOCS = FUSION.chevauchements(COURS);
-      if (SEMAINES.indexOf(sem) < 0) sem = semaineCourante();
+      if (semaineAuto || SEMAINES.indexOf(sem) < 0) sem = semaineCourante();
       return;
     }
     // Groupe enregistré sous une autre forme (préfixé ou non) que celle de
@@ -6745,7 +6742,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       if (!sel.length || !c.groupes.length) return true; // séance de toute la formation
       return c.groupes.some(function (g) { return groupeDans(sel, g); });
     });
-    if (SEMAINES.indexOf(sem) < 0) sem = semaineCourante();
+    if (semaineAuto || SEMAINES.indexOf(sem) < 0) sem = semaineCourante();
   }
   /* PDF du groupe s'il n'y en a qu'un. Plusieurs groupes : celui choisi
      dans la liste de la visionneuse (par défaut, toute la formation). */
@@ -6979,8 +6976,11 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     var i = SEMAINES.indexOf(sem);
     document.getElementById("sem-titre").textContent = "Semaine " + sem;
     var lun = dateSemJour(sem, 0);
-    // La semaine va jusqu'au samedi quand il y a cours ce jour-là (ULB).
-    var fin = coursDe(sem, 5).length ? dateSemJour(sem, 5) : dateSemJour(sem, 4);
+    // La semaine s'arrête au dernier jour où il y a cours : dimanche quand
+    // l'école en donne un, sinon samedi (ULB), sinon vendredi.
+    var fin = coursDe(sem, 6).length ? dateSemJour(sem, 6)
+            : coursDe(sem, 5).length ? dateSemJour(sem, 5)
+            : dateSemJour(sem, 4);
     document.getElementById("sem-dates").textContent =
       (lun.getMonth() === fin.getMonth()
         ? lun.getDate() + " – " + fmtDate(fin)
