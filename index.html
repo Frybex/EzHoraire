@@ -3993,6 +3993,10 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   var FERIES = {};       // jours fériés / de congé de l'école : { n° de jour : true }
   var FERIES_NOMS = {};  // leur nom quand l'école en donne un (« Toussaint »)
   var sem = 1;
+  // Faux dès que l'utilisateur a choisi une semaine (flèches, bandeau) :
+  // tous les horaires restent alors sur la même semaine. Vrai de nouveau
+  // avec « Cette semaine » ou tant qu'il n'a jamais navigué.
+  var semaineAuto = true;
 
   function parseDate(iso) {
     var p = iso.split("-");
@@ -6119,7 +6123,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     pile = [];
     fermerPdf();
     installer(choix.data);
-    sem = semaineCourante();
+    if (semaineAuto) sem = semaineCourante();
     resetDepliage(); deplierAujourdhui();
     afficherHoraire();
     actualiser().catch(function () { /* garde le cache local */ });
@@ -6446,7 +6450,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     DATA = null;
     var memo = memoProfil(profil);
     if (memo) installer(memo);
-    sem = semaineCourante();
+    if (semaineAuto) sem = semaineCourante();
     resetDepliage(); deplierAujourdhui();
     afficherHoraire();
     actualiser().catch(function (e) {
@@ -6614,7 +6618,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     DATA = null;
     var memo = memoProfil(profil);
     if (memo) installer(memo);
-    sem = semaineCourante();
+    if (semaineAuto) sem = semaineCourante();
     resetDepliage(); deplierAujourdhui();
     afficherHoraire();
     actualiser().catch(function () { /* hors ligne : garde le cache */ });
@@ -7136,7 +7140,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     delete ALERTES_SEMAINES[profil.id]; // ne revient pas dans cette visite
     rendreSeg(); // la pastille de l'onglet part avec le bandeau
     if (act === "voir") {
-      if (SEMAINES.indexOf(premiere) >= 0) sem = premiere;
+      if (SEMAINES.indexOf(premiere) >= 0) { sem = premiere; semaineAuto = false; }
       rendre();
       var w = document.querySelector(".week");
       if (w && w.scrollIntoView) w.scrollIntoView({ block: "start", behavior: sansAnim ? "auto" : "smooth" });
@@ -8067,7 +8071,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       if (profil) {
         var memo = memoProfil(profil);
         if (memo) installer(memo);
-        sem = semaineCourante();
+        if (semaineAuto) sem = semaineCourante();
         resetDepliage(); deplierAujourdhui();
         afficherHoraire();
         actualiser().catch(function () { /* hors ligne */ });
@@ -8355,14 +8359,14 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
 
   document.getElementById("sem-prec").addEventListener("click", function () {
     var i = SEMAINES.indexOf(sem);
-    if (i > 0) { sem = SEMAINES[i - 1]; resetDepliage(); fermerPdf(); rendre(); }
+    if (i > 0) { sem = SEMAINES[i - 1]; semaineAuto = false; resetDepliage(); fermerPdf(); rendre(); }
   });
   document.getElementById("sem-suiv").addEventListener("click", function () {
     var i = SEMAINES.indexOf(sem);
-    if (i < SEMAINES.length - 1) { sem = SEMAINES[i + 1]; resetDepliage(); fermerPdf(); rendre(); }
+    if (i < SEMAINES.length - 1) { sem = SEMAINES[i + 1]; semaineAuto = false; resetDepliage(); fermerPdf(); rendre(); }
   });
   document.getElementById("btn-auj").addEventListener("click", function () {
-    sem = semaineCourante(); resetDepliage(); fermerPdf(); rendre();
+    sem = semaineCourante(); semaineAuto = true; resetDepliage(); fermerPdf(); rendre();
   });
   // Auto-déplier aujourd'hui s'il est affiché et qu'il y a cours.
   function deplierAujourdhui() {
@@ -9078,7 +9082,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       if (!change) { DATA = data; rendreInfos(); return false; }
       if (!premier) { coursOuverts = {}; fermerPdf(); } // le PDF affiché serait périmé
       installer(data);
-      if (premier) { sem = semaineCourante(); deplierAujourdhui(); }
+      if (premier) { if (semaineAuto) sem = semaineCourante(); deplierAujourdhui(); }
       if (vue === "horaire") afficherHoraire();
       return true;
     });
