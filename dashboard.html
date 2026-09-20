@@ -234,7 +234,7 @@ catch (e) { /* navigation privée */ }
   .stat b { font-size: 1.2rem; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
   .stat b em { font-style: normal; font-size: .78rem; font-weight: 700; color: var(--free); margin-left: 6px; letter-spacing: 0; }
 
-  /* ---------- Parcours ---------- */
+  /* ---------- Tuiles (4 carrés du haut de l'Aperçu) ---------- */
   .tuiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
   @media (min-width: 900px) { .tuiles { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
   @media (max-width: 560px) { .tuiles { gap: 12px; } }
@@ -437,7 +437,6 @@ catch (e) { /* navigation privée */ }
   </div>
   <nav class="rail onglets" aria-label="Sections">
     <a href="#apercu" data-vue="apercu">Aperçu</a>
-    <a href="#parcours" data-vue="parcours">Parcours</a>
     <a href="#comptes" data-vue="comptes">Comptes</a>
     <a href="#retours" data-vue="retours">Retours <span class="pastille" id="retours-pastille" hidden></span></a>
   </nav>
@@ -450,6 +449,12 @@ catch (e) { /* navigation privée */ }
     <!-- Aperçu -->
     <div class="vue" id="vue-apercu">
       <div class="alerte" id="alerte" hidden></div>
+      <section class="tuiles" id="apercu-tuiles" aria-label="Chiffres clés">
+        <div class="card tuile"><div class="l">Comptes</div><b id="t-comptes">0</b></div>
+        <div class="card tuile"><div class="l">Consultations du jour</div><b id="t-auj">0</b></div>
+        <div class="card tuile"><div class="l">Comptes venus aujourd'hui</div><b id="t-venus">0</b></div>
+        <div class="card tuile"><div class="l">Consultations totales</div><b id="t-total">0</b></div>
+      </section>
       <section class="card hero" aria-labelledby="h-consult">
         <div class="hero-h">
           <div class="hero-l">
@@ -483,24 +488,6 @@ catch (e) { /* navigation privée */ }
           <div class="card-h"><h2>Communauté</h2></div>
           <ul class="stats-l" id="communaute"></ul>
         </section>
-      </div>
-    </div>
-
-    <!-- Parcours -->
-    <div class="vue" id="vue-parcours" hidden>
-      <p class="card vide" id="parcours-vide" hidden></p>
-      <div id="parcours-corps" class="vue">
-        <section class="tuiles" id="parcours-tuiles" aria-label="Chiffres clés du parcours"></section>
-        <div class="deux">
-          <section class="card">
-            <div class="card-h"><h2>De la visite à l'horaire</h2><span class="mut" id="parcours-resume"></span></div>
-            <ol class="entonnoir" id="entonnoir"></ol>
-          </section>
-          <section class="card">
-            <div class="card-h"><h2>Problèmes rencontrés</h2><span class="mut">visites touchées</span></div>
-            <ul class="rangs" id="problemes"></ul>
-          </section>
-        </div>
       </div>
     </div>
 
@@ -635,8 +622,8 @@ catch (e) { /* navigation privée */ }
     $("contenu").hidden = !!msg;
   }
 
-  /* ---------- Onglets (#apercu, #parcours, #comptes, #retours) ---------- */
-  var ONGLETS = ["apercu", "parcours", "comptes", "retours"];
+  /* ---------- Onglets (#apercu, #comptes, #retours) ---------- */
+  var ONGLETS = ["apercu", "comptes", "retours"];
   function ongletDepuisAdresse() {
     var h = (location.hash || "").replace("#", "");
     return ONGLETS.indexOf(h) >= 0 ? h : "apercu";
@@ -672,6 +659,12 @@ catch (e) { /* navigation privée */ }
     $("m-auj").textContent = nb(auj.visites);
     $("m-moy").textContent = nb(Math.round(t.consultations / Math.max(1, n) * 10) / 10);
     $("m-pers").textContent = nb(t.visiteurs_uniques);
+    /* 4 carrés du haut de l'Aperçu : comptes, consultations du jour,
+       comptes venus aujourd'hui, consultations totales (période). */
+    $("t-comptes").textContent = nb(t.comptes);
+    $("t-auj").textContent = nb(t.aujourdhui != null ? t.aujourdhui : auj.visites);
+    $("t-venus").textContent = nb(auj.visiteurs || 0);
+    $("t-total").textContent = nb(t.consultations);
     var brut = +t.consultations_brutes || 0;
     $("bulle-consult").innerHTML = "<b>Une consultation</b> = une personne connectée qui ouvre un de ses horaires. " +
       "Revenir sur l'app dans les 30 minutes ne compte pas deux fois." +
@@ -803,75 +796,6 @@ catch (e) { /* navigation privée */ }
       ligne("#comptes", "Horaires suivis", t.comptes ? (Math.round(t.horaires_suivis / t.comptes * 10) / 10).toLocaleString("fr-BE") + " par compte" : "",
         nb(t.horaires_suivis)) +
       ligne("#retours", "Retours à traiter", "bugs et demandes", aTraiter == null ? "…" : nb(aTraiter));
-  }
-
-  /* ---------- Parcours (anonyme : visites, pas personnes) ---------- */
-  var NOMS_ERREUR = { email_invalide: "Adresse email invalide", mot_de_passe_court: "Mot de passe trop court",
-    connexion_injoignable: "Service de connexion injoignable", invalid_credentials: "Email ou mot de passe incorrect",
-    email_not_confirmed: "Adresse pas encore confirmée", over_email_send_rate_limit: "Trop de tentatives",
-    over_request_rate_limit: "Trop de requêtes", weak_password: "Mot de passe trop faible",
-    signup_disabled: "Inscriptions fermées", interdit: "Piège anti-robot déclenché",
-    lien_expire: "Lien expiré", indisponible: "Service indisponible", connexion_echouee: "Échec de connexion",
-    recherche_0: "Recherche sans résultat", capture_invalide: "Capture : fichier non reconnu",
-    capture_vide: "Capture : aucun texte lisible", capture_echec: "Capture : lecture impossible",
-    analyse_0: "Liste collée : aucun cours reconnu", groupes_partiels: "Horaire validé sans choisir tous les groupes",
-    api_lente: "École trop lente à répondre", api_hors_ligne: "Hors ligne", api_erreur: "Réponse de l'école en erreur" };
-  var NOMS_ECRAN = { accueil: "page d'accueil", app: "entrée de l'app", compte: "écran de connexion",
-    identite: "écran nom/prénom", ecole: "écran école", formation: "écran formation",
-    groupes: "écran groupes", horaire: "horaire" };
-  function parcours() {
-    var p = donnees.parcours;
-    $("parcours-vide").hidden = !!p;
-    $("parcours-corps").hidden = !p;
-    if (!p) {
-      $("parcours-vide").textContent = "Pas encore de données de parcours. Si ça dure, recolle supabase/schema.sql dans Supabase.";
-      return;
-    }
-    var t = p.totaux || {};
-    var arrivees = +t.arrivees || 0, clics = +t.clics_connexion || 0;
-    var comptes = +t.comptes || 0, connexions = +t.connexions || 0;
-    var horaires = +t.horaires || 0;
-    function tuile(l, v) { return '<div class="card tuile"><div class="l">' + l + '</div><b>' + v + "</b></div>"; }
-    $("parcours-tuiles").innerHTML =
-      tuile("Visites", nb(arrivees)) +
-      tuile("Comptes créés", nb(comptes)) +
-      tuile("Conversion", (arrivees ? Math.round(comptes / arrivees * 100) : 0) + " %") +
-      tuile("Temps médian", +t.duree_mediane_s ? fmtDuree(t.duree_mediane_s) : "—");
-    $("parcours-resume").textContent = arrivees ? Math.round(horaires / arrivees * 100) + " % jusqu'au bout" : "";
-    var etapes = [
-      ["Visites", arrivees, "sans être connecté"],
-      ["Clic « Se connecter »", clics, ""],
-      ["Compte créé", comptes, connexions ? "+ " + pl(connexions, "connexion") + " à un compte existant" : ""],
-      ["École choisie", +t.ecole || 0, ""],
-      ["Formation choisie", +t.formation || 0, ""],
-      ["Horaire enregistré", horaires, ""]
-    ];
-    var max = Math.max(1, arrivees);
-    var html = "";
-    etapes.forEach(function (e, i) {
-      if (i) {
-        var avant = etapes[i - 1][1];
-        // Qui se connecte à un compte existant quitte l'entonnoir sans décrocher.
-        var partis = Math.max(0, avant - e[1] - (i === 2 ? connexions : 0));
-        html += '<li class="fuite' + (partis ? "" : " rien") + '">' + (partis ? "−" + nb(partis) + " ici" : "personne ne décroche") + "</li>";
-      }
-      html += '<li class="etape"><span class="n">' + (i + 1) + '</span><span class="nom">' + txt(e[0]) +
-        (e[2] ? "<small>" + txt(e[2]) + "</small>" : "") + "</span>" +
-        '<span class="val">' + nb(e[1]) + (i ? "<small>" + Math.round(e[1] / max * 100) + " %</small>" : "") + "</span>" +
-        '<span class="barre"><i style="width:' + (e[1] / max * 100) + '%"></i></span></li>';
-    });
-    $("entonnoir").innerHTML = html;
-    var errs = p.erreurs || [];
-    var maxE = Math.max.apply(null, errs.map(function (e) { return e.n; }).concat([1]));
-    $("problemes").innerHTML = errs.length ? '<li><ul class="sous-liste" style="padding:4px 0">' + errs.slice(0, 8).map(function (e) {
-      var det = [];
-      if (e.ecran) det.push(NOMS_ECRAN[e.ecran] || e.ecran);
-      det.push("dernier " + ilya(e.dernier));
-      return '<li><span class="nom">' + txt(NOMS_ERREUR[e.erreur] || e.erreur) + "</span>" +
-        '<span class="val">' + nb(e.n) + "</span>" +
-        '<span class="barre"><i style="width:' + (e.n / maxE * 100) + '%"></i></span>' +
-        '<span class="det">' + txt(det.join(" · ")) + "</span></li>";
-    }).join("") + "</ul></li>" : '<li class="vide">Aucun problème sur la période.</li>';
   }
 
   /* ---------- Comptes : par école, puis la liste ---------- */
@@ -1131,7 +1055,7 @@ catch (e) { /* navigation privée */ }
   function rendre() {
     var maj = new Date().toLocaleTimeString("fr-BE", { hour: "2-digit", minute: "2-digit" });
     $("sous-titre").textContent = jours + " derniers jours · à jour à " + maj;
-    alertes(); consultations(); ecoles(); communaute(); parcours(); comptes(); rendreBugs();
+    alertes(); consultations(); ecoles(); communaute(); comptes(); rendreBugs();
   }
 
   /* ---------- Données ---------- */
