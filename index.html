@@ -1401,15 +1401,19 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   @keyframes boite-part { to { opacity: 0; transform: translateY(8px) scale(.98); } }
   .boite h3 { margin: 0 0 18px; font-size: 1.25rem; font-weight: 750; letter-spacing: -.025em; }
   .boite-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 22px; }
-  .boite-actions button {
+  .boite-actions button, .boite-actions a {
     height: 50px; border: none; border-radius: 14px;
     font: inherit; font-size: .98rem; font-weight: 650; cursor: pointer;
     background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
     box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
     transition: color .15s, transform .12s;
   }
-  .boite-actions button:active { transform: scale(.98); }
-  .boite-actions button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  /* L'action peut être une vraie balise (le tap part seul vers l'agenda) :
+     elle doit ressembler au bouton qu'elle remplace. */
+  .boite-actions a { display: grid; place-items: center; text-decoration: none; }
+  .boite-actions a.attente { opacity: .55; cursor: default; }
+  .boite-actions button:active, .boite-actions a:active { transform: scale(.98); }
+  .boite-actions button:focus-visible, .boite-actions a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .btn-sec { color: var(--muted); }
   .btn-sec:hover { color: var(--ink); }
   .btn-prim { color: var(--ink); }
@@ -1477,9 +1481,10 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     display: flex; align-items: center; gap: 10px; width: 100%; padding: 11px 12px;
     border: none; border-radius: 12px; font: inherit; color: var(--ink); text-align: left;
     cursor: pointer; background: var(--creux); box-shadow: inset 0 0 0 1px var(--line);
+    text-decoration: none;
   }
   .export-cours-ligne:active { transform: scale(.99); }
-  .export-cours-ligne:disabled { opacity: .55; cursor: default; }
+  .export-cours-ligne:disabled, .export-cours-ligne.attente { opacity: .55; cursor: default; }
   .export-cours-ligne:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .ec-point { width: 12px; height: 12px; border-radius: 50%; flex: none; }
   .ec-nom { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 550; }
@@ -1492,7 +1497,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
   }
   .ec-act.fait { color: var(--free); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--free) 35%, transparent); }
-  #boite-export .boite-actions button { height: auto; min-height: 50px; padding: 8px 10px; line-height: 1.2; }
+  #boite-export .boite-actions button, #boite-export .boite-actions a { height: auto; min-height: 50px; padding: 8px 10px; line-height: 1.2; }
   /* Un seul bouton (écran de choix) : il prend toute la largeur. */
   #boite-export .boite-actions.seule { grid-template-columns: 1fr; }
   /* Sur mesure : seul export possible, un lien discret sous les boutons. */
@@ -2931,7 +2936,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     <p class="export-status" id="export-status" role="status"></p>
     <div class="boite-actions seule" id="export-actions">
       <button type="button" class="btn-sec" id="export-retour" hidden>Retour</button>
-      <button type="button" class="btn-prim halo" id="export-ajouter" hidden>Ajouter</button>
+      <a class="btn-prim halo" id="export-ajouter" hidden>Ajouter</a>
       <button type="button" class="btn-sec" id="export-annuler">Fermer</button>
     </div>
     <p class="export-repli" id="export-repli" hidden><button type="button" class="lien-pied" id="export-fichier">Télécharger le fichier (.ics)</button></p>
@@ -7860,7 +7865,12 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
          propose à l'abonnement).
      Rien n'est stocké côté serveur : le jeton signé décrit l'horaire à
      servir. Un horaire sur mesure (fusion de plusieurs sources) n'a pas
-     d'équivalent côté serveur : il garde le fichier local. */
+     d'équivalent côté serveur : il garde le fichier local.
+     L'ouverture est une vraie balise (webcal:// sur iPhone), pas un clic
+     fabriqué : le geste du doigt doit porter l'adresse jusqu'à Calendrier,
+     sinon il s'ouvre sans l'abonnement. Le flux est préchauffé pendant que
+     la fenêtre est ouverte — au premier appel, la fonction d'abonnement
+     relit l'école. */
   var exportCarte = null;   // { p, data, liens } de l'export ouvert
   var exportJeton = 0;      // invalide un chargement si la fenêtre est fermée
   function exportOuvert() { return !document.getElementById("voile-export").hidden; }
@@ -7932,16 +7942,25 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
         });
       });
   }
-  /* Ouvre l'abonnement : sur iPhone, webcal:// ouvre directement la boîte
-     « S'abonner » de Calendrier (nom + couleur). Ailleurs, l'adresse est
-     ouverte telle quelle (ICSx5 sur Android, Calendrier sur macOS). */
-  function ouvrirAbonnement(url) {
-    var a = document.createElement("a");
-    a.href = estIOS() ? url.replace(/^https?:\/\//, "webcal://") : url;
-    a.rel = "noopener";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+  /* Adresse de l'abonnement telle qu'elle doit être ouverte : sur iPhone,
+     webcal:// ouvre directement la boîte « S'abonner » de Calendrier (nom
+     + couleur). Ailleurs, l'adresse https part vers l'application d'agenda
+     (ICSx5 sur Android, Calendrier sur macOS). */
+  function urlOuvrable(url) {
+    return estIOS() ? url.replace(/^https?:\/\//, "webcal://") : url;
+  }
+  /* Préchauffe le flux : c'est l'agenda du téléphone qui le lit, pas la
+     page. Au premier appel, la fonction d'abonnement relit l'école
+     (plusieurs secondes — son cache est par fonction, pas partagé avec
+     /api/horaires) : c'est au premier essai que l'abonnement échoue. On la
+     préchauffe donc pendant que la fenêtre est ouverte. Le corps est
+     annulé dès les en-têtes : le travail serveur (école relue, flux
+     construit) est fait, rien n'est téléchargé pour rien. */
+  function prechaufferFlux(url) {
+    if (!url || !window.fetch) return;
+    fetch(url, { cache: "no-store" }).then(function (r) {
+      try { if (r.body && r.body.cancel) r.body.cancel(); } catch (e) { /* jetable */ }
+    }, function () { /* le tap réessaiera : rien à montrer */ });
   }
   /* Pastille + titre d'un cours, comme dans l'horaire. */
   function listeCoursExport(p, data) {
@@ -7996,15 +8015,37 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   /* Palette de l'agenda : les mêmes teintes que les cours, en ton moyen.
      La couleur du thème de l'horaire est présélectionnée. */
   var PALETTE_AGENDA = TEINTES.map(function (h) { return hslHex(h, 0.62, 0.46); });
-  /* Prépare le lien « tout l'horaire » : le tap doit ouvrir Calendrier
-     sans attente (une requête au moment du tap risquerait d'être bloquée
-     comme pop-up). Refaite quand la couleur change. */
+  /* Met l'adresse sur la balise « Ajouter » : le tap est alors la
+     navigation du doigt, comme un lien webcal d'une page ordinaire. Un
+     clic fabriqué après une requête ferait perdre le geste — Calendrier
+     s'ouvrirait sans l'abonnement, et il faudrait recommencer. */
+  function majLienAjouter() {
+    var a = document.getElementById("export-ajouter");
+    var url = exportCarte && exportCarte.liens.tout;
+    if (url) {
+      a.href = urlOuvrable(url);
+      a.classList.remove("attente");
+    } else {
+      a.removeAttribute("href");
+      a.classList.add("attente");
+    }
+  }
+  /* Prépare le lien « tout l'horaire ». Tant qu'il est prêt pour la
+     couleur choisie, on le garde : le refabriquer ferait retomber le tap
+     dans le chemin asynchrone (celui qui échoue sur iPhone). Refaite
+     quand la couleur change. */
   function preparerLienTout(p) {
     if (!exportCarte) return;
     var couleur = exportCarte.couleur;
+    if (exportCarte.liens.tout && exportCarte.liens.toutCouleur === couleur) return;
     exportCarte.liens.tout = null;
+    majLienAjouter();
     demanderLien(p, "", couleur, nomExport(p)).then(function (url) {
-      if (exportCarte && exportCarte.couleur === couleur) exportCarte.liens.tout = url;
+      if (!exportCarte || exportCarte.couleur !== couleur) return;
+      exportCarte.liens.tout = url;
+      exportCarte.liens.toutCouleur = couleur;
+      majLienAjouter();
+      prechaufferFlux(url);
     }, function () { /* le clic réessaiera */ });
   }
   function rendreSwatches() {
@@ -8045,18 +8086,28 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     // Vue couleur : Retour + Ajouter suffisent (sinon trois boutons se chevauchent).
     document.getElementById("export-annuler").hidden = vue === "couleur";
     document.getElementById("export-actions").classList.toggle("seule", vue === "choix");
+    majLienAjouter();
     statutExport("");
   }
   /* Une ligne de cours : pastille + titre + bouton. `fait` = déjà ajouté
      (le bouton passe au vert, et la ligne descend dans « Déjà ajoutés » —
      on ne peut pas savoir avec certitude que l'abonnement a été confirmé
-     dans Calendrier, donc on peut toujours recommencer). */
+     dans Calendrier, donc on peut toujours recommencer).
+     Lien prêt : une vraie balise, dont le tap part seul vers l'agenda (le
+     geste du doigt est intact). Sinon, un bouton qui le prépare et invite
+     à retoucher. */
   function ligneCours(c, fait) {
-    return '<button type="button" class="export-cours-ligne" data-matiere="' + txt(c.matiere) + '">' +
-      '<span class="ec-point" style="background:' + txt(c.couleur) + '"></span>' +
+    var interieur = '<span class="ec-point" style="background:' + txt(c.couleur) + '"></span>' +
       '<span class="ec-nom">' + txt(c.titre) + "</span>" +
       '<span class="ec-act' + (fait ? " fait" : "") + '">' +
-      (fait ? ICONE_CHECK + "Ajouté" : "Ajouter") + "</span></button>";
+      (fait ? ICONE_CHECK + "Ajouté" : "Ajouter") + "</span>";
+    var url = !fait && exportCarte && exportCarte.liens[c.matiere];
+    if (url) {
+      return '<a class="export-cours-ligne" href="' + txt(urlOuvrable(url)) +
+        '" data-matiere="' + txt(c.matiere) + '">' + interieur + "</a>";
+    }
+    return '<button type="button" class="export-cours-ligne' + (fait ? "" : " attente") +
+      '" data-matiere="' + txt(c.matiere) + '">' + interieur + "</button>";
   }
   function rendreListeCours() {
     if (!exportCarte || !exportCarte.data) return;
@@ -8118,7 +8169,9 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       tout.disabled = false;
       parCours.disabled = false;
       statutExport("");
-      // Prépare le lien « tout l'horaire » (le clic doit ouvrir sans attente).
+      // Prépare le lien « tout l'horaire » et préchauffe le flux : le tap
+      // doit être une navigation native, et Calendrier doit recevoir un
+      // flux déjà prêt.
       preparerLienTout(p);
     }, function (e) {
       if (jeton !== exportJeton || !exportCarte) return;
@@ -8134,38 +8187,51 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     preparerLienTout(exportCarte.p);
     montrerExport("couleur");
   });
-  document.getElementById("export-ajouter").addEventListener("click", function () {
-    if (!exportCarte || !exportCarte.data) return;
-    var p = exportCarte.p, self = this;
-    self.disabled = true;
-    statutExport("Préparation de l'abonnement…");
-    var lien = exportCarte.liens.tout
-      ? Promise.resolve(exportCarte.liens.tout)
-      : demanderLien(p, "", exportCarte.couleur, nomExport(p));
-    lien.then(function (url) {
-      if (!exportCarte) return;
-      exportCarte.liens.tout = url;
-      self.disabled = false;
-      statutExport("Calendrier s'ouvre : confirme l'abonnement.", "ok");
-      ouvrirAbonnement(url);
-    }, function (e) {
-      self.disabled = false;
-      statutExport("Impossible de créer l'abonnement" +
-        (e && e.message ? " (" + String(e.message).slice(0, 120) + ")" : "") + ".", "erreur");
-    });
+  document.getElementById("export-ajouter").addEventListener("click", function (e) {
+    if (!exportCarte || !exportCarte.data) { e.preventDefault(); return; }
+    if (!exportCarte.liens.tout) {
+      // Lien pas encore prêt (rare : il est préparé à l'ouverture) : on le
+      // prépare et on invite à retoucher. L'envoyer après une requête
+      // ferait perdre le geste du doigt — Calendrier s'ouvrirait sans
+      // l'abonnement.
+      e.preventDefault();
+      var p = exportCarte.p, couleur = exportCarte.couleur;
+      statutExport("Préparation de l'abonnement…");
+      demanderLien(p, "", couleur, nomExport(p)).then(function (url) {
+        if (!exportCarte || exportCarte.couleur !== couleur) return;
+        exportCarte.liens.tout = url;
+        exportCarte.liens.toutCouleur = couleur;
+        majLienAjouter();
+        prechaufferFlux(url);
+        statutExport("C'est prêt : touche « Ajouter » pour ouvrir Calendrier.", "ok");
+      }, function (err) {
+        if (!exportCarte) return;
+        statutExport("Impossible de créer l'abonnement" +
+          (err && err.message ? " (" + String(err.message).slice(0, 120) + ")" : "") + ".", "erreur");
+      });
+      return;
+    }
+    // La balise porte l'adresse : la navigation qui suit est celle du
+    // doigt (webcal sur iPhone), donc Calendrier reçoit l'abonnement du
+    // premier coup.
+    statutExport("Calendrier s'ouvre : confirme l'abonnement.", "ok");
   });
   document.getElementById("export-par-cours").addEventListener("click", function () {
     if (!exportCarte || !exportCarte.data) return;
     var p = exportCarte.p;
-    rendreListeCours();
-    montrerExport("liste");
-    // Prépare les liens pendant que la liste s'affiche : le tap ouvre sans attente.
     var jeton = exportJeton;
-    listeCoursExport(p, exportCarte.data).forEach(function (c) {
-      demanderLien(p, c.matiere, c.couleur, c.titre).then(function (url) {
-        if (jeton !== exportJeton || !exportCarte) return;
-        exportCarte.liens[c.matiere] = url;
-      }, function () { /* le clic réessaiera */ });
+    montrerExport("liste");
+    statutExport("Préparation des liens…");
+    // Tous les liens sont préparés avant l'affichage : chaque ligne est
+    // alors une vraie balise, dont le tap part seul vers l'agenda.
+    Promise.all(listeCoursExport(p, exportCarte.data).map(function (c) {
+      return demanderLien(p, c.matiere, c.couleur, c.titre).then(function (url) {
+        if (jeton === exportJeton && exportCarte) exportCarte.liens[c.matiere] = url;
+      }, function () { /* la ligne se préparera au tap */ });
+    })).then(function () {
+      if (jeton !== exportJeton) return;
+      rendreListeCours();
+      statutExport("");
     });
   });
   document.getElementById("export-cours").addEventListener("click", function (e) {
@@ -8175,23 +8241,34 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     var c = null;
     listeCoursExport(p, exportCarte.data).forEach(function (x) { if (x.matiere === m) c = x; });
     if (!c) return;
+    if (!exportCarte.liens[m]) {
+      // Lien pas encore prêt : on le prépare et on invite à retoucher.
+      e.preventDefault();
+      var jeton = exportJeton;
+      statutExport("Préparation de « " + c.titre + " »…");
+      demanderLien(p, c.matiere, c.couleur, c.titre).then(function (url) {
+        if (jeton !== exportJeton || !exportCarte) return;
+        exportCarte.liens[m] = url;
+        prechaufferFlux(url);
+        rendreListeCours();
+        statutExport("C'est prêt : touche à nouveau « " + c.titre + " ».", "ok");
+      }, function (err) {
+        if (!exportCarte) return;
+        statutExport("Impossible de créer l'abonnement" +
+          (err && err.message ? " (" + String(err.message).slice(0, 120) + ")" : "") + ".", "erreur");
+      });
+      return;
+    }
+    // La balise porte l'adresse : on laisse la navigation native partir,
+    // et on marque la ligne sans la retirer du DOM tout de suite — la
+    // retirer pendant le clic risquerait d'annuler la navigation.
     exportCarte.ajoutes[m] = true;
-    rendreListeCours();
-    b.disabled = true;
-    statutExport("Préparation de « " + c.titre + " »…");
-    var lien = exportCarte.liens[m] ? Promise.resolve(exportCarte.liens[m]) : demanderLien(p, c.matiere, c.couleur, c.titre);
-    lien.then(function (url) {
-      if (!exportCarte) return;
-      exportCarte.liens[m] = url;
-      b.disabled = false;
-      statutExport("Calendrier s'ouvre : confirme — sa couleur est déjà proposée.", "ok");
-      ouvrirAbonnement(url);
-    }, function (err) {
-      if (exportCarte) delete exportCarte.ajoutes[m];
-      rendreListeCours();
-      statutExport("Impossible de créer l'abonnement" +
-        (err && err.message ? " (" + String(err.message).slice(0, 120) + ")" : "") + ".", "erreur");
-    });
+    var act = b.querySelector(".ec-act");
+    if (act) { act.className = "ec-act fait"; act.innerHTML = ICONE_CHECK + "Ajouté"; }
+    statutExport("Calendrier s'ouvre : confirme — sa couleur est déjà proposée.", "ok");
+    setTimeout(function () {
+      if (exportCarte && exportCarte.ajoutes[m]) rendreListeCours();
+    }, 1500);
   });
   document.getElementById("export-retour").addEventListener("click", function () {
     montrerExport("choix");

@@ -44,6 +44,8 @@
     "api/ical.py": { "maxDuration": 30 },
     "api/importer.py": { "maxDuration": 60 },
     "api/stats.py": { "maxDuration": 30 },
-    "api/bugs.py": { "maxDuration": 30 }
+    "api/bugs.py": { "maxDuration": 30 },
+    "api/abonnement.py": { "maxDuration": 90 },
+    "api/export.py": { "maxDuration": 90 }
   }
 }

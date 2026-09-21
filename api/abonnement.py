@@ -190,7 +190,56 @@ def _adresse(h):
     return proto + "://" + hote
 
 
-def _repondre_ics(h, texte, nom):
+# Cache privé : la copie du téléphone est fraîche 5 min — il ne redemande
+# donc pas plus souvent, et dès qu'il redemande il reçoit la version à jour
+# (ou « rien de neuf » grâce à l'ETag). L'école, elle, n'est relue qu'à
+# l'expiration du cache des moteurs (~15 min) : le rappel d'un téléphone ne
+# la fait pas travailler à chaque fois.
+CACHE = "private, max-age=300"
+
+
+def _etag(horaire, nom, uid, couleur):
+    """Empreinte de tout ce qui compose le flux, sans l'horodatage du
+    fichier (il change à chaque seconde) : le téléphone peut alors demander
+    « rien de neuf ? » et recevoir une réponse vide au lieu du calendrier
+    entier. Ne dépend que du contenu : deux appels identiques donnent la
+    même empreinte, même sur deux machines différentes."""
+    matiere = json.dumps([
+        (horaire.get("meta") or {}).get("premier_lundi"),
+        horaire.get("cours") or [],
+        nom, uid, couleur
+    ], sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+    return '"' + hashlib.sha256(matiere.encode("utf-8")).hexdigest() + '"'
+
+
+def _non_modifie(h, etag):
+    """Vrai si le client annonce déjà cette version (If-None-Match)."""
+    try:
+        entete = (h.headers.get("If-None-Match") or "").strip()
+    except Exception:  # noqa: BLE001 - en-tête absent ou illisible
+        return False
+    if not entete:
+        return False
+    if entete == "*":
+        return True
+    for morceau in entete.split(","):
+        morceau = morceau.strip()
+        if morceau.startswith("W/"):  # validateur faible : même contenu
+            morceau = morceau[2:].strip()
+        if morceau == etag:
+            return True
+    return False
+
+
+def _repondre_ics(h, texte, nom, etag):
+    if _non_modifie(h, etag):
+        # Le téléphone annonce déjà cette version : aucun octet de
+        # calendrier renvoyé (il garde le sien).
+        h.send_response(304)
+        h.send_header("ETag", etag)
+        h.send_header("Cache-Control", CACHE)
+        h.end_headers()
+        return
     corps = texte.encode("utf-8")
     ascii_nom = nom.encode("ascii", "replace").decode("ascii").replace('"', "")
     h.send_response(200)
@@ -198,10 +247,8 @@ def _repondre_ics(h, texte, nom):
     h.send_header("Content-Disposition",
                   'inline; filename="%s"; filename*=UTF-8\'\'%s' % (ascii_nom, quote(nom)))
     h.send_header("Content-Length", str(len(corps)))
-    # Cache privé court : le téléphone rappelle régulièrement, et l'école
-    # n'est relue qu'après expiration (elle est de toute façon mémorisée
-    # ~15 min par les moteurs).
-    h.send_header("Cache-Control", "private, max-age=300")
+    h.send_header("ETag", etag)
+    h.send_header("Cache-Control", CACHE)
     h.end_headers()
     h.wfile.write(corps)
 
@@ -263,10 +310,10 @@ def _servir(h, jeton):
         cours = _filtrer(data.get("cours") or [], sel, matiere)
         if not cours:
             raise ValueError("Aucun cours à exporter pour cet horaire.")
-        texte = export_ics.construire(
-            {"meta": data.get("meta") or {}, "cours": _cours_export(cours, sel)},
-            nom, uid=_propre(payload.get("u"))[:40], couleur=couleur)
-        _repondre_ics(h, texte, export_ics.nom_fichier(nom))
+        uid = _propre(payload.get("u"))[:40]
+        horaire = {"meta": data.get("meta") or {}, "cours": _cours_export(cours, sel)}
+        texte = export_ics.construire(horaire, nom, uid=uid, couleur=couleur)
+        _repondre_ics(h, texte, export_ics.nom_fichier(nom), _etag(horaire, nom, uid, couleur))
     except ValueError as e:
         _erreur(h, 404, str(e))
     except Surcharge as e:
