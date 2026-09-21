@@ -160,8 +160,8 @@ try { var _a = localStorage.getItem("ezh_apparence"); if (_a === "clair" || _a =
                   <td data-label="Base légale"><span class="pastille">Contrat</span> art. 6.1.b</td>
                 </tr>
                 <tr>
-                  <td>Suivre l'usage du service : comptes actifs, formations suivies, consultations par jour, pour le faire tourner, le dimensionner et repérer les abus</td>
-                  <td data-label="Données">Compte, horaires suivis, consultations</td>
+                  <td>Suivre l'usage du service : comptes actifs, formations suivies, consultations par jour et PDF officiels ouverts, pour le faire tourner, le dimensionner et repérer les abus</td>
+                  <td data-label="Données">Compte, horaires suivis, consultations, PDF ouverts</td>
                   <td data-label="Base légale"><span class="pastille">Intérêt légitime</span> art. 6.1.f : faire fonctionner un service gratuit et ménager les serveurs des écoles. Tu peux t'y opposer (voir <a href="#droits">Tes droits</a>).</td>
                 </tr>
                 <tr>
@@ -177,7 +177,7 @@ try { var _a = localStorage.getItem("ezh_apparence"); if (_a === "clair" || _a =
               </tbody>
             </table>
           </div>
-          <p>Le tableau de bord interne, réservé à l'éditeur, montre pour chaque compte : l'email, le nom, les dates de création et de dernière connexion, les horaires suivis et le nombre de consultations. Il ne sert qu'aux finalités ci-dessus.</p>
+          <p>Le tableau de bord interne, réservé à l'éditeur, montre pour chaque compte : l'email, le nom, les dates de création et de dernière connexion, les horaires suivis et le nombre de consultations. Il montre aussi, en chiffres globaux, combien de PDF officiels sont ouverts (par jour et par école), pour décider si cette fonction doit rester. Il ne sert qu'aux finalités ci-dessus.</p>
           <p>Aucune décision automatisée produisant des effets juridiques à ton égard n'est prise (article 22 du RGPD), et aucun profil publicitaire n'est construit.</p>
         </section>
 
@@ -230,7 +230,7 @@ try { var _a = localStorage.getItem("ezh_apparence"); if (_a === "clair" || _a =
             <table class="tableau">
               <thead><tr><th scope="col">Prestataire</th><th scope="col">Rôle</th><th scope="col">Données concernées</th></tr></thead>
               <tbody>
-                <tr><td>Supabase, Inc.</td><td data-label="Rôle">Authentification et base de données</td><td data-label="Données concernées">Compte, horaires suivis, consultations, étapes de visite anonymes, journaux de connexion (dont l'adresse IP)</td></tr>
+                <tr><td>Supabase, Inc.</td><td data-label="Rôle">Authentification et base de données</td><td data-label="Données concernées">Compte, horaires suivis, consultations, PDF ouverts, étapes de visite anonymes, journaux de connexion (dont l'adresse IP)</td></tr>
                 <tr><td>Vercel, Inc.</td><td data-label="Rôle">Hébergement du site et des API</td><td data-label="Données concernées">Données techniques, contenu des requêtes le temps de les traiter</td></tr>
                 <tr><td>Resend (Plus Five Five, Inc.)</td><td data-label="Rôle">Envoi des emails du service, réception des messages à contact@ezhoraire.be</td><td data-label="Données concernées">Email, contenu des messages</td></tr>
                 <tr><td>TypeSafe</td><td data-label="Rôle">Aide à la reconnaissance des cours importés (Jev)</td><td data-label="Données concernées">Lignes de la liste importée, sans identité</td></tr>
@@ -254,6 +254,7 @@ try { var _a = localStorage.getItem("ezh_apparence"); if (_a === "clair" || _a =
               <tbody>
                 <tr><td>Compte et horaires suivis</td><td data-label="Durée">Tant que le compte existe. Supprimés sous 30 jours après ta demande de suppression.</td></tr>
                 <tr><td>Consultations</td><td data-label="Durée">180 jours, puis effacement automatique</td></tr>
+                <tr><td>PDF officiels ouverts</td><td data-label="Durée">180 jours, puis effacement automatique</td></tr>
                 <tr><td>Étapes de visite anonymes</td><td data-label="Durée">90 jours, puis effacement automatique</td></tr>
                 <tr><td>Liste de cours importée</td><td data-label="Durée">Pas conservée : traitée le temps de la réponse</td></tr>
                 <tr><td>Journaux techniques (hébergeur, connexions)</td><td data-label="Durée">Durée courte fixée par nos prestataires, en général de quelques jours à quelques semaines</td></tr>
@@ -261,7 +262,7 @@ try { var _a = localStorage.getItem("ezh_apparence"); if (_a === "clair" || _a =
               </tbody>
             </table>
           </div>
-          <p>Supprimer ton compte efface aussi, en cascade, tes horaires et ton historique de consultations. Les sauvegardes techniques éventuelles du prestataire s'écrasent ensuite selon leur propre cycle.</p>
+          <p>Supprimer ton compte efface aussi, en cascade, tes horaires, ton historique de consultations et tes PDF ouverts. Les sauvegardes techniques éventuelles du prestataire s'écrasent ensuite selon leur propre cycle.</p>
         </section>
 
         <section id="securite">

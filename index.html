@@ -1274,6 +1274,38 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     text-underline-offset: 3px; cursor: pointer;
   }
 
+  /* École manquante : bouton « Mon école n'est pas là » (même carte en
+     relief que les écoles) + mini-formulaire en creux, sous la liste. */
+  #ecole-manquante { margin-top: 10px; }
+  #btn-ecole-manquante {
+    overflow: hidden; width: 100%; min-height: 60px; padding: 14px 16px;
+    display: flex; align-items: center; gap: 14px; text-align: left;
+    border: none; border-radius: 16px; font: inherit; color: var(--ink); cursor: pointer;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    transition: transform .12s;
+  }
+  #btn-ecole-manquante:active { transform: scale(.985); }
+  #btn-ecole-manquante:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  #btn-ecole-manquante .nom { flex: 1; min-width: 0; font-weight: 600; letter-spacing: -.01em; }
+  #btn-ecole-manquante .nom small {
+    display: block; margin-top: 2px; color: var(--muted);
+    font-weight: 400; font-size: .85rem; letter-spacing: 0;
+  }
+  #btn-ecole-manquante[aria-expanded="true"] .chev { transform: rotate(225deg); border-color: var(--ink); }
+  #form-ecole-manquante { margin-top: 10px; }
+  #form-ecole-manquante .champs { margin-bottom: 14px; }
+  #form-ecole-manquante .champs.off { opacity: .45; }
+  .coche-ligne {
+    display: flex; align-items: flex-start; gap: 10px; margin: 2px 2px 16px;
+    font-size: .9rem; line-height: 1.45; color: var(--muted); cursor: pointer;
+  }
+  .coche-ligne input {
+    flex: none; width: 22px; height: 22px; margin: 0;
+    accent-color: var(--accent); cursor: pointer;
+  }
+  #ecole-manquante-status.ok { color: var(--free); }
+
   /* Fenêtre de signalement : rail Bug / Demande (même .seg que les
      horaires : piste en creux, pastille en relief), email (lecture seule),
      grande zone de texte, trombone pour les captures, aperçu des images. */
@@ -2525,6 +2557,33 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     <p class="etapes" role="img" aria-label="Étape 1 sur 3"><span class="on"></span><span></span><span></span></p>
     <h2 class="q">Ton école</h2>
     <ul class="liste" id="liste-ecoles"></ul>
+    <div id="ecole-manquante">
+      <button type="button" class="halo" id="btn-ecole-manquante" aria-expanded="false" aria-controls="form-ecole-manquante">
+        <span class="nom">Mon école n'est pas là<small>Dis-nous laquelle, on y jettera un œil</small></span><span class="chev" aria-hidden="true"></span>
+      </button>
+      <form id="form-ecole-manquante" hidden novalidate>
+        <label class="champ-titre" for="ecole-manquante-nom">Nom de ton école</label>
+        <div class="champs halo">
+          <div class="champ-ligne">
+            <input class="champ" id="ecole-manquante-nom" type="text" maxlength="120" autocomplete="off" spellcheck="false"
+                   placeholder="ex. Haute École de Namur">
+          </div>
+        </div>
+        <label class="champ-titre" for="ecole-manquante-lien">Lien du site de ton école avec les horaires</label>
+        <div class="champs halo">
+          <div class="champ-ligne">
+            <input class="champ" id="ecole-manquante-lien" type="url" inputmode="url" autocomplete="off" autocorrect="off" spellcheck="false"
+                   placeholder="https://…">
+          </div>
+        </div>
+        <label class="coche-ligne" for="ecole-manquante-sans-lien">
+          <input type="checkbox" id="ecole-manquante-sans-lien">
+          <span>Je ne connais pas le site de mon école / je n'ai pas le lien</span>
+        </label>
+        <button class="primaire halo" id="ecole-manquante-envoyer" type="submit">Envoyer ma demande</button>
+        <p class="pdf-status" id="ecole-manquante-status" role="status"></p>
+      </form>
+    </div>
     <p class="bug-aide"><button type="button" class="lien-bug" data-bug>Un souci, une idée ? Signaler</button></p>
   </section>
 
@@ -3844,6 +3903,22 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       }).then(function () { /* jetable */ }, function () { /* jetable */ });
     } catch (e) { /* jetable */ }
   }
+  /* PDF officiel affiché avec succès : une ligne dans `pdf_exports`
+     (voir supabase/schema.sql), pour savoir si la fonctionnalité sert.
+     Chaque ouverture réussie compte, même la même semaine rouverte :
+     c'est l'usage réel qui décide si on garde le bouton. */
+  function tracerPdf(cible) {
+    try {
+      if (!SUPABASE_OK || !sb || !sessionSupabase || !sessionSupabase.user || !cible) return;
+      sb.from("pdf_exports").insert({
+        user_id: sessionSupabase.user.id,
+        ecole: String(cible.ecole || "").slice(0, 120),
+        formation: String(cible.formation || "").slice(0, 160),
+        groupe: String(cible.groupe || "").slice(0, 120),
+        semaine: Math.max(0, Math.min(99, +cible.semaine || 0))
+      }).then(function () { /* jetable */ }, function () { /* jetable */ });
+    } catch (e) { /* jetable */ }
+  }
   /* ---------- Bouton « Tableau admin » (menu ⋮ du compte) ----------
      Visible uniquement si /api/stats confirme que ce compte est admin
      (liste ADMIN_EMAILS côté serveur). Vérifié une fois par session,
@@ -5117,6 +5192,106 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     choix = { ecole: b.getAttribute("data-ecole"), formation: null, data: null, groupes: [], ical: null, editionId: keepEdition, theme: keepTheme };
     aller("formation");
   });
+
+  /* ---------- 1b. École manquante : « Mon école n'est pas là » ----------
+     Nom de l'école, lien du site avec les horaires, case « je n'ai pas
+     le lien ». Part en type "demande" vers /api/bugs (même tuyau que
+     Signaler, visible dans le dashboard) : pas de table ni de migration
+     en plus. Le lien est normalisé (https:// ajouté si absent) et
+     vérifié côté app ; le serveur revérifie la taille et le type. */
+  (function () {
+    var btn = document.getElementById("btn-ecole-manquante");
+    var form = document.getElementById("form-ecole-manquante");
+    if (!btn || !form) return;
+    var nom = document.getElementById("ecole-manquante-nom");
+    var lien = document.getElementById("ecole-manquante-lien");
+    var sansLien = document.getElementById("ecole-manquante-sans-lien");
+    var status = document.getElementById("ecole-manquante-status");
+    var envoyerBtn = document.getElementById("ecole-manquante-envoyer");
+    function majLien() {
+      var off = sansLien.checked;
+      lien.disabled = off;
+      lien.closest(".champs").classList.toggle("off", off);
+      if (off) effacer(status);
+    }
+    btn.addEventListener("click", function () {
+      var ouvrir = form.hidden;
+      form.hidden = !ouvrir;
+      btn.setAttribute("aria-expanded", String(ouvrir));
+      if (ouvrir) {
+        if (window.EZH_SUIVI) EZH_SUIVI.friction("ecole_manquante");
+        setTimeout(function () { try { nom.focus({ preventScroll: true }); } catch (e) { nom.focus(); } }, 60);
+      }
+    });
+    sansLien.addEventListener("change", majLien);
+    function normaliserLien(v) {
+      v = String(v || "").trim();
+      if (!v) return "";
+      if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(v)) v = "https://" + v;
+      return v;
+    }
+    function lienValide(v) {
+      return /^(https?:\/\/)[a-z0-9-]+(\.[a-z0-9-]+)+(:\d+)?(\/\S*)?$/i.test(v);
+    }
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var nomEcole = nom.value.replace(/\s+/g, " ").trim();
+      if (nomEcole.length < 2) {
+        erreur(status, "Donne le nom de ton école en quelques mots.");
+        nom.focus();
+        return;
+      }
+      var url = "";
+      if (!sansLien.checked) {
+        url = normaliserLien(lien.value);
+        if (!lienValide(url)) {
+          erreur(status, "Ce lien ne ressemble pas à une adresse web, vérifie-le — ou coche la case si tu ne l'as pas.");
+          lien.focus();
+          return;
+        }
+      }
+      envoyerBtn.disabled = true;
+      status.classList.remove("ok");
+      attente(status, "Envoi en cours…");
+      var corps = {
+        titre: "Nouvelle école : " + nomEcole.slice(0, 60),
+        message: "École demandée : " + nomEcole +
+          (url ? "\nSite des horaires : " + url
+               : "\nSite des horaires : non renseigné (l'étudiant ne l'a pas)."),
+        etape: "v-ecole", email: bugEmail(), type: "demande",
+        contexte: bugContexte(""), image_urls: [], site_web: ""
+      };
+      corps.contexte.ecole_nom = nomEcole.slice(0, 120);
+      corps.contexte.ecole_lien = url;
+      corps.contexte.lien_inconnu = sansLien.checked;
+      var entetes = { "Content-Type": "application/json" };
+      if (sessionSupabase && sessionSupabase.access_token) {
+        entetes.Authorization = "Bearer " + sessionSupabase.access_token;
+      }
+      fetch("api/bugs", { method: "POST", cache: "no-store", headers: entetes, body: JSON.stringify(corps) })
+        .then(function (r) {
+          return r.json().catch(function () { throw new Error("réponse illisible (" + r.status + ")."); });
+        })
+        .then(function (rep) {
+          if (!rep.ok) throw new Error(rep.erreur || "réponse incomplète.");
+          effacer(status);
+          status.hidden = false;
+          status.style.display = "";
+          status.classList.remove("erreur");
+          status.classList.add("ok");
+          status.textContent = "Merci, c'est noté. On y jettera un œil.";
+          if (window.EZH_SUIVI) EZH_SUIVI.friction("ecole_demandee");
+          nom.value = "";
+          lien.value = "";
+          sansLien.checked = false;
+          majLien();
+        }, function (err) {
+          erreur(status, "Échec de l'envoi : " + (err && err.message ? err.message : "réessaie."));
+        })
+        .then(function () { envoyerBtn.disabled = false; });
+    });
+    majLien();
+  })();
 
   /* ---------- 2. Formation ---------- */
   var formations = { ecole: null, liste: null };
@@ -8425,6 +8600,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       .then(function (blob) {
         if (maDemande !== pdfDemande) return; // semaine changée entre-temps
         if (!blob || (blob.size === 0)) throw new Error("PDF vide.");
+        tracerPdf(cible); // PDF bien reçu : compté pour le dashboard
         if (pdfURL) { try { URL.revokeObjectURL(pdfURL); } catch (e) { /* jetable */ } }
         pdfURL = URL.createObjectURL(blob);
         status.style.display = "none"; // le texte disparaît, le PDF est là

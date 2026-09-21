@@ -9,6 +9,8 @@ agrège avec la clé service_role (jamais exposée au navigateur) :
   +  consultations / jour (table visites, dédoublonnées : une même
      personne qui rouvre le même horaire dans les 30 min ne compte
      qu'une fois ; jours à l'heure de Bruxelles)
+  +  PDF officiels ouverts (table pdf_exports : total, par jour, par
+     école, utilisateurs) — absent si schema.sql n'a pas été recollé.
   +  parcours anonyme (table evenements, agrégé côté base par
      stats_evenements() : arrivées, clics de connexion, comptes créés,
      pages d'arrêt, erreurs) — absent si schema.sql n'a pas été recollé.
@@ -17,8 +19,10 @@ Réponse : {"ok": true, "data": {
   "totaux": {...}, "precedent": {...}, "par_jour": [...],
   "par_ecole": [...], "par_formation": [...],
   "utilisateurs": [...], "parcours": {...} | null,
-  "limites": {"comptes": bool, "profils": bool, "visites": bool},
-  "plus_ancienne_visite": "...", "plus_ancienne_absolue": "..." }}
+  "pdf": {...} | null,
+  "limites": {"comptes": bool, "profils": bool, "visites": bool, "pdf": bool},
+  "plus_ancienne_visite": "...", "plus_ancienne_absolue": "...",
+  "plus_ancien_pdf": "..." }}
 
 Env requises : SUPABASE_URL, SUPABASE_ANON_KEY,
   SUPABASE_SERVICE_ROLE_KEY (alias SERVICE_ROLE acceptés), puis au moins
@@ -49,6 +53,9 @@ except Exception:  # noqa: BLE001 - sans tzdata : UTC, décalé d'une ou deux he
 # cette fenêtre ne recompte pas (côté app ET ici, pour l'historique).
 FENETRE_CONSULTATION = timedelta(minutes=30)
 VISITES_MAX = 40000
+# PDF ouverts : volume faible (une poignée par semaine et par utilisateur),
+# 10 000 lignes couvrent large sur 90 jours.
+PDF_MAX = 10000
 
 ICI = os.path.dirname(os.path.abspath(__file__))
 if ICI not in sys.path:
@@ -316,6 +323,35 @@ class handler(BaseHTTPRequestHandler):
                     raise
             except Exception:  # noqa: BLE001 - indicateur seul, jamais bloquant
                 parcours = None
+
+            # PDF officiels ouverts : chaque ouverture réussie compte (pas
+            # de dédoublonnage : c'est l'usage réel qui dit si on garde le
+            # bouton). Table absente (schema.sql pas recollé) : on
+            # continue sans, le dashboard l'indique au lieu d'échouer.
+            pdf_lignes = None
+            pdf_tronques = False
+            ancien_pdf = ""
+            try:
+                pdf_lignes = _get_pagine(
+                    base, "/rest/v1/pdf_exports?select=user_id,ecole,created_at"
+                    "&created_at=gte." + limite.replace("+", "%2B") +
+                    "&order=created_at.desc",
+                    dict(h_svc, Accept="application/json"), PDF_MAX) or []
+                pdf_tronques = len(pdf_lignes) >= PDF_MAX
+                try:
+                    vieux_pdf = _get_json(
+                        base + "/rest/v1/pdf_exports?select=created_at"
+                        "&order=created_at.asc&limit=1", h_svc, timeout=20)
+                    ancien_pdf = (vieux_pdf[0].get("created_at")
+                                  if isinstance(vieux_pdf, list) and vieux_pdf else "") or ""
+                except Exception:  # noqa: BLE001 - indicateur seul
+                    ancien_pdf = ""
+            except HTTPError as e:
+                if e.code not in (400, 404):
+                    raise
+                pdf_lignes = None
+            except Exception:  # noqa: BLE001 - indicateur seul, jamais bloquant
+                pdf_lignes = None
         except HTTPError as e:  # noqa: BLE001 - clé invalide, table manquante…
             if e.code == 401:
                 return repondre_json(self, 502, {"ok": False, "erreur":
@@ -428,6 +464,47 @@ class handler(BaseHTTPRequestHandler):
                                   "inscrits": len(inscrits_par_ecole.get(eco, set()))})
         lignes_ecoles.sort(key=lambda l: (l["visites"], l["inscrits"]), reverse=True)
 
+        # PDF officiels : total, précédent, par jour, par école, utilisateurs.
+        if pdf_lignes is None:
+            pdf = None
+        else:
+            pdf_jours = {j: {"pdf": 0, "utilisateurs": set()} for j in jours_cles}
+            pdf_ecoles = {}
+            pdf_users = set()
+            pdf_precedent = 0
+            for row in pdf_lignes:
+                d = _iso_date(row.get("created_at"))
+                if not d or d < debut_precedent:
+                    continue
+                uid_p = row.get("user_id") or ""
+                if d < debut_periode:
+                    pdf_precedent += 1
+                    continue
+                jour_p = d.astimezone(_TZ).date().isoformat()
+                if jour_p in pdf_jours:
+                    pdf_jours[jour_p]["pdf"] += 1
+                    if uid_p:
+                        pdf_jours[jour_p]["utilisateurs"].add(uid_p)
+                eco_p = (row.get("ecole") or "").strip()
+                pe_p = pdf_ecoles.setdefault(eco_p, {"pdf": 0, "utilisateurs": set()})
+                pe_p["pdf"] += 1
+                if uid_p:
+                    pe_p["utilisateurs"].add(uid_p)
+                    pdf_users.add(uid_p)
+            pdf = {
+                "total": sum(v["pdf"] for v in pdf_jours.values()),
+                "precedent": pdf_precedent,
+                "utilisateurs": len(pdf_users),
+                "aujourdhui": pdf_jours[auj.isoformat()]["pdf"] if auj.isoformat() in pdf_jours else 0,
+                "par_jour": [{
+                    "jour": j, "pdf": pdf_jours[j]["pdf"],
+                    "utilisateurs": len(pdf_jours[j]["utilisateurs"])} for j in jours_cles],
+                "par_ecole": sorted(
+                    [{"ecole": eco, "pdf": v["pdf"],
+                      "utilisateurs": len(v["utilisateurs"])} for eco, v in pdf_ecoles.items()],
+                    key=lambda l: l["pdf"], reverse=True),
+            }
+
         return repondre_json(self, 200, {"ok": True, "data": {
             "totaux": {
                 "comptes": len(comptes),
@@ -444,9 +521,12 @@ class handler(BaseHTTPRequestHandler):
                 "comptes": comptes_tronques,
                 "profils": profils_tronques,
                 "visites": visites_tronquees,
+                "pdf": pdf_tronques,
             },
             "plus_ancienne_visite": plus_ancienne.isoformat() if plus_ancienne else "",
             "plus_ancienne_absolue": ancienne_absolue,
+            "plus_ancien_pdf": ancien_pdf,
+            "pdf": pdf,
             "parcours": parcours,
             "par_jour": [{
                 "jour": j, "visites": par_jour[j]["visites"],

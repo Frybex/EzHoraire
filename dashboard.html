@@ -399,6 +399,7 @@ catch (e) { /* navigation privée */ }
     </div>
     <div class="seg" id="periode" role="group" aria-label="Période">
       <button data-j="7" aria-pressed="true">7 j</button>
+      <button data-j="14" aria-pressed="false">14 j</button>
       <button data-j="30" aria-pressed="false">30 j</button>
       <button data-j="90" aria-pressed="false">90 j</button>
     </div>
@@ -489,6 +490,30 @@ catch (e) { /* navigation privée */ }
           <ul class="stats-l" id="communaute"></ul>
         </section>
       </div>
+
+      <section class="card" aria-labelledby="h-pdf">
+        <div class="card-h"><h2 id="h-pdf">PDF officiels</h2><span class="mut" id="pdf-resume"></span></div>
+        <div class="hero-h" style="margin-bottom:16px">
+          <div class="hero-l">
+            <div class="etiquette">
+              <span>Ouvertures réussies</span>
+              <span class="info">
+                <button type="button" aria-label="Comment c'est compté" aria-expanded="false" data-info>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5v.5"/></svg>
+                </button>
+                <span class="bulle" id="bulle-pdf" role="tooltip" hidden></span>
+              </span>
+            </div>
+            <div class="grand"><b id="pdf-total">0</b><span class="delta" id="pdf-delta" hidden></span><span class="delta-txt" id="pdf-delta-txt"></span></div>
+          </div>
+          <div class="minis">
+            <div class="mini"><div class="l">Aujourd'hui</div><b id="pdf-auj">0</b></div>
+            <div class="mini"><div class="l">Moyenne / jour</div><b id="pdf-moy">0</b></div>
+            <div class="mini"><div class="l">Personnes</div><b id="pdf-pers">0</b></div>
+          </div>
+        </div>
+        <ul class="rangs" id="pdf-ecoles"></ul>
+      </section>
     </div>
 
     <!-- Comptes -->
@@ -798,6 +823,51 @@ catch (e) { /* navigation privée */ }
       ligne("#retours", "Retours à traiter", "bugs et demandes", aTraiter == null ? "…" : nb(aTraiter));
   }
 
+  /* ---------- Aperçu : PDF officiels ---------- */
+  function pdfs() {
+    var p = donnees.pdf;
+    if (!p) {
+      $("pdf-resume").textContent = "";
+      $("pdf-total").textContent = "—";
+      $("pdf-auj").textContent = "—";
+      $("pdf-moy").textContent = "—";
+      $("pdf-pers").textContent = "—";
+      $("pdf-delta").hidden = true;
+      $("pdf-delta-txt").textContent = "";
+      $("bulle-pdf").textContent = "Le comptage démarre quand supabase/schema.sql a été recollé.";
+      $("pdf-ecoles").innerHTML = '<li class="vide">Recolle supabase/schema.sql dans Supabase pour activer le comptage des PDF.</li>';
+      return;
+    }
+    var total = +p.total || 0, prec = +p.precedent || 0;
+    $("pdf-total").textContent = nb(total);
+    var d = $("pdf-delta"), dt = $("pdf-delta-txt");
+    if (prec > 0) {
+      var pct = Math.round((total - prec) / prec * 100);
+      d.hidden = false;
+      d.className = "delta " + (pct > 0 ? "haut" : pct < 0 ? "bas" : "egal");
+      d.textContent = (pct > 0 ? "↑ " : pct < 0 ? "↓ " : "") + Math.abs(pct) + " %";
+      dt.textContent = "vs les " + jours + " jours d'avant";
+    } else {
+      d.hidden = true;
+      dt.textContent = jours + " derniers jours";
+    }
+    $("pdf-resume").textContent = total && donnees.totaux.comptes
+      ? Math.round(total / Math.max(1, donnees.totaux.comptes) * 10) / 10 + " par compte" : "";
+    $("pdf-auj").textContent = nb(p.aujourdhui);
+    $("pdf-moy").textContent = nb(Math.round(total / Math.max(1, (p.par_jour || []).length) * 10) / 10);
+    $("pdf-pers").textContent = nb(p.utilisateurs);
+    $("bulle-pdf").innerHTML = "<b>Une ouverture</b> = un appui sur « PDF officiel » dont le téléchargement a réussi. " +
+      "Rouvrir la même semaine recompte : c'est l'usage réel qui dit si le bouton doit rester.";
+    var es = p.par_ecole || [];
+    var max = Math.max.apply(null, es.map(function (e) { return e.pdf; }).concat([1]));
+    $("pdf-ecoles").innerHTML = es.length ? '<li><ul class="sous-liste" style="padding:4px 0">' + es.map(function (e) {
+      return '<li><span class="nom">' + txt(ecoleNom(e.ecole)) + "</span>" +
+        '<span class="val">' + nb(e.pdf) + "</span>" +
+        '<span class="barre"><i style="width:' + (e.pdf / max * 100) + '%"></i></span>' +
+        '<span class="det">' + pl(e.utilisateurs, "personne") + "</span></li>";
+    }).join("") + "</ul></li>" : '<li class="vide">Aucun PDF ouvert sur la période : le bouton ne sert peut-être à personne.</li>';
+  }
+
   /* ---------- Comptes : par école, puis la liste ---------- */
   var TRIS = {
     visite: function (a, b) { return (b.derniere_visite || "").localeCompare(a.derniere_visite || ""); },
@@ -1032,6 +1102,7 @@ catch (e) { /* navigation privée */ }
     if (lim.comptes) quels.push("comptes (4 000)");
     if (lim.profils) quels.push("horaires (10 000)");
     if (lim.visites) quels.push("consultations (40 000)");
+    if (lim.pdf) quels.push("PDF (10 000)");
     if (quels.length) msgs.push("Chiffres tronqués — plafond atteint : " + txt(quels.join(", ")) + ". Augmente les plafonds dans api/stats.py.");
     var pa = donnees.plus_ancienne_absolue;
     if (pa && !isNaN(new Date(pa)) && (Date.now() - new Date(pa)) / 864e5 > 200) {
@@ -1040,6 +1111,10 @@ catch (e) { /* navigation privée */ }
     var pe = donnees.parcours && donnees.parcours.plus_ancien;
     if (pe && !isNaN(new Date(pe)) && (Date.now() - new Date(pe)) / 864e5 > 100) {
       msgs.push("Table evenements jamais purgée (depuis le " + txt(date(pe)) + ") : planifie <code>select public.purger_evenements(90)</code>.");
+    }
+    var pp = donnees.plus_ancien_pdf;
+    if (pp && !isNaN(new Date(pp)) && (Date.now() - new Date(pp)) / 864e5 > 200) {
+      msgs.push("Table pdf_exports jamais purgée (depuis le " + txt(date(pp)) + ") : planifie <code>select public.purger_pdf_exports(180)</code>.");
     }
     $("alerte").hidden = !msgs.length;
     $("alerte").innerHTML = msgs.map(function (m) { return "<div>" + m + "</div>"; }).join("");
@@ -1055,7 +1130,7 @@ catch (e) { /* navigation privée */ }
   function rendre() {
     var maj = new Date().toLocaleTimeString("fr-BE", { hour: "2-digit", minute: "2-digit" });
     $("sous-titre").textContent = jours + " derniers jours · à jour à " + maj;
-    alertes(); consultations(); ecoles(); communaute(); comptes(); rendreBugs();
+    alertes(); consultations(); ecoles(); communaute(); pdfs(); comptes(); rendreBugs();
   }
 
   /* ---------- Données ---------- */

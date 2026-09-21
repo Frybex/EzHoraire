@@ -583,3 +583,90 @@ grant execute on function public.stats_evenements(integer) to service_role;
 -- visites (à décommenter, une fois) :
 -- select cron.schedule('ezh-purge-evenements', '23 4 * * *',
 --                      'select public.purger_evenements(90)');
+
+-- ---------------------------------------------------------------
+-- EzHoraire — PDF officiels ouverts (pour décider de garder ou non
+-- la fonctionnalité : volume réel d'usage).
+-- Une ligne = un PDF officiel affiché avec succès (bouton « PDF
+-- officiel » de l'app, après téléchargement réussi). L'app l'insère
+-- seule, en arrière-plan, comme les consultations (`visites`).
+-- Lecture interdite côté app : seul le dashboard (via /api/stats,
+-- clé service_role côté serveur) les agrège. Rejouable.
+-- ---------------------------------------------------------------
+create table if not exists public.pdf_exports (
+  id         bigint      generated always as identity primary key,
+  user_id    uuid        not null references auth.users (id) on delete cascade,
+  ecole      text        not null default '',
+  formation  text        not null default '',
+  groupe     text        not null default '',
+  semaine    smallint    not null default 0,
+  created_at timestamptz not null default now()
+);
+
+alter table public.pdf_exports enable row level security;
+
+drop policy if exists "pdf_exports_insert_propres" on public.pdf_exports;
+create policy "pdf_exports_insert_propres" on public.pdf_exports
+  for insert with check (auth.uid() = user_id);
+
+-- Pas de politique SELECT : personne ne lit ses exports depuis l'app.
+-- (Le service_role du backend contourne la RLS pour le dashboard.)
+
+create index if not exists idx_pdf_exports_date on public.pdf_exports (created_at desc);
+create index if not exists idx_pdf_exports_ecole on public.pdf_exports (ecole, created_at desc);
+
+-- Garde-fous (rejouable) : au plus 100 PDF / 24 h / compte (un usage
+-- normal en ouvre une poignée par semaine), textes bornés, date posée
+-- par la base. Purge à 180 jours comme les visites.
+create or replace function public.limiter_pdf_exports()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  recents integer;
+begin
+  new.created_at := now();
+  new.ecole     := left(new.ecole, 120);
+  new.formation := left(new.formation, 160);
+  new.groupe    := left(new.groupe, 120);
+  new.semaine   := greatest(0, least(new.semaine, 99));
+
+  select count(*) into recents
+  from public.pdf_exports
+  where user_id = new.user_id
+    and created_at > now() - interval '24 hours';
+
+  if recents >= 100 then
+    raise exception 'Trop de PDF enregistrés sur 24 h.';
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists trg_pdf_exports_limite on public.pdf_exports;
+create trigger trg_pdf_exports_limite
+  before insert on public.pdf_exports
+  for each row execute function public.limiter_pdf_exports();
+
+create or replace function public.purger_pdf_exports(jours integer default 180)
+returns bigint
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  supprimees bigint;
+begin
+  delete from public.pdf_exports
+  where created_at < now() - make_interval(days => greatest(jours, 30));
+  get diagnostics supprimees = row_count;
+  return supprimees;
+end $$;
+
+revoke all on function public.purger_pdf_exports(integer) from public, anon, authenticated;
+grant execute on function public.purger_pdf_exports(integer) to service_role;
+
+-- Si l'extension pg_cron est activée, planifier la purge avec les autres :
+-- select cron.schedule('ezh-purge-pdf', '29 4 * * *',
+--                      'select public.purger_pdf_exports(180)');
