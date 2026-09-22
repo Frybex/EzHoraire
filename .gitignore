@@ -87,3 +87,5 @@ dashboard.md
 /test_*.py
 logos/propositions/*.py
 rapports-seo/
+node_modules/
+surveillance-seo/node_modules/
