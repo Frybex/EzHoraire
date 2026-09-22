@@ -9,6 +9,7 @@ api/
 ├── formations.py   GET /api/formations?ecole=…            liste des formations
 ├── horaires.py     GET /api/horaires?ecole=…&formation=…  horaire complet
 ├── export.py       GET /api/export?ecole=…&formation=…    horaire en .ics (Calendrier iPhone)
+├── abonnement.py   GET /api/abonnement?jeton=…            flux .ics qui se met à jour (abonnement)
 ├── recherche.py    GET /api/recherche?ecole=…&genre=…&q=… recherche en direct
 ├── ical.py         GET /api/ical?lien=…                   horaire d'un lien perso
 ├── importer.py     POST /api/importer (corps JSON)        liste collée → cours
@@ -17,6 +18,7 @@ api/
 ├── stats.py        GET /api/stats                         dashboard admin (réservé : comptes, visites, parcours anonyme)
 ├── bugs.py         POST /api/bugs (public)                reports bug / demande (anonymes OK)
 │                   GET /api/bugs + PATCH /api/bugs?id=..  lecture + statuts (admin)
+├── _partage.py     aides communes à export.py et abonnement.py (groupes, filtre, .ics)
 │
 ├── _ecoles/        UNE ÉCOLE = UN FICHIER
 │   ├── __init__.py  registre ECOLES + aides HTTP (réponses, quotas par IP)

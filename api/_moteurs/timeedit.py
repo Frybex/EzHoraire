@@ -331,27 +331,31 @@ class ClientTimeEdit:
     def _reservations(self, ids, budget=60):
         """Réservations de la sélection, au-delà du plafond si nécessaire.
 
-        La fenêtre « p=0.w,<fin>.x » part du lundi de la semaine en cours :
-        avec « 0.m » TimeEdit ne renvoyait qu'à partir d'aujourd'hui (les
-        cours du lundi au mercredi de la semaine affichée manquaient).
-        Quand une sélection dépasse le plafond, on découpe la fin de fenêtre
-        en tranches et on déduplique par identifiant de séance."""
+        La fenêtre part du premier lundi de l'année (dates absolues
+        « AAAAMMJJ,AAAAMMJJ ») : avec « 0.w » TimeEdit partait du lundi de
+        la semaine en cours et les semaines passées revenaient vides
+        (la semaine 1 s'affichait « sans cours » alors qu'elle en avait).
+        Quand une sélection dépasse le plafond, on découpe en tranches de
+        35 jours et on déduplique par identifiant de séance."""
         params = {"sid": self.sid_cours, "objects": ",".join(ids), "h": "t",
                   "ox": 0, "types": 0, "fe": 0, "max": PLAFOND_SEANCES}
-        d = self._json("ri.json", dict(params, p=f"0.w,{self.fin_fenetre}.x"),
+        debut_fenetre = datetime.strptime(
+            self.premier_lundi_defaut, "%Y-%m-%d").date().strftime("%Y%m%d")
+        d = self._json("ri.json", dict(params, p=f"{debut_fenetre},{self.fin_fenetre}"),
                        timeout=max(20, min(budget, 60)))
         seances = {r.get("id"): r for r in (d.get("reservations") or [])}
         total = (d.get("info") or {}).get("reservationcount") or 0
         if total >= PLAFOND_SEANCES:
             debut = time.monotonic()
             fin = datetime.strptime(self.fin_fenetre, "%Y%m%d").date()
-            tranche = datetime.now().date() + timedelta(days=35)
-            while tranche < fin and time.monotonic() - debut < budget:
-                d = self._json("ri.json", dict(params, p=f"0.w,{tranche.strftime('%Y%m%d')}.x"),
+            cur = datetime.strptime(debut_fenetre, "%Y%m%d").date()
+            while cur < fin and time.monotonic() - debut < budget:
+                nxt = min(cur + timedelta(days=35), fin)
+                d = self._json("ri.json", dict(params, p=f"{cur.strftime('%Y%m%d')},{nxt.strftime('%Y%m%d')}"),
                                timeout=max(20, min(budget, 60)))
                 for r in d.get("reservations") or []:
                     seances.setdefault(r.get("id"), r)
-                tranche += timedelta(days=35)
+                cur = nxt + timedelta(days=1)
         return list(seances.values())
 
     def _recuperer(self, formation, budget=75):
@@ -525,7 +529,8 @@ class ClientTimeEdit:
                 avec = [i for i in indices if jeton in seances[i]["ens"] or seances[i]["info"] == jeton]
                 if not avec or len(avec) == len(indices):
                     continue  # ne sépare pas ce cours : étiquette de promo
-                sans = [i for i in indices if i not in set(avec)]
+                ensemble = set(avec)
+                sans = [i for i in indices if i not in ensemble]
                 sig_avec = {self._signature(seances[i]) for i in avec}
                 sig_sans = {self._signature(seances[i]) for i in sans}
                 if sig_avec == sig_sans:
@@ -682,7 +687,8 @@ class ClientTimeEdit:
                 if not self._groupe_info(groupe) or (connus is not None and groupe not in connus):
                     raise ValueError(f"groupe introuvable : {groupe}")
         lundi0 = datetime.strptime(self.premier_lundi_defaut, "%Y-%m-%d").date()
-        fin = lundi0 + timedelta(days=semaine * 7 - 1)
+        debut_sem = lundi0 + timedelta(days=(semaine - 1) * 7)
+        fin = debut_sem + timedelta(days=6)
         debut = time.monotonic()
         # Options du PDF TimeEdit (celles du dialogue d'impression) :
         # ps/page, sp/orientation (ignorée par ce point d'entrée), fs/police,
@@ -695,7 +701,7 @@ class ClientTimeEdit:
         # des couleurs restent.
         contenu = self._appel("ri.pdf", {
             "h": "t", "sid": self.sid_cours, "objects": ",".join(ids),
-            "p": f"{semaine - 1}.w,{fin.strftime('%Y%m%d')}.x", "mw": 300,
+            "p": f"{debut_sem.strftime('%Y%m%d')},{fin.strftime('%Y%m%d')}", "mw": 300,
             "fs": 8, "shf": 1,
         }, timeout=max(20, min(budget, 60)), flot=True)
         if not contenu.startswith(b"%PDF"):
