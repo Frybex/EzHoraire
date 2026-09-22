@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#f4f5f7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#101216" media="(prefers-color-scheme: dark)">
+<!-- Opt-out de l'assombrissement automatique de Chrome/WebView Android :
+     sans ce meta, un téléphone en mode sombre peut griser la page claire. -->
+<meta name="color-scheme" content="light dark">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="EzHoraire">
@@ -36,7 +39,7 @@
 <!-- Le SDK Supabase vient de jsdelivr : on ouvre la connexion tôt. -->
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <!-- En « defer » : rien ici ne bloque le premier rendu. -->
-<script defer src="/favicon.js?v=2"></script>
+<script defer src="/favicon.js?v=3"></script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
 {"@type":"Organization","@id":"https://www.ezhoraire.be/#org","name":"EzHoraire","url":"https://www.ezhoraire.be/","logo":"https://www.ezhoraire.be/icon-512.png","email":"contact@ezhoraire.be","areaServed":"BE"},
@@ -47,6 +50,13 @@
 /* Apparence (Clair / Sombre / Système) posée avant le premier rendu : pas d'éclair. */
 try { var _a = localStorage.getItem("ezh_apparence"); document.documentElement.setAttribute("data-apparence", (_a === "clair" || _a === "sombre") ? _a : "systeme"); }
 catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); }
+/* Système d'exploitation : quelques styles se comportent différemment
+   (picker d'heure Android, etc.). Posé avant le CSS pour éviter un flash. */
+try {
+  var _ua = navigator.userAgent || "";
+  document.documentElement.setAttribute("data-os",
+    /Android/i.test(_ua) ? "android" : /iPad|iPhone|iPod/.test(_ua) ? "ios" : "autre");
+} catch (e) { document.documentElement.setAttribute("data-os", "autre"); }
 </script>
 <style>
   :root {
@@ -86,18 +96,23 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
      à côté du PDF zoomerait tout le site au lieu du PDF (qui a son
      propre zoom) et créerait des écrans de vide. pan-x pan-y garde le
      défilement tactile mais coupe le pincement et le double-toucher. */
-  html, body { touch-action: pan-x pan-y; }
+  html, body { touch-action: pan-x pan-y; /* pas de tirette « recharger » en haut (Chrome Android) */
+    overscroll-behavior-y: none; }
   button, a { touch-action: manipulation; }
   body {
     /* Relief premium : dégradé vertical + reflet d'1 px en haut ; creux =
        surfaces gravées (champs, pistes). Calculés depuis --bg pour suivre
        la couleur de l'horaire en cours. */
+    --relief-haut: #fdfdfd; /* repli sans color-mix (vieux Samsung Internet…) */
     --relief-haut: color-mix(in srgb, var(--bg), #fff 78%);
+    --relief-bas: #f9f9fb; /* repli sans color-mix */
     --relief-bas: color-mix(in srgb, var(--bg), #fff 44%);
     --reflet: rgba(255, 255, 255, .9);
     --ombre-btn: 0 1px 2px rgba(23, 32, 68, .06), 0 2px 8px -4px rgba(23, 32, 68, .08);
+    --creux: #fbfbfc; /* repli sans color-mix */
     --creux: color-mix(in srgb, var(--bg), #fff 60%);
     --creux-ombre: rgba(23, 32, 68, .07);
+    --feuille: #fbfcfc; /* repli sans color-mix */
     --feuille: color-mix(in srgb, var(--bg), #fff 66%);
     margin: 0; color: var(--ink);
     background-color: var(--bg);
@@ -110,12 +125,16 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   }
   @media (prefers-color-scheme: dark) {
     body {
+      --relief-haut: #212326; /* repli sans color-mix (vieux Samsung Internet…) */
       --relief-haut: color-mix(in srgb, var(--bg), #fff 7%);
+      --relief-bas: #16181c; /* repli sans color-mix */
       --relief-bas: color-mix(in srgb, var(--bg), #fff 2.5%);
       --reflet: rgba(255, 255, 255, .06);
       --ombre-btn: 0 1px 2px rgba(0, 0, 0, .4), 0 4px 12px -6px rgba(0, 0, 0, .6);
+      --creux: #0c0d10; /* repli sans color-mix */
       --creux: color-mix(in srgb, var(--bg), #000 26%);
       --creux-ombre: rgba(0, 0, 0, .4);
+      --feuille: #1a1b1f; /* repli sans color-mix */
       --feuille: color-mix(in srgb, var(--bg), #fff 4%);
     }
   }
@@ -363,7 +382,6 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   }
   /* Zone texte en arrière-plan : remplie par la capture, jamais affichée. */
   #rech-texte[hidden] { display: none; }
-  #rech-import .import-ligne { display: flex; gap: 10px; align-items: flex-end; }
   #rech-import textarea {
     flex: 1 1 auto; min-width: 0; min-height: 96px; resize: none;
     overflow-y: hidden; /* agrandi par le script ; style de repli discret ci-dessous */
@@ -385,7 +403,6 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     border-radius: 14px; white-space: nowrap;
   }
   @media (max-width: 560px) {
-    #rech-import .import-ligne { flex-direction: column; align-items: stretch; }
     #rech-import #rech-import-voir { width: 100%; }
   }
 
@@ -1541,8 +1558,9 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   .ech-sep { flex: none; width: 1px; align-self: stretch; margin: 11px 0; background: var(--line); }
   #voile-echeance input[type="date"]::-webkit-calendar-picker-indicator { opacity: .55; }
   /* L'horloge native mange la place de l'heure (« 10:30 AM » en locale
-     anglaise) : le champ reste cliquable, l'icône n'apporte rien. */
-  #voile-echeance input[type="time"]::-webkit-calendar-picker-indicator { display: none; }
+     anglaise) : le champ reste cliquable, l'icône n'apporte rien.
+     Sauf sur Android, où l'icône est le repère principal du picker. */
+  html:not([data-os="android"]) #voile-echeance input[type="time"]::-webkit-calendar-picker-indicator { display: none; }
   /* Ajouter à l'agenda : deux abonnements possibles (tout l'horaire, ou
      cours par cours), puis la liste des cours avec leur couleur. */
   .export-nom { margin: 0 0 12px; font-weight: 650; }
@@ -1953,6 +1971,16 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     .cal-libre strong { font-size: 1.05rem; font-weight: 650; letter-spacing: -.01em; }
     .cal-libre.ferie { --rayure: color-mix(in srgb, var(--accent) 18%, transparent); }
     .cal-libre.ferie strong { color: var(--accent); }
+    /* Jour sans cours : les échéances posées ce jour-là (et le bouton pour
+       en ajouter une) se glissent sous « Pas de cours », au centre de la
+       colonne rayée. */
+    .libre-boite {
+      position: relative; display: flex; flex-direction: column; align-items: center;
+      gap: 9px; max-width: 100%; padding: 10px 12px;
+    }
+    .libre-boite .ech-liste { width: 100%; max-width: 230px; margin: 0; text-align: left; }
+    .libre-boite .ech { background: var(--surface); }
+    .libre-add { margin: 0; }
     /* Cours : fond mat teinté (une couleur par
        intitulé, jamais deux intitulés avec la même — voir preparerCouleurs). */
     .ev {
@@ -2030,6 +2058,16 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     .ev .eb { display: flex; align-items: baseline; gap: 8px; margin-top: auto; }
     .ev .eb .ep { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .ev .eb .eh { flex: none; margin-left: auto; white-space: nowrap; }
+    /* Échéance à venir sur un cours : une pastille discrète, dans la
+       rangée du bas — elle suit la couleur du texte de la case (lisible
+       sur les fonds clairs comme sur les fonds sombres), jamais un aplat
+       qui jurerait avec le pastel du cours. Le détail est dans la bulle. */
+    .ev .eb .ev-ech {
+      flex: none; align-self: center; padding: 2px 6px; border-radius: 6px;
+      font-size: .61rem; font-weight: 750; text-transform: uppercase; letter-spacing: .03em;
+      white-space: nowrap;
+      background: color-mix(in srgb, currentColor 15%, transparent);
+    }
     /* Case courte (< 75 min) : la rangée redevient transparente pour
        garder la ligne titre + salle + prof d'avant. */
     .ev.court .eb { display: contents; }
@@ -2058,11 +2096,28 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       .ev .eb .ep { font-size: .7rem; }
       .ev .eb .eh { font-size: .68rem; }
     }
+    /* Colonne étroite : la pastille d'échéance se réduit à un point (le
+       libellé complet et le détail sont dans la bulle), pour ne pas
+       chasser le prof de la rangée. */
+    @container col (max-width: 200px) {
+      .ev .eb .ev-ech {
+        font-size: 0; width: 9px; height: 9px; padding: 0; border-radius: 50%;
+        background: color-mix(in srgb, currentColor 45%, transparent);
+      }
+    }
+    /* Case courte (< 75 min) : même repli en point, la rangée garde son
+       titre, sa salle et son prof. */
+    .ev.court .eb .ev-ech {
+      font-size: 0; width: 9px; height: 9px; padding: 0; border-radius: 50%;
+      align-self: baseline;
+      background: color-mix(in srgb, currentColor 45%, transparent);
+    }
 
     /* Détail d'un cours, en bulle flottante */
     #pop {
       display: block; position: fixed; z-index: 40; width: 320px;
       padding: 20px 22px; border-radius: 20px;
+      max-height: calc(100vh - 108px); overflow-y: auto;
       background: var(--relief-haut); color: var(--ink);
       box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), 0 28px 60px -24px rgba(0, 0, 0, .5);
       opacity: 0; visibility: hidden; transform: translateY(4px) scale(.98);
@@ -2079,6 +2134,20 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     #pop dt { color: var(--muted); }
     #pop dd { margin: 0; }
     #pop .nc { color: var(--muted); font-style: italic; }
+    /* Échéances du cours, dans la bulle : la même liste que sur téléphone
+       (type, intitulé, date) et le bouton pour en ajouter une. */
+    .pop-ech { margin: 18px 0 0 20px; }
+    .pop-ech-titre {
+      margin: 0 0 9px; color: var(--muted); font-size: .74rem; font-weight: 650;
+      letter-spacing: .04em; text-transform: uppercase;
+    }
+    .pop-ech .ech-liste { margin: 0; }
+    .pop-ech .ech { background: var(--surface); }
+    .pop-ech-vide { margin: 0 0 10px; color: var(--muted); font-size: .85rem; }
+    .pop-ech-add {
+      width: 100%; justify-content: center; gap: 6px; margin-top: 10px;
+      padding: 9px 10px; font-size: .8rem;
+    }
 
     /* Panneau PDF */
     #pdf-zone {
@@ -2192,6 +2261,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     --line: #e4e7ec; --accent: #2456e0; --accent-soft: rgba(36, 86, 224, .09);
     --wash: rgba(36, 86, 224, 0); --free: #18794e; --seg-track: #e8eaef;
     --shadow: 0 16px 40px -24px rgba(23, 32, 68, .28); --danger: #d42a3c;
+    --attention: #b26a00; /* sinon le résidu sombre du système transparaît en « clair » forcé */
   }
   html[data-apparence="sombre"] {
     --bg: #101216; --surface: #171a20; --ink: #f0f3f7; --muted: #98a1b1;
@@ -2200,21 +2270,29 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     --shadow: 0 18px 44px -20px rgba(0, 0, 0, .75); --danger: #ff6b7a;
   }
   html[data-apparence="clair"] body {
+    --relief-haut: #fdfdfd; /* repli sans color-mix (vieux Samsung Internet…) */
     --relief-haut: color-mix(in srgb, var(--bg), #fff 78%);
+    --relief-bas: #f9f9fb; /* repli sans color-mix */
     --relief-bas: color-mix(in srgb, var(--bg), #fff 44%);
     --reflet: rgba(255, 255, 255, .9);
     --ombre-btn: 0 1px 2px rgba(23, 32, 68, .06), 0 2px 8px -4px rgba(23, 32, 68, .08);
+    --creux: #fbfbfc; /* repli sans color-mix */
     --creux: color-mix(in srgb, var(--bg), #fff 60%);
     --creux-ombre: rgba(23, 32, 68, .07);
+    --feuille: #fbfcfc; /* repli sans color-mix */
     --feuille: color-mix(in srgb, var(--bg), #fff 66%);
   }
   html[data-apparence="sombre"] body {
+    --relief-haut: #212326; /* repli sans color-mix (vieux Samsung Internet…) */
     --relief-haut: color-mix(in srgb, var(--bg), #fff 7%);
+    --relief-bas: #16181c; /* repli sans color-mix */
     --relief-bas: color-mix(in srgb, var(--bg), #fff 2.5%);
     --reflet: rgba(255, 255, 255, .06);
     --ombre-btn: 0 1px 2px rgba(0, 0, 0, .4), 0 4px 12px -6px rgba(0, 0, 0, .6);
+    --creux: #0c0d10; /* repli sans color-mix */
     --creux: color-mix(in srgb, var(--bg), #000 26%);
     --creux-ombre: rgba(0, 0, 0, .4);
+    --feuille: #1a1b1f; /* repli sans color-mix */
     --feuille: color-mix(in srgb, var(--bg), #fff 4%);
   }
   html[data-apparence="clair"] body[data-theme="0"],
@@ -2320,18 +2398,17 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   /* ---------- Horaire sur mesure (fusion.js) ---------- */
   :root { --attention: #b26a00; }
   @media (prefers-color-scheme: dark) { :root { --attention: #f0b866; } }
+  /* Apparence forcée : pas de reprise du sombre système (sinon le clair
+     garde l'ambre prévu pour fond sombre quand le téléphone est en mode
+     sombre — écart iOS/Android). */
+  html[data-apparence="clair"] { --attention: #b26a00; }
+  html[data-apparence="sombre"] { --attention: #f0b866; }
   .liste button.surmesure {
     background: linear-gradient(180deg,
       color-mix(in srgb, var(--accent) 10%, var(--relief-haut)),
       color-mix(in srgb, var(--accent) 4%, var(--relief-bas)));
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 34%, transparent),
       inset 0 1px 0 var(--reflet), var(--ombre-btn);
-  }
-  .sm-ico {
-    flex: none; width: 38px; height: 38px; border-radius: 12px;
-    display: grid; place-items: center; color: var(--accent);
-    background: color-mix(in srgb, var(--accent) 12%, var(--surface));
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 24%, transparent);
   }
   .liste .surmesure .nom small, .liste button.deja .nom small {
     display: block; margin-top: 2px; font-weight: 500; color: var(--muted); font-size: .84rem;
@@ -2646,20 +2723,8 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     </div>
     <div class="theme-select-bloc">
       <p class="theme-select-titre">Thème de ton horaire</p>
-      <div class="choix-themes" id="identite-themes" role="radiogroup" aria-label="Thème de ton horaire">
-        <button type="button" class="theme-opt" data-theme-opt="2" role="radio" aria-checked="true">
-          <span class="theme-pastille" style="background:#1d4fd7"></span>
-          <span>Bleu</span>
-        </button>
-        <button type="button" class="theme-opt" data-theme-opt="1" role="radio" aria-checked="false">
-          <span class="theme-pastille" style="background:#0e8655"></span>
-          <span>Vert</span>
-        </button>
-        <button type="button" class="theme-opt" data-theme-opt="3" role="radio" aria-checked="false">
-          <span class="theme-pastille" style="background:#d14d8a"></span>
-          <span>Rose</span>
-        </button>
-      </div>
+      <div class="choix-themes" id="identite-themes" role="radiogroup" aria-label="Thème de ton horaire"></div>
+    </div>
       <p class="surnom-aide">Il colore toute l'application pour ton horaire — touche une couleur pour voir le résultat.</p>
     </div>
     <p class="pdf-status erreur" id="identite-status" role="status" hidden></p>
@@ -2794,20 +2859,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     </div>
     <div id="bloc-theme">
       <p class="theme-select-titre">Thème de cet horaire</p>
-      <div class="choix-themes" id="groupes-themes" role="radiogroup" aria-label="Thème de cet horaire">
-        <button type="button" class="theme-opt" data-theme-opt="2" role="radio" aria-checked="true">
-          <span class="theme-pastille" style="background:#1d4fd7"></span>
-          <span>Bleu</span>
-        </button>
-        <button type="button" class="theme-opt" data-theme-opt="1" role="radio" aria-checked="false">
-          <span class="theme-pastille" style="background:#0e8655"></span>
-          <span>Vert</span>
-        </button>
-        <button type="button" class="theme-opt" data-theme-opt="3" role="radio" aria-checked="false">
-          <span class="theme-pastille" style="background:#d14d8a"></span>
-          <span>Rose</span>
-        </button>
-      </div>
+      <div class="choix-themes" id="groupes-themes" role="radiogroup" aria-label="Thème de cet horaire"></div>
       <p class="surnom-aide">Il colore toute l'application quand tu consultes cet horaire — touche une couleur pour voir le résultat.</p>
     </div>
     <button class="primaire halo" id="btn-valider" type="button" hidden></button>
@@ -3131,10 +3183,10 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
 <!-- « defer » : le SDK (~100 ko) ne retarde plus l'affichage ; l'app
      l'attend en arrière-plan (voir chargerSdkSupabase). -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0" integrity="sha384-JBR+x8blGwjDRO63aHCGiZMD4VNiTR4ZUGA+N6ZKLf3zNt1fK8IBpcgPaMrxqWBp" crossorigin="anonymous" data-supabase></script>
-<script src="/suivi.js"></script>
-<script src="/fusion.js"></script>
-<script src="/export_ics.js"></script>
-<script src="/semaine.js"></script>
+<script src="/suivi.js?v=3"></script>
+<script src="/fusion.js?v=3"></script>
+<script src="/export_ics.js?v=3"></script>
+<script src="/semaine.js?v=3"></script>
 <script>
 (function () {
   "use strict";
@@ -3296,6 +3348,16 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
         annuler: "Plus tard", confirmer: "Installer", danger: false
       }).then(function (ok) {
         if (ok && inviteInstallAndroid) { inviteInstallAndroid.prompt(); inviteInstallAndroid = null; }
+        else if (ok) {
+          // Chrome n'a pas proposé l'invite (déjà refusée, ou version qui
+          // n'émet plus l'événement) : on montre le chemin manuel plutôt
+          // que de fermer sans rien faire.
+          demanderConfirmation({
+            titre: "Installer depuis le menu",
+            message: "Ouvre le <strong>menu ⋮</strong> de Chrome, puis touche <strong>« Installer l'application »</strong> (ou « Ajouter à l'écran d'accueil »).",
+            annuler: "Plus tard", confirmer: "Compris", danger: false
+          });
+        }
       });
     } else if (estIOS()) {
       demanderConfirmation({
@@ -3318,6 +3380,26 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     { id: 1, nom: "Vert", couleur: "#0e8655" },
     { id: 3, nom: "Rose", couleur: "#d14d8a" }
   ];
+  /* Choix de thème : un seul générateur pour les quatre endroits qui
+     l'affichent (identité, horaires, composeur, fenêtre de modification). */
+  function choixThemesHTML(t) {
+    var actuel = normaliserTheme(t);
+    return THEMES.map(function (th) {
+      return '<button type="button" class="theme-opt" data-theme-opt="' + th.id + '" role="radio" aria-checked="' +
+        (actuel === th.id) + '"><span class="theme-pastille" style="background:' + th.couleur + '"></span>' +
+        "<span>" + txt(th.nom) + "</span></button>";
+    }).join("");
+  }
+  /* Même choix, avec le conteneur en grille et son libellé d'accessibilité
+     (les deux volets qui le construisent entièrement : composeur, édition). */
+  function choixThemesBlocHTML(t, id, label) {
+    return '<div class="choix-themes" id="' + id + '" role="radiogroup" aria-label="' + label + '">' +
+      choixThemesHTML(t) + "</div>";
+  }
+  ["identite-themes", "groupes-themes"].forEach(function (id) {
+    var zone = document.getElementById(id);
+    if (zone) zone.innerHTML = choixThemesHTML(2);
+  });
   function normaliserTheme(t) {
     if (t === 1) return 1; // Vert
     if (t === 3) return 3; // Rose
@@ -3382,6 +3464,13 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   var FUSION = window.EZH_FUSION;
   var EXPORT_ICS = window.EZH_EXPORT_ICS;
   var SEMAINE = window.EZH_SEMAINE;
+  /* Règles de groupes : une seule implémentation (fusion.js), pour que
+     l'app et la fusion voient exactement les mêmes correspondances. */
+  var propre = FUSION.propre;
+  var courtGroupe = FUSION.courtGroupe;
+  var aPrefixe = FUSION.aPrefixe;
+  var memeGroupe = FUSION.memeGroupe;
+  var groupeDans = FUSION.groupeDans;
   function estPerso(p) { return !!(p && Array.isArray(p.sources) && p.sources.length); }
   function ecoleExiste(id) { return !!ecoleDe(id); }
   function profilValide(p) {
@@ -4269,8 +4358,12 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
 
   var DATA = null;       // horaire complet de la formation affichée
   var COURS = [];        // ses cours, filtrés selon les groupes de l'étudiant
+  var COURS_PAR_JOUR = {}; // « sem|jour » -> cours triés (index d'affichage)
   var CHOCS = [];        // horaire sur mesure : chevauchements entre sources
+  var CHOCS_SEM = {};    // sem -> chevauchements de la semaine
+  var COURS_EN_CHOC = {}; // sem -> Set des cours qui se chevauchent
   var NOUVELLES_SEMAINES = []; // semaines publiées depuis la dernière visite
+  var SANS_PROFS = false; // l'école ne publie aucun nom de prof (calculé à l'installation)
   var ALERTES_SEMAINES = {}; // profils déjà alertés depuis l'ouverture de la page
   var LUNDI0 = null, SEMAINES = [];
   var FERIES = {};       // jours fériés / de congé de l'école : { n° de jour : true }
@@ -4323,33 +4416,11 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   function semaineCourante() {
     return SEMAINE.semaineAffichee(LUNDI0, SEMAINES, COURS, new Date());
   }
-  // Clé d'un groupe : le nom renvoyé par l'API, espaces nettoyés (l'école
-  // les double parfois).
-  function propre(s) {
-    return String(s).replace(/\s+/g, " ").trim();
-  }
-  // L'API renvoie les groupes UMONS en nom court ('Dr. rom - Gr 1'), sauf
-  // si deux groupes s'afficheraient pareil : ils gardent alors le préfixe
-  // de leur formation ('<.BAB1 - Droit>Dr. rom - Gr 1'), mis entre
-  // parenthèses à l'affichage.
-  function courtGroupe(s) { return propre(String(s).replace(/^\s*<[^>]*>/, "")); }
-  function aPrefixe(s) { return /^\s*</.test(String(s)); }
+  // Clé d'un groupe : voir les règles partagées en tête de script
+  // (propre, courtGroupe, aPrefixe, memeGroupe, groupeDans).
   function nomGroupe(s) {
     var m = /^\s*<([^>]*)>(.*)$/.exec(String(s));
     return m ? propre(m[2]) + " (" + joliFormation(m[1]) + ")" : propre(s);
-  }
-  // Un groupe enregistré correspond à un groupe de l'école : même nom, ou
-  // même nom court si l'un des deux n'a pas de préfixe (profil d'une
-  // ancienne version, ou groupe devenu ambigu chez l'école).
-  function memeGroupe(a, b) {
-    a = propre(a); b = propre(b);
-    if (a === b) return true;
-    if (aPrefixe(a) && aPrefixe(b)) return false;
-    return courtGroupe(a) === courtGroupe(b);
-  }
-  function groupeDans(liste, g) {
-    for (var i = 0; i < liste.length; i++) if (memeGroupe(liste[i], g)) return true;
-    return false;
   }
   // Nom de formation affichable : l'UMONS préfixe d'un point
   // ('.BAB1 - Droit'). La valeur complète reste la clé d'API.
@@ -4373,12 +4444,55 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       .replace(/'/g, "&#39;");
   }
 
+  /* Bouton retour Android : chaque fenêtre / feuille empile une entrée
+     history ; le retour ferme la couche du dessus au lieu de quitter
+     l'app. Les menus ⋮ sont une sous-couche de la feuille (pas d'entrée
+     propre) : un retour les ferme d'abord, la feuille reste. */
+  var histPile = [];
+  var histIgnore = 0; // popstate dus à un history.back() programmatique
+  function histOuvrir(id) {
+    if (histPile.indexOf(id) !== -1) return;
+    histPile.push(id);
+    try { history.pushState({ ezh: id }, ""); } catch (e) { /* jetable */ }
+  }
+  function histFermer(id) {
+    var i = histPile.lastIndexOf(id);
+    if (i === -1) return;
+    histPile.splice(i, 1);
+    if (i !== histPile.length) return; // pas la couche du dessus
+    histIgnore++;
+    try { history.back(); } catch (e) { histIgnore--; }
+  }
+  function histCoucheFermer(id) {
+    if (id === "confirm") repondreConfirmation(false);
+    else if (id === "edition") fermerEdition();
+    else if (id === "echeance") fermerEcheance();
+    else if (id === "export") fermerExport();
+    else if (id === "bug") fermerBug();
+    else if (id === "menus") fermerMenus();
+    else if (id === "feuille") fermerFeuille();
+    else if (id === "pop") fermerPop();
+  }
+  window.addEventListener("popstate", function () {
+    if (histIgnore > 0) { histIgnore--; return; }
+    // Menus ouverts : sous-couche sans entrée propre. On les ferme et on
+    // rejoue l'entrée de la feuille, ainsi le prochain retour la ferme.
+    if (menusOuverts() && histPile.length) {
+      fermerMenus();
+      try { history.pushState({ ezh: histPile[histPile.length - 1] }, ""); } catch (e) { /* jetable */ }
+      return;
+    }
+    if (!histPile.length) return;
+    var id = histPile.pop();
+    histCoucheFermer(id);
+  });
+
   /* Demande de confirmation custom (remplace window.confirm partout).
      Usage : demanderConfirmation({ titre, message, confirmer, annuler, danger })
      -> Promise<boolean>. Voile flouté, Échap / clic dehors = non,
      focus piégé dans la carte, fond bloqué pendant la demande. */
   var ICONE_POUBELLE = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
-    'stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 4h4M7 7l1 13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-13"/>' +
+    'stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 4h7M7 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1L18 7"/>' +
     '<path d="M10 11v6M14 11v6"/></svg>';
   var ICONE_POINT_INTERRO = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" ' +
     'stroke-linecap="round"><path d="M9 9a3 3 0 1 1 4.5 2.6c-1 .6-1.5 1.2-1.5 2.4"/><circle cx="12" cy="17.5" r=".5" fill="currentColor"/></svg>';
@@ -4404,6 +4518,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     confirmerDernierFocus = document.activeElement;
     voile.hidden = false;
     document.body.classList.add("confirm-ouverte");
+    histOuvrir("confirm");
     // Rejoue l'animation à chaque ouverture.
     try { void boite.offsetWidth; } catch (e) { /* jetable */ }
     setTimeout(function () { try { btnNon.focus(); } catch (e) { /* jetable */ } }, 30);
@@ -4411,6 +4526,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   }
   function repondreConfirmation(ok) {
     if (!confirmerResolve) return;
+    histFermer("confirm");
     var resolve = confirmerResolve;
     confirmerResolve = null;
     document.getElementById("voile-confirm").hidden = true;
@@ -4445,6 +4561,13 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   var sansAnim = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var MQ_BUREAU = window.matchMedia("(min-width: 1024px)");
   function bureau() { return MQ_BUREAU.matches; }
+  // Chaque vue ne construit que ce qu'elle affiche (voir rendre) : en
+  // changeant de taille d'écran, on repose celle qui devient visible.
+  if (MQ_BUREAU.addEventListener) {
+    MQ_BUREAU.addEventListener("change", function () {
+      if (DATA && vue === "horaire") rendre();
+    });
+  }
 
   var joursOuverts = {}; // jours dépliés {index: true}, interrupteurs indépendants
   var coursOuverts = {}; // cours dépliés {"jour:index": true}, interrupteurs indépendants
@@ -4571,23 +4694,9 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     annulerRenduPdf();
     if (pdfDoc) { try { pdfDoc.destroy(); } catch (e) { /* jetable */ } pdfDoc = null; }
   }
-  // Texte d'attente + sa copie claire pour le reflet (ignorée à l'oral).
+  // Texte d'attente du PDF (voir attente(), partagée avec les autres écrans).
   function statutPdfAttente(status) {
-    var texte = "Le PDF est en cours de téléchargement…";
-    status.classList.remove("erreur");
-    status.style.display = "";
-    status.textContent = "";
-    var bloc = document.createElement("span"); // largeur exacte du texte
-    bloc.className = "pdf-texte";
-    bloc.textContent = texte;
-    var reflet = document.createElement("span");
-    reflet.className = "pdf-reflet";
-    reflet.setAttribute("aria-hidden", "true");
-    var copie = document.createElement("span");
-    copie.textContent = texte;
-    reflet.appendChild(copie);
-    bloc.appendChild(reflet);
-    status.appendChild(bloc);
+    attente(status, "Le PDF est en cours de téléchargement…");
   }
   function fermerPdf() {
     pdfDemande++; // invalide un téléchargement en cours
@@ -6653,7 +6762,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     document.getElementById("perso-bloc-surnom").hidden = !perso.editionId && profils.length === 0;
     document.getElementById("perso-surnom").value = perso.surnom || "";
     document.getElementById("perso-themes").innerHTML =
-      htmlChoixThemes(perso.theme).replace('id="edition-themes"', 'id="perso-themes-choix"');
+      choixThemesBlocHTML(perso.theme, "perso-themes-choix", "Thème de cet horaire");
     var btn = document.getElementById("perso-valider");
     btn.disabled = !n;
     btn.textContent = !n ? "Ajoute au moins une année" : perso.editionId ? "Enregistrer" : "Voir mon horaire";
@@ -7081,6 +7190,8 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   });
   function installer(data) {
     DATA = data;
+    SANS_PROFS = !!(data && data.cours && data.cours.length &&
+      !data.cours.some(function (c) { return c.profs; }));
     preparerCouleurs(data && data.cours);
     LUNDI0 = parseDate(DATA.meta.premier_lundi);
     SEMAINES = parseEns(DATA.meta.periode).sort(function (a, b) { return a - b; });
@@ -7114,6 +7225,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       // Déjà filtré source par source (cours, groupes) par fusion.js.
       COURS = DATA.cours;
       CHOCS = FUSION.chevauchements(COURS);
+      indexerCours();
       if (semaineAuto || SEMAINES.indexOf(sem) < 0) sem = semaineCourante();
       return;
     }
@@ -7133,6 +7245,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       if (!sel.length || !c.groupes.length) return true; // séance de toute la formation
       return c.groupes.some(function (g) { return groupeDans(sel, g); });
     });
+    indexerCours();
     if (semaineAuto || SEMAINES.indexOf(sem) < 0) sem = semaineCourante();
   }
   /* PDF du groupe s'il n'y en a qu'un. Plusieurs groupes : celui choisi
@@ -7257,9 +7370,36 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   }
 
   function coursDe(s, jour) {
-    return COURS
-      .filter(function (c) { return c.jour === jour && c.semaines.indexOf(s) >= 0; })
-      .sort(function (a, b) { return a.debut < b.debut ? -1 : a.debut > b.debut ? 1 : 0; });
+    return COURS_PAR_JOUR[s + "|" + jour] || [];
+  }
+  /* Index reconstruit à chaque installation : cours par (semaine, jour)
+     déjà triés, et chevauchements par semaine. Sans lui, chaque rendu
+     refiltrait et retriait tout l'horaire des dizaines de fois. */
+  function indexerCours() {
+    COURS_PAR_JOUR = {};
+    var i, w, k;
+    for (i = 0; i < COURS.length; i++) {
+      var c = COURS[i], semaines = c.semaines || [];
+      for (w = 0; w < semaines.length; w++) {
+        k = semaines[w] + "|" + c.jour;
+        (COURS_PAR_JOUR[k] || (COURS_PAR_JOUR[k] = [])).push(c);
+      }
+    }
+    for (k in COURS_PAR_JOUR) {
+      COURS_PAR_JOUR[k].sort(function (a, b) {
+        return a.debut < b.debut ? -1 : a.debut > b.debut ? 1 : 0;
+      });
+    }
+    CHOCS_SEM = {};
+    COURS_EN_CHOC = {};
+    for (i = 0; i < CHOCS.length; i++) {
+      var x = CHOCS[i], semainesX = x.semaines || [];
+      for (w = 0; w < semainesX.length; w++) {
+        var s = semainesX[w];
+        (CHOCS_SEM[s] || (CHOCS_SEM[s] = [])).push(x);
+        (COURS_EN_CHOC[s] || (COURS_EN_CHOC[s] = new Set())).add(x.a).add(x.b);
+      }
+    }
   }
   function mins(h) { return (+h.slice(0, 2)) * 60 + (+h.slice(3, 5)); }
 
@@ -7296,10 +7436,11 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   }
   // Séances en conflit la semaine `s` (horaire sur mesure).
   function chocsSemaine(s) {
-    return CHOCS.filter(function (x) { return x.semaines.indexOf(s) >= 0; });
+    return CHOCS_SEM[s] || [];
   }
   function enConflit(c, s) {
-    return CHOCS.some(function (x) { return (x.a === c || x.b === c) && x.semaines.indexOf(s) >= 0; });
+    var set = COURS_EN_CHOC[s];
+    return !!set && set.has(c);
   }
   /* ---------- Devoirs et examens, rattachés à un cours ou à un jour ----------
      Chaque horaire a ses propres échéances, rangées sous une clé : un cours
@@ -7311,8 +7452,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   var JOURS_COURTS = ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."];
   var _echTout = null; // cache d'un rendu, invalidé à chaque écriture
   var echNeuf = "";    // échéance qui vient d'être ajoutée (surbrillance)
-  var ICONE_PLUS = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
-    'stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+  /* ICONE_PLUS est déclarée plus bas (section export) : une seule fois. */
 
   function lireEcheancesTout() {
     if (_echTout === null) {
@@ -7323,6 +7463,13 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   }
   function cleCoursEch(c) { return c.jour + "|" + c.debut + "|" + (c.matiere || ""); }
   function cleJourEch(jour) { return jour + "||"; }
+  /* Clé de rendez-vous d'un cours dans la semaine affichée (« jour:index ») :
+     c'est elle que portent les boutons et les lignes d'échéances, pour
+     retrouver le cours au moment du clic. */
+  function cleRenduCours(c) {
+    var i = coursDe(sem, c.jour).indexOf(c);
+    return i >= 0 ? c.jour + ":" + i : cleCoursEch(c);
+  }
   /* Un jour sans cours se comporte comme un cours sans heure ni matière :
      même rangement, même affichage, mêmes fonctions. */
   function pseudoJour(jour) { return { jour: jour, debut: "", fin: "", matiere: "", groupes: [] }; }
@@ -7400,16 +7547,22 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     }
     return html + "</ul>";
   }
-  /* Étiquette de la ligne de cours : le type de la prochaine échéance à
-     venir (+ le nombre d'autres), pour ne pas écraser le nom du cours. */
-  function tagEcheances(c) {
+  /* Résumé des échéances à venir d'un cours : le type de la prochaine
+     (+ le nombre d'autres). Sert d'étiquette sur téléphone et de pastille
+     dans la grille du grand écran. */
+  function resumeEcheances(c) {
     var liste = trierEcheances(echeancesDe(c).filter(function (e) { return !echPassee(e); }));
-    if (!liste.length) return "";
+    if (!liste.length) return null;
     var examen = liste[0].type === "examen";
     var texte = examen ? "Examen" : "Devoir";
     if (liste.length > 1) texte += " +" + (liste.length - 1);
-    return '<span class="ech-tag" style="--c:' + (examen ? "var(--attention)" : "var(--accent)") + '">' +
-      txt(texte) + "</span>";
+    return { texte: texte, examen: examen, nombre: liste.length };
+  }
+  function tagEcheances(c) {
+    var r = resumeEcheances(c);
+    if (!r) return "";
+    return '<span class="ech-tag" style="--c:' + (r.examen ? "var(--attention)" : "var(--accent)") + '">' +
+      txt(r.texte) + "</span>";
   }
 
   function detailJour(cours, jour) {
@@ -7530,12 +7683,13 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     document.getElementById("btn-auj").classList.toggle("cache", sem === semaineCourante());
 
     var auj = new Date();
-    var html = "", vide = true, conge = true;
+    var html = "", vide = true, conge = true, surPC = bureau();
     for (var j = 0; j < 7; j++) {
       var liste = coursDe(sem, j);
       if (liste.length) vide = false;
       if (j < 5 && !estFerie(sem, j)) conge = false;
       if (j >= 5 && !liste.length) continue; // samedi/dimanche : seulement s'il y a cours
+      if (surPC) continue; // liste masquée sur ordinateur : rien à construire
       var date = dateSemJour(sem, j);
       var estAuj = memeJour(date, auj);
       var resume = liste.length
@@ -7554,19 +7708,23 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
         (liste.length ? detailJour(liste, j) : detailJourVide(j)) +
         "</div></li>";
     }
-    var nomsConge = [];
-    if (conge) {
-      for (var n2 = 0; n2 < 5; n2++) {
-        if (estFerie(sem, n2) && FERIES_NOMS[numJour(sem, n2)]) nomsConge.push(FERIES_NOMS[numJour(sem, n2)]);
+    if (!surPC) {
+      var nomsConge = [];
+      if (conge) {
+        for (var n2 = 0; n2 < 5; n2++) {
+          if (estFerie(sem, n2) && FERIES_NOMS[numJour(sem, n2)]) nomsConge.push(FERIES_NOMS[numJour(sem, n2)]);
+        }
       }
+      document.getElementById("jours").innerHTML = vide
+        ? '<div class="empty">' + (SEMAINES.indexOf(sem) < 0
+            ? "Semaine non publiée par l'école (congés ?)."
+            : (conge ? "Semaine de congé" + (nomsConge.length ? " — " + txt(nomsConge.join(", ")) : "") + "."
+                     : "Aucun cours cette semaine.")) + "</div>"
+        : html;
     }
-    document.getElementById("jours").innerHTML = vide
-      ? '<div class="empty">' + (SEMAINES.indexOf(sem) < 0
-          ? "Semaine non publiée par l'école (congés ?)."
-          : (conge ? "Semaine de congé" + (nomsConge.length ? " — " + txt(nomsConge.join(", ")) : "") + "."
-                   : "Aucun cours cette semaine.")) + "</div>"
-      : html;
-    rendreCal();
+    // Chaque vue ne construit que ce qu'elle affiche : la grille sur
+    // ordinateur, la liste de jours sur téléphone (voir le CSS).
+    if (surPC) rendreCal();
     rendreInfos();
   }
 
@@ -7724,11 +7882,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   document.getElementById("chocs").addEventListener("click", function (e) {
     var b = e.target.closest("button[data-voir-jour]");
     if (!b) return;
-    var j = +b.getAttribute("data-voir-jour");
-    joursOuverts[j] = true;
-    rendre();
-    var btnJour = document.querySelector('#jours .day > button[data-jour="' + j + '"]');
-    calerDansEcran(btnJour && btnJour.closest ? btnJour.closest(".day") : btnJour, true);
+    basculerJour(+b.getAttribute("data-voir-jour"), true);
   });
   document.getElementById("sources-ligne").addEventListener("click", function (e) {
     if (e.target.closest("#sources-modifier") && profil && estPerso(profil)) modifierPerso(profil.id);
@@ -7825,14 +7979,23 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
               "<span>" + JOURS[d.j].slice(0, 3) + "</span><strong>" + date.getDate() + "</strong>" + resume + "</div>";
       corps += '<div class="cal-col' + (estAuj ? " today" : "") + '">';
       if (!d.cours.length) {
-        corps += estFerie(sem, d.j)
-          ? '<div class="cal-libre ferie" title="' + txt(nomFerie(sem, d.j)) + '"><p><strong>' +
-            txt(nomFerie(sem, d.j)) + "</strong></p></div>"
-          : '<div class="cal-libre"><p><strong>Pas de cours</strong></p></div>';
+        // Jour sans cours : mêmes échéances que sur téléphone (rangées
+        // sous la clé « jour|| »), avec le bouton pour en poser une.
+        var echJour = echeancesJour(d.j);
+        corps += '<div class="cal-libre' + (estFerie(sem, d.j) ? " ferie" : "") + '"' +
+          (estFerie(sem, d.j) ? ' title="' + txt(nomFerie(sem, d.j)) + '"' : "") + ">" +
+          '<div class="libre-boite">' +
+          "<p><strong>" + (estFerie(sem, d.j) ? txt(nomFerie(sem, d.j)) : "Pas de cours") + "</strong></p>" +
+          (echJour.length ? listeEcheancesHTML(echJour, cleJourEch(d.j), date) : "") +
+          '<button type="button" class="ech-add libre-add" data-ech-cible="' + txt(cleJourEch(d.j)) + '" ' +
+          'aria-label="Ajouter un devoir ou un examen à ce jour" title="Ajouter un devoir ou un examen">' +
+          ICONE_PLUS + "<span>Échéance</span></button>" +
+          "</div></div>";
       }
       couloirs(d.cours).forEach(function (x) {
         var c = x.c, a = mins(c.debut), b = Math.min(mins(c.fin), fin);
         var i = evCal.push(c) - 1;
+        var rEch = resumeEcheances(c);
         corps += '<button type="button" class="ev' + (b - a < 75 ? " court" : "") +
           (DATA.perso && enConflit(c, sem) ? " ev-choc" : "") +
           (mins(c.fin) > fin ? " coupe" : "") + '" data-ev="' + i + '"' +
@@ -7842,7 +8005,9 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
           (c.salles ? '<span class="es"><span>' + txt(c.salles) + "</span></span>" : "") +
           '<span class="eb">' +
           (c.profs ? '<span class="ep">' + txt(c.profs) + "</span>" : "") +
-          '<span class="eh">' + fmtH(c.debut) + " – " + fmtH(c.fin) + "</span></span></button>";
+          '<span class="eh">' + fmtH(c.debut) + " – " + fmtH(c.fin) + "</span>" +
+          (rEch ? '<span class="ev-ech" title="' + txt(rEch.texte + " — voir le détail") + '">' +
+            txt(rEch.texte) + "</span>" : "") + "</span></button>";
       });
       corps += "</div>";
     });
@@ -7858,14 +8023,21 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   /* Bulle de détail d'un cours : à côté du bloc cliqué. */
   var pop = document.getElementById("pop"), popSource = null;
   function fermerPop() {
-    if (popSource) popSource.classList.remove("actif");
+    if (!popSource) return;
+    popSource.classList.remove("actif");
     popSource = null;
     pop.classList.remove("visible");
+    histFermer("pop");
   }
   function ouvrirPop(btn) {
     var c = evCal[+btn.getAttribute("data-ev")];
     if (!c) return;
-    fermerPop();
+    if (popSource) {
+      popSource.classList.remove("actif");
+      popSource = null;
+      pop.classList.remove("visible");
+    }
+    histOuvrir("pop");
     var d = "";
     d += "<dt>Salle</dt><dd>" + (c.salles ? txt(c.salles.replace(/, ([^,]*)$/, " et $1")) : '<span class="nc">non communiquée</span>') + "</dd>";
     if (c.profs) d += "<dt>Prof</dt><dd>" + txt(c.profs) + "</dd>";
@@ -7880,9 +8052,18 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     pop.style.setProperty("--h", tc.h);
     pop.style.setProperty("--v", tc.v);
     if (codeMatiere(c.matiere)) d += "<dt>Code</dt><dd>" + txt(codeMatiere(c.matiere)) + "</dd>";
+    // Échéances du cours : la même liste que sur téléphone, et de quoi en
+    // ajouter une sans quitter la bulle.
+    var ech = echeancesDe(c), cleEch = cleRenduCours(c);
+    var blocEch = '<div class="pop-ech">' +
+      '<p class="pop-ech-titre">Échéances</p>' +
+      (ech.length ? listeEcheancesHTML(ech, cleEch, date)
+                  : '<p class="pop-ech-vide">Aucune échéance pour ce cours.</p>') +
+      '<button type="button" class="ech-add pop-ech-add" data-ech-cible="' + txt(cleEch) + '">' +
+      ICONE_PLUS + "<span>Ajouter un devoir ou un examen</span></button></div>";
     pop.innerHTML = '<p class="pt">' + txt(nettoyerMatiere(c.matiere || "Cours")) + "</p>" +
       '<p class="ph">' + JOURS[c.jour] + " " + fmtDate(date) + " · " + fmtH(c.debut) + " – " + fmtH(c.fin) + "</p>" +
-      "<dl>" + d + "</dl>";
+      "<dl>" + d + "</dl>" + blocEch;
     var r = btn.getBoundingClientRect(), w = pop.offsetWidth, hp = pop.offsetHeight;
     var x = r.right + 12;
     if (x + w > window.innerWidth - 16) x = r.left - w - 12;
@@ -7895,12 +8076,15 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     pop.classList.add("visible");
   }
   document.getElementById("cal").addEventListener("click", function (e) {
+    if (clicEcheance(e)) return;
     var b = e.target.closest(".ev");
     if (!b) return;
     if (popSource === b) fermerPop(); else ouvrirPop(b);
   });
+  // Dans la bulle : ajouter ou supprimer une échéance sans la refermer.
+  pop.addEventListener("click", function (e) { clicEcheance(e); });
   document.addEventListener("click", function (e) {
-    if (confirmationOuverte() || editionOuverte() || bugOuvert() || exportOuvert()) return;
+    if (confirmationOuverte() || editionOuverte() || bugOuvert() || exportOuvert() || echeanceOuverte()) return;
     if (popSource && !pop.contains(e.target) && !e.target.closest(".ev")) fermerPop();
     if (feuille.classList.contains("visible") && !feuille.contains(e.target) && !e.target.closest("#btn-moi")) fermerFeuille();
   });
@@ -7923,12 +8107,13 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   var VERSION_APP = "39";
   function rendreInfos() {
     if (!DATA || !profil) return;
-    var sansProfs = DATA.cours.length && !DATA.cours.some(function (c) { return c.profs; });
     document.getElementById("maj").textContent = "Mis à jour le " + DATA.meta.fetched_at + " · v" + VERSION_APP +
-      (sansProfs ? " · Noms des profs non publiés par l'école" : "");
-    rendreListeProfils();
+      (SANS_PROFS ? " · Noms des profs non publiés par l'école" : "");
+    // Les cartes ne servent que dans la feuille des réglages (fermée la
+    // plupart du temps) : ouvrirFeuille les rafraîchit, inutile de les
+    // reconstruire à chaque rendu.
+    if (document.getElementById("feuille").classList.contains("visible")) rendreListeProfils();
   }
-  var COULEURS_POINTS = ["#1d4fd7", "#0e8655", "#1d4fd7", "#d14d8a"];
   /* Renommé = le nom affiché diffère du nom officiel de la formation.
      Les Détails (nom officiel + groupe) n'existent que dans ce cas :
      sinon la ligne affiche déjà le nom officiel.
@@ -8037,7 +8222,8 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     var r = pop.getBoundingClientRect();
     if (r.bottom > window.innerHeight - 8) pop.classList.add("haut");
   }
-  /* Ferme les menus ⋮ ouverts (compte, apparence et horaires). */
+  /* Ferme les menus ⋮ ouverts (compte, apparence et horaires).
+      Pas d'entrée history propre : sous-couche de la feuille (voir histPile). */
   function fermerMenus() {
     var m = document.getElementById("menu-compte");
     if (m && !m.hidden) {
@@ -8062,13 +8248,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   var edition = null, editionJeton = 0, editionDernierFocus = null;
   function editionOuverte() { return !!edition; }
   function htmlChoixThemes(t) {
-    var actuel = normaliserTheme(t);
-    return '<div class="choix-themes" id="edition-themes" role="radiogroup" aria-label="Thème de l\'horaire">' +
-      THEMES.map(function (th) {
-        return '<button type="button" class="theme-opt" data-theme-opt="' + th.id + '" role="radio" aria-checked="' +
-          (actuel === th.id) + '"><span class="theme-pastille" style="background:' + th.couleur + '"></span>' +
-          "<span>" + txt(th.nom) + "</span></button>";
-      }).join("") + "</div>";
+    return choixThemesBlocHTML(t, "edition-themes", "Thème de l'horaire");
   }
   function ouvrirEdition(opts) {
     fermerMenus();
@@ -8082,6 +8262,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     voile.classList.remove("sortie");
     voile.hidden = false;
     document.body.classList.add("confirm-ouverte");
+    histOuvrir("edition");
     // Prévisualisation du thème modifié : la fenêtre et le fond suivent
     // la couleur touchée ; fermerEdition restaure le thème en cours.
     if (opts && typeof opts.theme !== "undefined") {
@@ -8092,6 +8273,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   }
   function fermerEdition() {
     if (!edition) return;
+    histFermer("edition");
     // Annulation : on avait prévisualisé un autre thème, on revient à
     // celui de l'horaire affiché. Après un enregistrement c'est le même.
     var restaurer = edition && typeof edition.theme !== "undefined";
@@ -8200,6 +8382,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     voile.classList.remove("sortie");
     voile.hidden = false;
     document.body.classList.add("confirm-ouverte");
+    histOuvrir("echeance");
     setTimeout(function () {
       try { document.getElementById("ech-titre").focus({ preventScroll: true }); } catch (e) { /* jetable */ }
     }, 60);
@@ -8207,6 +8390,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   function fermerEcheance(direct) {
     var voile = document.getElementById("voile-echeance");
     if (!voile || voile.hidden) return;
+    histFermer("echeance");
     echCours = null;
     function fin() {
       voile.hidden = true;
@@ -8235,10 +8419,12 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       heure: document.getElementById("ech-heure").value || "", cree: Date.now()
     });
     ecrireEcheances(echCours, liste);
+    var coursMaj = echCours, depuisPop = pop.classList.contains("visible");
     fermerEcheance(true);
     echNeuf = id; // surbrillance à l'apparition dans le cours
     rendre();
     echNeuf = "";
+    if (depuisPop) rouvrirPopPour(coursMaj);
   });
   document.getElementById("echeance-rail").addEventListener("click", function (e) {
     var b = e.target.closest("[data-ech-type]");
@@ -8265,7 +8451,9 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     }).then(function (ok) {
       if (!ok) return;
       ecrireEcheances(c, echeancesDe(c).filter(function (x) { return x.id !== id; }));
+      var depuisPop = pop.classList.contains("visible");
       rendre();
+      if (depuisPop) rouvrirPopPour(c);
     });
   }
   /* Retrouve la cible d'une échéance à partir de sa clé de rendez-vous :
@@ -8283,6 +8471,35 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     var liste = coursDe(sem, j);
     if (i < 0 || i >= liste.length) return null;
     return { c: liste[i], cle: j + ":" + i };
+  }
+  /* Ajout / suppression d'une échéance : même geste sur téléphone (liste
+     des jours), dans la grille du grand écran (jours sans cours) et dans
+     la bulle de détail d'un cours. Renvoie true si le clic est consommé. */
+  function clicEcheance(e) {
+    var ajout = e.target.closest(".ech-add");
+    if (ajout) {
+      var cible = cibleDeCle(ajout.getAttribute("data-ech-cible"));
+      if (cible) ouvrirEcheance(cible.c);
+      return true;
+    }
+    var suppr = e.target.closest(".ech-suppr");
+    if (suppr) {
+      var ligne = suppr.closest(".ech");
+      var cibleSuppr = ligne && cibleDeCle(ligne.getAttribute("data-ech-cle"));
+      if (cibleSuppr) supprimerEcheance(cibleSuppr.c, suppr.getAttribute("data-ech-suppr"));
+      return true;
+    }
+    return false;
+  }
+  /* La bulle de détail d'un cours est rebâtie à chaque rendu : on la
+     rouvre sur le même cours après un ajout ou une suppression, pour que
+     l'échéance apparaisse (ou disparaisse) sous les yeux. */
+  function rouvrirPopPour(c) {
+    if (!bureau() || !c) return;
+    var boutons = document.querySelectorAll("#cal .ev");
+    for (var i = 0; i < boutons.length; i++) {
+      if (evCal[+boutons[i].getAttribute("data-ev")] === c) { ouvrirPop(boutons[i]); return; }
+    }
   }
 
   function modifierProfil(id) {
@@ -8359,11 +8576,11 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
      Rien n'est stocké côté serveur : le jeton signé décrit l'horaire à
      servir. Un horaire sur mesure (fusion de plusieurs sources) n'a pas
      d'équivalent côté serveur : il garde le fichier local.
-     L'ouverture est une vraie balise (webcal:// sur iPhone), pas un clic
-     fabriqué : le geste du doigt doit porter l'adresse jusqu'à Calendrier,
-     sinon il s'ouvre sans l'abonnement. Le flux est préchauffé pendant que
-     la fenêtre est ouverte — au premier appel, la fonction d'abonnement
-     relit l'école. */
+     L'ouverture est une vraie balise (webcal:// sur iPhone et Android),
+     pas un clic fabriqué : le geste du doigt doit porter l'adresse jusqu'à
+     l'agenda, sinon il s'ouvre sans l'abonnement. Le flux est préchauffé
+     pendant que la fenêtre est ouverte — au premier appel, la fonction
+     d'abonnement relit l'école. */
   var exportCarte = null;   // { p, data, liens } de l'export ouvert
   var exportJeton = 0;      // invalide un chargement si la fenêtre est fermée
   function exportOuvert() { return !document.getElementById("voile-export").hidden; }
@@ -8435,12 +8652,14 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
         });
       });
   }
-  /* Adresse de l'abonnement telle qu'elle doit être ouverte : sur iPhone,
-     webcal:// ouvre directement la boîte « S'abonner » de Calendrier (nom
-     + couleur). Ailleurs, l'adresse https part vers l'application d'agenda
-     (ICSx5 sur Android, Calendrier sur macOS). */
+  /* Adresse de l'abonnement telle qu'elle doit être ouverte : webcal://
+     ouvre directement la boîte « S'abonner » de Calendrier sur iPhone
+     (nom + couleur), et part vers l'application d'agenda sur Android
+     (ICSx5 ou autre qui réclame le schéma webcal) — sans lui, Chrome
+     téléchargerait le .ics au lieu d'ouvrir un agenda. Ailleurs
+     (ordinateur), l'adresse https suffit. */
   function urlOuvrable(url) {
-    return estIOS() ? url.replace(/^https?:\/\//, "webcal://") : url;
+    return (estIOS() || estAndroid()) ? url.replace(/^https?:\/\//, "webcal://") : url;
   }
   /* Préchauffe le flux : c'est l'agenda du téléphone qui le lit, pas la
      page. Au premier appel, la fonction d'abonnement relit l'école
@@ -8638,6 +8857,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     statutExport("Préparation de l'horaire…");
     document.getElementById("voile-export").hidden = false;
     document.body.classList.add("confirm-ouverte");
+    histOuvrir("export");
     setTimeout(function () {
       try { document.getElementById("export-annuler").focus(); } catch (e) { /* jetable */ }
     }, 30);
@@ -8661,6 +8881,9 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       }
       tout.disabled = false;
       parCours.disabled = false;
+      // Repli toujours visible : si l'abonnement n'ouvre aucun agenda
+      // (Android sans app d'abonnement, etc.), le fichier reste une sortie.
+      document.getElementById("export-repli").hidden = false;
       statutExport("");
       // Prépare le lien « tout l'horaire » et préchauffe le flux : le tap
       // doit être une navigation native, et Calendrier doit recevoir un
@@ -8696,7 +8919,9 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
         exportCarte.liens.toutCouleur = couleur;
         majLienAjouter();
         prechaufferFlux(url);
-        statutExport("C'est prêt : touche « Ajouter » pour ouvrir Calendrier.", "ok");
+        statutExport(estIOS()
+          ? "C'est prêt : touche « Ajouter » pour ouvrir Calendrier."
+          : "C'est prêt : touche « Ajouter » pour ouvrir ton agenda.", "ok");
       }, function (err) {
         if (!exportCarte) return;
         statutExport("Impossible de créer l'abonnement" +
@@ -8705,9 +8930,11 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       return;
     }
     // La balise porte l'adresse : la navigation qui suit est celle du
-    // doigt (webcal sur iPhone), donc Calendrier reçoit l'abonnement du
-    // premier coup.
-    statutExport("Calendrier s'ouvre : confirme l'abonnement.", "ok");
+    // doigt (webcal sur iPhone et Android), donc l'agenda reçoit
+    // l'abonnement du premier coup.
+    statutExport(estIOS()
+      ? "Calendrier s'ouvre : confirme l'abonnement."
+      : "Ton agenda s'ouvre : confirme l'abonnement.", "ok");
   });
   document.getElementById("export-par-cours").addEventListener("click", function () {
     if (!exportCarte || !exportCarte.data) return;
@@ -8758,7 +8985,9 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     exportCarte.ajoutes[m] = true;
     var act = b.querySelector(".ec-act");
     if (act) { act.className = "ec-act fait"; act.innerHTML = ICONE_CHECK + "Ajouté"; }
-    statutExport("Calendrier s'ouvre : confirme — sa couleur est déjà proposée.", "ok");
+    statutExport(estIOS()
+      ? "Calendrier s'ouvre : confirme — sa couleur est déjà proposée."
+      : "Ton agenda s'ouvre : confirme — sa couleur est déjà proposée.", "ok");
     setTimeout(function () {
       if (exportCarte && exportCarte.ajoutes[m]) rendreListeCours();
     }, 1500);
@@ -8771,11 +9000,13 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     exportCarte = null;
     var voile = document.getElementById("voile-export");
     if (voile.hidden) return;
+    histFermer("export");
     voile.hidden = true;
     document.body.classList.remove("confirm-ouverte");
   }
   document.getElementById("export-annuler").addEventListener("click", fermerExport);
-  // Sur mesure : le fichier .ics reste le seul export (rien à servir).
+  // Repli universel (sur mesure, ou abonnement sans app d'agenda) :
+  // le fichier .ics est fabriqué sur l'appareil, rien à servir.
   document.getElementById("export-fichier").addEventListener("click", function () {
     if (!exportCarte || !exportCarte.data) return;
     try {
@@ -9077,44 +9308,41 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     } catch (e) { /* jetable */ }
   }
   document.getElementById("jours").addEventListener("click", function (e) {
-    var ajoutEch = e.target.closest(".ech-add");
-    if (ajoutEch) {
-      var cible = cibleDeCle(ajoutEch.getAttribute("data-ech-cible"));
-      if (cible) ouvrirEcheance(cible.c);
-      return;
-    }
-    var supprEch = e.target.closest(".ech-suppr");
-    if (supprEch) {
-      var ligne = supprEch.closest(".ech");
-      var cibleSuppr = ligne && cibleDeCle(ligne.getAttribute("data-ech-cle"));
-      if (cibleSuppr) supprimerEcheance(cibleSuppr.c, supprEch.getAttribute("data-ech-suppr"));
-      return;
-    }
+    if (clicEcheance(e)) return;
     var c = e.target.closest(".cbtn");
     if (c) {
       // Jour à un seul cours : déjà déroulé et non refermable.
       if (c.disabled || (c.closest && c.closest("li.c.seul"))) return;
-      var cle = c.getAttribute("data-cle");
-      var ouvreCours = !coursOuverts[cle];
-      if (ouvreCours) { coursOuverts[cle] = true; } else { delete coursOuverts[cle]; }
-      rendre();
-      if (ouvreCours) {
-        var btnCours = document.querySelector('#jours .cbtn[data-cle="' + cle + '"]');
-        calerDansEcran(btnCours && btnCours.closest ? btnCours.closest("li.c") : btnCours, false);
-      }
+      basculerCours(c.getAttribute("data-cle"));
       return;
     }
     var b = e.target.closest(".day > button");
     if (!b) return;
-    var j = +b.getAttribute("data-jour");
-    var ouvreJour = !joursOuverts[j];
-    if (ouvreJour) { joursOuverts[j] = true; } else { delete joursOuverts[j]; }
-    rendre();
-    if (ouvreJour) {
-      var btnJour = document.querySelector('#jours .day > button[data-jour="' + j + '"]');
-      calerDansEcran(btnJour && btnJour.closest ? btnJour.closest(".day") : btnJour, true);
-    }
+    basculerJour(+b.getAttribute("data-jour"));
   });
+  /* Déplier/replier un jour ou un cours : une classe sur l'élément, pas un
+     nouveau rendu — le détail est déjà dans le DOM (la hauteur est animée
+     en CSS). Un rendu complet ne servait qu'à ça. */
+  function basculerJour(j, ouvrir) {
+    var btn = document.querySelector('#jours .day > button[data-jour="' + j + '"]');
+    var li = btn && btn.closest(".day");
+    if (!li) return;
+    if (ouvrir == null) ouvrir = !joursOuverts[j];
+    if (ouvrir) joursOuverts[j] = true; else delete joursOuverts[j];
+    li.classList.toggle("open", ouvrir);
+    btn.setAttribute("aria-expanded", !!ouvrir);
+    if (ouvrir) calerDansEcran(li, true);
+  }
+  function basculerCours(cle, ouvrir) {
+    var btn = document.querySelector('#jours .cbtn[data-cle="' + cle + '"]');
+    var li = btn && btn.closest("li.c");
+    if (!li) return;
+    if (ouvrir == null) ouvrir = !coursOuverts[cle];
+    if (ouvrir) coursOuverts[cle] = true; else delete coursOuverts[cle];
+    li.classList.toggle("open", ouvrir);
+    btn.setAttribute("aria-expanded", !!ouvrir);
+    if (ouvrir) calerDansEcran(li, false);
+  }
 
   document.getElementById("sem-prec").addEventListener("click", function () {
     var i = SEMAINES.indexOf(sem);
@@ -9135,11 +9363,6 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     }
   }
 
-  /* Clic sur le bouton PDF : ouvre la visionneuse sous le bouton, à la
-     largeur de l'écran. Pendant le téléchargement, le texte d'attente
-     balaie un reflet en boucle ; il disparaît dès que le PDF s'affiche.
-     Un clic sur le PDF n'ouvre rien : le pincement zoome uniquement le
-     PDF, jamais le reste du site. Un second clic sur le bouton masque. */
   /* Clic sur le bouton PDF : ouvre la visionneuse sous le bouton, à la
      largeur de l'écran. Pendant le téléchargement, le texte d'attente
      balaie un reflet en boucle ; il disparaît dès que le PDF s'affiche.
@@ -9272,9 +9495,6 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       var v = localStorage.getItem(CLE_APPARENCE);
       return (v === "clair" || v === "sombre" || v === "systeme") ? v : "systeme";
     } catch (e) { return "systeme"; }
-  }
-  function systemeSombre() {
-    return !!(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
   }
   function rgbVersHex(rgb) {
     var m = String(rgb || "").match(/(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
@@ -9420,13 +9640,17 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     feuille.style.transform = "";
     feuille.classList.add("visible");
     document.body.classList.add("sheet-ouverte");
+    histOuvrir("feuille");
     verifierAdmin(); // révèle « Tableau admin » si le compte est admin
   }
   function fermerFeuille() {
+    if (!feuille.classList.contains("visible")) return;
+    fermerMenus(); // les ⋮ sont sous la feuille : les fermer d'abord
     feuille.classList.remove("dragging");
     feuille.style.transform = "";
     feuille.classList.remove("visible");
     document.body.classList.remove("sheet-ouverte");
+    histFermer("feuille");
   }
   document.getElementById("btn-moi").addEventListener("click", function () {
     if (feuille.classList.contains("visible")) fermerFeuille(); else ouvrirFeuille();
@@ -9628,13 +9852,17 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     voile.classList.remove("sortie");
     voile.hidden = false;
     document.body.classList.add("confirm-ouverte");
+    histOuvrir("bug");
     setTimeout(function () {
       // Le titre d'abord, sauf s'il est déjà rempli (réouverture après un échec).
       var champ = document.getElementById(document.getElementById("bug-sujet").value ? "bug-message" : "bug-sujet");
       try { champ.focus({ preventScroll: true }); } catch (e) { champ.focus(); }
     }, 60);
   }
-  function fermerBug(sansAnim) {    var voile = document.getElementById("voile-bug");
+  function fermerBug(sansAnim) {
+    var voile = document.getElementById("voile-bug");
+    if (voile.hidden) return;
+    histFermer("bug");
     function fin() {
       voile.hidden = true;
       voile.classList.remove("sortie");

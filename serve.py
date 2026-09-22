@@ -75,6 +75,27 @@ ENTETES_SECURITE = {
     "Content-Security-Policy": CSP,
 }
 
+# Mêmes valeurs que vercel.json (garder les deux synchronisés) : « servir
+# la copie en mémoire, vérifier en arrière-plan ». Le HTML ne bloque plus
+# l'ouverture, les scripts et les icônes se rafraîchissent tout seuls.
+CACHE_HTML = "public, max-age=0, stale-while-revalidate=86400"
+CACHE_SCRIPT = "public, max-age=300, stale-while-revalidate=86400"
+CACHE_IMAGE = "public, max-age=86400, stale-while-revalidate=604800"
+EXTENSIONS_IMAGE = ("png", "svg", "ico", "webmanifest")
+
+
+def cache_fichier(chemin):
+    """En-tête de cache d'un fichier servi, d'après son extension."""
+    chemin = chemin.split("?")[0]
+    extension = chemin.rsplit(".", 1)[-1].lower() if "." in chemin.split("/")[-1] else ""
+    if extension == "js":
+        return CACHE_SCRIPT
+    if extension in EXTENSIONS_IMAGE:
+        return CACHE_IMAGE
+    if extension in ("", "html"):
+        return CACHE_HTML
+    return "public, max-age=0, must-revalidate"
+
 
 class Serveur(ThreadingHTTPServer):
     """Écoute en IPv4 ET IPv6 : « localhost » marche quel que soit le navigateur."""
@@ -190,11 +211,13 @@ class Handler(SimpleHTTPRequestHandler):
             self.wfile.write(corps)
 
     def end_headers(self):
-        # Fichiers : même cache que Vercel (revalidation, 304) au lieu de
-        # l'heuristique locale qui pouvait servir un vieux JS sans le dire.
-        # Les points d'entrée de l'API posent le leur (voir repondre_json).
+        # Fichiers : mêmes valeurs que vercel.json (garder les deux
+        # synchronisés) — le navigateur peut servir sa copie tout de suite
+        # et vérifier en arrière-plan, au lieu d'attendre un aller-retour de
+        # revalidation. Les points d'entrée de l'API posent le leur (voir
+        # repondre_json).
         if getattr(self, "statique", False):
-            self.send_header("Cache-Control", "public, max-age=0, must-revalidate")
+            self.send_header("Cache-Control", cache_fichier(self.path))
         for cle, valeur in ENTETES_SECURITE.items():
             self.send_header(cle, valeur)
         super().end_headers()

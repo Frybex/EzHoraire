@@ -341,6 +341,11 @@
   var api = {
     MAX_SOURCES: MAX_SOURCES,
     ECART_MAX_SEMAINES: ECART_MAX_SEMAINES,
+    propre: propre,
+    courtGroupe: courtGroupe,
+    aPrefixe: aPrefixe,
+    memeGroupe: memeGroupe,
+    groupeDans: groupeDans,
     clesCours: clesCours,
     coursDeSource: coursDeSource,
     estParcours: estParcours,
