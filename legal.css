@@ -3,8 +3,9 @@
    cartes. Clair / Sombre suit le réglage de l'app (ezh_apparence), sinon
    le système. */
 :root {
-  --bg: #f4f5f7; --surface: #ffffff; --ink: #17191d; --muted: #626977;
-  --line: #e4e7ec; --accent: #2456e0; --free: #18794e;
+  --bg: #f4f5f7; --surface: #ffffff; --ink: #17191d; --muted: #626977; --faint: #8c93a1;
+  --line: #e4e7ec; --track: #e8eaef; --accent: #2456e0; --accent-soft: rgba(36, 86, 224, .09); --free: #18794e;
+  --c1: #1d4fd7; --c2: #0e8655; --c3: #d14d8a; --c4: #b26a00;
   --relief-haut: color-mix(in srgb, var(--bg), #fff 78%);
   --creux: color-mix(in srgb, var(--bg), #fff 60%);
   --reflet: rgba(255, 255, 255, .9);
@@ -15,8 +16,8 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-apparence="clair"]) {
-    --bg: #101216; --surface: #171a20; --ink: #f0f3f7; --muted: #98a1b1;
-    --line: #262b34; --accent: #8ba6ff; --free: #5fce96;
+    --bg: #101216; --surface: #171a20; --ink: #f0f3f7; --muted: #98a1b1; --faint: #6f7786;
+    --line: #262b34; --track: #20252e; --accent: #8ba6ff; --accent-soft: rgba(139, 166, 255, .13); --free: #5fce96;
     --relief-haut: color-mix(in srgb, var(--bg), #fff 7%);
     --creux: color-mix(in srgb, var(--bg), #000 26%);
     --reflet: rgba(255, 255, 255, .06);
@@ -26,8 +27,8 @@
   }
 }
 :root[data-apparence="sombre"] {
-  --bg: #101216; --surface: #171a20; --ink: #f0f3f7; --muted: #98a1b1;
-  --line: #262b34; --accent: #8ba6ff; --free: #5fce96;
+  --bg: #101216; --surface: #171a20; --ink: #f0f3f7; --muted: #98a1b1; --faint: #6f7786;
+  --line: #262b34; --track: #20252e; --accent: #8ba6ff; --accent-soft: rgba(139, 166, 255, .13); --free: #5fce96;
   --relief-haut: color-mix(in srgb, var(--bg), #fff 7%);
   --creux: color-mix(in srgb, var(--bg), #000 26%);
   --reflet: rgba(255, 255, 255, .06);
@@ -37,7 +38,7 @@
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+html { scroll-behavior: smooth; scroll-padding-top: 84px; }
 body {
   margin: 0; background: var(--bg); color: var(--ink);
   font-family: var(--font); font-size: 16.5px; line-height: 1.62;
@@ -47,8 +48,9 @@ a { color: var(--accent); text-underline-offset: 2px; }
 a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-/* Voiles d'accent, décoratifs, immobiles si l'on limite les animations. */
-.aurore { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+/* Fond plat comme l'app : pas de halos (le div .aurore, s'il reste
+   dans le HTML, est masqué). */
+.aurore { display: none; }
 .aurore::before, .aurore::after {
   content: ""; position: absolute; width: 60vmax; height: 60vmax; border-radius: 50%; filter: blur(80px); opacity: .45;
 }
@@ -71,53 +73,67 @@ a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px soli
   padding: calc(18px + env(safe-area-inset-top)) 16px calc(40px + env(safe-area-inset-bottom));
 }
 
-/* Barre du haut : marque à gauche, retour à l'app à droite. */
-.barre { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 34px; }
-.marque { display: flex; align-items: center; gap: 10px; color: inherit; text-decoration: none; font-weight: 700; font-size: 1.05rem; letter-spacing: -.02em; }
+/* Barre du haut : chevron retour à gauche (comme le dashboard),
+   marque centrée comme sur l'accueil de l'app. */
+.barre { position: relative; display: flex; align-items: center; justify-content: center; min-height: 38px; margin-bottom: 16px; }
+.marque { display: flex; align-items: center; gap: 8px; color: inherit; text-decoration: none; font-weight: 700; font-size: 1rem; letter-spacing: -.02em; }
 .marque svg { flex: none; border-radius: 8px; }
 .marque .ac { color: var(--accent); }
 .retour {
-  display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px;
-  border-radius: 999px; text-decoration: none; color: var(--ink); font-size: .88rem; font-weight: 600;
-  background: var(--relief-haut); box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
-  transition: box-shadow .2s, transform .2s;
+  position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px;
+  color: var(--ink); background: var(--surface); border: 1px solid var(--line);
+  box-shadow: var(--ombre-btn); transition: transform .15s;
 }
-.retour:hover { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 30%, transparent), inset 0 1px 0 var(--reflet), var(--ombre-btn); }
-.retour:active { transform: scale(.98); }
+.retour:active { transform: translateY(-50%) scale(.96); }
 
-/* En-tête du document. */
-.entete { max-width: 760px; margin: 0 0 30px; }
-.sur-titre { margin: 0 0 12px; color: var(--accent); font-size: .72rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+/* Basculer entre les trois documents : même segment que l'app
+   (« Se connecter / Créer un compte »), collant sous le haut de page. */
+.onglets-doc {
+  position: sticky; top: 10px; z-index: 20;
+  display: flex; gap: 2px; max-width: 560px; margin: 0 auto 28px; padding: 3px;
+  background: var(--track); border: 1px solid var(--line); border-radius: 14px;
+  box-shadow: var(--ombre-btn);
+}
+.onglets-doc a {
+  flex: 1; padding: 9px 6px; border-radius: 11px; text-align: center;
+  color: var(--muted); text-decoration: none; font-weight: 650; font-size: .86rem; white-space: nowrap;
+}
+.onglets-doc a:hover { color: var(--ink); }
+.onglets-doc a[aria-current="page"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0, 0, 0, .12); }
+
+/* En-tête du document : gros titre franc comme l'accueil de l'app,
+   sans bandeau générique. */
+.entete { max-width: 760px; margin: 0 0 28px; }
+.sur-titre { margin: 0 0 8px; color: var(--muted); font-size: .82rem; font-weight: 600; letter-spacing: .01em; }
 h1 { margin: 0 0 14px; font-size: clamp(2.1rem, 8.4vw, 3.3rem); line-height: 1.02; letter-spacing: -.05em; font-weight: 760; text-wrap: balance; }
 h1 em { font-style: normal; color: var(--accent); }
-.chapeau { margin: 0 0 18px; color: var(--muted); font-size: 1.06rem; line-height: 1.55; max-width: 60ch; }
-.meta { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
-.meta li {
-  padding: 5px 11px; border-radius: 999px; font-size: .8rem; font-weight: 600; color: var(--muted);
-  background: var(--relief-haut); box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet);
-}
+.chapeau { margin: 0 0 16px; color: var(--muted); font-size: 1.06rem; line-height: 1.55; max-width: 60ch; }
+/* Métadonnées en ligne de texte discret, pas en pastilles. */
+.meta { display: flex; flex-wrap: wrap; gap: 4px 0; margin: 0; padding: 0; list-style: none; color: var(--muted); font-size: .84rem; }
+.meta li { padding: 0; background: none; box-shadow: none; border-radius: 0; font-weight: 500; color: var(--muted); }
+.meta li + li::before { content: "·"; margin: 0 9px; color: var(--faint); font-weight: 700; }
 
-/* L'essentiel : quatre tuiles lisibles en dix secondes. */
+/* L'essentiel : quatre tuiles marquées chacune d'une couleur de cours
+   de l'app (bleu, vert, rose, ocre), sans icônes génériques. */
 .essentiel { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; margin: 0 0 40px; }
 .tuile {
-  position: relative; overflow: hidden; padding: 18px 18px 16px; border-radius: 20px; background: var(--surface);
+  position: relative; overflow: hidden; padding: 16px 18px; border-radius: 20px; background: var(--surface);
   box-shadow: inset 0 0 0 1px var(--line), var(--ombre-carte);
 }
 .tuile::before {
-  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-  background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 25%, var(--surface)));
+  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--accent);
 }
-.tuile .ico {
-  display: grid; place-items: center; width: 38px; height: 38px; margin-bottom: 12px; border-radius: 12px;
-  color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface));
-}
+.essentiel .tuile:nth-child(4n+1)::before { background: var(--c1); }
+.essentiel .tuile:nth-child(4n+2)::before { background: var(--c2); }
+.essentiel .tuile:nth-child(4n+3)::before { background: var(--c3); }
+.essentiel .tuile:nth-child(4n+4)::before { background: var(--c4); }
+.tuile .ico { display: none; }
 .tuile h3 { margin: 0 0 4px; font-size: 1rem; letter-spacing: -.015em; line-height: 1.3; }
 .tuile p { margin: 0; color: var(--muted); font-size: .9rem; line-height: 1.5; }
 @media (max-width: 560px) {
   .essentiel { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 32px; }
-  .tuile { padding: 14px 13px 13px; border-radius: 18px; }
-  .tuile .ico { width: 32px; height: 32px; margin-bottom: 10px; border-radius: 10px; }
-  .tuile .ico svg { width: 17px; height: 17px; }
+  .tuile { padding: 13px; border-radius: 18px; }
   .tuile h3 { font-size: .9rem; }
   .tuile p { font-size: .8rem; line-height: 1.42; }
 }
@@ -151,17 +167,21 @@ h1 em { font-style: normal; color: var(--accent); }
 .sommaire a.actif { color: var(--ink); background: color-mix(in srgb, var(--accent) 9%, transparent); }
 .sommaire a.actif::before { color: var(--accent); }
 
-/* Sections numérotées. */
+/* Sections en cartes comme celles du dashboard, numéros discrets. */
 .texte { counter-reset: sec; min-width: 0; }
-.texte > section { counter-increment: sec; padding: 0 0 34px; margin: 0 0 34px; border-bottom: 1px solid var(--line); }
-.texte > section:last-of-type { border-bottom: 0; margin-bottom: 0; }
+.texte > section {
+  counter-increment: sec; margin: 0 0 16px; padding: 20px; border: 0; border-radius: 20px;
+  background: var(--surface); box-shadow: inset 0 0 0 1px var(--line), var(--ombre-carte);
+}
+.texte > section:last-of-type { margin-bottom: 0; }
+@media (max-width: 560px) { .texte > section { padding: 16px; border-radius: 18px; } }
 .texte h2 {
   display: flex; align-items: baseline; gap: 12px; margin: 0 0 14px;
   font-size: clamp(1.3rem, 4.6vw, 1.55rem); line-height: 1.2; letter-spacing: -.03em; font-weight: 740;
 }
 .texte h2::before {
-  content: counter(sec, decimal-leading-zero); flex: none; font-size: .78rem; font-weight: 700; letter-spacing: .04em;
-  color: var(--accent); font-variant-numeric: tabular-nums; transform: translateY(-2px);
+  content: counter(sec, decimal-leading-zero); flex: none; font-size: .72rem; font-weight: 700; letter-spacing: .04em;
+  color: var(--faint); font-variant-numeric: tabular-nums; transform: translateY(-2px);
 }
 .texte h3 { margin: 22px 0 8px; font-size: 1.02rem; letter-spacing: -.015em; }
 .texte p { margin: 10px 0; overflow-wrap: break-word; }

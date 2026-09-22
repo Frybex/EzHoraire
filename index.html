@@ -1414,16 +1414,29 @@ try {
   }
   #btn-ecole-manquante[aria-expanded="true"] .chev { transform: rotate(225deg); border-color: var(--ink); }
   #form-ecole-manquante { margin-top: 10px; }
-  #form-ecole-manquante .champs { margin-bottom: 14px; }
+  #form-ecole-manquante .champs { margin-bottom: 12px; }
   #form-ecole-manquante .champs.off { opacity: .45; }
+  .ecole-manquante-aide { margin: 0 2px 12px; font-size: .88rem; line-height: 1.5; color: var(--muted); }
   .coche-ligne {
-    display: flex; align-items: flex-start; gap: 10px; margin: 2px 2px 16px;
+    display: flex; align-items: center; gap: 10px; margin: 0 2px 16px;
     font-size: .9rem; line-height: 1.45; color: var(--muted); cursor: pointer;
   }
+  /* Case à cocher dessinée (coins arrondis, comme les cartes et les
+     champs) : le carré natif ne suit pas les rayons du reste. */
   .coche-ligne input {
-    flex: none; width: 22px; height: 22px; margin: 0;
-    accent-color: var(--accent); cursor: pointer;
+    flex: none; position: relative; width: 22px; height: 22px; margin: 0;
+    border: none; border-radius: 7px; cursor: pointer;
+    background: var(--creux);
+    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--muted) 55%, transparent);
+    -webkit-appearance: none; appearance: none;
+    transition: background .2s, box-shadow .2s;
   }
+  .coche-ligne input:checked { background: var(--accent); box-shadow: none; }
+  .coche-ligne input:checked::after {
+    content: ""; position: absolute; left: 7.5px; top: 4.5px; width: 4.6px; height: 9px;
+    border: solid var(--bg); border-width: 0 2.3px 2.3px 0; transform: rotate(45deg);
+  }
+  .coche-ligne input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   #ecole-manquante-status.ok { color: var(--free); }
 
   /* Fenêtre de signalement : rail Bug / Demande (même .seg que les
@@ -3180,25 +3193,26 @@ try {
         <span class="nom">Mon école n'est pas là<small>Dis-nous laquelle, on y jettera un œil</small></span><span class="chev" aria-hidden="true"></span>
       </button>
       <form id="form-ecole-manquante" hidden novalidate>
-        <label class="champ-titre" for="ecole-manquante-nom">Nom de ton école</label>
+        <p class="ecole-manquante-aide">Dis-nous quelle école il te manque. Si tu peux, colle le lien de la page où ton école publie ses horaires : ça nous aide à la brancher plus vite.</p>
         <div class="champs halo">
           <div class="champ-ligne">
+            <svg class="champ-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-5h6v5"/></svg>
             <input class="champ" id="ecole-manquante-nom" type="text" maxlength="120" autocomplete="off" spellcheck="false"
-                   placeholder="ex. Haute École de Namur">
+                   placeholder="Nom de mon école" aria-label="Nom de mon école">
           </div>
         </div>
-        <label class="champ-titre" for="ecole-manquante-lien">Lien du site de ton école avec les horaires</label>
         <div class="champs halo">
           <div class="champ-ligne">
+            <svg class="champ-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.2 1.2"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.2-1.2"/></svg>
             <input class="champ" id="ecole-manquante-lien" type="url" inputmode="url" autocomplete="off" autocorrect="off" spellcheck="false"
-                   placeholder="https://…">
+                   placeholder="Lien vers les horaires de mon école" aria-label="Lien vers les horaires de mon école">
           </div>
         </div>
         <label class="coche-ligne" for="ecole-manquante-sans-lien">
           <input type="checkbox" id="ecole-manquante-sans-lien">
-          <span>Je ne connais pas le site de mon école / je n'ai pas le lien</span>
+          <span>Je ne connais pas le lien</span>
         </label>
-        <button class="primaire halo" id="ecole-manquante-envoyer" type="submit">Envoyer ma demande</button>
+        <button class="btn-ajout halo" id="ecole-manquante-envoyer" type="submit">Envoyer</button>
         <p class="pdf-status" id="ecole-manquante-status" role="status"></p>
       </form>
     </div>
