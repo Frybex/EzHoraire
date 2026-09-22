@@ -30,7 +30,13 @@ PATCH /api/bugs?id=12  (admin)
 
 Env : SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY (+ alias),
   ADMIN_USER_IDS / ADMIN_EMAILS (comme stats.py).
+  Notif email (optionnelle, best-effort) : RESEND_API_KEY + BUGS_NOTIFY_TO
+  (adresse perso de l'admin), BUGS_NOTIFY_FROM (optionnel, défaut
+  "EzHoraire <contact@ezhoraire.be>" — doit appartenir à un domaine
+  vérifié chez Resend). Sans ces variables, aucun mail ne part mais
+  le report est quand même enregistré.
 """
+import html
 import json
 import os
 import re
@@ -179,6 +185,59 @@ def _signer(base, service, chemin):
         return ""
 
 
+def _notifier_resend(typ, bug_id, titre, message, etape, email, user_id, contexte, nb_images):
+    """Prévient l'admin par email via Resend. Best-effort : tout échec est
+    avalé silencieusement — le report est déjà en base, l'utilisateur a
+    déjà sa réponse OK."""
+    cle = _env("RESEND_API_KEY")
+    destinataire = _env("BUGS_NOTIFY_TO")
+    if not cle or not destinataire:
+        return
+    expediteur = _env("BUGS_NOTIFY_FROM") or "EzHoraire <contact@ezhoraire.be>"
+    libelle = "Demande" if typ == "demande" else "Bug"
+    accroche = titre or (message[:60] + ("…" if len(message) > 60 else ""))
+    sujet = "[%s #%d] %s" % (libelle, bug_id, accroche)
+    lignes = [
+        "Nouveau signalement %s #%d" % (libelle.lower(), bug_id),
+        "",
+        "Titre : %s" % (titre or "—"),
+        "Étape : %s" % (etape or "—"),
+        "Email déclarant : %s" % (email or "—"),
+        "Compte : %s" % (user_id or "anonyme"),
+        "Images : %d" % nb_images,
+        "",
+        message,
+    ]
+    try:
+        ctx_txt = json.dumps(contexte, ensure_ascii=False, indent=2)[:2000]
+    except (TypeError, ValueError):
+        ctx_txt = "{}"
+    lignes += ["", "Contexte : " + ctx_txt,
+               "", "Voir : https://www.ezhoraire.be/dashboard.html"]
+    texte = "\n".join(lignes)
+    corps_html = (
+        "<h2>Nouveau signalement %s #%d</h2>"
+        "<p><strong>%s</strong></p>"
+        "<ul><li>Étape : %s</li><li>Email : %s</li>"
+        "<li>Compte : %s</li><li>Images : %d</li></ul>"
+        "<p>%s</p>"
+        "<pre>%s</pre>"
+        '<p><a href="https://www.ezhoraire.be/dashboard.html">Ouvrir le dashboard</a></p>'
+    ) % (html.escape(libelle.lower()), bug_id, html.escape(accroche),
+         html.escape(etape or "—"), html.escape(email or "—"),
+         html.escape(user_id or "anonyme"), nb_images,
+         html.escape(message).replace("\n", "<br>"),
+         html.escape(ctx_txt))
+    try:
+        _requete_json("POST", "https://api.resend.com/emails",
+                      {"Authorization": "Bearer " + cle},
+                      {"from": expediteur, "to": [destinataire],
+                       "subject": sujet, "text": texte, "html": corps_html},
+                      timeout=10)
+    except Exception:  # noqa: BLE001 - un mail raté ne doit jamais faire échouer le report
+        pass
+
+
 class handler(BaseHTTPRequestHandler):
     # ---- POST public : déposer un report ----
     def do_POST(self):
@@ -271,6 +330,11 @@ class handler(BaseHTTPRequestHandler):
         except Exception as e:  # noqa: BLE001
             return _erreur(self, 502, "Base injoignable : " + str(e)[-160:])
         bug_id = (insere[0].get("id") if isinstance(insere, list) and insere else 0) or 0
+        try:
+            _notifier_resend(typ, bug_id, titre, message, etape, email,
+                             user_id or "", contexte, len(chemins))
+        except Exception:  # noqa: BLE001 - ceinture et bretelles, voir _notifier_resend
+            pass
         return repondre_json(self, 200, {"ok": True, "data": {"id": bug_id}})
 
     # ---- GET admin : lire les reports ----
