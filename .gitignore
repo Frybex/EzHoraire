@@ -86,3 +86,4 @@ dashboard.md
 # Brouillons de logos (scripts jetables, chemins propres à cette machine)
 /test_*.py
 logos/propositions/*.py
+rapports-seo/
