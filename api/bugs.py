@@ -42,6 +42,7 @@ import os
 import re
 import sys
 from http.server import BaseHTTPRequestHandler
+from string import Template
 from urllib.error import HTTPError
 from urllib.parse import parse_qs, urlparse
 from urllib.request import Request, urlopen
@@ -170,12 +171,12 @@ def _identite_optionnelle(url, anon, h):
     return str((moi or {}).get("id") or ""), str((moi or {}).get("email") or "")
 
 
-def _signer(base, service, chemin):
-    """URL signée (1 h) pour une image du bucket privé, "" si échec."""
+def _signer(base, service, chemin, expire=3600):
+    """URL signée (1 h par défaut) pour une image du bucket privé, "" si échec."""
     try:
         rep = _requete_json("POST", base + "/storage/v1/object/sign/bug-images/" + chemin,
                             {"apikey": service, "Authorization": "Bearer " + service},
-                            {"expiresIn": 3600}, timeout=15)
+                            {"expiresIn": expire}, timeout=15)
         signe = (rep or {}).get("signedURL") or ""
         # Supabase renvoie un chemin relatif à /storage/v1 ("/object/sign/…").
         if signe.startswith("/storage/v1/"):
@@ -185,7 +186,214 @@ def _signer(base, service, chemin):
         return ""
 
 
-def _notifier_resend(typ, bug_id, titre, message, etape, email, user_id, contexte, nb_images):
+LIEN_DASHBOARD = "https://www.ezhoraire.be/dashboard.html"
+NOMS_ETAPES = {
+    "v-compte": "Connexion", "v-identite": "Nom et prénom", "v-ecole": "Choix de l'école",
+    "v-formation": "Choix de la formation", "v-groupes": "Groupes",
+    "v-horaire": "Horaire", "dashboard": "Dashboard",
+}
+POLICE = ("font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, "
+          "'Helvetica Neue', Arial, sans-serif;")
+
+# Notif mise en page : mêmes tables, mêmes couleurs et même carte que
+# emails/reset-password.html (thème de l'app). Le report y est présenté
+# comme dans la fenêtre de signalement — déclarant, type, titre, message,
+# captures — puis un bouton ouvre le report dans le dashboard.
+GABARIT_NOTIF = Template("""<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark">
+<title>$sujet</title>
+<style>
+  .cta-cell:hover {
+    background-image: linear-gradient(180deg, #ffffff, #fbfbfe) !important;
+    border-color: #c9cfd9 !important;
+  }
+  /* Sombre : Apple Mail, iOS Mail et Outlook.com suivent ces règles ;
+     les autres gardent la version claire, qui reste lisible. */
+  @media (prefers-color-scheme: dark) {
+    .fond { background-color: #101216 !important; }
+    .carte { background-color: #171a20 !important; border-color: #262b34 !important; }
+    .titre { color: #f0f3f7 !important; }
+    .texte { color: #d6dbe4 !important; }
+    .doux { color: #98a1b1 !important; }
+    .creux { background-color: #101216 !important; border-color: #262b34 !important; }
+    .filet { background-color: #262b34 !important; }
+    .lien, .accent { color: #8ba6ff !important; }
+    .cta-cell { background-color: #1a1d24 !important; background-image: linear-gradient(180deg, #212326, #16181c) !important; border-color: #262b34 !important; box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 1px 2px rgba(0,0,0,.4), 0 4px 12px -6px rgba(0,0,0,.6) !important; }
+    .cta-btn { color: #f0f3f7 !important; }
+    .cta-cell:hover {
+      background-image: linear-gradient(180deg, #262a33, #1a1d24) !important;
+      border-color: #3a4150 !important;
+    }
+  }
+  /* Téléphone : on resserre les marges pour garder la carte au large. */
+  @media only screen and (max-width: 520px) {
+    .pad { padding-left: 22px !important; padding-right: 22px !important; }
+    .h1 { font-size: 24px !important; }
+    .cta a { display: block !important; }
+  }
+  a { text-decoration: none; }
+</style>
+</head>
+<body class="fond" style="margin: 0; padding: 0; width: 100%; word-spacing: normal; background-color: #f4f5f7;">
+<!-- Aperçu affiché dans la liste des messages, avant l'ouverture. -->
+<div style="display: none; max-height: 0; overflow: hidden; opacity: 0; color: transparent; visibility: hidden;">
+  $apercu
+  &#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;
+</div>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="fond" style="background-color: #f4f5f7;">
+  <tr>
+    <td align="center" style="padding: 40px 16px 48px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 540px;">
+
+        <!-- Marque : le logo de l'app, puis le mot-symbole « EzHoraire ». -->
+        <tr>
+          <td style="padding: 0 4px 22px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td width="46" height="46" valign="middle" style="width: 46px; height: 46px; background-color: #1a1e26; border-radius: 10px; line-height: 0; font-size: 0;">
+                  <img src="https://www.ezhoraire.be/logo-email.png" width="46" height="46" alt="" style="display: block; width: 46px; height: 46px; border: 0; outline: none; border-radius: 10px;">
+                </td>
+                <td valign="middle" class="titre" style="padding-left: 13px; $police font-size: 19px; font-weight: 700; letter-spacing: -0.02em; color: #17191d;">
+                  Ez<span class="accent" style="color: #2456e0;">Horaire</span>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Carte -->
+        <tr>
+          <td class="carte" style="background-color: #ffffff; border: 1px solid #e4e7ec; border-radius: 24px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+
+              <tr>
+                <td class="pad" style="padding: 34px 34px 8px;">
+                  $identite
+
+                  <p class="accent" style="margin: 0 0 12px; $police font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #2456e0;">$libelle #$numero</p>
+
+                  <h1 class="h1 titre" style="margin: 0 0 14px; $police font-size: 28px; line-height: 1.15; letter-spacing: -0.03em; font-weight: 800; color: #17191d;">$titre</h1>
+
+                  <p class="texte" style="margin: 0 0 24px; $police font-size: 15.5px; line-height: 1.6; color: #3c414b;">$message</p>
+                  $bloc_images
+                </td>
+              </tr>
+
+              <tr>
+                <td class="pad" style="padding: 0 34px;">
+                  <div class="filet" style="height: 1px; background-color: #e4e7ec; font-size: 0; line-height: 1px;">&nbsp;</div>
+                </td>
+              </tr>
+
+              <tr>
+                <td class="pad" style="padding: 22px 34px 30px;">
+                  <p class="doux" style="margin: 0 0 18px; $police font-size: 13px; line-height: 1.6; color: #6d7482;">$meta</p>
+
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="cta" style="margin: 0 0 14px;">
+                    <tr>
+                      <td align="center" class="cta-cell" bgcolor="#f9f9fb" style="background-color: #f9f9fb; background-image: linear-gradient(180deg, #fdfdfd, #f9f9fb); border: 1px solid #e4e7ec; border-radius: 15px; box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 1px 2px rgba(23,32,68,.06), 0 2px 8px -4px rgba(23,32,68,.08);">
+                        <a class="cta-btn" href="$lien" style="display: inline-block; width: 100%; box-sizing: border-box; padding: 16px 24px; $police font-size: 16px; font-weight: 650; letter-spacing: -0.01em; color: #17191d; text-decoration: none; text-align: center; border-radius: 14px;">Voir le report</a>
+                      </td>
+                    </tr>
+                  </table>
+
+                  <p class="doux" style="margin: 0; $police font-size: 12.5px; line-height: 1.55; text-align: center; color: #6d7482;">Ouvre directement ce signalement dans le dashboard EzHoraire.</p>
+                </td>
+              </tr>
+
+            </table>
+          </td>
+        </tr>
+
+        <!-- Pied -->
+        <tr>
+          <td align="center" class="doux" style="padding: 24px 12px 0; $police font-size: 12px; line-height: 1.7; color: #6d7482;">
+            <a class="lien" href="https://www.ezhoraire.be" style="color: #2456e0; text-decoration: none; font-weight: 600;">ezhoraire.be</a>
+            &nbsp;·&nbsp;
+            <a class="lien" href="$dashboard" style="color: #2456e0; text-decoration: none; font-weight: 600;">Dashboard</a>
+            &nbsp;·&nbsp;
+            <a class="lien" href="https://www.ezhoraire.be/confidentialite.html" style="color: #2456e0; text-decoration: none; font-weight: 600;">Confidentialité</a>
+            <br>
+            Email automatique — merci de ne pas y répondre.
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>""")
+
+
+def _email_signalement(typ, bug_id, titre, message, etape, email, contexte, images,
+                       base, service):
+    """Sujet + versions texte et HTML de la notif, au gabarit maison."""
+    libelle = "Demande" if typ == "demande" else "Bug"
+    accroche = titre or (message[:60] + ("…" if len(message) > 60 else ""))
+    sujet = "[%s #%d] %s" % (libelle, bug_id, accroche)
+    lien = "%s#retours-%d" % (LIEN_DASHBOARD, bug_id)
+    declarant = email or "Visiteur anonyme"
+    ctx = contexte if isinstance(contexte, dict) else {}
+    infos = ["Étape : " + (NOMS_ETAPES.get(etape) or etape or "—")]
+    lieu = " ".join(str(ctx.get(c) or "").strip() for c in ("ecole", "formation")).strip()
+    if lieu:
+        infos.append("Contexte : " + lieu)
+    # Les captures vivent dans un bucket privé : URL signée valable
+    # plusieurs jours, le temps de lire la notif (le dashboard, lui,
+    # resignera à chaque ouverture).
+    liens = []
+    for chemin in (images or [])[:3]:
+        url_image = _signer(base, service, chemin, expire=7 * 24 * 3600) if base and service else ""
+        if url_image:
+            liens.append(url_image)
+
+    texte = "\n".join(
+        ["Nouveau signalement %s #%d — %s" % (libelle.lower(), bug_id, accroche),
+         "", "Envoyé en tant que : " + declarant] + infos +
+         ["Images : %d" % len(liens), "", message,
+         "", "Voir le report : " + lien] + ([""] + liens if liens else []))
+
+    bloc_identite = Template(
+        '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 0 0 22px;">'
+        '<tr><td class="creux" style="background-color: #f4f5f7; border: 1px solid #e4e7ec; border-radius: 14px; padding: 13px 16px;">'
+        '<p class="doux" style="margin: 0 0 3px; $police font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #6d7482;">Envoyé en tant que</p>'
+        '<p class="titre" style="margin: 0; $police font-size: 15.5px; font-weight: 650; letter-spacing: -0.01em; color: #17191d; word-break: break-all;">$declarant</p>'
+        '</td></tr></table>').substitute(police=POLICE, declarant=html.escape(declarant))
+
+    bloc_images = ""
+    for numero, url_image in enumerate(liens, 1):
+        bloc_images += (
+            '<tr><td style="padding: 0 0 10px;">'
+            '<a href="%s" style="text-decoration: none;">'
+            '<img src="%s" alt="Capture %d" width="472" style="display: block; width: 100%%; max-width: 100%%; height: auto; border: 1px solid #e4e7ec; border-radius: 14px; outline: none;">'
+            '</a></td></tr>') % (lien, html.escape(url_image, quote=True), numero)
+    if bloc_images:
+        bloc_images = (
+            '<table role="presentation" width="100%%" cellpadding="0" cellspacing="0" border="0" style="margin: 0 0 26px;">'
+            '<tr><td class="doux" style="padding: 0 0 9px; %s font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #6d7482;">Capture%s</td></tr>'
+            '%s</table>') % (POLICE, "s" if len(liens) > 1 else "", bloc_images)
+
+    corps_html = GABARIT_NOTIF.substitute(
+        sujet=html.escape(sujet), apercu=html.escape("Nouveau signalement %s #%d — %s"
+                                                     % (libelle.lower(), bug_id, accroche)),
+        identite=bloc_identite, libelle=libelle, numero=bug_id,
+        titre=html.escape(titre or accroche),
+        message=html.escape(message).replace("\n", "<br>"),
+        bloc_images=bloc_images,
+        meta=" &nbsp;·&nbsp; ".join(html.escape(x) for x in infos),
+        lien=lien, dashboard=LIEN_DASHBOARD, police=POLICE)
+    return sujet, texte, corps_html
+
+
+def _notifier_resend(typ, bug_id, titre, message, etape, email, contexte, images,
+                     base, service):
     """Prévient l'admin par email via Resend. Best-effort : le report est
     déjà en base et l'utilisateur a déjà sa réponse OK, un échec ne doit
     donc jamais remonter — mais il est journalisé (stderr, visible dans
@@ -198,40 +406,8 @@ def _notifier_resend(typ, bug_id, titre, message, etape, email, user_id, context
               "absente de l'environnement." % bug_id, file=sys.stderr)
         return
     expediteur = _env("BUGS_NOTIFY_FROM") or "EzHoraire <contact@ezhoraire.be>"
-    libelle = "Demande" if typ == "demande" else "Bug"
-    accroche = titre or (message[:60] + ("…" if len(message) > 60 else ""))
-    sujet = "[%s #%d] %s" % (libelle, bug_id, accroche)
-    lignes = [
-        "Nouveau signalement %s #%d" % (libelle.lower(), bug_id),
-        "",
-        "Titre : %s" % (titre or "—"),
-        "Étape : %s" % (etape or "—"),
-        "Email déclarant : %s" % (email or "—"),
-        "Compte : %s" % (user_id or "anonyme"),
-        "Images : %d" % nb_images,
-        "",
-        message,
-    ]
-    try:
-        ctx_txt = json.dumps(contexte, ensure_ascii=False, indent=2)[:2000]
-    except (TypeError, ValueError):
-        ctx_txt = "{}"
-    lignes += ["", "Contexte : " + ctx_txt,
-               "", "Voir : https://www.ezhoraire.be/dashboard.html"]
-    texte = "\n".join(lignes)
-    corps_html = (
-        "<h2>Nouveau signalement %s #%d</h2>"
-        "<p><strong>%s</strong></p>"
-        "<ul><li>Étape : %s</li><li>Email : %s</li>"
-        "<li>Compte : %s</li><li>Images : %d</li></ul>"
-        "<p>%s</p>"
-        "<pre>%s</pre>"
-        '<p><a href="https://www.ezhoraire.be/dashboard.html">Ouvrir le dashboard</a></p>'
-    ) % (html.escape(libelle.lower()), bug_id, html.escape(accroche),
-         html.escape(etape or "—"), html.escape(email or "—"),
-         html.escape(user_id or "anonyme"), nb_images,
-         html.escape(message).replace("\n", "<br>"),
-         html.escape(ctx_txt))
+    sujet, texte, corps_html = _email_signalement(typ, bug_id, titre, message, etape, email,
+                                                  contexte, images, base, service)
     try:
         # Cloudflare (devant api.resend.com) refuse le User-Agent par défaut
         # d'urllib avec un 403 « error code: 1010 » : d'où cet en-tête.
@@ -350,7 +526,7 @@ class handler(BaseHTTPRequestHandler):
         bug_id = (insere[0].get("id") if isinstance(insere, list) and insere else 0) or 0
         try:
             _notifier_resend(typ, bug_id, titre, message, etape, email,
-                             user_id or "", contexte, len(chemins))
+                             contexte, chemins, url.rstrip("/"), service)
         except Exception:  # noqa: BLE001 - ceinture et bretelles, voir _notifier_resend
             pass
         return repondre_json(self, 200, {"ok": True, "data": {"id": bug_id}})

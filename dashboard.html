@@ -659,7 +659,14 @@ catch (e) { /* navigation privée */ }
   var ONGLETS = ["apercu", "comptes", "retours"];
   function ongletDepuisAdresse() {
     var h = (location.hash || "").replace("#", "");
+    // #retours-12 (lien depuis la notif mail) ouvre l'onglet Retours et
+    // déplie le report 12 une fois la liste chargée.
+    if (h.indexOf("retours") === 0) return "retours";
     return ONGLETS.indexOf(h) >= 0 ? h : "apercu";
+  }
+  function cibleDepuisAdresse() {
+    var m = /^retours-(\d+)$/.exec((location.hash || "").replace("#", ""));
+    return m ? +m[1] : 0;
   }
   function montrerOnglet(o, defiler) {
     vue.onglet = o;
@@ -980,7 +987,7 @@ catch (e) { /* navigation privée */ }
 
   /* ---------- Retours : bugs & demandes (via /api/bugs) ---------- */
   var bugs = null, reqBugs = 0;
-  var vueBugs = { filtre: "bug", ouvert: null };
+  var vueBugs = { filtre: "bug", ouvert: null, cible: 0 };
   var NOMS_STATUT = { nouveau: "Nouveau", en_cours: "En cours", corrige: "Corrigé" };
   var NOMS_ETAPE = { "v-compte": "Connexion", "v-identite": "Nom et prénom", "v-ecole": "Choix de l'école",
     "v-formation": "Choix de la formation", "v-groupes": "Groupes", "v-horaire": "Horaire", dashboard: "Dashboard" };
@@ -1030,7 +1037,7 @@ catch (e) { /* navigation privée */ }
     var t = typeDe(b), ouvert = vueBugs.ouvert === b.id;
     var meta = [b.email || "Anonyme", ilya(b.created_at)];
     if (NOMS_ETAPE[b.etape]) meta.push(NOMS_ETAPE[b.etape]);
-    var html = '<li><button class="retour-l" data-b="' + b.id + '" aria-expanded="' + ouvert + '">' +
+    var html = '<li id="retour-' + b.id + '"><button class="retour-l" data-b="' + b.id + '" aria-expanded="' + ouvert + '">' +
       '<span class="ic ' + (b.statut === "corrige" ? "" : t) + '">' + ICONES_TYPE[t] + "</span>" +
       '<span class="t">' + (b.statut === "nouveau" ? '<span class="point" aria-label="Nouveau"></span>' : "") +
       txt(titreDe(b)) + "</span>" +
@@ -1053,6 +1060,20 @@ catch (e) { /* navigation privée */ }
     return html + "</li>";
   }
   function rendreBugs() {
+    // Lien de la notif mail (#retours-12) : bon filtre, report déplié et
+    // amené à l'écran, une seule fois (ensuite la liste redevient libre).
+    if (bugs && vueBugs.cible) {
+      var vise = bugs.filter(function (x) { return x.id === vueBugs.cible; })[0];
+      vueBugs.cible = 0;
+      if (vise) {
+        vueBugs.filtre = vise.statut === "corrige" ? "corrige" : typeDe(vise);
+        vueBugs.ouvert = vise.id;
+        rendreBugs();
+        var ligne = document.getElementById("retour-" + vise.id);
+        if (ligne) ligne.scrollIntoView({ block: "center" });
+        return;
+      }
+    }
     filtresBugs();
     var nouveaux = bugs ? bugs.filter(function (b) { return b.statut === "nouveau"; }).length : 0;
     var pastille = $("retours-pastille");
@@ -1184,7 +1205,11 @@ catch (e) { /* navigation privée */ }
     charger();
   });
   $("rafraichir").addEventListener("click", function () { if (sb) charger(); });
-  window.addEventListener("hashchange", function () { montrerOnglet(ongletDepuisAdresse(), true); });
+  window.addEventListener("hashchange", function () {
+    vueBugs.cible = cibleDepuisAdresse();
+    montrerOnglet(ongletDepuisAdresse(), true);
+    if (bugs) rendreBugs();
+  });
 
   var g = $("graph");
   g.addEventListener("pointermove", survol);
@@ -1258,6 +1283,7 @@ catch (e) { /* navigation privée */ }
     largeur = window.innerWidth;
   });
 
+  vueBugs.cible = cibleDepuisAdresse();
   montrerOnglet(ongletDepuisAdresse(), false);
   fetch("api/config", { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (rep) {
     var s = (rep && rep.supabase) || {};
