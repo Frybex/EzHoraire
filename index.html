@@ -7933,6 +7933,12 @@ try {
     var auj = new Date();
     return jourEch(e.date).getTime() < new Date(auj.getFullYear(), auj.getMonth(), auj.getDate()).getTime();
   }
+  /* Le jour affiché (la séance ou le jour même) tombe après la date
+     butoir : l'échéance ne s'y accroche plus, elle ne suit le cours que
+     jusqu'au jour où elle est due. */
+  function echApresDate(e, dateJour) {
+    return !!dateJour && e.date < isoEch(dateJour);
+  }
   function trierEcheances(liste) {
     return liste.slice().sort(function (a, b) {
       var ka = a.date + (a.heure || ""), kb = b.date + (b.heure || "");
@@ -7942,7 +7948,9 @@ try {
   var ICONE_CROIX = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
     'stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
   function listeEcheancesHTML(liste, cleCours, dateJour) {
-    var items = trierEcheances(liste), html = '<ul class="ech-liste">';
+    var items = trierEcheances(liste).filter(function (e) { return !echApresDate(e, dateJour); });
+    if (!items.length) return "";
+    var html = '<ul class="ech-liste">';
     for (var i = 0; i < items.length; i++) {
       var e = items[i], examen = e.type === "examen";
       // Le jour affiché porte déjà la date : on ne la répète que pour une
@@ -7962,7 +7970,10 @@ try {
      (+ le nombre d'autres). Sert d'étiquette sur téléphone et de pastille
      dans la grille du grand écran. */
   function resumeEcheances(c) {
-    var liste = trierEcheances(echeancesDe(c).filter(function (e) { return !echPassee(e); }));
+    var dateJour = dateSemJour(sem, c.jour);
+    var liste = trierEcheances(echeancesDe(c).filter(function (e) {
+      return !echPassee(e) && !echApresDate(e, dateJour);
+    }));
     if (!liste.length) return null;
     var examen = liste[0].type === "examen";
     var texte = examen ? "Examen" : "Devoir";
@@ -8007,13 +8018,13 @@ try {
         var noms = (c.srcs || [c.src]).map(function (i) { return nomSource(profil.sources[i]); }).filter(Boolean);
         if (noms.length) sub += '<div class="src"><span class="k">Source : </span>' + txt(noms.join(" et ")) + "</div>";
       }
-      var ech = echeancesDe(c);
+      var ech = listeEcheancesHTML(echeancesDe(c), cle, dateJour);
       html += '<div class="csub"><div><div class="csub-in">' +
         '<div class="infos">' + sub + "</div>" +
         '<button type="button" class="ech-add" data-ech-cible="' + txt(cle) + '" ' +
         'aria-label="Ajouter un devoir ou un examen à ce cours" title="Ajouter un devoir ou un examen">' +
         ICONE_PLUS + "<span>Échéance</span></button>" +
-        (ech.length ? listeEcheancesHTML(ech, cle, dateJour) : "") +
+        ech +
         "</div></div></div>";
       html += "</li>";
       if (i < cours.length - 1) {
@@ -8025,10 +8036,10 @@ try {
     // Une échéance posée un jour sans cours se range à part : si ce jour a
     // des cours dans une autre semaine, on la liste quand même (sans le
     // bouton, réservé aux jours vides).
-    var echJour = echeancesJour(jour);
-    if (echJour.length) {
+    var echJour = listeEcheancesHTML(echeancesJour(jour), cleJourEch(jour), dateJour);
+    if (echJour) {
       html += '<div class="csub-in"><div class="infos jour-creux"><div>Échéance du jour</div></div>' +
-        listeEcheancesHTML(echJour, cleJourEch(jour), dateJour) + "</div>";
+        echJour + "</div>";
     }
     return html + "</div></div>";
   }
@@ -8037,7 +8048,7 @@ try {
      au-dessus — le bouton est le seul point d'entrée de ce jour-là. */
   function detailJourVide(jour) {
     var cle = cleJourEch(jour);
-    var ech = echeancesJour(jour);
+    var ech = listeEcheancesHTML(echeancesJour(jour), cle, dateSemJour(sem, jour));
     var quoi = estFerie(sem, jour)
       ? "Jour férié" + (FERIES_NOMS[numJour(sem, jour)] ? " — " + txt(FERIES_NOMS[numJour(sem, jour)]) : "") + "."
       : "Aucun cours ce jour-là.";
@@ -8046,7 +8057,7 @@ try {
       '<button type="button" class="ech-add" data-ech-cible="' + txt(cle) + '" ' +
       'aria-label="Ajouter un devoir ou un examen à ce jour" title="Ajouter un devoir ou un examen">' +
       ICONE_PLUS + "<span>Échéance</span></button>" +
-      (ech.length ? listeEcheancesHTML(ech, cle, dateSemJour(sem, jour)) : "") +
+      ech +
       "</div></div></div>";
   }
 
@@ -8392,12 +8403,12 @@ try {
       if (!d.cours.length) {
         // Jour sans cours : mêmes échéances que sur téléphone (rangées
         // sous la clé « jour|| »), avec le bouton pour en poser une.
-        var echJour = echeancesJour(d.j);
+        var echJour = listeEcheancesHTML(echeancesJour(d.j), cleJourEch(d.j), date);
         corps += '<div class="cal-libre' + (estFerie(sem, d.j) ? " ferie" : "") + '"' +
           (estFerie(sem, d.j) ? ' title="' + txt(nomFerie(sem, d.j)) + '"' : "") + ">" +
           '<div class="libre-boite">' +
           "<p><strong>" + (estFerie(sem, d.j) ? txt(nomFerie(sem, d.j)) : "Pas de cours") + "</strong></p>" +
-          (echJour.length ? listeEcheancesHTML(echJour, cleJourEch(d.j), date) : "") +
+          echJour +
           '<button type="button" class="ech-add libre-add" data-ech-cible="' + txt(cleJourEch(d.j)) + '" ' +
           'aria-label="Ajouter un devoir ou un examen à ce jour" title="Ajouter un devoir ou un examen">' +
           ICONE_PLUS + "<span>Échéance</span></button>" +
@@ -8455,11 +8466,11 @@ try {
     if (codeMatiere(c.matiere)) d += "<dt>Code</dt><dd>" + txt(codeMatiere(c.matiere)) + "</dd>";
     // Échéances du cours : la même liste que sur téléphone, et de quoi en
     // ajouter une sans quitter la bulle.
-    var ech = echeancesDe(c), cleEch = cleRenduCours(c);
+    var cleEch = cleRenduCours(c);
+    var listeEch = listeEcheancesHTML(echeancesDe(c), cleEch, date);
     var blocEch = '<div class="pop-ech">' +
       '<p class="pop-ech-titre">Échéances</p>' +
-      (ech.length ? listeEcheancesHTML(ech, cleEch, date)
-                  : '<p class="pop-ech-vide">Aucune échéance pour ce cours.</p>') +
+      (listeEch || '<p class="pop-ech-vide">Aucune échéance pour ce cours.</p>') +
       '<button type="button" class="ech-add pop-ech-add" data-ech-cible="' + txt(cleEch) + '">' +
       ICONE_PLUS + "<span>Ajouter un devoir ou un examen</span></button></div>";
     return '<p class="pt">' + txt(nettoyerMatiere(c.matiere || "Cours")) + "</p>" +
