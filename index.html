@@ -7638,7 +7638,7 @@ try {
       "</div></div></div>";
   }
 
-  function rendre() {
+  function rendre(garderPop) {
     if (!SEMAINES.length) {
       document.getElementById("horaire-contenu").hidden = true;
       rendreSemaines();
@@ -7723,7 +7723,7 @@ try {
     }
     // Chaque vue ne construit que ce qu'elle affiche : la grille sur
     // ordinateur, la liste de jours sur téléphone (voir le CSS).
-    if (surPC) rendreCal();
+    if (surPC) rendreCal(garderPop);
     rendreInfos();
   }
 
@@ -7940,8 +7940,8 @@ try {
     return res;
   }
   var evCal = [];
-  function rendreCal() {
-    fermerPop();
+  function rendreCal(garderPop) {
+    if (!garderPop) fermerPop();
     var jours = [], debut = 8 * 60, fin = 18 * 60;
     // Une longue séance du soir (UMONS : « événement » jusqu'à 22h15)
     // étirerait la grille et écraserait toutes les cases de la semaine :
@@ -8028,15 +8028,9 @@ try {
     pop.classList.remove("visible");
     histFermer("pop");
   }
-  function ouvrirPop(btn) {
-    var c = evCal[+btn.getAttribute("data-ev")];
-    if (!c) return;
-    if (popSource) {
-      popSource.classList.remove("actif");
-      popSource = null;
-      pop.classList.remove("visible");
-    }
-    histOuvrir("pop");
+  /* Contenu de la bulle pour un cours (titre, détails, échéances). */
+  function contenuPop(c) {
+    var date = dateSemJour(sem, c.jour);
     var d = "";
     d += "<dt>Salle</dt><dd>" + (c.salles ? txt(c.salles.replace(/, ([^,]*)$/, " et $1")) : '<span class="nc">non communiquée</span>') + "</dd>";
     if (c.profs) d += "<dt>Prof</dt><dd>" + txt(c.profs) + "</dd>";
@@ -8046,10 +8040,6 @@ try {
       if (nomsSrc.length) d += "<dt>Source</dt><dd>" + txt(nomsSrc.join(" et ")) + "</dd>";
       if (enConflit(c, sem)) d += '<dt>Attention</dt><dd>Chevauche un cours d\'une autre source</dd>';
     }
-    var date = dateSemJour(sem, c.jour);
-    var tc = couleurCours(c.matiere);
-    pop.style.setProperty("--h", tc.h);
-    pop.style.setProperty("--v", tc.v);
     if (codeMatiere(c.matiere)) d += "<dt>Code</dt><dd>" + txt(codeMatiere(c.matiere)) + "</dd>";
     // Échéances du cours : la même liste que sur téléphone, et de quoi en
     // ajouter une sans quitter la bulle.
@@ -8060,9 +8050,12 @@ try {
                   : '<p class="pop-ech-vide">Aucune échéance pour ce cours.</p>') +
       '<button type="button" class="ech-add pop-ech-add" data-ech-cible="' + txt(cleEch) + '">' +
       ICONE_PLUS + "<span>Ajouter un devoir ou un examen</span></button></div>";
-    pop.innerHTML = '<p class="pt">' + txt(nettoyerMatiere(c.matiere || "Cours")) + "</p>" +
+    return '<p class="pt">' + txt(nettoyerMatiere(c.matiere || "Cours")) + "</p>" +
       '<p class="ph">' + JOURS[c.jour] + " " + fmtDate(date) + " · " + fmtH(c.debut) + " – " + fmtH(c.fin) + "</p>" +
       "<dl>" + d + "</dl>" + blocEch;
+  }
+  /* Place la bulle à côté du bloc cliqué et l'allume. */
+  function placerPop(btn) {
     var r = btn.getBoundingClientRect(), w = pop.offsetWidth, hp = pop.offsetHeight;
     var x = r.right + 12;
     if (x + w > window.innerWidth - 16) x = r.left - w - 12;
@@ -8070,9 +8063,46 @@ try {
     var y = Math.max(88, Math.min(window.innerHeight - hp - 16, r.top));
     pop.style.left = x + "px";
     pop.style.top = y + "px";
+    if (popSource && popSource !== btn) popSource.classList.remove("actif");
     popSource = btn;
     btn.classList.add("actif");
     pop.classList.add("visible");
+  }
+  function ouvrirPop(btn) {
+    var c = evCal[+btn.getAttribute("data-ev")];
+    if (!c) return;
+    if (popSource) {
+      popSource.classList.remove("actif");
+      popSource = null;
+      pop.classList.remove("visible");
+    }
+    histOuvrir("pop");
+    var tc = couleurCours(c.matiere);
+    pop.style.setProperty("--h", tc.h);
+    pop.style.setProperty("--v", tc.v);
+    pop.innerHTML = contenuPop(c);
+    placerPop(btn);
+  }
+  /* Le bloc de la grille qui porte un cours (après un rendu). */
+  function blocCours(c) {
+    var boutons = document.querySelectorAll("#cal .ev");
+    for (var i = 0; i < boutons.length; i++) {
+      if (evCal[+boutons[i].getAttribute("data-ev")] === c) return boutons[i];
+    }
+    return null;
+  }
+  /* Met à jour la bulle déjà ouverte après un rendu, sans toucher à
+     l'historique : l'entrée « pop » empilée reste valable. Refermer la
+     bulle puis la rouvrir dans la foulée (ce que faisait l'ajout) lançait
+     deux history.back() asynchrones suivis d'un pushState : sur Chrome, la
+     pile de l'app et l'historique du navigateur se désynchronisaient, et
+     le clic suivant quittait l'application. */
+  function rafraichirPop(c) {
+    if (!c || !pop.classList.contains("visible")) return;
+    var btn = blocCours(c);
+    if (!btn) { fermerPop(); return; }
+    pop.innerHTML = contenuPop(c);
+    placerPop(btn);
   }
   document.getElementById("cal").addEventListener("click", function (e) {
     if (clicEcheance(e)) return;
@@ -8421,9 +8451,9 @@ try {
     var coursMaj = echCours, depuisPop = pop.classList.contains("visible");
     fermerEcheance(true);
     echNeuf = id; // surbrillance à l'apparition dans le cours
-    rendre();
+    rendre(depuisPop);
     echNeuf = "";
-    if (depuisPop) rouvrirPopPour(coursMaj);
+    if (depuisPop) rafraichirPop(coursMaj);
   });
   document.getElementById("echeance-rail").addEventListener("click", function (e) {
     var b = e.target.closest("[data-ech-type]");
@@ -8451,8 +8481,8 @@ try {
       if (!ok) return;
       ecrireEcheances(c, echeancesDe(c).filter(function (x) { return x.id !== id; }));
       var depuisPop = pop.classList.contains("visible");
-      rendre();
-      if (depuisPop) rouvrirPopPour(c);
+      rendre(depuisPop);
+      if (depuisPop) rafraichirPop(c);
     });
   }
   /* Retrouve la cible d'une échéance à partir de sa clé de rendez-vous :
@@ -8489,16 +8519,6 @@ try {
       return true;
     }
     return false;
-  }
-  /* La bulle de détail d'un cours est rebâtie à chaque rendu : on la
-     rouvre sur le même cours après un ajout ou une suppression, pour que
-     l'échéance apparaisse (ou disparaisse) sous les yeux. */
-  function rouvrirPopPour(c) {
-    if (!bureau() || !c) return;
-    var boutons = document.querySelectorAll("#cal .ev");
-    for (var i = 0; i < boutons.length; i++) {
-      if (evCal[+boutons[i].getAttribute("data-ev")] === c) { ouvrirPop(boutons[i]); return; }
-    }
   }
 
   function modifierProfil(id) {
