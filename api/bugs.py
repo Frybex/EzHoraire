@@ -186,12 +186,16 @@ def _signer(base, service, chemin):
 
 
 def _notifier_resend(typ, bug_id, titre, message, etape, email, user_id, contexte, nb_images):
-    """Prévient l'admin par email via Resend. Best-effort : tout échec est
-    avalé silencieusement — le report est déjà en base, l'utilisateur a
-    déjà sa réponse OK."""
+    """Prévient l'admin par email via Resend. Best-effort : le report est
+    déjà en base et l'utilisateur a déjà sa réponse OK, un échec ne doit
+    donc jamais remonter — mais il est journalisé (stderr, visible dans
+    les logs Vercel) pour pouvoir diagnostiquer une notif qui ne part
+    pas."""
     cle = _env("RESEND_API_KEY")
     destinataire = _env("BUGS_NOTIFY_TO")
     if not cle or not destinataire:
+        print("Resend : notif bug #%s ignorée — RESEND_API_KEY ou BUGS_NOTIFY_TO "
+              "absente de l'environnement." % bug_id, file=sys.stderr)
         return
     expediteur = _env("BUGS_NOTIFY_FROM") or "EzHoraire <contact@ezhoraire.be>"
     libelle = "Demande" if typ == "demande" else "Bug"
@@ -229,13 +233,24 @@ def _notifier_resend(typ, bug_id, titre, message, etape, email, user_id, context
          html.escape(message).replace("\n", "<br>"),
          html.escape(ctx_txt))
     try:
-        _requete_json("POST", "https://api.resend.com/emails",
-                      {"Authorization": "Bearer " + cle},
-                      {"from": expediteur, "to": [destinataire],
-                       "subject": sujet, "text": texte, "html": corps_html},
-                      timeout=10)
-    except Exception:  # noqa: BLE001 - un mail raté ne doit jamais faire échouer le report
-        pass
+        rep = _requete_json("POST", "https://api.resend.com/emails",
+                            {"Authorization": "Bearer " + cle},
+                            {"from": expediteur, "to": [destinataire],
+                             "subject": sujet, "text": texte, "html": corps_html},
+                            timeout=10)
+        identifiant = (rep or {}).get("id") or "?"
+        print(("Resend : notif bug #%s envoyée à %s (id %s)."
+               % (bug_id, destinataire, identifiant))[:400], file=sys.stderr)
+    except HTTPError as e:
+        try:
+            detail = e.read().decode("utf-8", "replace")
+        except Exception:  # noqa: BLE001
+            detail = ""
+        print(("Resend : notif bug #%s refusée — HTTP %s %s"
+               % (bug_id, e.code, detail))[:700], file=sys.stderr)
+    except Exception as e:  # noqa: BLE001 - un mail raté ne doit jamais faire échouer le report
+        print(("Resend : notif bug #%s en échec — %s: %s"
+               % (bug_id, type(e).__name__, e))[:700], file=sys.stderr)
 
 
 class handler(BaseHTTPRequestHandler):
