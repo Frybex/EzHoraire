@@ -11,8 +11,11 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="EzHoraire">
-<title>EzHoraire — Horaire étudiant HEH, UMONS, Condorcet, HELB, ULB, UCLouvain</title>
-<meta name="description" content="Horaire de cours étudiant en Belgique : HEH, UMONS, Condorcet, HELB, ULB et UCLouvain, lisible sur téléphone et à jour à chaque visite. Gratuit, sans pub.">
+<title>EzHoraire — Ton horaire étudiant clair et à jour (HEH, UMONS, ULB...)</title>
+<meta name="description" content="EzHoraire : l'application gratuite pour consulter ton horaire étudiant en Belgique (HEH, UMONS, Condorcet, HELB, ULB, UCLouvain). Lisible sur mobile, sans pub et synchronisé.">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+<meta name="keywords" content="ezhoraire, ez horaire, horaire etudiant belgique, horaire heh, horaire umons, horaire ulb, horaire condorcet, horaire helb, horaire uclouvain, planning etudiant">
+<meta name="google-site-verification" content="5OqtRI0uRCKGJNHKW6TTkrJHEd-2tEtqtsN_WkNgH_Y">
 <link rel="canonical" href="https://www.ezhoraire.be/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="EzHoraire">
@@ -42,14 +45,26 @@
 <script defer src="/favicon.js?v=3"></script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
-{"@type":"Organization","@id":"https://www.ezhoraire.be/#org","name":"EzHoraire","url":"https://www.ezhoraire.be/","logo":"https://www.ezhoraire.be/icon-512.png","email":"contact@ezhoraire.be","areaServed":"BE"},
-{"@type":"WebSite","@id":"https://www.ezhoraire.be/#site","url":"https://www.ezhoraire.be/","name":"EzHoraire","inLanguage":"fr-BE","publisher":{"@id":"https://www.ezhoraire.be/#org"}}
+{"@type":"Organization","@id":"https://www.ezhoraire.be/#org","name":"EzHoraire","alternateName":["Ez Horaire","ezhoraire","Easy Horaire","EzHoraire Belgique"],"url":"https://www.ezhoraire.be/","logo":{"@type":"ImageObject","url":"https://www.ezhoraire.be/icon-512.png","width":512,"height":512},"email":"contact@ezhoraire.be","areaServed":{"@type":"Country","name":"Belgique"},"description":"Application et plateforme gratuite de consultation des horaires d'étudiants en Belgique (HEH, UMONS, Condorcet, HELB, ULB, UCLouvain)."},
+{"@type":"WebSite","@id":"https://www.ezhoraire.be/#site","url":"https://www.ezhoraire.be/","name":"EzHoraire","alternateName":["Ez Horaire","ezhoraire"],"inLanguage":"fr-BE","publisher":{"@id":"https://www.ezhoraire.be/#org"}},
+{"@type":"WebApplication","@id":"https://www.ezhoraire.be/#app","name":"EzHoraire","alternateName":["Ez Horaire","ezhoraire"],"applicationCategory":"EducationalApplication","operatingSystem":"All","browserRequirements":"Requires JavaScript. Requires HTML5.","url":"https://www.ezhoraire.be/","description":"Consulte et synchronise ton horaire étudiant en Belgique (HEH, UMONS, Condorcet, HELB, ULB, UCLouvain) lisible sur mobile, sans pub et gratuit.","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"inLanguage":"fr-BE"},
+{"@type":"FAQPage","@id":"https://www.ezhoraire.be/#faq","mainEntity":[
+{"@type":"Question","name":"Qu'est-ce qu'EzHoraire ?","acceptedAnswer":{"@type":"Answer","text":"EzHoraire est une application web gratuite conçue pour simplifier la consultation des horaires de cours des universités et hautes écoles belges (HEH, UMONS, Condorcet, HELB, ULB, UCLouvain)."}},
+{"@type":"Question","name":"EzHoraire est-il gratuit ?","acceptedAnswer":{"@type":"Answer","text":"Oui, EzHoraire est 100 % gratuit et sans aucune publicité."}},
+{"@type":"Question","name":"Comment synchroniser mon horaire sur Google Agenda ou Apple Calendrier ?","acceptedAnswer":{"@type":"Answer","text":"Depuis l'application EzHoraire, un bouton d'export permet de générer un lien d'abonnement iCal / ICS synchronisé en temps réel avec ton agenda favori."}},
+{"@type":"Question","name":"Quelles universités et hautes écoles sont disponibles ?","acceptedAnswer":{"@type":"Answer","text":"EzHoraire prend actuellement en charge la HEH, l'UMONS, la Haute École Condorcet, la HELB Ilya Prigogine, l'ULB et l'UCLouvain."}}
+]}
 ]}
 </script>
 <script>
 /* Apparence (Clair / Sombre / Système) posée avant le premier rendu : pas d'éclair. */
 try { var _a = localStorage.getItem("ezh_apparence"); document.documentElement.setAttribute("data-apparence", (_a === "clair" || _a === "sombre") ? _a : "systeme"); }
 catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); }
+/* Prévention du flash pour utilisateur déjà connecté */
+try {
+  var _comptePre = JSON.parse(localStorage.getItem("ezh_compte") || "null");
+  if (_comptePre && _comptePre.nom && _comptePre.prenom) document.documentElement.classList.add("est-connecte");
+} catch (e) {}
 /* Système d'exploitation : quelques styles se comportent différemment
    (picker d'heure Android, etc.). Posé avant le CSS pour éviter un flash. */
 try {
@@ -675,8 +690,10 @@ try {
      l'email. Ordinateur : formulaire à gauche, aperçu en grand à droite.
      L'aperçu reprend la grille de l'horaire : on voit tout de suite ce
      qu'on va obtenir. */
-  #v-compte { --sur-accent: #fff; display: flex; flex-direction: column; padding-top: 6px; }
+  html.est-connecte #v-compte { display: none !important; }
+  #v-compte { --sur-accent: #fff; display: flex; flex-direction: column; }
   @media (prefers-color-scheme: dark) { #v-compte { --sur-accent: #0b1020; } }
+  .compte-hero { display: flex; flex-direction: column; padding-top: 6px; }
   .entree { display: contents; }
   .entree-titre {
     order: 0; margin: 4px 0 20px;
@@ -1695,6 +1712,244 @@ try {
   .cal, .pdf-tete, .moi-txt, #pop, .official svg { display: none; }
   .avatar { display: grid; place-items: center; }
 
+  /* Contenu SEO et présentation sur la vue d'accueil (v-compte) */
+  .compte-seo {
+    margin-top: 48px;
+    padding-top: 48px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    gap: 48px;
+  }
+  .seo-sur-titre {
+    font-size: .8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--accent);
+    margin: 0 0 10px;
+  }
+  .seo-h2 {
+    font-size: clamp(1.6rem, 4vw, 2.2rem);
+    font-weight: 750;
+    letter-spacing: -.03em;
+    line-height: 1.15;
+    margin: 0 0 14px;
+    color: var(--ink);
+  }
+  .seo-chapeau {
+    color: var(--muted);
+    font-size: 1.05rem;
+    line-height: 1.6;
+    max-width: 68ch;
+    margin: 0;
+  }
+  .seo-section {
+    display: flex;
+    flex-direction: column;
+  }
+  .seo-section-titre {
+    font-size: clamp(1.35rem, 3.2vw, 1.75rem);
+    font-weight: 720;
+    letter-spacing: -.025em;
+    margin: 0 0 8px;
+    color: var(--ink);
+  }
+  .seo-section-desc {
+    color: var(--muted);
+    font-size: .95rem;
+    margin: 0 0 22px;
+  }
+  .seo-grille {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+  }
+  .seo-tuile {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 22px 20px;
+    box-shadow: inset 0 0 0 1px var(--line), var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .seo-ico {
+    font-size: 1.5rem;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .seo-tuile h3 {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 680;
+    letter-spacing: -.015em;
+    color: var(--ink);
+  }
+  .seo-tuile p {
+    margin: 0;
+    font-size: .92rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .seo-ecoles-grille {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 14px;
+  }
+  .seo-ecole-carte {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 18px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: inset 0 0 0 1px var(--line), var(--shadow);
+    text-decoration: none;
+    color: inherit;
+    transition: transform .2s, box-shadow .2s;
+  }
+  .seo-ecole-carte:hover {
+    transform: translateY(-2px);
+    box-shadow: inset 0 0 0 1px var(--accent), var(--shadow);
+  }
+  .seo-ecole-carte img {
+    flex: none;
+    border-radius: 8px;
+  }
+  .seo-ecole-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .seo-ecole-info strong {
+    font-size: .96rem;
+    font-weight: 650;
+    color: var(--ink);
+  }
+  .seo-ecole-info span {
+    font-size: .82rem;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .seo-fleche {
+    flex: none;
+    font-weight: 700;
+    color: var(--accent);
+    transition: transform .2s;
+  }
+  .seo-ecole-carte:hover .seo-fleche {
+    transform: translateX(4px);
+  }
+  .seo-faq-liste {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .seo-faq-item {
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: inset 0 0 0 1px var(--line);
+    padding: 16px 20px;
+  }
+  .seo-faq-item summary {
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 1rem;
+    font-weight: 650;
+    user-select: none;
+    color: var(--ink);
+  }
+  .seo-faq-item summary::-webkit-details-marker {
+    display: none;
+  }
+  .seo-faq-item summary::after {
+    content: "↓";
+    font-weight: 600;
+    color: var(--muted);
+    transition: transform .2s;
+    margin-left: 12px;
+  }
+  .seo-faq-item[open] summary::after {
+    transform: rotate(180deg);
+  }
+  .seo-faq-item p {
+    margin: 12px 0 0;
+    color: var(--muted);
+    font-size: .92rem;
+    line-height: 1.55;
+  }
+  .compte-pied {
+    margin-top: 16px;
+    padding-top: 36px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+  .cp-haut {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 28px;
+  }
+  .cp-marque .cp-logo {
+    font-size: 1.25rem;
+    font-weight: 750;
+    letter-spacing: -.02em;
+    color: var(--ink);
+  }
+  .cp-marque .cp-logo span {
+    color: var(--accent);
+  }
+  .cp-marque p {
+    margin: 10px 0 0;
+    color: var(--muted);
+    font-size: .88rem;
+    line-height: 1.5;
+  }
+  .cp-col {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .cp-col h4 {
+    margin: 0 0 4px;
+    font-size: .84rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--ink);
+  }
+  .cp-col a, .cp-col .lien-pied {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: .88rem;
+    text-align: left;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    font-family: inherit;
+    transition: color .15s;
+  }
+  .cp-col a:hover, .cp-col .lien-pied:hover {
+    color: var(--accent);
+  }
+  .cp-bas {
+    padding-top: 18px;
+    border-top: 1px dashed var(--line);
+    color: var(--muted);
+    font-size: .82rem;
+    text-align: center;
+  }
+
   /* ================= Ordinateur =================
      Une vraie app de bureau : barre fixe en haut, semaine en grille
      horaire qui tient dans l'écran, PDF dans un panneau latéral avec ses
@@ -1737,10 +1992,13 @@ try {
     /* Connexion : formulaire à gauche, semaine type à droite, le tout
        centré dans la hauteur de la fenêtre. */
     #v-compte {
+      max-width: 1200px; margin: 0 auto; padding: 24px 0 48px; display: flex; flex-direction: column;
+    }
+    .compte-hero {
       display: grid; align-items: center; column-gap: clamp(48px, 6vw, 96px);
       grid-template-columns: minmax(360px, 460px) minmax(0, 1fr);
-      max-width: 1200px; padding: 24px 0 48px;
       min-height: calc(100vh - 96px); min-height: calc(100dvh - 96px);
+      padding-top: 0;
     }
     .entree { display: block; }
     .entree-titre { margin: 0 0 36px; font-size: 3.1rem; }
@@ -2583,8 +2841,9 @@ try {
   </div>
 
   <!-- 0. Connexion (écran d'entrée : on se connecte avant tout) -->
-  <section id="v-compte" hidden>
-    <div class="entree">
+  <section id="v-compte">
+    <div class="compte-hero">
+      <div class="entree">
       <h2 class="entree-titre">Enfin des horaires<br><span class="nobr">pratiques et <em>lisibles.</em></span></h2>
       <div class="fournisseurs">
         <button type="button" class="halo" data-auth="google" aria-label="Continuer avec Google">
@@ -2705,6 +2964,158 @@ try {
           <div class="ap-libre"><p><strong>Pas de cours</strong></p></div>
         </div>
       </div>
+    </div>
+    </div><!-- /.compte-hero -->
+
+    <!-- Section SEO et présentation publique (indexable et crawlable par Google) -->
+    <div class="compte-seo">
+      <section class="seo-intro">
+        <p class="seo-sur-titre">L'application d'horaire étudiant en Belgique</p>
+        <h2 class="seo-h2">EzHoraire — Ton emploi du temps universitaire clair, rapide et sans prise de tête.</h2>
+        <p class="seo-chapeau">
+          Fini les fichiers PDF de quarante colonnes illisibles sur smartphone et les portails étudiants complexes. <strong>EzHoraire</strong> regroupe, filtre et affiche le planning officiel de ton établissement en Belgique pour n'afficher que tes cours, tes groupes et tes locaux avec une lisibilité parfaite.
+        </p>
+      </section>
+
+      <section class="seo-section">
+        <h2 class="seo-section-titre">Pourquoi choisir EzHoraire ?</h2>
+        <p class="seo-section-desc">Tout ce qu'il te faut pour ne plus jamais rater un cours ni chercher ton local.</p>
+        <div class="seo-grille">
+          <div class="seo-tuile halo">
+            <div class="seo-ico" aria-hidden="true">📱</div>
+            <h3>Pensé pour ton smartphone</h3>
+            <p>Une interface fluide et intuitive adaptée à ton écran. Tes cours s'affichent par semaine ou par jour dans des cartes nettes et aérées.</p>
+          </div>
+          <div class="seo-tuile halo">
+            <div class="seo-ico" aria-hidden="true">🔄</div>
+            <h3>À jour en direct</h3>
+            <p>Synchronisé directement avec les serveurs officiels de ton école (Hyperplanning, ADE, TimeEdit). Tout changement de salle ou d'horaire est pris en compte.</p>
+          </div>
+          <div class="seo-tuile halo">
+            <div class="seo-ico" aria-hidden="true">📅</div>
+            <h3>Export calendrier iCal</h3>
+            <p>Connecte ton horaire à Google Agenda, Apple Calendrier ou Outlook grâce à un lien d'abonnement universel pour recevoir tes rappels automatiques.</p>
+          </div>
+          <div class="seo-tuile halo">
+            <div class="seo-ico" aria-hidden="true">✨</div>
+            <h3>100 % gratuit & sans pub</h3>
+            <p>Une application créée par et pour des étudiants. Pas de bannières publicitaires, pas de pistage commercial et aucun frais caché.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="seo-section">
+        <h2 class="seo-section-titre">Horaires par université et haute école</h2>
+        <p class="seo-section-desc">Choisis ton établissement pour consulter ou configurer ton planning de cours :</p>
+        <div class="seo-ecoles-grille">
+          <a href="/horaires/heh/" class="seo-ecole-carte halo">
+            <img src="/logos/ecoles/heh.svg" alt="Logo Haute École en Hainaut" width="38" height="38" loading="lazy">
+            <div class="seo-ecole-info">
+              <strong>Haute École en Hainaut (HEH)</strong>
+              <span>Mons, Tournai · Pédagogique, Sciences & Technologies, Social</span>
+            </div>
+            <span class="seo-fleche" aria-hidden="true">→</span>
+          </a>
+          <a href="/horaires/umons/" class="seo-ecole-carte halo">
+            <img src="/logos/ecoles/umons.svg" alt="Logo Université de Mons" width="38" height="38" loading="lazy">
+            <div class="seo-ecole-info">
+              <strong>Université de Mons (UMONS)</strong>
+              <span>Mons, Charleroi · Polytech, Sciences, Warocqué, FTI-EII, FPSE...</span>
+            </div>
+            <span class="seo-fleche" aria-hidden="true">→</span>
+          </a>
+          <a href="/horaires/condorcet/" class="seo-ecole-carte halo">
+            <img src="/logos/ecoles/condorcet.svg" alt="Logo Haute École Condorcet" width="38" height="38" loading="lazy">
+            <div class="seo-ecole-info">
+              <strong>HEPH Condorcet</strong>
+              <span>Mons, Charleroi, Tournai, Ath · Tous les départements Condorcet</span>
+            </div>
+            <span class="seo-fleche" aria-hidden="true">→</span>
+          </a>
+          <a href="/horaires/helb/" class="seo-ecole-carte halo">
+            <img src="/logos/ecoles/helb.svg" alt="Logo HELB Ilya Prigogine" width="38" height="38" loading="lazy">
+            <div class="seo-ecole-info">
+              <strong>HELB Ilya Prigogine</strong>
+              <span>Bruxelles · Paramédical, technologie, cinématographie...</span>
+            </div>
+            <span class="seo-fleche" aria-hidden="true">→</span>
+          </a>
+          <a href="/horaires/ulb/" class="seo-ecole-carte halo">
+            <img src="/logos/ecoles/ulb.svg" alt="Logo Université libre de Bruxelles" width="38" height="38" loading="lazy">
+            <div class="seo-ecole-info">
+              <strong>Université libre de Bruxelles (ULB)</strong>
+              <span>Bruxelles (Solbosch, Plaine, Érasme), Charleroi · Par cours ou MonULB</span>
+            </div>
+            <span class="seo-fleche" aria-hidden="true">→</span>
+          </a>
+          <a href="/horaires/uclouvain/" class="seo-ecole-carte halo">
+            <img src="/logos/ecoles/ucl.svg" alt="Logo UCLouvain" width="38" height="38" loading="lazy">
+            <div class="seo-ecole-info">
+              <strong>UCLouvain</strong>
+              <span>Louvain-la-Neuve, Bruxelles, Mons · Par programme ou Mon Horaire</span>
+            </div>
+            <span class="seo-fleche" aria-hidden="true">→</span>
+          </a>
+        </div>
+      </section>
+
+      <section class="seo-section">
+        <h2 class="seo-section-titre">Questions fréquentes sur EzHoraire</h2>
+        <div class="seo-faq-liste">
+          <details class="seo-faq-item halo">
+            <summary><strong>Qu'est-ce qu'EzHoraire ?</strong></summary>
+            <p>EzHoraire est une plateforme web et mobile indépendante conçue pour offrir aux étudiants de l'enseignement supérieur en Belgique un emploi du temps moderne, lisible et mis à jour en direct depuis les plannings officiels de leur école.</p>
+          </details>
+          <details class="seo-faq-item halo">
+            <summary><strong>EzHoraire est-il vraiment gratuit ?</strong></summary>
+            <p>Oui, le service est totalement gratuit, sans abonnement payant et sans aucune publicité. Il s'agit d'un projet communautaire fait pour aider les étudiants belges au quotidien.</p>
+          </details>
+          <details class="seo-faq-item halo">
+            <summary><strong>Comment synchroniser mon horaire sur Google Agenda ou Apple Calendrier ?</strong></summary>
+            <p>Une fois connecté et ton profil d'horaire configuré, utilise l'option d'export iCal dans l'application. Tu obtiendras un lien d'abonnement que tu pourras ajouter directement dans l'application Calendrier de ton iPhone, de ton Mac ou dans Google Agenda.</p>
+          </details>
+          <details class="seo-faq-item halo">
+            <summary><strong>Comment ajouter EzHoraire sur l'écran d'accueil de mon smartphone ?</strong></summary>
+            <p>Sur iPhone (Safari) : appuie sur l'icône de partage (carré avec une flèche vers le haut) puis choisis « Sur l'écran d'accueil ». Sur Android (Chrome) : appuie sur les trois points verticaux en haut à droite puis « Installer l'application » ou « Ajouter à l'écran d'accueil ».</p>
+          </details>
+          <details class="seo-faq-item halo">
+            <summary><strong>Mon école ou ma section n'apparaît pas, que faire ?</strong></summary>
+            <p>Nous ajoutons régulièrement de nouveaux établissements et départements. Tu peux nous faire une demande d'ajout directe en cliquant sur « Signaler une idée ou un bug » ci-dessous ou lors de la recherche d'établissement dans l'app.</p>
+          </details>
+        </div>
+      </section>
+
+      <footer class="compte-pied">
+        <div class="cp-haut">
+          <div class="cp-marque">
+            <span class="cp-logo">Ez<span>Horaire</span></span>
+            <p>L'horaire de cours étudiant en Belgique, clair sur smartphone et à jour à chaque visite. Conçu avec soin, gratuit et sans pub.</p>
+          </div>
+          <div class="cp-col">
+            <h4>Horaires par école</h4>
+            <a href="/horaires/heh/">Horaire HEH</a>
+            <a href="/horaires/umons/">Horaire UMONS</a>
+            <a href="/horaires/condorcet/">Horaire Condorcet</a>
+            <a href="/horaires/helb/">Horaire HELB</a>
+            <a href="/horaires/ulb/">Horaire ULB</a>
+            <a href="/horaires/uclouvain/">Horaire UCLouvain</a>
+          </div>
+          <div class="cp-col">
+            <h4>Ressources</h4>
+            <a href="/aide/">Centre d'aide & FAQ</a>
+            <button type="button" class="lien-pied" data-bug>Signaler une idée ou un bug</button>
+            <a href="mailto:contact@ezhoraire.be">contact@ezhoraire.be</a>
+          </div>
+          <div class="cp-col">
+            <h4>Légal</h4>
+            <a href="/confidentialite.html">Politique de confidentialité</a>
+            <a href="/cgu.html">Conditions d'utilisation (CGU)</a>
+          </div>
+        </div>
+        <div class="cp-bas">
+          <p>© 2026 EzHoraire · Fait pour les étudiants des universités et hautes écoles en Belgique</p>
+        </div>
+      </footer>
     </div>
   </section>
 
@@ -5023,6 +5434,7 @@ try {
   var vue = null, pile = []; // pile : écrans précédents (bouton Retour)
   function montrer(v) {
     vue = v;
+    try { document.documentElement.classList.remove("est-connecte"); } catch (e) {}
     if (window.EZH_SUIVI) EZH_SUIVI.ecran(v);
     VUES.forEach(function (n) { document.getElementById("v-" + n).hidden = n !== v; });
     document.getElementById("btn-retour").hidden = !pile.length;
