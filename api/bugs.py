@@ -233,8 +233,11 @@ def _notifier_resend(typ, bug_id, titre, message, etape, email, user_id, context
          html.escape(message).replace("\n", "<br>"),
          html.escape(ctx_txt))
     try:
+        # Cloudflare (devant api.resend.com) refuse le User-Agent par défaut
+        # d'urllib avec un 403 « error code: 1010 » : d'où cet en-tête.
         rep = _requete_json("POST", "https://api.resend.com/emails",
-                            {"Authorization": "Bearer " + cle},
+                            {"Authorization": "Bearer " + cle,
+                             "User-Agent": "EzHoraire/1.0 (+https://www.ezhoraire.be)"},
                             {"from": expediteur, "to": [destinataire],
                              "subject": sujet, "text": texte, "html": corps_html},
                             timeout=10)
