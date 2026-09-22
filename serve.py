@@ -124,6 +124,7 @@ class Handler(SimpleHTTPRequestHandler):
         return True
 
     def do_GET(self):
+        self.statique = False
         chemin = self._chemin_autorise()
         if chemin is None:
             return
@@ -133,11 +134,13 @@ class Handler(SimpleHTTPRequestHandler):
         if route:
             route.do_GET(self)
         else:
+            self.statique = True
             super().do_GET()
 
     def do_POST(self):
         # Seuls les points d'entrée de l'API acceptent POST ; le reste du
         # serveur local ne sert que des fichiers.
+        self.statique = False
         chemin = self._chemin_autorise()
         if chemin is None:
             return
@@ -149,6 +152,7 @@ class Handler(SimpleHTTPRequestHandler):
 
     def do_PATCH(self):
         # /api/bugs (changement de statut admin) est le seul PATCH.
+        self.statique = False
         chemin = self._chemin_autorise()
         if chemin is None:
             return
@@ -160,10 +164,12 @@ class Handler(SimpleHTTPRequestHandler):
 
     def do_HEAD(self):
         # Même garde que GET : do_HEAD hérité la contournerait entièrement.
+        self.statique = False
         if self._chemin_autorise() is None:
             return
         if self._redirection_app():
             return
+        self.statique = True
         super().do_HEAD()
 
     def log_message(self, *args):
@@ -184,6 +190,11 @@ class Handler(SimpleHTTPRequestHandler):
             self.wfile.write(corps)
 
     def end_headers(self):
+        # Fichiers : même cache que Vercel (revalidation, 304) au lieu de
+        # l'heuristique locale qui pouvait servir un vieux JS sans le dire.
+        # Les points d'entrée de l'API posent le leur (voir repondre_json).
+        if getattr(self, "statique", False):
+            self.send_header("Cache-Control", "public, max-age=0, must-revalidate")
         for cle, valeur in ENTETES_SECURITE.items():
             self.send_header(cle, valeur)
         super().end_headers()

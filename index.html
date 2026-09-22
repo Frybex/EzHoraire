@@ -26,11 +26,17 @@
 <meta name="twitter:description" content="Ton horaire de cours en Belgique, clair sur téléphone et à jour à chaque visite. Gratuit, sans pub.">
 <meta name="twitter:image" content="https://www.ezhoraire.be/og-image.png">
 <meta name="twitter:image:alt" content="EzHoraire : une semaine de cours affichée en cases de couleur.">
-<link rel="icon" href="/favicon.ico" sizes="32x32">
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico?v=2" sizes="32x32">
+<link rel="icon" href="/favicon-32x32.png?v=2" type="image/png" sizes="32x32">
+<link rel="icon" href="/favicon-16x16.png?v=2" type="image/png" sizes="16x16">
+<link rel="icon" href="/favicon.svg?v=2" type="image/svg+xml">
+<link rel="mask-icon" href="/safari-pinned-tab.svg?v=2" color="#2456e0">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
-<script src="/favicon.js"></script>
+<!-- Le SDK Supabase vient de jsdelivr : on ouvre la connexion tôt. -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<!-- En « defer » : rien ici ne bloque le premier rendu. -->
+<script defer src="/favicon.js?v=2"></script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
 {"@type":"Organization","@id":"https://www.ezhoraire.be/#org","name":"EzHoraire","url":"https://www.ezhoraire.be/","logo":"https://www.ezhoraire.be/icon-512.png","email":"contact@ezhoraire.be","areaServed":"BE"},
@@ -1037,6 +1043,14 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     flex: none; min-width: 106px;
     font-variant-numeric: tabular-nums; color: var(--muted); font-size: .88rem;
   }
+  /* Colonne des heures : l'étiquette d'échéance se glisse sous l'heure,
+     pas après le nom du cours (le titre garde toute sa largeur). */
+  .cbtn .hcol {
+    flex: none; min-width: 106px; display: flex; flex-direction: column;
+    align-items: flex-start; gap: 4px;
+  }
+  .cbtn .hcol .h { min-width: 0; }
+  .cbtn .hcol .ech-tag { margin-left: 0; }
   .cbtn .m { font-weight: 550; font-size: .96rem; flex: 1; min-width: 0; }
   .minichev {
     flex: none; width: 7px; height: 7px; align-self: center;
@@ -1049,17 +1063,86 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   li.c.seul .cbtn { cursor: default; }
   li.c.seul .cbtn:disabled { opacity: 1; color: inherit; }
   li.c.seul .minichev { display: none; }
-  /* Sous-détail du cours : prof + salle */
+  /* Sous-détail du cours : prof + salle dans la colonne de droite ; sous
+     les heures (colonne de gauche, jusqu'ici vide), le bouton qui ajoute
+     un devoir à rendre ou un rappel d'examen. Les échéances enregistrées
+     s'affichent en dessous, sur toute la largeur. */
   .csub {
-    display: grid; grid-template-rows: 0fr; opacity: 0;
-    transition: grid-template-rows .28s cubic-bezier(.16,1,.3,1), opacity .22s;
+    display: grid; grid-template-rows: 0fr; opacity: 0; visibility: hidden;
+    transition: grid-template-rows .28s cubic-bezier(.16,1,.3,1), opacity .22s, visibility 0s .28s;
   }
-  li.c.open .csub { grid-template-rows: 1fr; opacity: 1; }
+  li.c.open .csub {
+    grid-template-rows: 1fr; opacity: 1; visibility: visible;
+    transition: grid-template-rows .28s cubic-bezier(.16,1,.3,1), opacity .22s, visibility 0s;
+  }
   .csub > div { overflow: hidden; }
-  .csub-in { padding: 0 0 12px 124px; font-size: .86rem; }
-  .csub-in div { padding: 1px 0; }
+  .csub-in {
+    display: grid; grid-template-columns: 124px minmax(0, 1fr);
+    padding: 0 0 12px; font-size: .86rem;
+  }
+  .csub-in .infos { grid-area: 1 / 2; }
+  .csub-in .infos div { padding: 1px 0; }
   .csub-in .k { color: var(--muted); }
   .csub-in .nc { color: var(--muted); font-style: italic; }
+  .csub-in .jour-creux { color: var(--muted); }
+  /* Jour sans cours : une seule rangée, centrée en hauteur dans le bloc
+     (rien en dessous d'elle, contrairement à un cours). */
+  .detail .box-jour { padding: 10px 14px; }
+  .box-jour .csub-in { padding: 0; align-items: center; }
+  /* Ajouter une échéance : pastille douce, alignée sous l'heure. */
+  .ech-add {
+    grid-area: 1 / 1; justify-self: start; align-self: start;
+    display: inline-flex; align-items: center; gap: 5px;
+    margin: 1px 0 0; padding: 7px 10px 7px 9px;
+    border: none; border-radius: 11px; font: inherit; cursor: pointer;
+    font-size: .76rem; font-weight: 650; letter-spacing: -.005em; color: var(--muted);
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    transition: transform .12s, color .18s;
+  }
+  .ech-add svg { flex: none; color: var(--muted); transition: color .18s; }
+  .ech-add:hover, .ech-add:focus-visible { color: var(--ink); }
+  .ech-add:hover svg, .ech-add:focus-visible svg { color: var(--accent); }
+  .ech-add:active { transform: scale(.97); }
+  .ech-add:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  /* Échéances du cours : type, intitulé, date, suppression. */
+  .ech-liste {
+    grid-area: 2 / 1 / 3 / 3; list-style: none; margin: 9px 0 0; padding: 0;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .ech {
+    display: flex; align-items: flex-start; gap: 9px;
+    padding: 8px 10px; border-radius: 12px; font-size: .82rem;
+    background: var(--surface); box-shadow: inset 0 0 0 1px var(--line);
+  }
+  .ech.passe { opacity: .5; }
+  .ech.neuf { animation: ech-neuf 1.4s cubic-bezier(.16,1,.3,1); }
+  @keyframes ech-neuf {
+    from { background: color-mix(in srgb, var(--accent) 22%, var(--surface)); }
+  }
+  .ech-type {
+    flex: none; margin-top: 1px; font-size: .62rem; font-weight: 750; text-transform: uppercase;
+    letter-spacing: .03em; border-radius: 6px; padding: 2px 6px;
+  }
+  .ech-type.devoir { color: var(--accent); background: var(--accent-soft); }
+  .ech-type.examen {
+    color: var(--attention);
+    background: color-mix(in srgb, var(--attention) 12%, var(--surface));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--attention) 30%, transparent);
+  }
+  .ech-corps { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .ech-titre { font-weight: 550; overflow-wrap: anywhere; }
+  .ech-quand { color: var(--muted); font-size: .76rem; }
+  .ech-suppr {
+    flex: none; width: 28px; height: 28px; margin: -3px -5px -3px 0;
+    display: grid; place-items: center; border: none; border-radius: 9px;
+    background: none; color: var(--muted); cursor: pointer;
+    transition: color .15s, background-color .15s;
+  }
+  .ech-suppr:hover, .ech-suppr:focus-visible {
+    color: var(--danger); background: color-mix(in srgb, var(--danger) 10%, transparent);
+  }
+  .ech-suppr:focus-visible { outline: 2px solid var(--danger); outline-offset: 1px; }
   /* Pause : filets symétriques de part et d'autre du texte. */
   .detail li.p {
     display: flex; align-items: center; gap: 10px;
@@ -1441,6 +1524,25 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   /* Modification : en haut sur téléphone (le clavier occupe le bas). */
   #voile-edition { place-items: start center; padding-top: max(20px, 9vh); }
   @media (min-width: 1024px) { #voile-edition { place-items: center; padding-top: 20px; } }
+  /* Devoir ou examen : rail Devoir / Examen, cours concerné, intitulé,
+     puis date et heure sur une même ligne — en haut sur téléphone, comme
+     la modification (le clavier occupe le bas de l'écran). */
+  #voile-echeance { place-items: start center; padding-top: max(20px, 9vh); }
+  @media (min-width: 1024px) { #voile-echeance { place-items: center; padding-top: 20px; } }
+  #echeance-rail { margin: 0 0 16px; }
+  .ech-contexte {
+    margin: 0 0 18px; padding: 10px 12px; border-radius: 12px; font-size: .86rem;
+    background: var(--creux); box-shadow: inset 0 0 0 1px var(--line);
+    color: var(--muted); line-height: 1.4;
+  }
+  .ech-contexte strong { color: var(--ink); font-weight: 600; }
+  #voile-echeance .champs { margin: 0 0 16px; }
+  .champ-ligne .ech-heure { flex: none; width: 126px; padding-left: 10px; }
+  .ech-sep { flex: none; width: 1px; align-self: stretch; margin: 11px 0; background: var(--line); }
+  #voile-echeance input[type="date"]::-webkit-calendar-picker-indicator { opacity: .55; }
+  /* L'horloge native mange la place de l'heure (« 10:30 AM » en locale
+     anglaise) : le champ reste cliquable, l'icône n'apporte rien. */
+  #voile-echeance input[type="time"]::-webkit-calendar-picker-indicator { display: none; }
   /* Ajouter à l'agenda : deux abonnements possibles (tout l'horaire, ou
      cours par cours), puis la liste des cours avec leur couleur. */
   .export-nom { margin: 0 0 12px; font-weight: 650; }
@@ -2379,6 +2481,14 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     background: color-mix(in srgb, var(--attention) 12%, var(--surface));
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--attention) 30%, transparent);
   }
+  /* Ligne de cours : devoir ou examen en attente (la teinte suit le type). */
+  .ech-tag {
+    flex: none; margin-left: 6px; font-size: .64rem; font-weight: 750; text-transform: uppercase;
+    letter-spacing: .02em; border-radius: 6px; padding: 2px 6px;
+    color: var(--c, var(--accent));
+    background: color-mix(in srgb, var(--c, var(--accent)) 12%, var(--surface));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c, var(--accent)) 30%, transparent);
+  }
   .ev.ev-choc { outline: 2px solid var(--attention); outline-offset: -2px; }
 </style>
 </head>
@@ -2901,6 +3011,35 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   </form>
 </div>
 
+<!-- Ajouter un devoir à rendre ou un rappel d'examen à un cours : rail
+     Devoir / Examen, intitulé, date (l'heure est celle du cours). -->
+<div class="voile" id="voile-echeance" hidden>
+  <form class="boite" id="boite-echeance" role="dialog" aria-modal="true" aria-labelledby="echeance-titre" novalidate>
+    <div class="seg" id="echeance-rail" role="tablist" aria-label="Type d'échéance" style="--n:2;--idx:0">
+      <span class="pill" aria-hidden="true"></span>
+      <button type="button" role="tab" data-ech-type="devoir" aria-selected="true">Devoir</button>
+      <button type="button" role="tab" data-ech-type="examen" aria-selected="false">Examen</button>
+    </div>
+    <h3 id="echeance-titre">Ajouter un devoir</h3>
+    <p class="ech-contexte" id="echeance-cours"></p>
+    <label class="champ-titre" for="ech-titre">Intitulé</label>
+    <div class="champs" id="ech-titre-bloc"><div class="champ-ligne">
+      <input class="champ" id="ech-titre" type="text" maxlength="80" autocomplete="off" spellcheck="true"
+             placeholder="ex. Exercices 1 à 8 du chapitre 3">
+    </div></div>
+    <label class="champ-titre" for="ech-date" id="ech-date-label">À rendre pour le</label>
+    <div class="champs" id="ech-date-bloc"><div class="champ-ligne">
+      <input class="champ" id="ech-date" type="date">
+      <span class="ech-sep" aria-hidden="true"></span>
+      <input class="champ ech-heure" id="ech-heure" type="time" aria-label="Heure">
+    </div></div>
+    <div class="boite-actions">
+      <button type="button" class="btn-sec" id="echeance-annuler">Annuler</button>
+      <button type="submit" class="btn-prim halo" id="echeance-ok">Ajouter</button>
+    </div>
+  </form>
+</div>
+
 <!-- Ajouter l'horaire à l'agenda : un abonnement servi par /api/abonnement,
      que le téléphone rappelle tout seul (l'horaire reste à jour sans
      réexporter). « Tout l'horaire » = 1 calendrier, une couleur ;
@@ -2989,7 +3128,9 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   </form>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0" integrity="sha384-JBR+x8blGwjDRO63aHCGiZMD4VNiTR4ZUGA+N6ZKLf3zNt1fK8IBpcgPaMrxqWBp" crossorigin="anonymous"></script>
+<!-- « defer » : le SDK (~100 ko) ne retarde plus l'affichage ; l'app
+     l'attend en arrière-plan (voir chargerSdkSupabase). -->
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0" integrity="sha384-JBR+x8blGwjDRO63aHCGiZMD4VNiTR4ZUGA+N6ZKLf3zNt1fK8IBpcgPaMrxqWBp" crossorigin="anonymous" data-supabase></script>
 <script src="/suivi.js"></script>
 <script src="/fusion.js"></script>
 <script src="/export_ics.js"></script>
@@ -2999,7 +3140,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   "use strict";
   /* Version du parcours, jointe aux étapes anonymes : à incrémenter à
      chaque correctif, pour comparer « avant / après » dans le dashboard. */
-  window.EZH_VERSION = "5";
+  window.EZH_VERSION = "6";
   var JOURS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
   var MOIS = ["janv.", "févr.", "mars", "avr.", "mai", "juin",
               "juil.", "août", "sept.", "oct.", "nov.", "déc."];
@@ -3606,7 +3747,9 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       SUPABASE_CONFIG = { URL: window.__SUPABASE__.URL, CLE_ANON: window.__SUPABASE__.CLE_ANON || "" };
       return Promise.resolve(!!(SUPABASE_CONFIG.URL && SUPABASE_CONFIG.CLE_ANON));
     }
-    return fetchDelai("api/config", 8000).then(function (r) { return r.json(); }).then(function (rep) {
+    // Servie depuis le cache du navigateur quand elle est encore fraîche :
+    // l'app n'attend pas un aller-retour serveur pour se lancer.
+    return fetchDelai("api/config", 8000, undefined, "default").then(function (r) { return r.json(); }).then(function (rep) {
       var s = (rep && rep.supabase) || {};
       SUPABASE_CONFIG = { URL: s.url || "", CLE_ANON: s.anonKey || "" };
       // Le serveur dit quelles écoles il expose (UCLouvain en test :
@@ -3619,48 +3762,82 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     }, function () { return false; });
   }
 
-  /* Branche le client Supabase, restaure la session (retour OAuth :
-     supabase-js échange seul le ?code= de l'URL). */
-  function initSupabase() {
-    if (!(SUPABASE_CONFIG.URL && SUPABASE_CONFIG.CLE_ANON)) return Promise.resolve(false);
-    if (!window.supabase || !window.supabase.createClient) return Promise.resolve(false);
-    try {
-      sb = window.supabase.createClient(SUPABASE_CONFIG.URL, SUPABASE_CONFIG.CLE_ANON);
-    } catch (e) { sb = null; return Promise.resolve(false); }
-    SUPABASE_OK = true;
-    sb.auth.onAuthStateChange(function (evt, session) {
-      sessionSupabase = session || null;
-      if (session && session.user) AUTH.user = session.user;
-      if (evt === "SIGNED_IN" && session && session.user) retourOAuth(session.user);
-      else if (evt === "PASSWORD_RECOVERY") {
-        recuperationEnCours = true;
-        if (!demarrageFini) return;
-        ouvrirResetMdp();
-      }
-      else if (evt === "SIGNED_OUT") {
-        effacerSession();
-        if (demarrageFini) {
-          fermerFeuille();
-          fermerPdf();
-          pile = [];
-          ouvrirCompte();
-        }
-      }
+  /* Le SDK Supabase arrive en « defer » (voir la balise) : il ne bloque
+     plus l'affichage. initSupabase et les boutons de connexion l'attendent
+     ici, une seule fois. */
+  var sdkSupabase = null;
+  function chargerSdkSupabase() {
+    if (window.supabase && window.supabase.createClient) return Promise.resolve(true);
+    if (sdkSupabase) return sdkSupabase;
+    sdkSupabase = new Promise(function (ok) {
+      var s = document.querySelector("script[data-supabase]");
+      if (!s) { ok(false); return; }
+      s.addEventListener("load", function () { ok(!!(window.supabase && window.supabase.createClient)); });
+      s.addEventListener("error", function () { ok(false); });
+      setTimeout(function () { ok(!!(window.supabase && window.supabase.createClient)); }, 8000);
     });
-    return sb.auth.getSession().then(function (res) {
-      var session = res && res.data && res.data.session;
-      sessionSupabase = session || null;
+    return sdkSupabase;
+  }
+  /* Prêt à parler au cloud : config chargée, SDK chargé, client branché.
+     Les boutons de connexion l'attendent, sans bloquer l'affichage. */
+  function pretCloud() {
+    var cfg = window.EZH_CONFIG_PROMESSE || chargerConfigSupabase();
+    return cfg.then(function () { return SUPABASE_OK && sb ? true : initSupabase(); });
+  }
+  /* Branche le client Supabase, restaure la session (retour OAuth :
+     supabase-js échange seul le ?code= de l'URL). Une seule fois — un
+     échec (SDK pas encore arrivé, hors ligne) peut se retenter. */
+  var initSupabaseEnCours = null;
+  function initSupabase() {
+    if (initSupabaseEnCours) return initSupabaseEnCours;
+    var p = initSupabaseMaintenant();
+    initSupabaseEnCours = p;
+    var rate = function () { initSupabaseEnCours = null; };
+    p.then(function (ok) { if (!ok) rate(); }, rate);
+    return p;
+  }
+  function initSupabaseMaintenant() {
+    if (!(SUPABASE_CONFIG.URL && SUPABASE_CONFIG.CLE_ANON)) return Promise.resolve(false);
+    return chargerSdkSupabase().then(function (pret) {
+      if (!pret || !window.supabase || !window.supabase.createClient) return false;
       try {
-        if (/[?&](code|access_token)=/.test(location.search + " " + location.hash)) {
-          history.replaceState(null, "", location.pathname);
+        sb = window.supabase.createClient(SUPABASE_CONFIG.URL, SUPABASE_CONFIG.CLE_ANON);
+      } catch (e) { sb = null; return false; }
+      SUPABASE_OK = true;
+      sb.auth.onAuthStateChange(function (evt, session) {
+        sessionSupabase = session || null;
+        if (session && session.user) AUTH.user = session.user;
+        if (evt === "SIGNED_IN" && session && session.user) retourOAuth(session.user);
+        else if (evt === "PASSWORD_RECOVERY") {
+          recuperationEnCours = true;
+          if (!demarrageFini) return;
+          ouvrirResetMdp();
         }
-      } catch (e) { /* jetable */ }
-      // Lien « mot de passe oublié » (type=recovery dans l'adresse) : on
-      // montre le choix d'un nouveau mot de passe au lieu d'entrer.
-      if (/(^|[&#?])type=recovery/.test(location.search + " " + location.hash)) recuperationEnCours = true;
-      if (session && session.user && !recuperationEnCours) { AUTH.user = session.user; retourOAuth(session.user); }
-      return true;
-    }, function () { return true; });
+        else if (evt === "SIGNED_OUT") {
+          effacerSession();
+          if (demarrageFini) {
+            fermerFeuille();
+            fermerPdf();
+            pile = [];
+            ouvrirCompte();
+          }
+        }
+      });
+      return sb.auth.getSession().then(function (res) {
+        var session = res && res.data && res.data.session;
+        sessionSupabase = session || null;
+        try {
+          if (/[?&](code|access_token)=/.test(location.search + " " + location.hash)) {
+            history.replaceState(null, "", location.pathname);
+          }
+        } catch (e) { /* jetable */ }
+        // Lien « mot de passe oublié » (type=recovery dans l'adresse) : on
+        // montre le choix d'un nouveau mot de passe au lieu d'entrer.
+        if (/(^|[&#?])type=recovery/.test(location.search + " " + location.hash)) recuperationEnCours = true;
+        if (session && session.user && !recuperationEnCours) { AUTH.user = session.user; retourOAuth(session.user); }
+        return true;
+      }, function () { return true; });
+    });
   }
 
   function fournisseurDe(user) {
@@ -3753,6 +3930,14 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
         planifierPropositionPwa();
         return;
       }
+      // Même compte et horaire déjà ouvert par le routeur local (démarrage
+      // instantané) : on redessine avec les profils fusionnés, sans
+      // re-router — l'horaire ne repart pas pour un second chargement.
+      if (precId === user.id && vue === "horaire" && profil) {
+        rafraichirHoraireLocal();
+        planifierPropositionPwa();
+        return;
+      }
       pile = [];
       if (compte.nom && compte.prenom) {
         if (profil) demarrerHoraire();
@@ -3770,8 +3955,16 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   // Colonne `sources` absente du cloud (schema.sql pas rejoué) : les
   // horaires sur mesure restent sur l'appareil (voir pushProfils).
   var baseSansSources = false;
+  var pullEnVol = null; // synchro en vol : deux appels ne font qu'une requête
   function pullProfils() {
     if (!SUPABASE_OK || !sb || !sessionSupabase || !sessionSupabase.user || !compte || compte.supabase_id !== sessionSupabase.user.id) return Promise.resolve(false);
+    if (pullEnVol) return pullEnVol;
+    pullEnVol = pullProfilsMaintenant();
+    var fin = function () { pullEnVol = null; };
+    pullEnVol.then(fin, fin);
+    return pullEnVol;
+  }
+  function pullProfilsMaintenant() {
     var uid = sessionSupabase.user.id;
     var generation = generationCompte;
     // Base pas encore migrée (colonne `ical` ou `sources` absente) : on
@@ -3958,28 +4151,32 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
         EZH_SUIVI.envoyer("clic_connexion", { fournisseur: fournisseur });
         EZH_SUIVI.marquer("clic");
       }
-      if (!SUPABASE_OK || !sb) {
-        if (!EN_LOCAL) {
-          statutAuthErreur("Service de connexion injoignable : réessaie dans quelques minutes.", "connexion_injoignable");
-          return Promise.resolve(false);
+      // Le SDK peut être encore en route (defer) : on l'attend avant de
+      // décider (vrai OAuth ou repli local), sans bloquer l'affichage.
+      return pretCloud().then(function () {
+        if (!SUPABASE_OK || !sb) {
+          if (!EN_LOCAL) {
+            statutAuthErreur("Service de connexion injoignable : réessaie dans quelques minutes.", "connexion_injoignable");
+            return false;
+          }
+          compte = { fournisseur: fournisseur, nom: "", prenom: "" };
+          sauverCompte();
+          aller("identite");
+          return false;
         }
-        compte = { fournisseur: fournisseur, nom: "", prenom: "" };
-        sauverCompte();
-        aller("identite");
-        return Promise.resolve(false);
-      }
-      statutAuthChargement("Redirection vers " + (fournisseur === "github" ? "GitHub" : "Google") + "…");
-      var options = { redirectTo: location.origin + location.pathname };
-      // Google : forcer l'écran de choix du compte. Sans ça, après une
-      // déconnexion, Google reconnecte silencieusement le dernier compte
-      // au lieu de proposer d'en choisir un autre.
-      if (fournisseur === "google") options.queryParams = { prompt: "select_account" };
-      return sb.auth.signInWithOAuth({
-        provider: fournisseur,
-        options: options
-      }).then(function (res) {
-        if (res.error) statutAuthErreur("Échec : " + res.error.message, codeAuth(res.error) || "connexion_echouee");
-        return !res.error; // vrai = redirection en cours
+        statutAuthChargement("Redirection vers " + (fournisseur === "github" ? "GitHub" : "Google") + "…");
+        var options = { redirectTo: location.origin + location.pathname };
+        // Google : forcer l'écran de choix du compte. Sans ça, après une
+        // déconnexion, Google reconnecte silencieusement le dernier compte
+        // au lieu de proposer d'en choisir un autre.
+        if (fournisseur === "google") options.queryParams = { prompt: "select_account" };
+        return sb.auth.signInWithOAuth({
+          provider: fournisseur,
+          options: options
+        }).then(function (res) {
+          if (res.error) statutAuthErreur("Échec : " + res.error.message, codeAuth(res.error) || "connexion_echouee");
+          return !res.error; // vrai = redirection en cours
+        });
       });
     },
     // Email + mot de passe, selon le mode choisi sur le rail :
@@ -3992,48 +4189,52 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     //                identité, sans erreur, pour ne pas révéler qui est
     //                inscrit : on le transforme en message clair).
     loginEmail: function (email, mdp, mode) {
-      if (!SUPABASE_OK || !sb) {
-        statutAuthErreur("Service de connexion injoignable : réessaie dans quelques minutes.", "connexion_injoignable");
-        return Promise.resolve(false);
-      }
-      email = String(email || "").trim();
-      var creation = mode === "signup";
-      statutAuthChargement(creation ? "Création du compte…" : "Connexion en cours…");
       var self = this;
-      var demande;
-      if (creation) {
-        demande = sb.auth.signUp({
-          email: email, password: mdp,
-          options: { emailRedirectTo: location.origin + location.pathname }
-        }).then(function (ins) {
-          if (ins.error || (ins.data && ins.data.session)) return ins;
-          var u = ins.data && ins.data.user;
-          // Adresse déjà inscrite (aucune identité renvoyée).
-          if (u && u.identities && u.identities.length === 0) return { error: { code: "email_existe" } };
-          if (window.EZH_SUIVI) {
-            EZH_SUIVI.marquer("compte");
-            EZH_SUIVI.envoyer("compte_cree", { fournisseur: "email", details: { activation: "email" } });
-          }
-          statutAuthInfo("Compte créé : clique sur le lien reçu par email pour l'activer, puis reviens te connecter.");
-          return null;
-        });
-      } else {
-        demande = sb.auth.signInWithPassword({ email: email, password: mdp });
-      }
-      return demande.then(function (res) {
-        if (!res) return false;
-        if (res.error) {
-          statutAuthErreur(messageAuth(res.error), codeAuth(res.error) || "connexion_echouee");
-          marquerChampsErreur();
+      // Même attente que « login » : le SDK chargé en arrière-plan peut
+      // encore arriver quand on touche le bouton.
+      return pretCloud().then(function () {
+        if (!SUPABASE_OK || !sb) {
+          statutAuthErreur("Service de connexion injoignable : réessaie dans quelques minutes.", "connexion_injoignable");
           return false;
         }
-        if (res.data && res.data.session && res.data.session.user) {
-          self.user = res.data.session.user;
-          sessionSupabase = res.data.session;
-          statutAuthEffacer();
-          return retourOAuth(res.data.session.user);
+        email = String(email || "").trim();
+        var creation = mode === "signup";
+        statutAuthChargement(creation ? "Création du compte…" : "Connexion en cours…");
+        var demande;
+        if (creation) {
+          demande = sb.auth.signUp({
+            email: email, password: mdp,
+            options: { emailRedirectTo: location.origin + location.pathname }
+          }).then(function (ins) {
+            if (ins.error || (ins.data && ins.data.session)) return ins;
+            var u = ins.data && ins.data.user;
+            // Adresse déjà inscrite (aucune identité renvoyée).
+            if (u && u.identities && u.identities.length === 0) return { error: { code: "email_existe" } };
+            if (window.EZH_SUIVI) {
+              EZH_SUIVI.marquer("compte");
+              EZH_SUIVI.envoyer("compte_cree", { fournisseur: "email", details: { activation: "email" } });
+            }
+            statutAuthInfo("Compte créé : clique sur le lien reçu par email pour l'activer, puis reviens te connecter.");
+            return null;
+          });
+        } else {
+          demande = sb.auth.signInWithPassword({ email: email, password: mdp });
         }
-        return true;
+        return demande.then(function (res) {
+          if (!res) return false;
+          if (res.error) {
+            statutAuthErreur(messageAuth(res.error), codeAuth(res.error) || "connexion_echouee");
+            marquerChampsErreur();
+            return false;
+          }
+          if (res.data && res.data.session && res.data.session.user) {
+            self.user = res.data.session.user;
+            sessionSupabase = res.data.session;
+            statutAuthEffacer();
+            return retourOAuth(res.data.session.user);
+          }
+          return true;
+        });
       });
     },
     logout: function () {
@@ -4607,10 +4808,12 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
      `corps` (facultatif) = objet envoyé en POST, au format JSON : ce qui
      ne doit pas voyager dans une adresse (journaux de l'hébergeur,
      historique, Referer) passe par là. */
-  function fetchDelai(url, ms, corps) {
+  function fetchDelai(url, ms, corps, cache) {
     var ctrl = new AbortController();
     var timer = setTimeout(function () { ctrl.abort(); }, ms);
-    var options = { cache: "no-store", signal: ctrl.signal };
+    // « no-store » par défaut (réponses fraîches de l'école) ; la config,
+    // elle, est servie depuis le cache du navigateur (voir /api/config).
+    var options = { cache: cache || "no-store", signal: ctrl.signal };
     if (corps !== undefined) {
       options.method = "POST";
       options.headers = { "Content-Type": "application/json" };
@@ -4884,9 +5087,15 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     montrer("compte");
     preparerApercu();
     // Pour le développeur seulement : l'utilisateur n'a rien à en faire.
-    if (!SUPABASE_OK && window.console) {
-      console.warn("EzHoraire : Supabase non branché (clés absentes de /api/config ou SDK non chargé). " +
-        "Connexion factice en local, connexion refusée en ligne.");
+    // L'écran s'affiche avant le cloud : on ne prévient qu'une fois la
+    // connexion vraiment tentée (sinon le message serait un faux positif).
+    if (window.console) {
+      pretCloud().then(function () {
+        if (!SUPABASE_OK) {
+          console.warn("EzHoraire : Supabase non branché (clés absentes de /api/config ou SDK non chargé). " +
+            "Connexion factice en local, connexion refusée en ligne.");
+        }
+      });
     }
   }
   /* Aperçu de l'écran de connexion : dates de la semaine en cours et jour
@@ -5051,21 +5260,23 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     majOublie();
   }
   document.getElementById("mdp-oublie").addEventListener("click", function () {
-    if (!SUPABASE_OK || !sb) {
-      statutAuthErreur("Service de connexion injoignable : réessaie dans quelques minutes.");
-      return;
-    }
-    var em = String(document.getElementById("email").value || "").trim();
-    if (!emailValide(em)) {
-      try { document.getElementById("email").focus(); } catch (e) { /* jetable */ }
-      statutAuthErreur("Indique ton adresse email ci-dessus, puis retouche « Mot de passe oublié ? ».");
-      return;
-    }
-    statutAuthChargement("Envoi de l'email…");
-    sb.auth.resetPasswordForEmail(em, { redirectTo: location.origin + "/mot-de-passe.html" }).then(function (res) {
-      if (res.error) { statutAuthErreur(messageAuth(res.error)); return; }
-      statutAuthInfo("Email envoyé : clique sur le lien pour choisir un nouveau mot de passe.");
-    }, function (err) { statutAuthErreur(messageAuth(err)); });
+    pretCloud().then(function () {
+      if (!SUPABASE_OK || !sb) {
+        statutAuthErreur("Service de connexion injoignable : réessaie dans quelques minutes.");
+        return;
+      }
+      var em = String(document.getElementById("email").value || "").trim();
+      if (!emailValide(em)) {
+        try { document.getElementById("email").focus(); } catch (e) { /* jetable */ }
+        statutAuthErreur("Indique ton adresse email ci-dessus, puis retouche « Mot de passe oublié ? ».");
+        return;
+      }
+      statutAuthChargement("Envoi de l'email…");
+      sb.auth.resetPasswordForEmail(em, { redirectTo: location.origin + "/mot-de-passe.html" }).then(function (res) {
+        if (res.error) { statutAuthErreur(messageAuth(res.error)); return; }
+        statutAuthInfo("Email envoyé : clique sur le lien pour choisir un nouveau mot de passe.");
+      }, function (err) { statutAuthErreur(messageAuth(err)); });
+    });
   });
   document.getElementById("btn-mdp-nouveau").addEventListener("click", function () {
     var btn = this;
@@ -7090,8 +7301,120 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   function enConflit(c, s) {
     return CHOCS.some(function (x) { return (x.a === c || x.b === c) && x.semaines.indexOf(s) >= 0; });
   }
+  /* ---------- Devoirs et examens, rattachés à un cours ou à un jour ----------
+     Chaque horaire a ses propres échéances, rangées sous une clé : un cours
+     (jour, heure de début, matière) ou un jour sans cours (férié, libre) —
+     dans ce cas la clé est « jour|| ». Elles suivent la semaine d'une
+     semaine à l'autre et ne passent jamais d'un horaire à l'autre. Tout
+     reste dans le navigateur, comme le reste de l'horaire. */
+  var CLE_ECHEANCES = "ezh_echeances";
+  var JOURS_COURTS = ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."];
+  var _echTout = null; // cache d'un rendu, invalidé à chaque écriture
+  var echNeuf = "";    // échéance qui vient d'être ajoutée (surbrillance)
+  var ICONE_PLUS = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+    'stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+
+  function lireEcheancesTout() {
+    if (_echTout === null) {
+      var m = lire(CLE_ECHEANCES);
+      _echTout = m && typeof m === "object" && !Array.isArray(m) ? m : {};
+    }
+    return _echTout;
+  }
+  function cleCoursEch(c) { return c.jour + "|" + c.debut + "|" + (c.matiere || ""); }
+  function cleJourEch(jour) { return jour + "||"; }
+  /* Un jour sans cours se comporte comme un cours sans heure ni matière :
+     même rangement, même affichage, mêmes fonctions. */
+  function pseudoJour(jour) { return { jour: jour, debut: "", fin: "", matiere: "", groupes: [] }; }
+  function echeancesSous(cle) {
+    if (!profil || !cle) return [];
+    var parProfil = lireEcheancesTout()[profil.id];
+    var liste = parProfil && parProfil[cle];
+    return Array.isArray(liste) ? liste : [];
+  }
+  function ecrireEcheancesSous(cle, liste) {
+    if (!profil || !cle) return;
+    var tous = lireEcheancesTout();
+    if (!tous[profil.id]) tous[profil.id] = {};
+    if (liste && liste.length) tous[profil.id][cle] = liste;
+    else {
+      delete tous[profil.id][cle];
+      if (!Object.keys(tous[profil.id]).length) delete tous[profil.id];
+    }
+    ecrire(CLE_ECHEANCES, tous);
+  }
+  function echeancesDe(c) { return echeancesSous(cleCoursEch(c)); }
+  function ecrireEcheances(c, liste) { ecrireEcheancesSous(cleCoursEch(c), liste); }
+  function echeancesJour(jour) { return echeancesSous(cleJourEch(jour)); }
+  /* Horaire supprimé : ses échéances s'en vont avec. */
+  function oublierEcheances(id) {
+    var tous = lireEcheancesTout();
+    if (tous[id]) { delete tous[id]; ecrire(CLE_ECHEANCES, tous); }
+  }
+  function jourEch(iso) {
+    var p = String(iso || "").split("-");
+    return new Date(+p[0], +p[1] - 1, +p[2]);
+  }
+  function isoEch(d) {
+    var m = d.getMonth() + 1, j = d.getDate();
+    return d.getFullYear() + "-" + (m < 10 ? "0" : "") + m + "-" + (j < 10 ? "0" : "") + j;
+  }
+  function heureEch(h) { return h ? fmtH(String(h).replace(":", "h")) : ""; }
+  /* Toujours la date, jamais « demain » : le jour de la carte est déjà
+     daté juste au-dessus, et une date reste vraie quelle que soit la
+     semaine affichée. */
+  function fmtDateEch(iso) {
+    var d = jourEch(iso);
+    if (isNaN(d.getTime())) return "";
+    return JOURS_COURTS[d.getDay()] + " " + fmtDate(d);
+  }
+  function quandEch(e) {
+    return fmtDateEch(e.date) + (e.heure ? " · " + heureEch(e.heure) : "");
+  }
+  function echPassee(e) {
+    var auj = new Date();
+    return jourEch(e.date).getTime() < new Date(auj.getFullYear(), auj.getMonth(), auj.getDate()).getTime();
+  }
+  function trierEcheances(liste) {
+    return liste.slice().sort(function (a, b) {
+      var ka = a.date + (a.heure || ""), kb = b.date + (b.heure || "");
+      return ka < kb ? -1 : ka > kb ? 1 : 0;
+    });
+  }
+  var ICONE_CROIX = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+    'stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+  function listeEcheancesHTML(liste, cleCours, dateJour) {
+    var items = trierEcheances(liste), html = '<ul class="ech-liste">';
+    for (var i = 0; i < items.length; i++) {
+      var e = items[i], examen = e.type === "examen";
+      // Le jour affiché porte déjà la date : on ne la répète que pour une
+      // échéance qui tombe un autre jour (sinon, il ne reste que l'heure).
+      var quand = (dateJour && memeJour(jourEch(e.date), dateJour)) ? heureEch(e.heure) : quandEch(e);
+      html += '<li class="ech' + (echPassee(e) ? " passe" : "") + (echNeuf === e.id ? " neuf" : "") +
+        '" data-ech-cle="' + txt(cleCours) + '">' +
+        '<span class="ech-type ' + (examen ? "examen" : "devoir") + '">' + (examen ? "Examen" : "Devoir") + "</span>" +
+        '<span class="ech-corps"><span class="ech-titre">' + txt(e.titre) + "</span>" +
+        (quand ? '<span class="ech-quand">' + txt(quand) + "</span>" : "") + "</span>" +
+        '<button type="button" class="ech-suppr" data-ech-suppr="' + txt(e.id) + '" aria-label="Supprimer : ' +
+        txt(e.titre) + '">' + ICONE_CROIX + "</button></li>";
+    }
+    return html + "</ul>";
+  }
+  /* Étiquette de la ligne de cours : le type de la prochaine échéance à
+     venir (+ le nombre d'autres), pour ne pas écraser le nom du cours. */
+  function tagEcheances(c) {
+    var liste = trierEcheances(echeancesDe(c).filter(function (e) { return !echPassee(e); }));
+    if (!liste.length) return "";
+    var examen = liste[0].type === "examen";
+    var texte = examen ? "Examen" : "Devoir";
+    if (liste.length > 1) texte += " +" + (liste.length - 1);
+    return '<span class="ech-tag" style="--c:' + (examen ? "var(--attention)" : "var(--accent)") + '">' +
+      txt(texte) + "</span>";
+  }
+
   function detailJour(cours, jour) {
     var html = '<div><div class="box"><ol>';
+    var dateJour = dateSemJour(sem, jour);
     // Un seul cours dans le jour (téléphone) : déroulé d'office et non
     // refermable, sinon la ligne est trop petite à taper.
     var seul = cours.length === 1;
@@ -7102,7 +7425,8 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       var choc = !!DATA.perso && enConflit(c, sem);
       html += '<li class="c' + (estOuvert ? " open" : "") + (seul ? " seul" : "") + (choc ? " li-choc" : "") + '">';
       html += '<button class="cbtn" data-cle="' + cle + '" aria-expanded="' + estOuvert + '"' + (seul ? " disabled" : "") + ">" +
-              '<span class="h">' + txt(fmtH(c.debut)) + " – " + txt(fmtH(c.fin)) + "</span>" +
+              '<span class="hcol"><span class="h">' + txt(fmtH(c.debut)) + " – " + txt(fmtH(c.fin)) + "</span>" +
+              tagEcheances(c) + "</span>" +
               '<span class="cpoint" style="' + styleCours(c.matiere) + '" aria-hidden="true"></span>' +
               '<span class="m">' + txt(nettoyerMatiere(c.matiere || "Cours")) + "</span>" +
               (choc ? '<span class="choc-tag">Chevauche</span>' : "") +
@@ -7119,14 +7443,47 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
         var noms = (c.srcs || [c.src]).map(function (i) { return nomSource(profil.sources[i]); }).filter(Boolean);
         if (noms.length) sub += '<div class="src"><span class="k">Source : </span>' + txt(noms.join(" et ")) + "</div>";
       }
-      html += '<div class="csub"><div><div class="csub-in">' + sub + "</div></div></div>";
+      var ech = echeancesDe(c);
+      html += '<div class="csub"><div><div class="csub-in">' +
+        '<div class="infos">' + sub + "</div>" +
+        '<button type="button" class="ech-add" data-ech-cible="' + txt(cle) + '" ' +
+        'aria-label="Ajouter un devoir ou un examen à ce cours" title="Ajouter un devoir ou un examen">' +
+        ICONE_PLUS + "<span>Échéance</span></button>" +
+        (ech.length ? listeEcheancesHTML(ech, cle, dateJour) : "") +
+        "</div></div></div>";
       html += "</li>";
       if (i < cours.length - 1) {
         var p = pauseEntre(c.fin, cours[i + 1].debut);
         if (p) html += '<li class="p">' + p + "</li>";
       }
     }
-    return html + "</ol></div></div>";
+    html += "</ol>";
+    // Une échéance posée un jour sans cours se range à part : si ce jour a
+    // des cours dans une autre semaine, on la liste quand même (sans le
+    // bouton, réservé aux jours vides).
+    var echJour = echeancesJour(jour);
+    if (echJour.length) {
+      html += '<div class="csub-in"><div class="infos jour-creux"><div>Échéance du jour</div></div>' +
+        listeEcheancesHTML(echJour, cleJourEch(jour), dateJour) + "</div>";
+    }
+    return html + "</div></div>";
+  }
+
+  /* Jour sans cours (férié, libre) : la même zone d'échéances, sans cours
+     au-dessus — le bouton est le seul point d'entrée de ce jour-là. */
+  function detailJourVide(jour) {
+    var cle = cleJourEch(jour);
+    var ech = echeancesJour(jour);
+    var quoi = estFerie(sem, jour)
+      ? "Jour férié" + (FERIES_NOMS[numJour(sem, jour)] ? " — " + txt(FERIES_NOMS[numJour(sem, jour)]) : "") + "."
+      : "Aucun cours ce jour-là.";
+    return '<div><div class="box box-jour"><div class="csub-in">' +
+      '<div class="infos jour-creux"><div>' + quoi + "</div></div>" +
+      '<button type="button" class="ech-add" data-ech-cible="' + txt(cle) + '" ' +
+      'aria-label="Ajouter un devoir ou un examen à ce jour" title="Ajouter un devoir ou un examen">' +
+      ICONE_PLUS + "<span>Échéance</span></button>" +
+      (ech.length ? listeEcheancesHTML(ech, cle, dateSemJour(sem, jour)) : "") +
+      "</div></div></div>";
   }
 
   function rendre() {
@@ -7192,9 +7549,9 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
         '<span class="dot" aria-hidden="true"></span>' +
         '<span class="dname"><strong>' + JOURS[j] + "</strong>" +
         "<span>" + fmtDate(date) + "</span></span>" +
-        resume + '<span class="chev" aria-hidden="true"></span></button>' +
+        resume + tagEcheances(pseudoJour(j)) + '<span class="chev" aria-hidden="true"></span></button>' +
         '<div class="detail">' +
-        (liste.length ? detailJour(liste, j) : "<div></div>") +
+        (liste.length ? detailJour(liste, j) : detailJourVide(j)) +
         "</div></li>";
     }
     var nomsConge = [];
@@ -7563,7 +7920,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   });
   /* Version visible en pied de page : permet de vérifier que le
      téléphone affiche bien la dernière version (raccourci iOS). */
-  var VERSION_APP = "38";
+  var VERSION_APP = "39";
   function rendreInfos() {
     if (!DATA || !profil) return;
     var sansProfs = DATA.cours.length && !DATA.cours.some(function (c) { return c.profs; });
@@ -7791,6 +8148,142 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   document.addEventListener("keydown", function (e) {
     if (edition && e.key === "Escape") { e.preventDefault(); e.stopPropagation(); fermerEdition(); }
   }, true);
+
+  /* Fenêtre « devoir ou examen », ouverte depuis un cours déplié. */
+  var echCours = null; // cours visé (objet de COURS)
+  var echType = "devoir";
+  var echDernierFocus = null;
+  var echTitreBloc = document.getElementById("ech-titre-bloc");
+  var echDateBloc = document.getElementById("ech-date-bloc");
+
+  function echeanceOuverte() {
+    var v = document.getElementById("voile-echeance");
+    return !!v && !v.hidden;
+  }
+  function definirEchType(type) {
+    echType = type === "examen" ? "examen" : "devoir";
+    var rail = document.getElementById("echeance-rail"), examen = echType === "examen";
+    rail.style.setProperty("--idx", examen ? 1 : 0);
+    var boutons = rail.querySelectorAll("[data-ech-type]");
+    for (var i = 0; i < boutons.length; i++) {
+      boutons[i].setAttribute("aria-selected", boutons[i].getAttribute("data-ech-type") === echType ? "true" : "false");
+    }
+    document.getElementById("echeance-titre").textContent = examen ? "Ajouter un examen" : "Ajouter un devoir";
+    document.getElementById("ech-date-label").textContent = examen ? "Rappel pour le" : "À rendre pour le";
+    document.getElementById("ech-titre").placeholder = examen
+      ? "ex. Théorie des chapitres 1 à 4"
+      : "ex. Exercices 1 à 8 du chapitre 3";
+  }
+  function ouvrirEcheance(c) {
+    fermerMenus();
+    echCours = c;
+    echDernierFocus = document.activeElement;
+    var jour = dateSemJour(sem, c.jour);
+    document.getElementById("echeance-cours").innerHTML = c.debut
+      ? "Pour <strong>" + txt(nettoyerMatiere(c.matiere || "ce cours")) + "</strong> · " +
+        txt(JOURS[c.jour] + " " + fmtH(c.debut) + " – " + fmtH(c.fin))
+      : "Pour <strong>" + txt(JOURS[c.jour] + " " + fmtDate(jour)) + "</strong> · " +
+        txt(estFerie(sem, c.jour) ? nomFerie(sem, c.jour) : "pas de cours");
+    document.getElementById("ech-titre").value = "";
+    echTitreBloc.classList.remove("erreur");
+    echDateBloc.classList.remove("erreur");
+    document.getElementById("ech-heure").value = c.debut ? String(c.debut).replace("h", ":") : "";
+    // Échéance par défaut : le jour affiché ; s'il est déjà passé, la
+    // semaine suivante (la prochaine fois qu'on a ce cours ou ce jour).
+    var d = new Date(jour.getTime()), auj = new Date();
+    if (d.getTime() < new Date(auj.getFullYear(), auj.getMonth(), auj.getDate()).getTime()) {
+      d.setDate(d.getDate() + 7);
+    }
+    document.getElementById("ech-date").value = isoEch(d);
+    definirEchType("devoir");
+    var voile = document.getElementById("voile-echeance");
+    voile.classList.remove("sortie");
+    voile.hidden = false;
+    document.body.classList.add("confirm-ouverte");
+    setTimeout(function () {
+      try { document.getElementById("ech-titre").focus({ preventScroll: true }); } catch (e) { /* jetable */ }
+    }, 60);
+  }
+  function fermerEcheance(direct) {
+    var voile = document.getElementById("voile-echeance");
+    if (!voile || voile.hidden) return;
+    echCours = null;
+    function fin() {
+      voile.hidden = true;
+      voile.classList.remove("sortie");
+      document.body.classList.remove("confirm-ouverte");
+      if (echDernierFocus && echDernierFocus.focus && document.contains(echDernierFocus)) {
+        try { echDernierFocus.focus({ preventScroll: true }); } catch (e) { /* jetable */ }
+      }
+    }
+    if (direct || sansAnim) fin();
+    else { voile.classList.add("sortie"); setTimeout(fin, 180); }
+  }
+  document.getElementById("boite-echeance").addEventListener("submit", function (e) {
+    e.preventDefault();
+    if (!echCours) return;
+    var titre = document.getElementById("ech-titre").value.replace(/\s+/g, " ").trim();
+    var date = document.getElementById("ech-date").value;
+    echTitreBloc.classList.toggle("erreur", !titre);
+    echDateBloc.classList.toggle("erreur", !date);
+    if (!titre) { try { document.getElementById("ech-titre").focus(); } catch (err) { /* jetable */ } return; }
+    if (!date) { try { document.getElementById("ech-date").focus(); } catch (err) { /* jetable */ } return; }
+    var liste = echeancesDe(echCours);
+    var id = nouveauId();
+    liste.push({
+      id: id, type: echType, titre: titre, date: date,
+      heure: document.getElementById("ech-heure").value || "", cree: Date.now()
+    });
+    ecrireEcheances(echCours, liste);
+    fermerEcheance(true);
+    echNeuf = id; // surbrillance à l'apparition dans le cours
+    rendre();
+    echNeuf = "";
+  });
+  document.getElementById("echeance-rail").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-ech-type]");
+    if (b) definirEchType(b.getAttribute("data-ech-type"));
+  });
+  document.getElementById("echeance-annuler").addEventListener("click", function () { fermerEcheance(); });
+  // Les clics restent dans la fenêtre : sinon, une fois fermée, le clic
+  // atteindrait le détecteur de clic extérieur et fermerait les réglages.
+  document.getElementById("voile-echeance").addEventListener("click", function (e) {
+    e.stopPropagation();
+    if (e.target === this) fermerEcheance();
+  });
+  echTitreBloc.addEventListener("input", function () { echTitreBloc.classList.remove("erreur"); });
+  echDateBloc.addEventListener("input", function () { echDateBloc.classList.remove("erreur"); });
+
+  function supprimerEcheance(c, id) {
+    var liste = echeancesDe(c), cible = null;
+    for (var i = 0; i < liste.length; i++) if (liste[i].id === id) cible = liste[i];
+    if (!cible) return;
+    demanderConfirmation({
+      titre: cible.type === "examen" ? "Supprimer cet examen ?" : "Supprimer ce devoir ?",
+      message: "<strong>" + txt(cible.titre) + "</strong><br>" + txt(quandEch(cible)),
+      confirmer: "Supprimer"
+    }).then(function (ok) {
+      if (!ok) return;
+      ecrireEcheances(c, echeancesDe(c).filter(function (x) { return x.id !== id; }));
+      rendre();
+    });
+  }
+  /* Retrouve la cible d'une échéance à partir de sa clé de rendez-vous :
+     « jour:index » pour un cours, « jour|| » pour un jour sans cours. */
+  function cibleDeCle(cle) {
+    var s = String(cle || "");
+    if (/^\d+\|\|$/.test(s)) {
+      var jd = +s.split("|")[0];
+      if (jd < 0 || jd > 6) return null;
+      return { c: pseudoJour(jd), cle: s };
+    }
+    var p = s.split(":");
+    var j = +p[0], i = +p[1];
+    if (isNaN(j) || isNaN(i)) return null;
+    var liste = coursDe(sem, j);
+    if (i < 0 || i >= liste.length) return null;
+    return { c: liste[i], cle: j + ":" + i };
+  }
 
   function modifierProfil(id) {
     var p = profilParId(id);
@@ -8314,6 +8807,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       if (idx >= 0) profils.splice(idx, 1);
       supprimerProfilDistant(id); // efface aussi la ligne cloud, si connecté
       oublierSemaines(id);        // et la mémoire des semaines vues
+      oublierEcheances(id);       // et les devoirs / examens du cours
       if (profil && profil.id === id) profil = profils[Math.min(idx, profils.length - 1)] || null;
       carteOuverte = null;
       sauverProfils();
@@ -8583,6 +9077,19 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     } catch (e) { /* jetable */ }
   }
   document.getElementById("jours").addEventListener("click", function (e) {
+    var ajoutEch = e.target.closest(".ech-add");
+    if (ajoutEch) {
+      var cible = cibleDeCle(ajoutEch.getAttribute("data-ech-cible"));
+      if (cible) ouvrirEcheance(cible.c);
+      return;
+    }
+    var supprEch = e.target.closest(".ech-suppr");
+    if (supprEch) {
+      var ligne = supprEch.closest(".ech");
+      var cibleSuppr = ligne && cibleDeCle(ligne.getAttribute("data-ech-cle"));
+      if (cibleSuppr) supprimerEcheance(cibleSuppr.c, supprEch.getAttribute("data-ech-suppr"));
+      return;
+    }
     var c = e.target.closest(".cbtn");
     if (c) {
       // Jour à un seul cours : déjà déroulé et non refermable.
@@ -8928,6 +9435,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     if (e.key !== "Escape") return;
     if (exportOuvert()) { fermerExport(); return; }
     if (bugOuvert()) { fermerBug(); return; }
+    if (echeanceOuverte()) { fermerEcheance(); return; }
     if (confirmationOuverte() || editionOuverte()) return;
     if (dragCarte) { dragTermine(false); return; } // Échap repose la carte
     if (menusOuverts()) { fermerMenus(); return; } // Échap ferme d'abord le menu, puis les réglages
@@ -9319,11 +9827,13 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     return JSON.stringify([d.cours, d.groupes, d.meta.periode, d.meta.premier_lundi, d.meta.feries, d.infos || null]);
   }
   var derniereMaj = 0;
+  var actualisation = null; // requête en vol : deux appels ne font qu'un
   function actualiser() {
     if (!profil) return Promise.resolve(false);
+    if (actualisation) return actualisation;
     derniereMaj = Date.now();
     var p = profil;
-    return chargerProfil(p).then(function (data) {
+    actualisation = chargerProfil(p).then(function (data) {
       if (profil !== p) return false; // profil changé entre-temps
       // Un horaire sur mesure a une formation vide : on compare le profil.
       var meme = DATA && (DATA.perso || data.perso
@@ -9339,9 +9849,13 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       if (vue === "horaire") afficherHoraire();
       return true;
     });
+    var fin = function () { actualisation = null; };
+    actualisation.then(fin, fin);
+    return actualisation;
   }
   document.addEventListener("visibilitychange", function () {
-    if (profil && document.visibilityState === "visible" && Date.now() - derniereMaj > 600000) {
+    if (demarrageFini && vue === "horaire" && profil &&
+        document.visibilityState === "visible" && Date.now() - derniereMaj > 600000) {
       actualiser().catch(function () { /* on garde ce qui est affiché */ });
     }
   });
@@ -9414,7 +9928,7 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
   /* ---------- Démarrage ----------
      Ouvre le dernier horaire revu (connecté par défaut) : le cache local
      s'affiche tout de suite, puis actualiser() va chercher l'école. */
-  function demarrerHoraire() {
+  function rafraichirHoraireLocal() {
     var memo = memoProfil(profil);
     if (memo) {
       installer(memo);
@@ -9422,6 +9936,9 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
       deplierAujourdhui();
     }
     afficherHoraire();
+  }
+  function demarrerHoraire() {
+    rafraichirHoraireLocal();
     actualiser().catch(function (e) {
       if (!DATA && vue === "horaire") {
         erreur(document.getElementById("horaire-status"),
@@ -9430,23 +9947,9 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     });
     tracerVisite();
   }
-  /* ---------- Démarrage ----------
-     D'abord le cloud (/api/config puis session Supabase : un retour OAuth
-     arrive avec sa session), on tire les horaires du
-     compte, puis on route : pas de compte -> connexion, compte sans nom ->
-     identité, sinon dernier horaire revu (connecté par défaut). */
-  chargerConfigSupabase().then(function () {
-    return MODE_ESSAI ? null : initSupabase();
-  }).then(function () {
-    if (!MODE_ESSAI && sessionSupabase && sessionSupabase.user) {
-      return pullProfils().then(function () { return null; }, function () { return null; });
-    }
-    return null;
-  }).then(function () {
-    demarrageFini = true;
-    // Visiteur sans compte : c'est une arrivée dans l'app (le retour d'un
-    // OAuth a une session, donc n'est pas recompté).
-    if (!MODE_ESSAI && !sessionSupabase && window.EZH_SUIVI) EZH_SUIVI.arrivee("app");
+  /* Route sur ce que l'appareil sait déjà : compte et horaires en cache,
+     création en cours. Aucun aller-retour réseau avant l'affichage. */
+  function router() {
     if (MODE_ESSAI) {
       // Pas de connexion : un compte local de circonstance, pas de synchro.
       if (!compte || compte.fournisseur !== "essai") {
@@ -9478,6 +9981,37 @@ catch (e) { document.documentElement.setAttribute("data-apparence", "systeme"); 
     } else {
       ouvrirEcoles();
     }
+  }
+  /* ---------- Démarrage ----------
+     L'écran se décide d'abord sur l'appareil (aucune attente réseau) ;
+     le cloud (/api/config puis session Supabase) se branche derrière. Un
+     retour OAuth ou « mot de passe oublié » fait exception : la session
+     est dans l'adresse, il faut Supabase pour la lire, on attend. */
+  var retourCloud = /[?&#](code|access_token)=/.test(location.search + location.hash) ||
+                    /(^|[&#?])type=recovery/.test(location.search + location.hash);
+  // Partagée avec suivi.js (window.EZH_CONFIG_PROMESSE) : un seul
+  // /api/config par visite, et la forme {url, cle} attendue par le suivi.
+  window.EZH_CONFIG_PROMESSE = chargerConfigSupabase().then(function (ok) {
+    return ok ? { url: SUPABASE_CONFIG.URL, cle: SUPABASE_CONFIG.CLE_ANON } : null;
+  });
+  if (!retourCloud) {
+    demarrageFini = true;
+    router();
+  }
+  window.EZH_CONFIG_PROMESSE.then(function () {
+    return MODE_ESSAI ? null : initSupabase();
+  }).then(function () {
+    if (!MODE_ESSAI && sessionSupabase && sessionSupabase.user) {
+      return pullProfils().then(function () { return null; }, function () { return null; });
+    }
+    return null;
+  }).then(function () {
+    demarrageFini = true;
+    // Visiteur sans compte : c'est une arrivée dans l'app (le retour d'un
+    // OAuth a une session, donc n'est pas recompté).
+    if (!MODE_ESSAI && !sessionSupabase && window.EZH_SUIVI) EZH_SUIVI.arrivee("app");
+    // Retour OAuth / mot de passe oublié : la session est arrivée, on route.
+    if (retourCloud) router();
     // Un autre appareil a peut-être tout : on pousse le local en douceur.
     if (sessionSupabase) pushProfils().then(function () { /* jetable */ }, function () { /* jetable */ });
     // 1re connexion du compte sur mobile : pop-up écran d'accueil, une seule fois.

@@ -32,11 +32,14 @@ def lire_config():
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         url, cle = lire_config()
+        # Réponse publique et stable (clé anon, liste des écoles) : servie
+        # par le cache du navigateur puis celui du CDN. Sans ça, chaque
+        # ouverture de l'app payait un démarrage à froid de la fonction.
         repondre_json(self, 200, {
             "ok": True,
             "supabase": {"url": url, "anonKey": cle, "configure": bool(url and cle)},
             "ecoles": list(ECOLES),
-        })
+        }, cache="public, max-age=60, s-maxage=600, stale-while-revalidate=86400")
 
     def log_message(self, *args):
         pass  # silencieux

@@ -81,15 +81,21 @@
   function deja(nom) { return !!lire(PREFIXE + nom); }
   function marquer(nom) { ecrire(PREFIXE + nom, "1"); }
 
-  /* Config publique (même /api/config que l'app), demandée une seule fois. */
+  /* Config publique (même /api/config que l'app), demandée une seule fois.
+     Quand l'app est ouverte, on réutilise sa requête (window.EZH_CONFIG_PROMESSE)
+     au lieu d'en refaire une : un seul /api/config par visite. */
   function chargerConfig() {
     if (configPromise) return configPromise;
-    configPromise = fetch("api/config", { cache: "no-store" }).then(function (r) {
+    var partagee = window.EZH_CONFIG_PROMESSE;
+    configPromise = (partagee ? Promise.resolve(partagee) : fetch("api/config", { cache: "default" }).then(function (r) {
       return r.json();
     }).then(function (rep) {
       var s = (rep && rep.supabase) || {};
       if (!s.url || !s.anonKey) throw new Error("sans clés");
       return { url: String(s.url).replace(/\/+$/, ""), cle: s.anonKey };
+    })).then(function (c) {
+      if (!c || !c.url || !c.cle) throw new Error("sans clés");
+      return { url: String(c.url).replace(/\/+$/, ""), cle: c.cle };
     });
     return configPromise;
   }
