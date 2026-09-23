@@ -49,3 +49,8 @@ demo.html
 
 # Tests Node du moteur sur mesure : pas à servir en ligne.
 /test_*.mjs
+
+# Rapports et surveillance SEO (captures, logs, script Node local) : générés
+# hors ligne, aucune page ni l'app ne les référence. 31 Mo en moins à déployer.
+rapports-seo/
+surveillance-seo/
