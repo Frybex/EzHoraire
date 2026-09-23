@@ -437,7 +437,12 @@ les sources. `logos/ecoles/` est déployé, `logos/da/` et `logos/ez/`
 - `og-image.png` — aperçu des liens partagés (1200 × 630). Source :
   `logos/og/og-image.html`, rendu par `python3 logos/og/build.py`.
 - `robots.txt`, `sitemap.xml` — référencement (l'API, le dashboard et la
-  page de mot de passe sont exclus).
+  page de mot de passe sont exclus). Les `<lastmod>` se régénèrent depuis
+  l'historique git : `python3 maj_sitemap.py` (à lancer après une
+  retouche de page, `--check` pour vérifier sans écrire) ; tests :
+  `python3 test_sitemap.py`. Le hook `.githooks/pre-commit` refuse un
+  commit qui laisserait un `<lastmod>` périmé (activer une fois :
+  `git config core.hooksPath .githooks`).
 - `mot-de-passe.html` — page d'atterrissage du lien « mot de passe oublié »
   (vérification du jeton, adresse du compte, choix et enregistrement du
   nouveau mot de passe, renvoi d'un lien si celui-ci a expiré).

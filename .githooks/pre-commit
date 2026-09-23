@@ -1,0 +1,10 @@
+#!/bin/sh
+# Refuse un commit quand un <lastmod> de sitemap.xml ne reflète plus la
+# dernière modification de sa page. Activer une fois :
+#   git config core.hooksPath .githooks
+sortie=$(python3 maj_sitemap.py --check 2>&1)
+if [ $? -ne 0 ]; then
+    printf '%s\n' "$sortie" >&2
+    echo "Commit refusé : lancez « python3 maj_sitemap.py », ajoutez sitemap.xml, puis relancez le commit." >&2
+    exit 1
+fi

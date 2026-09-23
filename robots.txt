@@ -1,7 +1,9 @@
 User-agent: *
 Allow: /
 Disallow: /api/
-Disallow: /dashboard.html
-Disallow: /mot-de-passe.html
+# Pas de Disallow sur dashboard.html ni mot-de-passe.html : leur
+# <meta name="robots" content="noindex"> n'est pris en compte que si
+# Google peut crawler la page. Bloquer le crawl empêcherait de voir
+# le noindex (l'URL pourrait alors rester listée, sans contenu).
 
 Sitemap: https://www.ezhoraire.be/sitemap.xml

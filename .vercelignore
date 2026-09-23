@@ -1,5 +1,6 @@
 # Fichiers utilitaires : ne pas déployer sur Vercel
 serve.py
+maj_sitemap.py
 README.md
 AGENTS.md
 CLAUDE.md
@@ -7,6 +8,7 @@ supabase/
 # Modèles d'email : à coller dans Supabase, pas à servir sur le site.
 emails/
 .agents/
+.githooks/
 skills-lock.json
 __pycache__/
 .venv/
