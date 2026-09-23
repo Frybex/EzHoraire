@@ -117,6 +117,18 @@
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, stale-while-revalidate=86400" }]
     },
     {
+      "source": "/propositions/(.*)",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+    },
+    {
+      "source": "/propositions-grands-ecrans.html",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+    },
+    {
+      "source": "/test-bug.html",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+    },
+    {
       "source": "/(.*)",
       "headers": [
         { "key": "X-Content-Type-Options", "value": "nosniff" },
