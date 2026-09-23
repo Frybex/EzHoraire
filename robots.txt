@@ -3,8 +3,5 @@ Allow: /
 Disallow: /api/
 Disallow: /dashboard.html
 Disallow: /mot-de-passe.html
-Disallow: /propositions/
-Disallow: /propositions-grands-ecrans.html
-Disallow: /test-bug.html
 
 Sitemap: https://www.ezhoraire.be/sitemap.xml
