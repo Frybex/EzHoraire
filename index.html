@@ -3650,7 +3650,7 @@ try {
   "use strict";
   /* Version du parcours, jointe aux étapes anonymes : à incrémenter à
      chaque correctif, pour comparer « avant / après » dans le dashboard. */
-  window.EZH_VERSION = "6";
+  window.EZH_VERSION = "7";
   var JOURS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
   var MOIS = ["janv.", "févr.", "mars", "avr.", "mai", "juin",
               "juil.", "août", "sept.", "oct.", "nov.", "déc."];
@@ -4115,6 +4115,8 @@ try {
      avant : rien ne casse.
      Les horaires sont synchronisés dans la table `profils`
      (voir supabase/schema.sql) : fusion par id, le dernier écrit gagne.
+     Les devoirs et examens suivent dans la table `echeances` : fusion
+     par id, chaque échéance garde son identifiant.
      Côté consoles, reste à activer les fournisseurs (guide dans README,
      section Comptes) : Google (Client ID OAuth), GitHub (OAuth App),
      Email (natif). */
@@ -4147,6 +4149,10 @@ try {
     themeChoisiIdentite = 2;
     ecrire(CLE_PROFILS, profils);
     ecrire(CLE_COURANT, null);
+    _echTout = null; // devoirs d'un autre compte : le cloud les rendra si besoin
+    try { localStorage.removeItem(CLE_ECHEANCES); } catch (e) { /* jetable */ }
+    try { localStorage.removeItem(CLE_ECH_SUPPR); } catch (e) { /* jetable */ }
+    try { localStorage.removeItem(CLE_ECH_SYNC); } catch (e) { /* jetable */ }
     effacerBrouillon();
     try { localStorage.removeItem(CLE_PROFIL_LEGACY); } catch (e) { /* jetable */ }
     adminVerifie = false;
@@ -4466,7 +4472,8 @@ try {
     rendreAvatar();
     statutAuthEffacer();
     suiviCompte(user);
-    var p = pullProfils().then(function () { return null; }, function () { return null; });
+    var p = pullProfils().then(function () { return pullEcheances(); }, function () { return pullEcheances(); })
+      .then(function () { return null; }, function () { return null; });
     if (!demarrageFini) return p;
     return p.then(function () {
       if (generation !== generationCompte || !compte || compte.supabase_id !== user.id) return;
@@ -4480,8 +4487,13 @@ try {
       // Même compte et horaire déjà ouvert par le routeur local (démarrage
       // instantané) : on redessine avec les profils fusionnés, sans
       // re-router — l'horaire ne repart pas pour un second chargement.
+      // La consultation est comptée ici : au démarrage, l'horaire en cache
+      // s'affiche avant que la session Supabase soit prête, donc le
+      // tracerVisite() de demarrerHoraire() a échoué faute de session. Le
+      // dédoublonnage (30 min par compte et horaire) évite tout doublon.
       if (precId === user.id && vue === "horaire" && profil) {
         rafraichirHoraireLocal();
+        tracerVisite();
         planifierPropositionPwa();
         return;
       }
@@ -4608,7 +4620,8 @@ try {
       return true;
     });
   }
-  /* Poussée différée après chaque changement local (renommage, ajout…). */
+  /* Poussée différée après chaque changement local (renommage, ajout…,
+     devoir, suppression…). */
   function planifierPush() {
     if (!SUPABASE_OK || !sb || !sessionSupabase) return;
     clearTimeout(pousseeMinutee);
@@ -4616,6 +4629,7 @@ try {
     pousseeMinutee = setTimeout(function () {
       if (generation !== generationCompte) return;
       pushProfils().then(function () { /* jetable */ }, function () { /* réessaiera au prochain changement */ });
+      pushEcheances().then(function () { /* jetable */ }, function () { /* réessaiera au prochain changement */ });
     }, 800);
   }
   function supprimerProfilDistant(id) {
@@ -4626,9 +4640,11 @@ try {
      Une consultation = ouverture de l'app sur un horaire, ou changement
      d'horaire. Fire-and-forget : jamais bloquant, jamais d'erreur visible.
      Table `visites` (voir supabase/schema.sql), RLS insert-only.
-     supabase-js réémet SIGNED_IN à chaque retour sur l'onglet, ce qui
-     relance demarrerHoraire() : le même horaire rouvert dans les 30 min
-     ne recompte pas (même fenêtre que api/stats.py). */
+     Au démarrage instantané, la session Supabase n'est pas encore prête
+     quand l'horaire en cache s'affiche : retourOAuth() (SIGNED_IN, y
+     compris réémis au retour sur l'onglet) rattrape le comptage une fois
+     la session là. Le même horaire rouvert dans les 30 min ne recompte
+     pas (même fenêtre que api/stats.py). */
   var CLE_VISITES = "ezh_visites_tracees";
   function tracerVisite() {
     try {
@@ -7905,8 +7921,11 @@ try {
      Chaque horaire a ses propres échéances, rangées sous une clé : un cours
      (jour, heure de début, matière) ou un jour sans cours (férié, libre) —
      dans ce cas la clé est « jour|| ». Elles suivent la semaine d'une
-     semaine à l'autre et ne passent jamais d'un horaire à l'autre. Tout
-     reste dans le navigateur, comme le reste de l'horaire. */
+     semaine à l'autre et ne passent jamais d'un horaire à l'autre.
+     Connecté, elles voyagent dans la table `echeances` (voir
+     supabase/schema.sql) : ajoutées sur le téléphone, elles apparaissent
+     sur les autres appareils. Hors ligne ou sans cloud, le localStorage
+     seul fait foi. */
   var CLE_ECHEANCES = "ezh_echeances";
   var JOURS_COURTS = ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."];
   var _echTout = null; // cache d'un rendu, invalidé à chaque écriture
@@ -7948,14 +7967,304 @@ try {
       if (!Object.keys(tous[profil.id]).length) delete tous[profil.id];
     }
     ecrire(CLE_ECHEANCES, tous);
+    planifierPush(); // cloud (Supabase) si connecté, sinon rien
   }
   function echeancesDe(c) { return echeancesSous(cleCoursEch(c)); }
   function ecrireEcheances(c, liste) { ecrireEcheancesSous(cleCoursEch(c), liste); }
   function echeancesJour(jour) { return echeancesSous(cleJourEch(jour)); }
-  /* Horaire supprimé : ses échéances s'en vont avec. */
+  /* Horaire supprimé : ses échéances s'en vont avec, ici et dans le cloud. */
   function oublierEcheances(id) {
     var tous = lireEcheancesTout();
-    if (tous[id]) { delete tous[id]; ecrire(CLE_ECHEANCES, tous); }
+    if (tous[id]) {
+      var ids = [], parCle = tous[id];
+      for (var cle in parCle) {
+        if (!parCle.hasOwnProperty(cle) || !Array.isArray(parCle[cle])) continue;
+        for (var k = 0; k < parCle[cle].length; k++) if (parCle[cle][k] && parCle[cle][k].id) ids.push(parCle[cle][k].id);
+      }
+      oublierSyncEch(ids);
+      delete tous[id]; ecrire(CLE_ECHEANCES, tous);
+    }
+    if (!id) return;
+    fileSupprEch({ profil: id, tout: true });
+    supprimerEcheancesDistantes(id);
+    planifierPush(); // rejoue la suppression si l'appareil était hors ligne
+  }
+  /* ---------- Devoirs et examens dans le cloud (table `echeances`) ----------
+     Fusion par id : chaque échéance a son identifiant stable, deux
+     appareils qui ajoutent chacun un devoir ne s'écrasent pas (le pull
+     unit les deux listes). Une échéance n'est jamais modifiée, seulement
+     ajoutée ou supprimée : la suppression d'un autre appareil ne
+     s'applique ici que si la ligne n'y est plus (appareil neuf) — un
+     appareil qui l'avait déjà garde sa copie locale, comme les horaires
+     (voir pullProfils : pas de tombeau distant, une suppression peut
+     ressusciter si un appareil hors ligne la repousse ; il suffit alors
+     de la supprimer à nouveau).
+     Les suppressions locales partent tout de suite, et sont gardées dans
+     `ezh_echeances_suppr` jusqu'à leur envoi : un appareil hors ligne au
+     moment de la suppression la rejoue à la prochaine poussée.
+     Pour qu'une suppression ne ressuscite jamais (un appareil hors ligne
+     garderait sa copie et la repousserait à sa reconnexion), chaque
+     appareil retient dans `ezh_echeances_sync` les identifiants déjà vus
+     sur le cloud : au tirage, une ligne locale absente du cloud mais
+     déjà synchronisée vient d'être supprimée ailleurs — elle est effacée
+     ici aussi. Une ligne jamais synchronisée est un ajout hors ligne :
+     elle est gardée, puis poussée. */
+  // Table absente du cloud (schema.sql pas rejoué) : on reste en local,
+  // comme les horaires sur mesure sans colonne `sources` (voir pushProfils).
+  var baseSansEcheances = false;
+  var CLE_ECH_SUPPR = "ezh_echeances_suppr";
+  var ECH_MAX_DISTANTES = 500; // même plafond que limiter_echeances()
+  /* Une échéance venue du cloud (ou en partance) : nettoyée, jamais
+     crue sur parole — une ligne illisible est ignorée, pas stockée. */
+  function echeancePropre(e) {
+    if (!e || typeof e !== "object") return null;
+    var id = String(e.id || "");
+    if (!id || id.length > 120) return null;
+    var titre = String(e.titre || "").replace(/\s+/g, " ").trim().slice(0, 200);
+    if (!titre) return null;
+    var date = String(e.date || "");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
+    var heure = String(e.heure || "");
+    if (heure && !/^([01]\d|2[0-3]):[0-5]\d$/.test(heure)) heure = "";
+    var cree = +e.cree;
+    if (!(cree >= 0)) cree = 0;
+    return { id: id, type: e.type === "examen" ? "examen" : "devoir",
+             titre: titre, date: date, heure: heure,
+             cree: Math.min(Math.floor(cree), 9999999999999) };
+  }
+  function lireFileSupprEch() {
+    var f = lire(CLE_ECH_SUPPR);
+    return Array.isArray(f) ? f : [];
+  }
+  function ecrireFileSupprEch(file) { ecrire(CLE_ECH_SUPPR, file); }
+  /* Une suppression à rejouer : unitaire ({profil, cle, id}) ou tout un
+     horaire ({profil, tout}). Un tout-horaire rend ses suppressions
+     unitaires inutiles. Bornée : au-delà de 200, les plus anciennes sont
+     oubliées (le pire cas est une suppression à refaire à la main). */
+  function fileSupprEch(cible) {
+    if (!cible || !cible.profil) return;
+    var pid = String(cible.profil).slice(0, 120);
+    var file = lireFileSupprEch().filter(function (x) {
+      if (!x || x.profil !== pid) return true;
+      return cible.tout ? false : x.id !== cible.id;
+    });
+    file.push(cible.tout ? { profil: pid, tout: true }
+                         : { profil: pid, cle: String(cible.cle || "").slice(0, 300),
+                             id: String(cible.id || "").slice(0, 120) });
+    if (file.length > 200) file = file.slice(file.length - 200);
+    ecrireFileSupprEch(file);
+  }
+  function supprCouvre(file, profilId, id) {
+    for (var i = 0; i < file.length; i++) {
+      var x = file[i];
+      if (!x || x.profil !== profilId) continue;
+      if (x.tout || x.id === id) return true;
+    }
+    return false;
+  }
+  /* Identifiants déjà vus sur le cloud (poussés ou tirés) : c'est ce qui
+     distingue « ajout hors ligne à garder » de « suppression d'ailleurs
+     à appliquer ». Borné : au-delà de 2000, les plus anciens sont oubliés
+     (le pire cas est une suppression à refaire une fois à la main). */
+  var CLE_ECH_SYNC = "ezh_echeances_sync";
+  function lireSyncEch() {
+    var m = lire(CLE_ECH_SYNC);
+    return m && typeof m === "object" && !Array.isArray(m) ? m : {};
+  }
+  function ecrireSyncEch(m) { ecrire(CLE_ECH_SYNC, m); }
+  function marquerSyncEch(ids) {
+    if (!ids || !ids.length) return;
+    var m = lireSyncEch(), change = false, i;
+    for (i = 0; i < ids.length; i++) if (ids[i] && !m[ids[i]]) { m[ids[i]] = 1; change = true; }
+    if (!change) return;
+    var cles = Object.keys(m);
+    if (cles.length > 2000) for (i = 0; i < cles.length - 2000; i++) delete m[cles[i]];
+    ecrireSyncEch(m);
+  }
+  function oublierSyncEch(ids) {
+    if (!ids || !ids.length) return;
+    var m = lireSyncEch(), change = false;
+    for (var i = 0; i < ids.length; i++) if (ids[i] && m[ids[i]]) { delete m[ids[i]]; change = true; }
+    if (change) ecrireSyncEch(m);
+  }
+  /* Lignes à pousser : échéances valides des horaires connus. Un horaire
+     inconnu (autre compte, avant le tri du changement de compte) reste
+     local : il ne part jamais sous un autre user_id. */
+  function lignesEcheancesLocales(uid) {
+    var lignes = [], connus = {};
+    for (var i = 0; i < profils.length; i++) if (profils[i] && profils[i].id) connus[profils[i].id] = true;
+    var tous = lireEcheancesTout();
+    for (var pid in tous) {
+      if (!tous.hasOwnProperty(pid) || !connus[pid]) continue;
+      var parCle = tous[pid];
+      if (!parCle || typeof parCle !== "object") continue;
+      for (var cle in parCle) {
+        if (!parCle.hasOwnProperty(cle)) continue;
+        var liste = parCle[cle];
+        if (!Array.isArray(liste)) continue;
+        var c = String(cle).slice(0, 300);
+        if (!c) continue;
+        for (var k = 0; k < liste.length; k++) {
+          var e = echeancePropre(liste[k]);
+          if (!e) continue;
+          lignes.push({ user_id: uid, profil_id: pid, cle: c, id: e.id, type: e.type,
+                        titre: e.titre, date: e.date, heure: e.heure, cree: e.cree });
+          if (lignes.length >= ECH_MAX_DISTANTES) return lignes;
+        }
+      }
+    }
+    return lignes;
+  }
+  /* Suppression immédiate (horaire effacé) : la file rejouera en
+     différé si l'appareil est hors ligne. */
+  function supprimerEcheancesDistantes(profilId, cle, id) {
+    if (baseSansEcheances || !SUPABASE_OK || !sb || !sessionSupabase || !sessionSupabase.user) return;
+    var q = sb.from("echeances").delete().eq("user_id", sessionSupabase.user.id).eq("profil_id", profilId);
+    if (id) q = q.eq("cle", cle || "").eq("id", id);
+    q.then(function (res) {
+      var msg = res.error ? String(res.error.message || "") : "";
+      if (msg && /echeances/i.test(msg)) baseSansEcheances = true;
+    }, function () { /* la file rejouera */ });
+  }
+  /* Suppressions en attente : une à une, les ratées restent en file. */
+  function rejouerSupprEch(uid) {
+    var file = lireFileSupprEch();
+    if (!file.length) return Promise.resolve(true);
+    var ratees = [], suiv = 0;
+    function une() {
+      if (suiv >= file.length) { ecrireFileSupprEch(ratees); return true; }
+      var x = file[suiv++];
+      if (!x || !x.profil || (!x.tout && !x.id)) return une();
+      var q = sb.from("echeances").delete().eq("user_id", uid).eq("profil_id", x.profil);
+      if (!x.tout) q = q.eq("cle", x.cle || "").eq("id", x.id);
+      return q.then(function (res) {
+        if (res.error) {
+          var msg = String(res.error.message || "");
+          if (/echeances/i.test(msg)) baseSansEcheances = true;
+          ratees.push(x);
+        }
+        return une();
+      }, function () { ratees.push(x); return une(); });
+    }
+    return une().then(function () { return true; });
+  }
+  function pushEcheances() {
+    if (!SUPABASE_OK || !sb || !sessionSupabase || !sessionSupabase.user || !compte || compte.supabase_id !== sessionSupabase.user.id) return Promise.resolve(false);
+    if (baseSansEcheances) return Promise.resolve(false);
+    var uid = sessionSupabase.user.id;
+    var lignes = lignesEcheancesLocales(uid);
+    function pousse() {
+      if (!lignes.length) return Promise.resolve({});
+      return sb.from("echeances").upsert(lignes, { onConflict: "user_id,profil_id,cle,id" }).then(function (res) {
+        var msg = res.error ? String(res.error.message || "") : "";
+        if (msg && /echeances/i.test(msg)) { baseSansEcheances = true; return {}; }
+        return res;
+      });
+    }
+    return pousse().then(function (res) {
+      if (res.error) throw res.error;
+      // L'envoi a réussi : ces identifiants existent sur le cloud. Leur
+      // absence à un prochain tirage signifiera « supprimé ailleurs ».
+      var ids = [];
+      for (var i = 0; i < lignes.length; i++) if (lignes[i] && lignes[i].id) ids.push(lignes[i].id);
+      marquerSyncEch(ids);
+      return rejouerSupprEch(uid);
+    });
+  }
+  var pullEchEnVol = null; // comme pullEnVol : deux appels ne font qu'une requête
+  function pullEcheances() {
+    if (!SUPABASE_OK || !sb || !sessionSupabase || !sessionSupabase.user || !compte || compte.supabase_id !== sessionSupabase.user.id) return Promise.resolve(false);
+    if (baseSansEcheances) return Promise.resolve(false);
+    if (pullEchEnVol) return pullEchEnVol;
+    pullEchEnVol = pullEcheancesMaintenant();
+    var fin = function () { pullEchEnVol = null; };
+    pullEchEnVol.then(fin, fin);
+    return pullEchEnVol;
+  }
+  function pullEcheancesMaintenant() {
+    var uid = sessionSupabase.user.id;
+    var generation = generationCompte;
+    return sb.from("echeances").select("profil_id,cle,id,type,titre,date,heure,cree").eq("user_id", uid).then(function (res) {
+      if (generation !== generationCompte || !sessionSupabase || !sessionSupabase.user || sessionSupabase.user.id !== uid || !compte || compte.supabase_id !== uid) return false;
+      var msg = res.error ? String(res.error.message || "") : "";
+      if (msg && /echeances/i.test(msg)) { baseSansEcheances = true; return false; }
+      if (res.error) throw res.error;
+      var connus = {};
+      for (var i = 0; i < profils.length; i++) if (profils[i] && profils[i].id) connus[profils[i].id] = true;
+      var file = lireFileSupprEch();
+      var tous = lireEcheancesTout(), change = false, vus = {}, distIds = [];
+      (res.data || []).forEach(function (l) {
+        if (!l || !connus[l.profil_id]) return;
+        var e = echeancePropre(l);
+        if (!e) return;
+        var cle = String(l.cle || "").slice(0, 300);
+        if (!cle || supprCouvre(file, l.profil_id, e.id)) return;
+        vus[l.profil_id + "\n" + cle + "\n" + e.id] = true;
+        distIds.push(e.id);
+        if (!tous[l.profil_id]) tous[l.profil_id] = {};
+        var liste = tous[l.profil_id][cle];
+        if (!Array.isArray(liste)) { liste = tous[l.profil_id][cle] = []; change = true; }
+        var a = false;
+        for (var k = 0; k < liste.length; k++) if (liste[k] && liste[k].id === e.id) { a = true; break; }
+        if (!a) { liste.push(e); change = true; }
+      });
+      // Tirées du cloud : ces identifiants y existent, on les retient.
+      marquerSyncEch(distIds);
+      // Absente du cloud mais déjà synchronisée, et pas en file de
+      // suppression locale : c'est une suppression d'un autre appareil —
+      // elle s'applique ici au lieu de ressusciter à la prochaine poussée.
+      var sync = lireSyncEch(), syncChange = false;
+      for (var dPid in tous) {
+        if (!tous.hasOwnProperty(dPid) || !connus[dPid]) continue;
+        var dCle = tous[dPid];
+        for (var dC in dCle) {
+          if (!dCle.hasOwnProperty(dC)) continue;
+          var dListe = dCle[dC];
+          if (!Array.isArray(dListe)) continue;
+          var garde = [];
+          for (var dK = 0; dK < dListe.length; dK++) {
+            var dE = dListe[dK];
+            if (dE && dE.id && !vus[dPid + "\n" + dC + "\n" + dE.id] && sync[dE.id] && !supprCouvre(file, dPid, dE.id)) {
+              delete sync[dE.id]; syncChange = true; change = true;
+            } else garde.push(dE);
+          }
+          if (garde.length !== dListe.length) {
+            if (garde.length) dCle[dC] = garde;
+            else delete dCle[dC];
+          }
+        }
+        if (!Object.keys(dCle).length) delete tous[dPid];
+      }
+      if (syncChange) ecrireSyncEch(sync);
+      if (change) {
+        ecrire(CLE_ECHEANCES, tous);
+        // L'horaire affiché suit : le devoir d'un autre appareil apparaît
+        // sans recharger (sauf bulle ou fenêtre ouverte : elles gardent
+        // leur contenu, le prochain rendu affichera tout).
+        if (demarrageFini && vue === "horaire" && profil && !pop.classList.contains("visible") && !echeanceOuverte()) {
+          try { rafraichirHoraireLocal(); } catch (e) { /* jetable */ }
+        }
+      }
+      // Des lignes locales manquent au cloud (ajoutées hors ligne) : elles
+      // partent maintenant, sinon les autres appareils les attendraient
+      // jusqu'à la prochaine modification.
+      var manque = false;
+      for (var pid in tous) {
+        if (!tous.hasOwnProperty(pid) || !connus[pid] || manque) continue;
+        var parCle = tous[pid];
+        for (var c2 in parCle) {
+          if (!parCle.hasOwnProperty(c2) || manque) continue;
+          var l2 = parCle[c2];
+          if (!Array.isArray(l2)) continue;
+          for (var k2 = 0; k2 < l2.length; k2++) {
+            var e2 = l2[k2];
+            if (e2 && e2.id && !vus[pid + "\n" + c2 + "\n" + e2.id] && !supprCouvre(file, pid, e2.id)) { manque = true; break; }
+          }
+        }
+      }
+      if (manque) pushEcheances().then(function () { /* jetable */ }, function () { /* réessaiera au prochain changement */ });
+      return change;
+    });
   }
   function jourEch(iso) {
     var p = String(iso || "").split("-");
@@ -8951,6 +9260,8 @@ try {
       confirmer: "Supprimer"
     }).then(function (ok) {
       if (!ok) return;
+      if (profil) fileSupprEch({ profil: profil.id, cle: cleCoursEch(c), id: id });
+      oublierSyncEch([id]);
       ecrireEcheances(c, echeancesDe(c).filter(function (x) { return x.id !== id; }));
       var depuisPop = pop.classList.contains("visible");
       rendre(depuisPop);
@@ -10776,7 +11087,8 @@ try {
     return MODE_ESSAI ? null : initSupabase();
   }).then(function () {
     if (!MODE_ESSAI && sessionSupabase && sessionSupabase.user) {
-      return pullProfils().then(function () { return null; }, function () { return null; });
+      return pullProfils().then(function () { return pullEcheances(); }, function () { return pullEcheances(); })
+        .then(function () { return null; }, function () { return null; });
     }
     return null;
   }).then(function () {
@@ -10787,7 +11099,10 @@ try {
     // Retour OAuth / mot de passe oublié : la session est arrivée, on route.
     if (retourCloud) router();
     // Un autre appareil a peut-être tout : on pousse le local en douceur.
-    if (sessionSupabase) pushProfils().then(function () { /* jetable */ }, function () { /* jetable */ });
+    if (sessionSupabase) {
+      pushProfils().then(function () { /* jetable */ }, function () { /* jetable */ });
+      pushEcheances().then(function () { /* jetable */ }, function () { /* jetable */ });
+    }
     // 1re connexion du compte sur mobile : pop-up écran d'accueil, une seule fois.
     // Session cloud (dont retour OAuth traité avant le routeur), mode essai,
     // ou compte local avec identité : jamais pour un visiteur non connecté.

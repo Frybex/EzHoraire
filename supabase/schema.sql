@@ -3,6 +3,8 @@
 -- Ce que ça crée :
 --   table public.profils : un profil = un horaire complet
 --     (école + formation + groupes), relié au compte via user_id.
+--   table public.echeances : un devoir / examen = une ligne
+--     (profil_id + clé du cours), synchronisée entre les appareils.
 --   RLS : chacun ne voit / ne touche que SES lignes.
 --   updated_at : mis à jour seul à chaque écriture (conflits = dernier
 --     écrit gagne, l'app fusionne par id).
@@ -670,3 +672,126 @@ grant execute on function public.purger_pdf_exports(integer) to service_role;
 -- Si l'extension pg_cron est activée, planifier la purge avec les autres :
 -- select cron.schedule('ezh-purge-pdf', '29 4 * * *',
 --                      'select public.purger_pdf_exports(180)');
+
+-- ---------------------------------------------------------------
+-- EzHoraire — devoirs et examens (échéances), synchronisés entre
+-- les appareils du compte.
+-- Une ligne = une échéance d'un horaire : profil_id + clé du cours
+-- (« jour|debut|matiere », ou « jour|| » pour un jour sans cours).
+-- Avant, l'app ne les rangeait que dans le navigateur (localStorage
+-- `ezh_echeances`) : un devoir ajouté sur le téléphone restait
+-- invisible ailleurs. Fusion par id : chaque échéance a son
+-- identifiant stable, deux appareils qui ajoutent chacun un devoir
+-- ne s'écrasent pas. Les suppressions partent tout de suite, et sont
+-- rejouées à la prochaine poussée si l'appareil était hors ligne.
+-- RLS : chacun ne voit / ne touche que SES lignes.
+-- Rejouable : table + contrainte recréées à chaque passage.
+-- ---------------------------------------------------------------
+create table if not exists public.echeances (
+  user_id    uuid        not null references auth.users (id) on delete cascade,
+  profil_id  text        not null,
+  cle        text        not null,
+  id         text        not null,
+  type       text        not null default 'devoir',
+  titre      text        not null default '',
+  date       text        not null default '',
+  heure      text        not null default '',
+  cree       bigint      not null default 0,
+  updated_at timestamptz not null default now(),
+  primary key (user_id, profil_id, cle, id)
+);
+
+-- Horodatage auto (même fonction que les profils).
+drop trigger if exists trg_echeances_updated_at on public.echeances;
+create trigger trg_echeances_updated_at
+  before update on public.echeances
+  for each row execute function public.toucher_updated_at();
+
+-- Sécurité : tout est fermé par défaut, sauf ses propres lignes.
+alter table public.echeances enable row level security;
+
+drop policy if exists "echeances_select_propres" on public.echeances;
+create policy "echeances_select_propres" on public.echeances
+  for select using (auth.uid() = user_id);
+
+drop policy if exists "echeances_insert_propres" on public.echeances;
+create policy "echeances_insert_propres" on public.echeances
+  for insert with check (auth.uid() = user_id);
+
+drop policy if exists "echeances_update_propres" on public.echeances;
+create policy "echeances_update_propres" on public.echeances
+  for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+drop policy if exists "echeances_delete_propres" on public.echeances;
+create policy "echeances_delete_propres" on public.echeances
+  for delete using (auth.uid() = user_id);
+
+-- Bornes sur echeances : l'app écrit via la clé anon (RLS), un client
+-- trafiqué pourrait y stocker n'importe quoi. Mêmes ordres de grandeur
+-- que l'app : titre 80, clé « jour|debut|matiere », id 120 — avec de la
+-- marge. `date` et `heure` sont des textes au format fixe (jamais de
+-- vraies dates : l'app les affiche telles quelles).
+-- Rejouable : la contrainte est recréée à chaque passage.
+do $$
+begin
+  if exists (select 1 from pg_constraint where conname = 'echeances_bornes') then
+    alter table public.echeances drop constraint echeances_bornes;
+  end if;
+  alter table public.echeances add constraint echeances_bornes check (
+    char_length(profil_id) between 1 and 120
+    and char_length(cle) between 1 and 300
+    and char_length(id) between 1 and 120
+    and type in ('devoir', 'examen')
+    and char_length(titre) between 1 and 200
+    and date ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
+    and (heure = '' or heure ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$')
+    and cree >= 0 and cree <= 9999999999999
+  );
+end
+$$;
+
+-- Garde-fous d'usage (rejouable) : au plus 500 échéances / compte (un
+-- usage normal en compte des dizaines), textes bornés, horodatage posé
+-- par la base. SECURITY DEFINER : le comptage doit voir toute la table.
+create or replace function public.limiter_echeances()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  total integer;
+begin
+  new.updated_at := now();
+  new.profil_id  := left(new.profil_id, 120);
+  new.cle        := left(new.cle, 300);
+  new.id         := left(new.id, 120);
+  new.titre      := left(new.titre, 200);
+  new.heure      := left(new.heure, 5);
+  if new.type not in ('devoir', 'examen') then
+    raise exception 'Échéance invalide.';
+  end if;
+  if new.date !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' then
+    raise exception 'Échéance invalide.';
+  end if;
+  if new.cree is null or new.cree < 0 then
+    new.cree := 0;
+  end if;
+
+  -- Mise à jour d'une ligne déjà comptée : elle ne pèse pas double.
+  if tg_op = 'INSERT' then
+    select count(*) into total
+    from public.echeances
+    where user_id = new.user_id;
+
+    if total >= 500 then
+      raise exception 'Trop d''échéances enregistrées.';
+    end if;
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists trg_echeances_limite on public.echeances;
+create trigger trg_echeances_limite
+  before insert or update on public.echeances
+  for each row execute function public.limiter_echeances();
