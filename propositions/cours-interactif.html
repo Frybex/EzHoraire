@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>EzHoraire — Test interactif du nouveau cours</title>
+<style>
+  :root {
+    --bg: #eaf0fa;
+    --surface: #ffffff;
+    --ink: #17191d;
+    --muted: #626977;
+    --line: #e4e7ec;
+    --accent: #1d4fd7;
+    --accent-soft: rgba(29, 79, 215, .09);
+    --attention: #b26a00;
+    --free: #18794e;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0d1322;
+      --surface: #171a20;
+      --ink: #f0f3f7;
+      --muted: #98a1b1;
+      --line: #262b34;
+      --accent: #8ba6ff;
+      --accent-soft: rgba(139, 166, 255, .14);
+      --attention: #f0b866;
+      --free: #5fce96;
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    --relief-haut: color-mix(in srgb, var(--bg), #fff 78%);
+    --relief-bas: color-mix(in srgb, var(--bg), #fff 44%);
+    --reflet: rgba(255, 255, 255, .9);
+    --ombre-btn: 0 1px 2px rgba(23, 32, 68, .06), 0 2px 8px -4px rgba(23, 32, 68, .08);
+    --creux: color-mix(in srgb, var(--bg), #fff 60%);
+    --creux-ombre: rgba(23, 32, 68, .07);
+    margin: 0; color: var(--ink); background: var(--bg);
+    font-family: var(--font); font-size: 17px; line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+  }
+  @media (prefers-color-scheme: dark) {
+    body {
+      --relief-haut: color-mix(in srgb, var(--bg), #fff 7%);
+      --relief-bas: color-mix(in srgb, var(--bg), #fff 2.5%);
+      --reflet: rgba(255, 255, 255, .06);
+      --ombre-btn: 0 1px 2px rgba(0, 0, 0, .4), 0 4px 12px -6px rgba(0, 0, 0, .6);
+      --creux: color-mix(in srgb, var(--bg), #000 26%);
+      --creux-ombre: rgba(0, 0, 0, .4);
+    }
+  }
+  .wrap { max-width: 430px; margin: 0 auto; padding: 22px 16px 60px; }
+  .titre { font-size: 1.05rem; font-weight: 700; text-align: center; margin: 0 0 4px; letter-spacing: -.01em; }
+  .titre span { color: var(--accent); }
+  .aide { text-align: center; color: var(--muted); font-size: .84rem; margin: 0 0 18px; }
+
+  /* ---- Carte du jour ---- */
+  .day {
+    border-radius: 16px; margin: 0 0 10px;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  .day > button {
+    width: 100%; border: none; background: none; font: inherit; color: inherit;
+    display: flex; align-items: center; gap: 12px; text-align: left;
+    padding: 14px 14px; min-height: 62px; cursor: pointer; border-radius: 16px;
+  }
+  .dname strong { display: block; font-size: 1.02rem; font-weight: 600; letter-spacing: -.01em; }
+  .dsum { margin-left: auto; font-size: .96rem; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .dchev {
+    flex: none; width: 9px; height: 9px; margin: 0 4px 0 2px;
+    border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted);
+    transform: rotate(45deg); transition: transform .25s cubic-bezier(.16,1,.3,1), border-color .25s;
+  }
+  .day.open .dchev { transform: rotate(225deg); border-color: var(--ink); }
+  .dbody {
+    display: grid; grid-template-rows: 0fr; opacity: 0;
+    transition: grid-template-rows .32s cubic-bezier(.16,1,.3,1), opacity .25s;
+  }
+  .day.open .dbody { grid-template-rows: 1fr; opacity: 1; }
+  .dbody > div { overflow: hidden; }
+  .dsub { display: flex; align-items: center; padding: 0 14px 12px 33px; color: var(--muted); font-size: .85rem; }
+
+  /* ---- Le cours ---- */
+  .box {
+    margin: 0 10px 10px; padding: 10px 14px 10px 23px; border-radius: 13px;
+    background: var(--creux);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre);
+  }
+  ol.cours { list-style: none; margin: 0; padding: 0; }
+  ol.cours > li + li { border-top: 1px solid var(--line); }
+  .cbtn {
+    width: 100%; border: none; background: none; font: inherit; color: inherit;
+    display: flex; gap: 10px; align-items: flex-start; text-align: left;
+    padding: 9px 0; cursor: pointer; border-radius: 10px;
+  }
+  .cbtn.inactif { cursor: default; }
+  .cbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .cpoint {
+    flex: none; width: 8px; height: 8px; border-radius: 50%; margin-top: 6px;
+    background: hsl(var(--h) calc(52% - var(--v) * 10%) calc(52% + var(--v) * 7%));
+  }
+  .cbtn .h {
+    flex: none; min-width: 0; font-variant-numeric: tabular-nums;
+    color: var(--muted); font-size: .82rem; line-height: 1.25; white-space: nowrap;
+  }
+  .cbtn .hcol {
+    flex: none; min-width: 52px; display: flex; flex-direction: column;
+    align-items: flex-start; gap: 8px; align-self: stretch; justify-content: space-between;
+  }
+  .cbtn .ctxt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .cbtn .m {
+    font-weight: 550; font-size: .96rem; min-width: 0;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  dl.labs { margin: 0; display: flex; flex-direction: column; gap: 2px; }
+  .lab { display: flex; gap: 8px; font-size: .74rem; line-height: 1.3; }
+  .lab dt { flex: none; width: 42px; color: color-mix(in srgb, var(--muted) 75%, transparent); }
+  .lab dd { margin: 0; min-width: 0; color: var(--muted); }
+  .marques { flex: none; display: flex; flex-direction: column; gap: 4px; align-self: center; }
+  .ebadge {
+    width: 19px; height: 19px; border-radius: 50%;
+    display: grid; place-items: center; font-size: .62rem; font-weight: 750;
+    color: var(--c, var(--accent));
+    background: color-mix(in srgb, var(--c, var(--accent)) 12%, var(--surface));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c, var(--accent)) 32%, transparent);
+  }
+  /* Déplié : les pastilles laissent la place aux fiches. */
+  li.c.open .marques { display: none; }
+  /* Détail du cours : ouverture en douceur. */
+  .detail {
+    display: grid; grid-template-rows: 0fr; opacity: 0; visibility: hidden;
+    transition: grid-template-rows .28s cubic-bezier(.16,1,.3,1), opacity .22s, visibility 0s .28s;
+  }
+  li.c.open .detail {
+    grid-template-rows: 1fr; opacity: 1; visibility: visible;
+    transition: grid-template-rows .28s cubic-bezier(.16,1,.3,1), opacity .22s, visibility 0s;
+  }
+  .detail > div { overflow: hidden; }
+  .detail-in { padding: 0 0 12px; }
+  .ech-liste { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .ech {
+    display: flex; align-items: center; gap: 9px;
+    padding: 8px 10px; border-radius: 12px; font-size: .82rem;
+    background: var(--surface); box-shadow: inset 0 0 0 1px var(--line);
+  }
+  .ech-type {
+    flex: none; font-size: .62rem; font-weight: 750; text-transform: uppercase;
+    letter-spacing: .03em; border-radius: 6px; padding: 2px 6px;
+  }
+  .ech-type.devoir { color: var(--accent); background: var(--accent-soft); }
+  .ech-type.examen {
+    color: var(--attention);
+    background: color-mix(in srgb, var(--attention) 12%, var(--surface));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--attention) 30%, transparent);
+  }
+  .ech-corps { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .ech-titre { font-weight: 550; overflow-wrap: anywhere; }
+  .ech-quand { color: var(--muted); font-size: .76rem; }
+  .ech-suppr {
+    flex: none; width: 28px; height: 28px; margin: 0 -5px 0 0;
+    display: grid; place-items: center; border: none; border-radius: 9px;
+    background: none; color: var(--muted); font-size: 1rem; cursor: pointer;
+  }
+  /* Échéance du jour, sous les cours. */
+  .jour-ech { padding: 0 0 12px; }
+  .jour-ech .ech { background: var(--surface); }
+  /* Légende. */
+  .legende { margin: 18px 4px 0; color: var(--muted); font-size: .8rem; line-height: 1.7; }
+  .legende span { display: inline-flex; align-items: center; gap: 6px; margin-right: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="titre">Ez<span>Horaire</span> — nouveau cours</p>
+  <p class="aide">Tout est interactif : touche le jour, puis un cours. Seuls les cours avec une pastille s'ouvrent.</p>
+
+  <div class="day open" id="jour">
+    <button type="button" data-jour aria-expanded="true">
+      <span class="dname"><strong>Mercredi</strong></span>
+      <span class="dsum">08h15 → 17h30</span>
+      <span class="dchev" aria-hidden="true"></span>
+    </button>
+    <div class="dbody"><div>
+      <p class="dsub">23 sept.</p>
+      <div class="box">
+        <ol class="cours">
+
+          <!-- Sans échéance : salle + prof, la ligne ne s'ouvre pas -->
+          <li class="c">
+            <button class="cbtn inactif" type="button" aria-disabled="true">
+              <span class="hcol"><span class="h">08h15</span><span class="h">10h15</span></span>
+              <span class="cpoint" style="--h:221;--v:0"></span>
+              <span class="ctxt">
+                <span class="m">Droit constitutionnel</span>
+                <dl class="labs">
+                  <div class="lab"><dt>Salle</dt><dd>S.R42.5.503 - Auditoire Pierre DRION (bâtiment R)</dd></div>
+                  <div class="lab"><dt>Prof</dt><dd>DE VALERIOLA Sébastien</dd></div>
+                </dl>
+              </span>
+            </button>
+          </li>
+
+          <!-- Devoir + examen : deux pastilles, s'ouvre -->
+          <li class="c" data-deroulable>
+            <button class="cbtn" type="button" aria-expanded="false">
+              <span class="hcol"><span class="h">10h30</span><span class="h">12h30</span></span>
+              <span class="cpoint" style="--h:152;--v:0"></span>
+              <span class="ctxt">
+                <span class="m">Introduction à la sociologie</span>
+                <dl class="labs">
+                  <div class="lab"><dt>Salle</dt><dd>S.NB7.BOUT</dd></div>
+                  <div class="lab"><dt>Prof</dt><dd>LO GIUDICE Christophe</dd></div>
+                  <div class="lab"><dt>Groupe</dt><dd>Allison — S.NB7.BOUT</dd></div>
+                </dl>
+              </span>
+              <span class="marques"><span class="ebadge">D</span><span class="ebadge" style="--c:var(--attention)">E</span></span>
+            </button>
+            <div class="detail"><div><div class="detail-in">
+              <ul class="ech-liste">
+                <li class="ech">
+                  <span class="ech-type devoir">Devoir</span>
+                  <span class="ech-corps">
+                    <span class="ech-titre">Exercices 1 à 8 du chapitre 3</span>
+                    <span class="ech-quand">ven. 2 oct. · 10h30</span>
+                  </span>
+                  <button class="ech-suppr" type="button" aria-label="Supprimer">✕</button>
+                </li>
+                <li class="ech">
+                  <span class="ech-type examen">Examen</span>
+                  <span class="ech-corps">
+                    <span class="ech-titre">Théorie des chapitres 1 à 4</span>
+                    <span class="ech-quand">mar. 12 janv. · 10h30</span>
+                  </span>
+                  <button class="ech-suppr" type="button" aria-label="Supprimer">✕</button>
+                </li>
+              </ul>
+            </div></div></div>
+          </li>
+
+          <!-- Examen seul -->
+          <li class="c" data-deroulable>
+            <button class="cbtn" type="button" aria-expanded="false">
+              <span class="hcol"><span class="h">13h30</span><span class="h">15h30</span></span>
+              <span class="cpoint" style="--h:40;--v:0"></span>
+              <span class="ctxt">
+                <span class="m">Mathématiques</span>
+                <dl class="labs">
+                  <div class="lab"><dt>Salle</dt><dd>S.NB7.BOUT</dd></div>
+                  <div class="lab"><dt>Prof</dt><dd>LO GIUDICE Christophe</dd></div>
+                </dl>
+              </span>
+              <span class="marques"><span class="ebadge" style="--c:var(--attention)">E</span></span>
+            </button>
+            <div class="detail"><div><div class="detail-in">
+              <ul class="ech-liste">
+                <li class="ech">
+                  <span class="ech-type examen">Examen</span>
+                  <span class="ech-corps">
+                    <span class="ech-titre">Examen de janvier, théorie + exercices</span>
+                    <span class="ech-quand">mar. 12 janv. · 13h30</span>
+                  </span>
+                  <button class="ech-suppr" type="button" aria-label="Supprimer">✕</button>
+                </li>
+              </ul>
+            </div></div></div>
+          </li>
+
+          <!-- Devoir seul -->
+          <li class="c" data-deroulable>
+            <button class="cbtn" type="button" aria-expanded="false">
+              <span class="hcol"><span class="h">15h30</span><span class="h">17h30</span></span>
+              <span class="cpoint" style="--h:262;--v:0"></span>
+              <span class="ctxt">
+                <span class="m">Archit. des ordinateurs-Th.</span>
+                <dl class="labs">
+                  <div class="lab"><dt>Salle</dt><dd>2/10C</dd></div>
+                  <div class="lab"><dt>Prof</dt><dd>Martin</dd></div>
+                </dl>
+              </span>
+              <span class="marques"><span class="ebadge">D</span></span>
+            </button>
+            <div class="detail"><div><div class="detail-in">
+              <ul class="ech-liste">
+                <li class="ech">
+                  <span class="ech-type devoir">Devoir</span>
+                  <span class="ech-corps">
+                    <span class="ech-titre">Rapport de laboratoire n° 2</span>
+                    <span class="ech-quand">ven. 2 oct. · 15h30</span>
+                  </span>
+                  <button class="ech-suppr" type="button" aria-label="Supprimer">✕</button>
+                </li>
+              </ul>
+            </div></div></div>
+          </li>
+
+        </ol>
+        <!-- Devoir « à une autre heure » : il se range sous les cours -->
+        <div class="jour-ech">
+          <ul class="ech-liste">
+            <li class="ech">
+              <span class="ech-type devoir">Devoir</span>
+              <span class="ech-corps">
+                <span class="ech-titre">Relire le chapitre 3</span>
+                <span class="ech-quand">jeu. 24 sept. · 14h30</span>
+              </span>
+              <button class="ech-suppr" type="button" aria-label="Supprimer">✕</button>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div></div>
+  </div>
+
+  <p class="legende">
+    <span><span class="ebadge">D</span> devoir en attente</span>
+    <span><span class="ebadge" style="--c:var(--attention)">E</span> examen en attente</span><br>
+    Cours sans pastille : la ligne ne s'ouvre pas (tout est déjà affiché).<br>
+    Cours avec pastille : un appui ouvre les fiches, la pastille s'efface pendant ce temps.
+  </p>
+</div>
+<script>
+  (function () {
+    "use strict";
+    // Le jour s'ouvre et se ferme.
+    var jour = document.getElementById("jour");
+    jour.querySelector("[data-jour]").addEventListener("click", function () {
+      var ouvert = jour.classList.toggle("open");
+      this.setAttribute("aria-expanded", ouvert ? "true" : "false");
+    });
+    // Un cours ne s'ouvre que s'il porte une pastille.
+    document.querySelectorAll("ol.cours > li.c").forEach(function (li) {
+      var btn = li.querySelector(".cbtn");
+      btn.addEventListener("click", function () {
+        if (!li.hasAttribute("data-deroulable")) return;
+        var ouvert = li.classList.toggle("open");
+        btn.setAttribute("aria-expanded", ouvert ? "true" : "false");
+      });
+    });
+  })();
+</script>
+</body>
+</html>

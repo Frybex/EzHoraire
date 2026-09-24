@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>EzHoraire — Intégration de l'étiquette « Devoir » (5 propositions)</title>
+<style>
+  :root {
+    --bg: #eaf0fa; /* thème bleu de l'app */
+    --surface: #ffffff;
+    --ink: #17191d;
+    --muted: #626977;
+    --line: #e4e7ec;
+    --accent: #1d4fd7;
+    --accent-soft: rgba(29, 79, 215, .09);
+    --attention: #b26a00;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0d1322;
+      --surface: #171a20;
+      --ink: #f0f3f7;
+      --muted: #98a1b1;
+      --line: #262b34;
+      --accent: #8ba6ff;
+      --accent-soft: rgba(139, 166, 255, .14);
+      --attention: #f0b866;
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    --relief-haut: color-mix(in srgb, var(--bg), #fff 78%);
+    --relief-bas: color-mix(in srgb, var(--bg), #fff 44%);
+    --reflet: rgba(255, 255, 255, .9);
+    --ombre-btn: 0 1px 2px rgba(23, 32, 68, .06), 0 2px 8px -4px rgba(23, 32, 68, .08);
+    --creux: color-mix(in srgb, var(--bg), #fff 60%);
+    --creux-ombre: rgba(23, 32, 68, .07);
+    margin: 0; color: var(--ink); background: var(--bg);
+    font-family: var(--font); font-size: 17px; line-height: 1.45;
+  }
+  @media (prefers-color-scheme: dark) {
+    body {
+      --relief-haut: color-mix(in srgb, var(--bg), #fff 7%);
+      --relief-bas: color-mix(in srgb, var(--bg), #fff 2.5%);
+      --reflet: rgba(255, 255, 255, .06);
+      --ombre-btn: 0 1px 2px rgba(0, 0, 0, .4), 0 4px 12px -6px rgba(0, 0, 0, .6);
+      --creux: color-mix(in srgb, var(--bg), #000 26%);
+      --creux-ombre: rgba(0, 0, 0, .4);
+    }
+  }
+  .page { max-width: 460px; margin: 0 auto; padding: 26px 16px 60px; }
+  h1 { font-size: 1.35rem; letter-spacing: -.02em; margin: 0 0 6px; }
+  .intro { color: var(--muted); font-size: .9rem; margin: 0 0 26px; }
+  .prop { margin: 0 0 26px; }
+  .prop h2 {
+    font-size: .95rem; margin: 0 0 4px; letter-spacing: -.01em;
+    display: flex; align-items: baseline; gap: 8px;
+  }
+  .prop h2 b {
+    flex: none; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%;
+    font-size: .78rem; background: var(--ink); color: var(--bg);
+  }
+  .avis { margin: 0 0 12px 30px; color: var(--muted); font-size: .82rem; line-height: 1.5; }
+  .avis b { color: var(--ink); font-weight: 600; }
+  .box {
+    margin: 0 0 10px; padding: 14px 14px 14px 23px; border-radius: 13px;
+    background: var(--creux);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre);
+  }
+  .cas { margin: 0 0 4px 30px; color: var(--muted); font-size: .74rem; letter-spacing: .02em; text-transform: uppercase; font-weight: 650; }
+  ol.cours { list-style: none; margin: 0; padding: 0; }
+  ol.cours li + li { border-top: 1px solid var(--line); }
+
+  /* ---- La ligne de cours de l'app (copiée de index.html) ---- */
+  .cbtn {
+    width: 100%; border: none; background: none; font: inherit; color: inherit;
+    display: flex; gap: 10px; align-items: center; text-align: left;
+    padding: 7px 0; cursor: pointer;
+  }
+  .cpoint {
+    flex: none; width: 8px; height: 8px; border-radius: 50%;
+    background: hsl(var(--h) calc(52% - var(--v) * 10%) calc(52% + var(--v) * 7%));
+  }
+  .cbtn .h {
+    flex: none; min-width: 0; font-variant-numeric: tabular-nums;
+    color: var(--muted); font-size: .82rem; line-height: 1.25; white-space: nowrap;
+  }
+  .cbtn .hcol {
+    flex: none; min-width: 52px; display: flex; flex-direction: column;
+    align-items: flex-start; gap: 8px;
+  }
+  .cbtn .ctxt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .cbtn .m {
+    font-weight: 550; font-size: .96rem; min-width: 0;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .cbtn .s {
+    min-width: 0; font-size: .82rem; font-weight: 450; color: var(--muted);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .minichev {
+    flex: none; width: 7px; height: 7px; align-self: center;
+    border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted);
+    transform: rotate(45deg);
+  }
+  .ech-tag {
+    flex: none; margin-left: 6px; font-size: .64rem; font-weight: 750; text-transform: uppercase;
+    letter-spacing: .02em; border-radius: 6px; padding: 2px 6px;
+    color: var(--c, var(--accent));
+    background: color-mix(in srgb, var(--c, var(--accent)) 12%, var(--surface));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c, var(--accent)) 30%, transparent);
+  }
+
+  /* ---- 1. Étiquette à droite de la ligne du titre ---- */
+  .tline { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .tline .m { flex: 1 1 auto; min-width: 0; }
+  .tline .ech-tag { margin-left: auto; }
+
+  /* ---- 2. Pastille lettre (D / E) ---- */
+  .ebadge {
+    flex: none; margin-left: auto; width: 19px; height: 19px; border-radius: 50%;
+    display: grid; place-items: center; font-size: .62rem; font-weight: 750;
+    color: var(--c, var(--accent));
+    background: color-mix(in srgb, var(--c, var(--accent)) 12%, var(--surface));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c, var(--accent)) 32%, transparent);
+  }
+
+  /* ---- 3. Étiquette collée au titre ---- */
+  .tline.gauche .m { flex: 0 1 auto; }
+  .tline.gauche .ech-tag { margin-left: 0; }
+
+  /* ---- 4. Pastille sur le chevron ---- */
+  .chevwrap {
+    flex: none; position: relative; width: 20px; height: 20px; align-self: center;
+    display: grid; place-items: center;
+  }
+  .chevwrap .minichev { align-self: auto; }
+  .edot {
+    position: absolute; top: -4px; right: -5px; min-width: 15px; height: 15px; padding: 0 3px;
+    border-radius: 999px; display: grid; place-items: center;
+    font-size: .58rem; font-weight: 750; font-variant-numeric: tabular-nums;
+    color: var(--surface); background: var(--c, var(--accent));
+    box-shadow: 0 0 0 2px var(--creux);
+  }
+
+  /* ---- 5. Halo autour de la pastille du cours ---- */
+  .cpoint.halo {
+    box-shadow: 0 0 0 2px var(--creux), 0 0 0 4px color-mix(in srgb, var(--c, var(--accent)) 60%, transparent);
+  }
+  .legende { margin: 8px 0 0 30px; color: var(--muted); font-size: .78rem; }
+  .legende span { display: inline-flex; align-items: center; gap: 6px; margin-right: 14px; }
+  .legende i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>Étiquette « Devoir » : 5 propositions</h1>
+  <p class="intro">Le problème : l'étiquette ne doit pas faire grandir la ligne de cours, ne pas coller à la salle, et rester lisible même avec un titre et une salle très longs. Chaque proposition est montrée sur un cours normal, puis sur le cas extrême.</p>
+
+  <!-- 1 -->
+  <div class="prop">
+    <h2><b>1</b> Étiquette à droite de la ligne du titre</h2>
+    <p class="avis"><b>Pour :</b> le mot « Devoir » reste entier, la salle n'est jamais touchée (même très longue).<br>
+      <b>Contre :</b> le titre peut être coupé un peu plus tôt (environ 55 px).</p>
+    <p class="cas">Cas normal</p>
+    <div class="box">
+      <ol class="cours">
+        <li><button class="cbtn">
+          <span class="hcol"><span class="h">10h30</span><span class="h">12h30</span></span>
+          <span class="cpoint" style="--h:221;--v:0"></span>
+          <span class="ctxt">
+            <span class="tline"><span class="m">Internet of Everything</span><span class="ech-tag">Devoir</span></span>
+            <span class="s">2/09A</span>
+          </span>
+          <span class="minichev"></span>
+        </button></li>
+      </ol>
+    </div>
+    <p class="cas">Titre et salle très longs</p>
+    <div class="box">
+      <ol class="cours">
+        <li><button class="cbtn">
+          <span class="hcol"><span class="h">10h30</span><span class="h">12h30</span></span>
+          <span class="cpoint" style="--h:221;--v:0"></span>
+          <span class="ctxt">
+            <span class="tline"><span class="m">Introduction aux systèmes d'exploitation et architecture avancée</span><span class="ech-tag">Devoir</span></span>
+            <span class="s">Bâtiment Z, salle 2/09A et laboratoire L3.07 au deuxième étage</span>
+          </span>
+          <span class="minichev"></span>
+        </button></li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 2 -->
+  <div class="prop">
+    <h2><b>2</b> Pastille lettre « D » / « E » à droite du titre</h2>
+    <p class="avis"><b>Pour :</b> prend très peu de place (~20 px), le titre reste presque entier, la salle intacte.<br>
+      <b>Contre :</b> il faut connaître le code D / E ; la couleur (bleu / orange) dit le type.</p>
+    <p class="cas">Cas normal</p>
+    <div class="box">
+      <ol class="cours">
+        <li><button class="cbtn">
+          <span class="hcol"><span class="h">10h30</span><span class="h">12h30</span></span>
+          <span class="cpoint" style="--h:221;--v:0"></span>
+          <span class="ctxt">
+            <span class="tline"><span class="m">Internet of Everything</span><span class="ebadge">D</span></span>
+            <span class="s">2/09A</span>
+          </span>
+          <span class="minichev"></span>
+        </button></li>
+        <li><button class="cbtn">
+          <span class="hcol"><span class="h">13h30</span><span class="h">16h30</span></span>
+          <span class="cpoint" style="--h:152;--v:0"></span>
+          <span class="ctxt">
+            <span class="tline"><span class="m">Mathématiques</span><span class="ebadge" style="--c:var(--attention)">E</span></span>
+            <span class="s">2/11</span>
+          </span>
+          <span class="minichev"></span>
+        </button></li>
+      </ol>
+    </div>
+    <p class="cas">Titre et salle très longs</p>
+    <div class="box">
+      <ol class="cours">
+        <li><button class="cbtn">
+          <span class="hcol"><span class="h">10h30</span><span class="h">12h30</span></span>
+          <span class="cpoint" style="--h:221;--v:0"></span>
+          <span class="ctxt">
+            <span class="tline"><span class="m">Introduction aux systèmes d'exploitation et architecture avancée</span><span class="ebadge">D</span></span>
+            <span class="s">Bâtiment Z, salle 2/09A et laboratoire L3.07 au deuxième étage</span>
+          </span>
+          <span class="minichev"></span>
+        </button></li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 3 -->
+  <div class="prop">
+    <h2><b>3</b> Étiquette collée au titre</h2>
+    <p class="avis"><b>Pour :</b> se lit comme un mot de plus, juste après le titre ; l'espace libre reste à droite ; la salle intacte.<br>
+      <b>Contre :</b> le titre est coupé du montant de l'étiquette ; avec un titre court, l'étiquette « flotte » au milieu de la ligne.</p>
+    <p class="cas">Cas normal</p>
+    <div class="box">
+      <ol class="cours">
+        <li><button class="cbtn">
+          <span class="hcol"><span class="h">10h30</span><span class="h">12h30</span></span>
+          <span class="cpoint" style="--h:221;--v:0"></span>
+          <span class="ctxt">
+            <span class="tline gauche"><span class="m">Internet of Everything</span><span class="ech-tag">Devoir</span></span>
+            <span class="s">2/09A</span>
+          </span>
+          <span class="minichev"></span>
+        </button></li>
+      </ol>
+    </div>
+    <p class="cas">Titre et salle très longs</p>
+    <div class="box">
+      <ol class="cours">
+        <li><button class="cbtn">
+          <span class="hcol"><span class="h">10h30</span><span class="h">12h30</span></span>
+          <span class="cpoint" style="--h:221;--v:0"></span>
+          <span class="ctxt">
+            <span class="tline gauche"><span class="m">Introduction aux systèmes d'exploitation et architecture avancée</span><span class="ech-tag">Devoir</span></span>
+            <span class="s">Bâtiment Z, salle 2/09A et laboratoire L3.07 au deuxième étage</span>
+          </span>
+          <span class="minichev"></span>
+        </button></li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 4 -->
+  <div class="prop">
+    <h2><b>4</b> Pastille sur le chevron</h2>
+    <p class="avis"><b>Pour :</b> zéro impact sur la mise en page — titre et salle gardent toute leur largeur, même très longs.<br>
+      <b>Contre :</b> ne dit pas « devoir » ni « examen » (la couleur le dit) ; le nombre indique combien il y en a.</p>
+    <p class="cas">Cas normal — un devoir, puis un examen</p>
+    <div class="box">
+      <ol class="cours">
+        <li><button class="cbtn">
+          <span class="hcol"><span class="h">10h30</span><span class="h">12h30</span></span>
+          <span class="cpoint" style="--h:221;--v:0"></span>
+          <span class="ctxt">
+            <span class="m">Internet of Everything</span>
+            <span class="s">2/09A</span>
+          </span>
+          <span class="chevwrap"><span class="minichev"></span><span class="edot">1</span></span>
+        </button></li>
+        <li><button class="cbtn">
+          <span class="hcol"><span class="h">13h30</span><span class="h">16h30</span></span>
+          <span class="cpoint" style="--h:152;--v:0"></span>
+          <span class="ctxt">
+            <span class="m">Mathématiques</span>
+            <span class="s">2/11</span>
+          </span>
+          <span class="chevwrap"><span class="minichev"></span><span class="edot" style="--c:var(--attention)">2</span></span>
+        </button></li>
+      </ol>
+    </div>
+    <p class="cas">Titre et salle très longs</p>
+    <div class="box">
+      <ol class="cours">
+        <li><button class="cbtn">
+          <span class="hcol"><span class="h">10h30</span><span class="h">12h30</span></span>
+          <span class="cpoint" style="--h:221;--v:0"></span>
+          <span class="ctxt">
+            <span class="m">Introduction aux systèmes d'exploitation et architecture avancée</span>
+            <span class="s">Bâtiment Z, salle 2/09A et laboratoire L3.07 au deuxième étage</span>
+          </span>
+          <span class="chevwrap"><span class="minichev"></span><span class="edot">1</span></span>
+        </button></li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 5 -->
+  <div class="prop">
+    <h2><b>5</b> Halo autour de la pastille du cours</h2>
+    <p class="avis"><b>Pour :</b> zéro impact, très discret ; le halo bleu dit devoir, le orange dit examen.<br>
+      <b>Contre :</b> aucun texte — il faut apprendre le code couleur ; peut passer inaperçu.</p>
+    <p class="cas">Cas normal — un devoir, puis un examen</p>
+    <div class="box">
+      <ol class="cours">
+        <li><button class="cbtn">
+          <span class="hcol"><span class="h">10h30</span><span class="h">12h30</span></span>
+          <span class="cpoint halo" style="--h:221;--v:0;--c:var(--accent)"></span>
+          <span class="ctxt">
+            <span class="m">Internet of Everything</span>
+            <span class="s">2/09A</span>
+          </span>
+          <span class="minichev"></span>
+        </button></li>
+        <li><button class="cbtn">
+          <span class="hcol"><span class="h">13h30</span><span class="h">16h30</span></span>
+          <span class="cpoint halo" style="--h:152;--v:0;--c:var(--attention)"></span>
+          <span class="ctxt">
+            <span class="m">Mathématiques</span>
+            <span class="s">2/11</span>
+          </span>
+          <span class="minichev"></span>
+        </button></li>
+      </ol>
+    </div>
+    <p class="legende">
+      <span><i style="background:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 60%, transparent)"></i> Devoir</span>
+      <span><i style="background:var(--attention);box-shadow:0 0 0 3px color-mix(in srgb, var(--attention) 60%, transparent)"></i> Examen</span>
+    </p>
+    <p class="cas">Titre et salle très longs</p>
+    <div class="box">
+      <ol class="cours">
+        <li><button class="cbtn">
+          <span class="hcol"><span class="h">10h30</span><span class="h">12h30</span></span>
+          <span class="cpoint halo" style="--h:221;--v:0;--c:var(--accent)"></span>
+          <span class="ctxt">
+            <span class="m">Introduction aux systèmes d'exploitation et architecture avancée</span>
+            <span class="s">Bâtiment Z, salle 2/09A et laboratoire L3.07 au deuxième étage</span>
+          </span>
+          <span class="minichev"></span>
+        </button></li>
+      </ol>
+    </div>
+  </div>
+</div>
+</body>
+</html>

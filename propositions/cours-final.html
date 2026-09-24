@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>EzHoraire — Le cours, version retenue</title>
+<style>
+  :root {
+    --bg: #eaf0fa;
+    --surface: #ffffff;
+    --ink: #17191d;
+    --muted: #626977;
+    --line: #e4e7ec;
+    --accent: #1d4fd7;
+    --accent-soft: rgba(29, 79, 215, .09);
+    --attention: #b26a00;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0d1322;
+      --surface: #171a20;
+      --ink: #f0f3f7;
+      --muted: #98a1b1;
+      --line: #262b34;
+      --accent: #8ba6ff;
+      --accent-soft: rgba(139, 166, 255, .14);
+      --attention: #f0b866;
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    --relief-haut: color-mix(in srgb, var(--bg), #fff 78%);
+    --relief-bas: color-mix(in srgb, var(--bg), #fff 44%);
+    --reflet: rgba(255, 255, 255, .9);
+    --ombre-btn: 0 1px 2px rgba(23, 32, 68, .06), 0 2px 8px -4px rgba(23, 32, 68, .08);
+    --creux: color-mix(in srgb, var(--bg), #fff 60%);
+    --creux-ombre: rgba(23, 32, 68, .07);
+    margin: 0; color: var(--ink); background: var(--bg);
+    font-family: var(--font); font-size: 17px; line-height: 1.45;
+  }
+  @media (prefers-color-scheme: dark) {
+    body {
+      --relief-haut: color-mix(in srgb, var(--bg), #fff 7%);
+      --relief-bas: color-mix(in srgb, var(--bg), #fff 2.5%);
+      --reflet: rgba(255, 255, 255, .06);
+      --ombre-btn: 0 1px 2px rgba(0, 0, 0, .4), 0 4px 12px -6px rgba(0, 0, 0, .6);
+      --creux: color-mix(in srgb, var(--bg), #000 26%);
+      --creux-ombre: rgba(0, 0, 0, .4);
+    }
+  }
+  .page { max-width: 460px; margin: 0 auto; padding: 26px 16px 60px; }
+  h1 { font-size: 1.3rem; letter-spacing: -.02em; margin: 0 0 6px; }
+  .intro { color: var(--muted); font-size: .9rem; margin: 0 0 8px; }
+  .regle {
+    margin: 0 0 26px; padding: 12px 14px; border-radius: 14px; font-size: .85rem;
+    background: var(--creux); box-shadow: inset 0 0 0 1px var(--line);
+    color: var(--muted); line-height: 1.5;
+  }
+  .regle b { color: var(--ink); }
+  .prop { margin: 0 0 28px; }
+  .prop h2 {
+    font-size: .95rem; margin: 0 0 4px; letter-spacing: -.01em;
+    display: flex; align-items: baseline; gap: 8px;
+  }
+  .prop h2 b {
+    flex: none; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%;
+    font-size: .78rem; background: var(--ink); color: var(--bg);
+  }
+  .prop h2 em { font-style: normal; color: var(--muted); font-size: .78rem; font-weight: 500; }
+  .avis { margin: 0 0 12px 30px; color: var(--muted); font-size: .82rem; line-height: 1.5; }
+  .avis b { color: var(--ink); font-weight: 600; }
+  .box {
+    margin: 0 0 10px; padding: 12px 14px; border-radius: 13px;
+    background: var(--creux);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre);
+  }
+  .cas { margin: 0 0 4px 30px; color: var(--muted); font-size: .72rem; letter-spacing: .03em; text-transform: uppercase; font-weight: 650; }
+  ol.cours { list-style: none; margin: 0; padding: 0; }
+  ol.cours > li + li { border-top: 1px solid var(--line); }
+
+  /* ---- La ligne de cours retenue ----
+     Heures étalées sur la hauteur, libellés Salle / Prof / Groupe,
+     pastille(s) D / E à droite, aucune flèche. */
+  .cbtn {
+    width: 100%; border: none; background: none; font: inherit; color: inherit;
+    display: flex; gap: 10px; align-items: flex-start; text-align: left;
+    padding: 9px 0; cursor: pointer;
+  }
+  .cbtn.inactif { cursor: default; }
+  .cpoint {
+    flex: none; width: 8px; height: 8px; border-radius: 50%; margin-top: 6px;
+    background: hsl(var(--h) calc(52% - var(--v) * 10%) calc(52% + var(--v) * 7%));
+  }
+  .cbtn .h {
+    flex: none; min-width: 0; font-variant-numeric: tabular-nums;
+    color: var(--muted); font-size: .82rem; line-height: 1.25; white-space: nowrap;
+  }
+  .cbtn .hcol {
+    flex: none; min-width: 52px; display: flex; flex-direction: column;
+    align-items: flex-start; gap: 8px;
+    align-self: stretch; justify-content: space-between;
+  }
+  .cbtn .ctxt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .cbtn .m {
+    font-weight: 550; font-size: .96rem; min-width: 0;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  /* Libellés alignés. */
+  dl.labs { margin: 0; display: flex; flex-direction: column; gap: 2px; }
+  .lab { display: flex; gap: 8px; font-size: .74rem; line-height: 1.3; }
+  .lab dt { flex: none; width: 42px; color: color-mix(in srgb, var(--muted) 75%, transparent); }
+  .lab dd { margin: 0; min-width: 0; color: var(--muted); }
+  /* Pastilles D / E (une par type présent), centrées sur la hauteur de la
+     ligne, à la place de la flèche. */
+  .marques { flex: none; display: flex; gap: 4px; align-self: center; }
+  .ebadge {
+    width: 19px; height: 19px; border-radius: 50%;
+    display: grid; place-items: center; font-size: .62rem; font-weight: 750;
+    color: var(--c, var(--accent));
+    background: color-mix(in srgb, var(--c, var(--accent)) 12%, var(--surface));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c, var(--accent)) 32%, transparent);
+  }
+  /* ---- Les fiches, sous le cours déplié ---- */
+  .detail { padding: 0 0 12px; }
+  .ech-liste { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .ech {
+    display: flex; align-items: center; gap: 9px;
+    padding: 8px 10px; border-radius: 12px; font-size: .82rem;
+    background: var(--surface); box-shadow: inset 0 0 0 1px var(--line);
+  }
+  .ech-type {
+    flex: none; font-size: .62rem; font-weight: 750; text-transform: uppercase;
+    letter-spacing: .03em; border-radius: 6px; padding: 2px 6px;
+  }
+  .ech-type.devoir { color: var(--accent); background: var(--accent-soft); }
+  .ech-type.examen {
+    color: var(--attention);
+    background: color-mix(in srgb, var(--attention) 12%, var(--surface));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--attention) 30%, transparent);
+  }
+  .ech-corps { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .ech-titre { font-weight: 550; overflow-wrap: anywhere; }
+  .ech-quand { color: var(--muted); font-size: .76rem; }
+  .ech-suppr {
+    flex: none; width: 28px; height: 28px; margin: 0 -5px 0 0;
+    display: grid; place-items: center; border: none; border-radius: 9px;
+    background: none; color: var(--muted); font-size: 1rem; cursor: pointer;
+  }
+  .legende { margin: 4px 0 0 30px; color: var(--muted); font-size: .78rem; }
+  .legende span { display: inline-flex; align-items: center; gap: 6px; margin-right: 16px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>Le cours, version retenue</h1>
+  <p class="intro">Heures étalées sur la hauteur, libellés Salle / Prof / Groupe, pastilles D / E à droite — plus de flèche.</p>
+  <p class="regle">
+    <b>La règle :</b> pas d'échéance → pas de pastille, la ligne ne s'ouvre pas.<br>
+    Un devoir → <b>D</b> bleu · un examen → <b>E</b> orange · les deux → <b>D E</b> côte à côte.<br>
+    La ligne s'ouvre seulement s'il y a une pastille ; déplié, on voit les fiches.
+  </p>
+
+  <!-- 1 -->
+  <div class="prop">
+    <h2><b>1</b> Cours sans échéance <em>— pas de pastille, la ligne ne s'ouvre pas</em></h2>
+    <p class="cas">A — très longue salle</p>
+    <div class="box">
+      <ol class="cours">
+        <li><button class="cbtn inactif">
+          <span class="hcol"><span class="h">08h15</span><span class="h">10h15</span></span>
+          <span class="cpoint" style="--h:221;--v:0"></span>
+          <span class="ctxt">
+            <span class="m">Droit constitutionnel</span>
+            <dl class="labs">
+              <div class="lab"><dt>Salle</dt><dd>S.R42.5.503 - Auditoire Pierre DRION (bâtiment R)</dd></div>
+              <div class="lab"><dt>Prof</dt><dd>DE VALERIOLA Sébastien</dd></div>
+            </dl>
+          </span>
+        </button></li>
+      </ol>
+    </div>
+    <p class="cas">B — salle, prof et groupe</p>
+    <div class="box">
+      <ol class="cours">
+        <li><button class="cbtn inactif">
+          <span class="hcol"><span class="h">10h30</span><span class="h">12h30</span></span>
+          <span class="cpoint" style="--h:152;--v:0"></span>
+          <span class="ctxt">
+            <span class="m">Introduction à la sociologie</span>
+            <dl class="labs">
+              <div class="lab"><dt>Salle</dt><dd>S.NB7.BOUT</dd></div>
+              <div class="lab"><dt>Prof</dt><dd>LO GIUDICE Christophe</dd></div>
+              <div class="lab"><dt>Groupe</dt><dd>Allison — S.NB7.BOUT</dd></div>
+            </dl>
+          </span>
+        </button></li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 2 -->
+  <div class="prop">
+    <h2><b>2</b> Un devoir <em>— pastille D, fermé puis déplié</em></h2>
+    <p class="cas">Fermé</p>
+    <div class="box">
+      <ol class="cours">
+        <li><button class="cbtn">
+          <span class="hcol"><span class="h">08h15</span><span class="h">10h15</span></span>
+          <span class="cpoint" style="--h:221;--v:0"></span>
+          <span class="ctxt">
+            <span class="m">Droit constitutionnel</span>
+            <dl class="labs">
+              <div class="lab"><dt>Salle</dt><dd>S.R42.5.503 - Auditoire Pierre DRION (bâtiment R)</dd></div>
+              <div class="lab"><dt>Prof</dt><dd>DE VALERIOLA Sébastien</dd></div>
+            </dl>
+          </span>
+          <span class="marques"><span class="ebadge">D</span></span>
+        </button></li>
+      </ol>
+    </div>
+    <p class="cas">Déplié</p>
+    <div class="box">
+      <ol class="cours">
+        <li><button class="cbtn">
+          <span class="hcol"><span class="h">08h15</span><span class="h">10h15</span></span>
+          <span class="cpoint" style="--h:221;--v:0"></span>
+          <span class="ctxt">
+            <span class="m">Droit constitutionnel</span>
+            <dl class="labs">
+              <div class="lab"><dt>Salle</dt><dd>S.R42.5.503 - Auditoire Pierre DRION (bâtiment R)</dd></div>
+              <div class="lab"><dt>Prof</dt><dd>DE VALERIOLA Sébastien</dd></div>
+            </dl>
+          </span>
+          <span class="marques"><span class="ebadge">D</span></span>
+        </button>
+          <div class="detail">
+            <ul class="ech-liste">
+              <li class="ech">
+                <span class="ech-type devoir">Devoir</span>
+                <span class="ech-corps">
+                  <span class="ech-titre">Exercices 1 à 8 du chapitre 3</span>
+                  <span class="ech-quand">mer. 30 sept. · 08h15</span>
+                </span>
+                <button class="ech-suppr" aria-label="Supprimer">✕</button>
+              </li>
+            </ul>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 3 -->
+  <div class="prop">
+    <h2><b>3</b> Un examen <em>— pastille E</em></h2>
+    <p class="cas">Fermé</p>
+    <div class="box">
+      <ol class="cours">
+        <li><button class="cbtn">
+          <span class="hcol"><span class="h">13h30</span><span class="h">16h30</span></span>
+          <span class="cpoint" style="--h:40;--v:0"></span>
+          <span class="ctxt">
+            <span class="m">Mathématiques</span>
+            <dl class="labs">
+              <div class="lab"><dt>Salle</dt><dd>S.NB7.BOUT</dd></div>
+              <div class="lab"><dt>Prof</dt><dd>LO GIUDICE Christophe</dd></div>
+            </dl>
+          </span>
+          <span class="marques"><span class="ebadge" style="--c:var(--attention)">E</span></span>
+        </button></li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 4 -->
+  <div class="prop">
+    <h2><b>4</b> Un devoir et un examen <em>— pastilles D et E</em></h2>
+    <p class="cas">Fermé</p>
+    <div class="box">
+      <ol class="cours">
+        <li><button class="cbtn">
+          <span class="hcol"><span class="h">10h30</span><span class="h">12h30</span></span>
+          <span class="cpoint" style="--h:152;--v:0"></span>
+          <span class="ctxt">
+            <span class="m">Introduction à la sociologie</span>
+            <dl class="labs">
+              <div class="lab"><dt>Salle</dt><dd>S.NB7.BOUT</dd></div>
+              <div class="lab"><dt>Prof</dt><dd>LO GIUDICE Christophe</dd></div>
+              <div class="lab"><dt>Groupe</dt><dd>Allison — S.NB7.BOUT</dd></div>
+            </dl>
+          </span>
+          <span class="marques"><span class="ebadge">D</span><span class="ebadge" style="--c:var(--attention)">E</span></span>
+        </button></li>
+      </ol>
+    </div>
+    <p class="cas">Déplié</p>
+    <div class="box">
+      <ol class="cours">
+        <li><button class="cbtn">
+          <span class="hcol"><span class="h">10h30</span><span class="h">12h30</span></span>
+          <span class="cpoint" style="--h:152;--v:0"></span>
+          <span class="ctxt">
+            <span class="m">Introduction à la sociologie</span>
+            <dl class="labs">
+              <div class="lab"><dt>Salle</dt><dd>S.NB7.BOUT</dd></div>
+              <div class="lab"><dt>Prof</dt><dd>LO GIUDICE Christophe</dd></div>
+              <div class="lab"><dt>Groupe</dt><dd>Allison — S.NB7.BOUT</dd></div>
+            </dl>
+          </span>
+          <span class="marques"><span class="ebadge">D</span><span class="ebadge" style="--c:var(--attention)">E</span></span>
+        </button>
+          <div class="detail">
+            <ul class="ech-liste">
+              <li class="ech">
+                <span class="ech-type devoir">Devoir</span>
+                <span class="ech-corps">
+                  <span class="ech-titre">Exercices 1 à 8 du chapitre 3</span>
+                  <span class="ech-quand">ven. 2 oct. · 10h30</span>
+                </span>
+                <button class="ech-suppr" aria-label="Supprimer">✕</button>
+              </li>
+              <li class="ech">
+                <span class="ech-type examen">Examen</span>
+                <span class="ech-corps">
+                  <span class="ech-titre">Théorie des chapitres 1 à 4</span>
+                  <span class="ech-quand">mar. 12 janv. · 10h30</span>
+                </span>
+                <button class="ech-suppr" aria-label="Supprimer">✕</button>
+              </li>
+            </ul>
+          </div>
+        </li>
+      </ol>
+    </div>
+    <p class="legende">
+      <span><span class="ebadge">D</span> devoir en attente</span>
+      <span><span class="ebadge" style="--c:var(--attention)">E</span> examen en attente</span>
+    </p>
+  </div>
+</div>
+</body>
+</html>

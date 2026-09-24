@@ -91,6 +91,11 @@ try {
     --shadow: 0 16px 40px -24px rgba(23, 32, 68, .28);
     --radius: 14px;
     --danger: #d42a3c;
+    --danger-soft: rgba(212, 42, 60, .10);
+    --danger-hover: #b81c2d;
+    --action-edit: #1d4fd7;
+    --action-edit-hover: #163cb5;
+    --action-edit-arme: #113cb6;
     --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   }
   @media (prefers-color-scheme: dark) {
@@ -107,6 +112,11 @@ try {
       --seg-track: #20252e;
       --shadow: 0 18px 44px -20px rgba(0, 0, 0, .75);
       --danger: #ff6b7a;
+      --danger-soft: rgba(255, 107, 122, .15);
+      --danger-hover: #d94b5a;
+      --action-edit: #376bf5;
+      --action-edit-hover: #295adb;
+      --action-edit-arme: #1b49bf;
     }
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -537,7 +547,7 @@ try {
     background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
     box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
     transform: translateX(calc(var(--idx) * 100%));
-    transition: transform .3s cubic-bezier(.16,1,.3,1);
+    transition: transform .28s cubic-bezier(.16,1,.3,1);
     pointer-events: none;
   }
   /* Mode défilant (noms longs ou beaucoup d'horaires, jusqu'à 10) :
@@ -903,18 +913,14 @@ try {
     animation: ap-pose .6s cubic-bezier(.16,1,.3,1) both;
     animation-delay: calc(120ms + var(--i, 0) * 45ms);
   }
-  .ap-ev b, .ap-ev i, .ap-ev u, .ap-ev em { display: block; font-style: normal; text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ap-ev b, .ap-ev i, .ap-ev em { display: block; font-style: normal; text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   /* Même hiérarchie que .ev : titre > salle (centrée dans l'espace libre)
-     > bas de case (prof à gauche, horaires à droite). */
+     > bas de case (horaires à gauche, comme dans la grille). */
   .ap-ev b { font-size: .72rem; font-weight: 650; letter-spacing: -.005em; flex-shrink: 0; }
   .ap-ev i { font-size: .66rem; font-weight: 600; opacity: .85; flex-grow: 1; display: grid; align-content: center; }
   .ap-ev .ap-eb { display: flex; align-items: baseline; gap: 6px; margin-top: auto; }
-  .ap-ev u { flex: 1 1 auto; min-width: 0; font-size: .64rem; opacity: .8; }
-  .ap-ev em { flex: none; margin-left: auto; font-size: .62rem; font-weight: 500; opacity: .8; font-variant-numeric: tabular-nums; }
-  /* Colonne étroite : le prof cède la place aux horaires. */
+  .ap-ev em { flex: 1 1 auto; min-width: 0; font-size: .62rem; font-weight: 500; opacity: .8; font-variant-numeric: tabular-nums; }
   .ap-col { container: apcol / inline-size; }
-  .ap-ev u { display: none; }
-  @container apcol (min-width: 160px) { .ap-ev u { display: block; } }
   /* Jour sans cours : colonne rayée + « Pas de cours ». Le texte passe à
      la ligne et la pastille ne dépasse jamais la colonne, pour rester
      centrée même sur les colonnes les plus étroites. */
@@ -1033,7 +1039,8 @@ try {
   .day.today .dot { background: var(--accent); }
   .dname { flex: none; min-width: 112px; }
   .dname strong { display: block; font-size: 1.02rem; font-weight: 600; letter-spacing: -.01em; }
-  .dname span { font-size: .85rem; color: var(--muted); }
+  /* Date du jour : dans la sous-ligne, sous le nom du jour. */
+  .ddate { font-size: .85rem; color: var(--muted); }
   .dsum {
     margin-left: auto; font-size: .96rem; color: var(--muted);
     font-variant-numeric: tabular-nums; white-space: nowrap; letter-spacing: -.01em;
@@ -1049,7 +1056,6 @@ try {
     border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted);
     transform: rotate(45deg); transition: transform .25s cubic-bezier(.16,1,.3,1), border-color .25s;
   }
-  .day.open .chev { transform: rotate(225deg); border-color: var(--ink); }
   .day.today .dname strong { font-weight: 700; }
 
   /* Détail d'un jour : bloc gravé à l'intérieur de la carte. */
@@ -1060,7 +1066,7 @@ try {
   .day.open .detail { grid-template-rows: 1fr; opacity: 1; }
   .detail > div { overflow: hidden; }
   .detail .box {
-    margin: 0 10px 10px; padding: 2px 14px 6px; border: none; border-radius: 13px;
+    margin: 0 10px 10px; padding: 14px 14px 14px 23px; border: none; border-radius: 13px;
     background: var(--creux);
     box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre);
   }
@@ -1069,41 +1075,68 @@ try {
   .cbtn {
     width: 100%; border: none; background: none; font: inherit; color: inherit;
     display: flex; gap: 10px; align-items: center; text-align: left;
-    padding: 11px 0; cursor: pointer;
+    padding: 9px 0; cursor: pointer;
   }
+  /* Cours sans échéance : rien à ouvrir, la ligne reste inerte. */
+  .cbtn.inactif { cursor: default; }
+  .cbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   /* Pastille de couleur : même repère que sur la grille d'ordinateur. */
   .cpoint {
     flex: none; width: 8px; height: 8px; border-radius: 50%;
     background: hsl(var(--h) calc(52% - var(--v) * 10%) calc(52% + var(--v) * 7%));
   }
   .cbtn .h {
-    flex: none; min-width: 106px;
-    font-variant-numeric: tabular-nums; color: var(--muted); font-size: .88rem;
+    flex: none; min-width: 0;
+    font-variant-numeric: tabular-nums; color: var(--muted); font-size: .82rem;
+    line-height: 1.25; white-space: nowrap;
   }
-  /* Colonne des heures : l'étiquette d'échéance se glisse sous l'heure,
-     pas après le nom du cours (le titre garde toute sa largeur). */
+  /* Colonne des heures : début en haut, fin en bas — elle occupe toute la
+     hauteur de la ligne, qui se lit comme une plage horaire. */
   .cbtn .hcol {
-    flex: none; min-width: 106px; display: flex; flex-direction: column;
-    align-items: flex-start; gap: 4px;
+    flex: none; min-width: 52px; display: flex; flex-direction: column;
+    align-items: flex-start; gap: 8px;
+    align-self: stretch; justify-content: space-between;
   }
   .cbtn .hcol .h { min-width: 0; }
-  .cbtn .hcol .ech-tag { margin-left: 0; }
-  .cbtn .m { font-weight: 550; font-size: .96rem; flex: 1; min-width: 0; }
-  .minichev {
-    flex: none; width: 7px; height: 7px; align-self: center;
-    border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted);
-    transform: rotate(45deg); transition: transform .25s cubic-bezier(.16,1,.3,1), border-color .25s;
+  /* Titre puis infos : le titre tient sur une seule ligne (jamais deux),
+     Salle / Prof / Groupe suivent dans une colonne de libellés. */
+  .cbtn .ctxt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .cbtn .m {
+    font-weight: 550; font-size: .96rem; min-width: 0;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  li.c.open .minichev { transform: rotate(225deg); border-color: var(--ink); }
-  /* Jour à un seul cours (téléphone) : déjà déroulé et non refermable
-     (trop petit à taper sinon) — pas de chevron, curseur neutre. */
+  /* Nom de la salle sous le titre quand le cours est replié */
+  .cbtn .s {
+    min-width: 0; font-size: .82rem; font-weight: 450; color: var(--muted);
+    line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  /* Quand on ouvre le cours, la salle retourne à sa place dans les détails */
+  li.c.open .cbtn .s { display: none; }
+  dl.labs { margin: 0; display: flex; flex-direction: column; gap: 2px; }
+  .lab { display: flex; gap: 8px; font-size: .86rem; line-height: 1.35; }
+  .lab dt { flex: none; width: 56px; color: var(--muted); }
+  .lab dd { margin: 0; min-width: 0; color: inherit; }
+  /* Pastilles D / E : une par type d'échéance en attente (devoir, examen),
+     empilées et centrées sur la hauteur. Elles remplacent la flèche : un
+     cours ne s'ouvre que s'il a quelque chose à montrer. Déplié, elles
+     laissent la place aux fiches. */
+  /* Pastilles D / E : une par type d'''échéance en attente (devoir, examen),
+     empilées et centrées sur la hauteur. */
+  .marques { flex: none; display: flex; flex-direction: column; gap: 4px; align-self: center; }
+  .ebadge {
+    width: 19px; height: 19px; border-radius: 50%;
+    display: grid; place-items: center; font-size: .62rem; font-weight: 750;
+    color: var(--c, var(--accent));
+    background: color-mix(in srgb, var(--c, var(--accent)) 12%, var(--surface));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c, var(--accent)) 32%, transparent);
+  }
+  li.c.open .marques { display: none; }
+  /* Étiquette « Chevauche » (horaire sur mesure) : centrée sur la ligne. */
+  .cbtn .choc-tag { align-self: center; }
+  /* Jour à un seul cours (téléphone) : déjà déroulé et non refermable. */
   li.c.seul .cbtn { cursor: default; }
   li.c.seul .cbtn:disabled { opacity: 1; color: inherit; }
-  li.c.seul .minichev { display: none; }
-  /* Sous-détail du cours : prof + salle dans la colonne de droite ; sous
-     les heures (colonne de gauche, jusqu'ici vide), le bouton qui ajoute
-     un devoir à rendre ou un rappel d'examen. Les échéances enregistrées
-     s'affichent en dessous, sur toute la largeur. */
+  /* Sous-détail du cours : la classe, le prof et les fiches des échéances. */
   .csub {
     display: grid; grid-template-rows: 0fr; opacity: 0; visibility: hidden;
     transition: grid-template-rows .28s cubic-bezier(.16,1,.3,1), opacity .22s, visibility 0s .28s;
@@ -1113,6 +1146,18 @@ try {
     transition: grid-template-rows .28s cubic-bezier(.16,1,.3,1), opacity .22s, visibility 0s;
   }
   .csub > div { overflow: hidden; }
+  .csub-details {
+    padding: 0 0 10px 80px;
+    display: flex; flex-direction: column; gap: 8px;
+    font-size: .86rem;
+  }
+  .csub-details .infos div { padding: 1px 0; }
+  .csub-details .k { color: var(--muted); }
+  .csub-details .nc { color: var(--muted); font-style: italic; }
+  .csub-details dl.labs { margin: 0; }
+  .fiches { padding: 0 0 12px; }
+  .fiches .ech-liste { margin: 0; }
+  .csub-details .fiches { padding: 2px 0 2px; }
   .csub-in {
     display: grid; grid-template-columns: 124px minmax(0, 1fr);
     padding: 0 0 12px; font-size: .86rem;
@@ -1122,12 +1167,18 @@ try {
   .csub-in .k { color: var(--muted); }
   .csub-in .nc { color: var(--muted); font-style: italic; }
   .csub-in .jour-creux { color: var(--muted); }
+  /* Détail sans bouton d'ajout (les cours : l'ajout se fait au niveau du
+     jour) : les infos prennent toute la largeur. */
+  .csub-in.sans-ajout { grid-template-columns: minmax(0, 1fr); }
+  .csub-in.sans-ajout .infos { grid-area: 1 / 1; }
+  .csub-in.sans-ajout .ech-liste { grid-area: 2 / 1; }
   /* Jour sans cours : une seule rangée, centrée en hauteur dans le bloc
      (rien en dessous d'elle, contrairement à un cours). */
-  .detail .box-jour { padding: 10px 14px; }
+  .detail .box-jour { padding: 10px 14px 10px 23px; }
   .box-jour .csub-in { padding: 0; align-items: center; }
-  /* Ajouter une échéance : pastille douce, alignée sous l'heure. */
-  .ech-add {
+  /* Ajouter une échéance : pastille douce, alignée sous l'heure (jours
+     sans cours) ou en bas du jour déroulé (jours avec cours). */
+  .ech-add, .jour-ech-btn {
     grid-area: 1 / 1; justify-self: start; align-self: start;
     display: inline-flex; align-items: center; gap: 5px;
     margin: 1px 0 0; padding: 7px 10px 7px 9px;
@@ -1137,29 +1188,334 @@ try {
     box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
     transition: transform .12s, color .18s;
   }
-  .ech-add svg { flex: none; color: var(--muted); transition: color .18s; }
-  .ech-add:hover, .ech-add:focus-visible { color: var(--ink); }
-  .ech-add:hover svg, .ech-add:focus-visible svg { color: var(--accent); }
-  .ech-add:active { transform: scale(.97); }
-  .ech-add:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  /* Échéances du cours : type, intitulé, date, suppression. */
+  .ech-add svg, .jour-ech-btn svg { flex: none; color: var(--muted); transition: color .18s; }
+  .ech-add:hover, .ech-add:focus-visible,
+  .jour-ech-btn:hover, .jour-ech-btn:focus-visible { color: var(--ink); }
+  .ech-add:hover svg, .ech-add:focus-visible svg,
+  .jour-ech-btn:hover svg, .jour-ech-btn:focus-visible svg { color: var(--accent); }
+  .ech-add:active, .jour-ech-btn:active { transform: scale(.97); }
+  .ech-add:focus-visible, .jour-ech-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  /* Bouton « Échéance » sous la boîte des cours, à droite. */
+  .jour-ech { display: flex; justify-content: flex-end; padding: 0 12px 12px; }
+  /* Étape 1 de la fenêtre d'échéance : la liste des cours du jour, des
+     lignes bien hautes pour viser juste du pouce. Les deux étapes gardent
+     la même hauteur (celle du formulaire, posée en min-height à
+     l'ouverture du choix) : la fenêtre ne saute pas d'une étape à
+     l'autre, et la liste prend la place restante. */
+  #boite-echeance { display: flex; flex-direction: column; }
+  #ech-etape-choix { display: flex; flex-direction: column; flex: 1 1 auto; }
+  #ech-choix-titre { margin: 0 0 8px; }
+  #ech-choix-liste {
+    display: grid; gap: 8px; margin: 0 0 6px;
+    flex: 1 1 auto; align-content: start;
+    max-height: 46vh; max-height: 46dvh; overflow-y: auto;
+    scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--muted) 42%, transparent) transparent;
+  }
+  .ech-choix-cours {
+    display: flex; align-items: center; gap: 10px; width: 100%;
+    min-height: 62px; padding: 10px 14px; text-align: left;
+    border: none; border-radius: 16px; font: inherit; color: var(--ink); cursor: pointer;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    transition: transform .12s;
+  }
+  .ech-choix-cours:active { transform: scale(.98); }
+  .ech-choix-cours:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .ech-choix-cours .h {
+    flex: none; font-variant-numeric: tabular-nums; color: var(--muted);
+    font-size: .8rem; white-space: nowrap;
+  }
+  .ech-choix-cours .ctxt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .ech-choix-cours .m {
+    font-weight: 600; font-size: .95rem;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .ech-choix-cours .s {
+    font-size: .8rem; color: var(--muted);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  /* Devoir à une autre heure : même rangée que les cours, mais l'heure se
+     choisit dans un sélecteur classique. Un appui sur la rangée ouvre le
+     sélecteur ; l'échéance se range sous la journée. */
+
+  .ech-choix-autre .ico { flex: none; display: grid; place-items: center; color: var(--muted); }
+  .ech-choix-autre .ctxt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .ech-choix-autre .m {
+    font-weight: 600; font-size: .95rem;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .ech-choix-autre .s {
+    font-size: .8rem; color: var(--muted);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .ech-choix-autre input[type="time"] {
+    flex: none; width: 96px; height: 42px; padding: 0 10px; border: none; border-radius: 11px;
+    font: inherit; font-size: .95rem; font-weight: 600; color: var(--ink);
+    background: var(--creux); box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre);
+    text-align: center;
+  }
+  .ech-choix-autre input[type="time"]::-webkit-calendar-picker-indicator,
+  .ech-choix-autre input[type="time"]::-webkit-inner-spin-button,
+  .ech-choix-autre input[type="time"]::-webkit-clear-button {
+    display: none; -webkit-appearance: none;
+  }
+  .ech-choix-autre input[type="time"]:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
+  /* Bouton « Valider » déroulé sous l'heure personnalisée : aligné pile
+     sous la case de l'heure (même largeur de 96px, même retrait de 14px).
+     Il se déploie dès qu'on commence à régler ou taper une heure, pour
+     éviter de basculer à l'étape suivante au premier chiffre des minutes. */
+  /* Boîte de l'heure personnalisée : même rangée que les cours. */
+  .ech-choix-autre {
+    display: flex; align-items: center; gap: 10px; width: 100%;
+    min-height: 62px; margin-top: 2px; padding: 10px 14px;
+    border-radius: 16px;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    cursor: pointer;
+    transition: background-color .15s, box-shadow .15s, border-bottom-right-radius .2s;
+  }
+  .ech-choix-autre.ouvert {
+    border-bottom-right-radius: 0;
+  }
+  /* Boîte qui enrobe le bouton « Valider » sous l'heure personnalisée :
+     prolongement direct de la boîte sur sa droite (largeur du bouton +
+     marges), sans ligne de séparation et sans étirer la gauche. */
+  .ech-choix-valider-zone {
+    margin-left: auto; width: 124px;
+    margin-top: -1px; padding: 0 14px;
+    background: linear-gradient(180deg, var(--relief-bas), var(--relief-bas));
+    box-shadow: inset -1px 0 0 var(--line), inset 0 -1px 0 var(--line), inset 1px 0 0 var(--line), var(--ombre-btn);
+    border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;
+    display: flex; justify-content: flex-end;
+    position: relative; z-index: 1;
+    max-height: 0; opacity: 0; overflow: hidden; pointer-events: none;
+    transition: max-height .24s cubic-bezier(.16, 1, .3, 1),
+                opacity .18s ease-out,
+                padding .24s cubic-bezier(.16, 1, .3, 1);
+  }
+  .ech-choix-valider-zone::before {
+    content: ""; position: absolute; top: -1px; left: 1px; right: 1px; height: 2px;
+    background: var(--relief-bas);
+  }
+  .ech-choix-valider-zone.ouvert {
+    max-height: 52px; opacity: 1; pointer-events: auto;
+    padding: 0 14px 10px;
+    overflow: visible;
+  }
+  /* Arrondi intérieur (congé de raccordement) adoucissant l'angle entre
+     le bas de la boîte et l'extension droite du bouton. */
+  .ech-valider-conge {
+    position: absolute; top: -1px; left: -13px;
+    width: 14px; height: 14px; pointer-events: none;
+  }
+  .ech-valider-conge .ech-conge-fond { fill: var(--relief-bas); }
+  .ech-valider-conge .ech-conge-ligne { stroke: var(--line); stroke-width: 1; fill: none; }
+  .ech-choix-valider {
+    width: 96px; height: 38px; border: none; border-radius: 11px;
+    font: inherit; font-size: .88rem; font-weight: 650; letter-spacing: -.005em; cursor: pointer;
+    color: var(--ink);
+    background-color: var(--relief-haut);
+    background-image: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    transition: color .15s, transform .12s;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .ech-choix-valider:hover { color: var(--ink); }
+  .ech-choix-valider:active { transform: scale(.97); }
+  .ech-choix-valider:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  /* Retour à l'étape 1 depuis le formulaire (passé par le choix du cours). */
+  #ech-retour {
+    display: block; margin: -6px 0 10px; padding: 6px 0; border: none; background: none;
+    font: inherit; font-size: .85rem; font-weight: 600; color: var(--accent); cursor: pointer;
+    min-height: 32px; text-align: left;
+  }
+  #ech-retour[hidden] { display: none; }
+  #ech-retour:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  /* Échéances du cours : type à la verticale, intitulé, date, validation,
+     suppression. Une échéance passée a exactement le même aspect qu'une
+     échéance à venir (ni voile ni texte estompé). */
   .ech-liste {
     grid-area: 2 / 1 / 3 / 3; list-style: none; margin: 9px 0 0; padding: 0;
     display: flex; flex-direction: column; gap: 6px;
   }
-  .ech {
-    display: flex; align-items: flex-start; gap: 9px;
-    padding: 8px 10px; border-radius: 12px; font-size: .82rem;
-    background: var(--surface); box-shadow: inset 0 0 0 1px var(--line);
+  .ech-item {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    background: transparent;
+    touch-action: pan-y;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: height .28s cubic-bezier(.16,1,.3,1),
+                margin .28s cubic-bezier(.16,1,.3,1),
+                opacity .22s ease-out;
   }
-  .ech.passe { opacity: .5; }
+  .ech-item.supprime {
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    opacity: 0 !important;
+    pointer-events: none;
+  }
+  .ech-fond-suppr {
+    position: absolute;
+    inset: 0;
+    background: var(--danger);
+    display: flex;
+    justify-content: flex-end;
+    align-items: stretch;
+    border-radius: 12px;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    z-index: 1;
+    transition: opacity .18s ease-out, visibility .18s ease-out, width .26s cubic-bezier(.16,1,.3,1), background-color .2s;
+  }
+  .ech-fond-modifier {
+    position: absolute;
+    inset: 0;
+    background: var(--action-edit);
+    display: flex;
+    justify-content: flex-start;
+    align-items: stretch;
+    border-radius: 12px;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    z-index: 1;
+    transition: opacity .18s ease-out, visibility .18s ease-out, width .26s cubic-bezier(.16,1,.3,1), background-color .2s;
+  }
+  .ech-action-btn {
+    border: none;
+    background: none;
+    color: #ffffff;
+    width: 76px;
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    font: inherit;
+    font-size: .68rem;
+    font-weight: 650;
+    letter-spacing: .02em;
+    cursor: pointer;
+    padding: 0;
+    transition: background-color .15s, width .26s cubic-bezier(.16,1,.3,1);
+  }
+  .ech-fond-suppr .ech-action-btn:hover { background: var(--danger-hover); }
+  .ech-fond-modifier .ech-action-btn:hover { background: var(--action-edit-hover); }
+  .ech-action-btn svg {
+    flex: none;
+    transition: transform .22s cubic-bezier(.175, .885, .32, 1.275);
+  }
+  .btn-libelle-auto { display: none; }
+  .btn-libelle-normal { display: inline; }
+
+  .ech-item.arme-declenchement .btn-libelle-normal { display: none !important; }
+  .ech-item.arme-declenchement .btn-libelle-auto {
+    display: inline !important;
+    font-size: .66rem;
+    font-weight: 750;
+    letter-spacing: .02em;
+    text-transform: uppercase;
+    animation: ech-pop-label .18s cubic-bezier(.16,1,.3,1);
+  }
+  @keyframes ech-pop-label {
+    from { opacity: 0; transform: translateY(3px) scale(.88); }
+    to { opacity: 1; transform: none; }
+  }
+  .ech-item.arme-declenchement .ech-action-btn svg {
+    transform-origin: center;
+    filter: drop-shadow(0 2px 5px rgba(0, 0, 0, .3));
+    animation: svg-vibre .26s ease-in-out infinite;
+  }
+  @keyframes svg-vibre {
+    0%   { transform: scale(1.35) rotate(0deg); }
+    20%  { transform: scale(1.37) rotate(-7deg); }
+    40%  { transform: scale(1.33) rotate(7deg); }
+    60%  { transform: scale(1.37) rotate(-5deg); }
+    80%  { transform: scale(1.34) rotate(5deg); }
+    100% { transform: scale(1.35) rotate(0deg); }
+  }
+  .ech-item.arme-declenchement .ech-fond-suppr {
+    background: #b51527 !important;
+  }
+  .ech-item.arme-declenchement .ech-fond-modifier {
+    background: var(--action-edit-arme) !important;
+  }
+
+  .ech {
+    position: relative;
+    z-index: 2;
+    display: flex; align-items: center; gap: 9px;
+    padding: 7px 10px; border-radius: 12px; font-size: .82rem;
+    background: var(--surface); box-shadow: inset 0 0 0 1px var(--line);
+    cursor: pointer;
+    will-change: transform, margin;
+    transition: transform .26s cubic-bezier(.16,1,.3,1),
+                margin .26s cubic-bezier(.16,1,.3,1),
+                box-shadow .26s cubic-bezier(.16,1,.3,1);
+  }
+  .ech-item.glissant .ech {
+    cursor: grabbing;
+    transition: none !important;
+    margin: 0 !important;
+  }
+  .ech-item[data-ouvert="suppr"] .ech {
+    box-shadow: inset 0 0 0 1px var(--line), 3px 0 14px rgba(0, 0, 0, .14);
+  }
+  .ech-item[data-ouvert="edit"] .ech {
+    box-shadow: inset 0 0 0 1px var(--line), -3px 0 14px rgba(0, 0, 0, .14);
+  }
+  .ech-item[data-ouvert="split"] .ech-fond-modifier {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    width: 50%;
+    right: auto;
+    border-radius: 12px 0 0 12px;
+  }
+  .ech-item[data-ouvert="split"] .ech-fond-suppr {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    width: 50%;
+    left: auto;
+    border-radius: 0 12px 12px 0;
+  }
+  .ech-item[data-ouvert="split"] .ech-action-btn {
+    width: 26px;
+  }
+  .ech-item[data-ouvert="split"] .ech-action-btn span {
+    display: none !important;
+  }
+  .ech-item[data-ouvert="split"] .ech-action-btn svg {
+    width: 15px;
+    height: 15px;
+    transform: none !important;
+    animation: none !important;
+  }
+  .ech-item[data-ouvert="split"] .ech {
+    margin: 0 26px;
+    transform: translateX(0px);
+    box-shadow: inset 0 0 0 1px var(--line), 0 3px 18px rgba(0, 0, 0, .16);
+  }
+
   .ech.neuf { animation: ech-neuf 1.4s cubic-bezier(.16,1,.3,1); }
   @keyframes ech-neuf {
     from { background: color-mix(in srgb, var(--accent) 22%, var(--surface)); }
   }
+  /* Type (Devoir / Examen) : écrit à la verticale, sur toute la hauteur de
+     la fiche, pour garder la place au titre et à la date. */
   .ech-type {
-    flex: none; margin-top: 1px; font-size: .62rem; font-weight: 750; text-transform: uppercase;
-    letter-spacing: .03em; border-radius: 6px; padding: 2px 6px;
+    flex: none; align-self: stretch; display: grid; place-items: center;
+    font-size: .5rem; font-weight: 750; text-transform: uppercase;
+    letter-spacing: .03em; border-radius: 6px; padding: 4px 2px;
+    writing-mode: vertical-rl; transform: rotate(180deg);
   }
   .ech-type.devoir { color: var(--accent); background: var(--accent-soft); }
   .ech-type.examen {
@@ -1167,24 +1523,38 @@ try {
     background: color-mix(in srgb, var(--attention) 12%, var(--surface));
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--attention) 30%, transparent);
   }
-  .ech-corps { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-  .ech-titre { font-weight: 550; overflow-wrap: anywhere; }
-  .ech-quand { color: var(--muted); font-size: .76rem; }
-  .ech-suppr {
-    flex: none; width: 28px; height: 28px; margin: -3px -5px -3px 0;
-    display: grid; place-items: center; border: none; border-radius: 9px;
-    background: none; color: var(--muted); cursor: pointer;
-    transition: color .15s, background-color .15s;
+  .ech-corps { flex: 1; min-width: 0; }
+  /* Titre validé : une barre grandit sur le texte (les lignes multiples
+     sont barrées une à une). */
+  .ech-titre {
+    display: inline; font-weight: 550; overflow-wrap: anywhere;
+    -webkit-box-decoration-break: clone; box-decoration-break: clone;
+    background-image: linear-gradient(currentColor, currentColor);
+    background-repeat: no-repeat; background-position: 0 .62em; background-size: 0% 1.5px;
+    transition: background-size .34s cubic-bezier(.16,1,.3,1);
   }
-  .ech-suppr:hover, .ech-suppr:focus-visible {
-    color: var(--danger); background: color-mix(in srgb, var(--danger) 10%, transparent);
+  .ech-titre.fait { background-size: 100% 1.5px; }
+  .ech-quand { display: block; color: var(--muted); font-size: .76rem; margin-top: 1px; }
+  /* Case « c’est fait » : elle valide l’échéance et barre son titre. */
+  .ech-valide {
+    flex: none; width: 28px; height: 28px; display: grid; place-items: center;
+    border: none; border-radius: 9px; background: none; color: var(--muted); cursor: pointer;
+    box-shadow: inset 0 0 0 1.5px var(--line);
+    transition: color .15s, background-color .15s, box-shadow .15s;
   }
-  .ech-suppr:focus-visible { outline: 2px solid var(--danger); outline-offset: 1px; }
+  .ech-valide svg { opacity: 0; transform: scale(.5); transition: opacity .18s, transform .18s cubic-bezier(.16,1,.3,1); }
+  .ech-valide:hover { color: var(--ink); background: color-mix(in srgb, var(--ink) 7%, transparent); }
+  .ech-valide.fait {
+    color: var(--surface); background: var(--accent);
+    box-shadow: inset 0 0 0 1.5px var(--accent);
+  }
+  .ech-valide.fait svg { opacity: 1; transform: scale(1); }
+  .ech-valide:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
   /* Pause : filets symétriques de part et d'autre du texte. */
   .detail li.p {
     display: flex; align-items: center; gap: 10px;
-    padding: 9px 0; color: var(--muted);
-    font-size: .78rem; font-weight: 600; letter-spacing: .02em; white-space: nowrap;
+    padding: 6px 0; color: var(--muted);
+    font-size: .7rem; font-weight: 600; letter-spacing: .02em; white-space: nowrap;
   }
   .detail li.p::before, .detail li.p::after {
     content: ""; flex: 1; height: 1px; background: var(--line);
@@ -1676,7 +2046,7 @@ try {
   .ec-act.fait { color: var(--free); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--free) 35%, transparent); }
   #boite-export .boite-actions button, #boite-export .boite-actions a { height: auto; min-height: 50px; padding: 8px 10px; line-height: 1.2; }
   /* Un seul bouton (écran de choix) : il prend toute la largeur. */
-  #boite-export .boite-actions.seule { grid-template-columns: 1fr; }
+  #boite-export .boite-actions.seule, #boite-echeance .boite-actions.seule { grid-template-columns: 1fr; }
   /* Sur mesure : seul export possible, un lien discret sous les boutons. */
   .export-repli { margin: 12px 0 0; text-align: center; }
   .export-repli .lien-pied { padding: 6px; }
@@ -2064,7 +2434,6 @@ try {
     .ap-ev { gap: 2px; padding: 7px 10px; border-radius: 11px; }
     .ap-ev b { font-size: .82rem; white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
     .ap-ev i { font-size: .76rem; }
-    .ap-ev u { font-size: .72rem; }
     .ap-ev em { font-size: .7rem; }
     .ap-libre { border-radius: 12px; }
     .ap-libre p { padding: 7px 10px; border-radius: 14px; }
@@ -2278,7 +2647,11 @@ try {
     }
     .libre-boite .ech-liste { width: 100%; max-width: 230px; margin: 0; text-align: left; }
     .libre-boite .ech { background: var(--surface); }
-    .libre-add { margin: 0; }
+    /* Le bouton hérite de .ech-add (aligné à gauche en vue téléphone) :
+       on le recentre dans la colonne. Sans ça, sous « Pas de cours »
+       (plus large que lui) il reste collé à gauche, alors que sous
+       « Férié » (plus étroit) il paraît centré. */
+    .libre-add { margin: 0; align-self: center; }
     /* Cours : fond mat teinté (une couleur par
        intitulé, jamais deux intitulés avec la même — voir preparerCouleurs). */
     .ev {
@@ -2348,14 +2721,14 @@ try {
       white-space: normal; overflow-wrap: anywhere; overflow: hidden;
     }
     @container salle (max-height: 33px) { .ev .es > span { -webkit-line-clamp: 1; } }
-    .ev .ep { font-size: .74rem; opacity: .8; }
     .ev .eh { font-size: .72rem; font-weight: 500; opacity: .8; font-variant-numeric: tabular-nums; }
-    /* Bas de case : prof à gauche, horaires calés en bas à droite sur la
-       même ligne. Ça rend une ligne au titre, qui n'est plus coupé quand
-       la colonne est étroite. Sans prof, les horaires restent à droite. */
+    /* Bas de case : horaires à gauche (là où était le prof, qui ne
+       s'affiche plus sur la grille — il reste dans la bulle de détail),
+       pastille d'échéance calée en bas à droite sur la même ligne. Ça
+       rend une ligne au titre, qui n'est plus coupé quand la colonne est
+       étroite. */
     .ev .eb { display: flex; align-items: baseline; gap: 8px; margin-top: auto; }
-    .ev .eb .ep { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .ev .eb .eh { flex: none; margin-left: auto; white-space: nowrap; }
+    .ev .eb .eh { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     /* Échéance à venir sur un cours : une pastille discrète, dans la
        rangée du bas — elle suit la couleur du texte de la case (lisible
        sur les fonds clairs comme sur les fonds sombres), jamais un aplat
@@ -2367,20 +2740,16 @@ try {
       background: color-mix(in srgb, currentColor 15%, transparent);
     }
     /* Case courte (< 75 min) : la rangée redevient transparente pour
-       garder la ligne titre + salle + prof d'avant. */
+       garder la ligne titre + salle + horaires d'avant. */
     .ev.court .eb { display: contents; }
     .ev.court { flex-direction: row; align-items: baseline; gap: 8px; padding-top: 4px; }
     .ev.court .et { -webkit-line-clamp: 1; flex: 1; min-width: 0; }
     .ev.court .es { flex: none; max-width: 36%; min-width: 0; font-size: .74rem; display: block; overflow: hidden; }
     .ev.court .es > span { -webkit-line-clamp: 1; }
-    .ev.court .ep { flex: none; max-width: 32%; min-width: 0; }
-    /* En ligne courte, les horaires sautent en premier (la position dans
-       la grille + la bulle les donnent) ; sans salle ni prof, on garde
-       les horaires plutôt qu'un titre seul. Mais sans prof (l'UMONS n'en
-       publie jamais), la salle seule ne doit pas les chasser : les
-       horaires restent dès qu'il n'y a pas de prof à afficher. */
-    .ev.court .eh { display: none; }
-    .ev.court:not(:has(.ep)) .eh { display: block; flex: none; }
+    /* Les horaires gardent leur place dans la ligne courte (plus de prof
+       à chasser de la rangée) : juste après la salle, avant la pastille
+       d'échéance. */
+    .ev.court .eh { display: block; flex: none; }
     /* Colonne étroite (fenêtre ~1024px, semaine de 6 jours…) : la hauteur
        des cases ne change pas, donc on resserre le texte plutôt que de le
        couper — piloté par la largeur réelle de la colonne. En compact,
@@ -2391,12 +2760,11 @@ try {
       .ev .et { font-size: .78rem; line-height: 1.2; }
       .ev .es { font-size: .7rem; }
       .ev .eb { gap: 6px; }
-      .ev .eb .ep { font-size: .7rem; }
       .ev .eb .eh { font-size: .68rem; }
     }
     /* Colonne étroite : la pastille d'échéance se réduit à un point (le
        libellé complet et le détail sont dans la bulle), pour ne pas
-       chasser le prof de la rangée. */
+       chasser les horaires de la rangée. */
     @container col (max-width: 200px) {
       .ev .eb .ev-ech {
         font-size: 0; width: 9px; height: 9px; padding: 0; border-radius: 50%;
@@ -2404,7 +2772,7 @@ try {
       }
     }
     /* Case courte (< 75 min) : même repli en point, la rangée garde son
-       titre, sa salle et son prof. */
+       titre, sa salle et ses horaires. */
     .ev.court .eb .ev-ech {
       font-size: 0; width: 9px; height: 9px; padding: 0; border-radius: 50%;
       align-self: baseline;
@@ -2525,7 +2893,7 @@ try {
         0 0 0 1.5px hsl(var(--h) calc(45% - var(--v) * 8%) calc(62% + var(--v) * 5%)),
         0 12px 26px -14px rgba(0, 0, 0, .8);
     }
-    .ev .es, .ev .ep, .ev .eh { color: #eef2f8; }
+    .ev .es, .ev .eh { color: #eef2f8; }
     .pdf-pages canvas { box-shadow: 0 8px 24px -12px rgba(0,0,0,.8); }
   }
 
@@ -2655,7 +3023,7 @@ try {
       box-shadow: 0 0 0 1.5px hsl(var(--h) calc(45% - var(--v) * 10%) calc(52% + var(--v) * 6%)),
         0 12px 26px -14px rgba(15, 20, 40, .5);
     }
-    html[data-apparence="clair"] .ev .es, html[data-apparence="clair"] .ev .ep,
+    html[data-apparence="clair"] .ev .es,
     html[data-apparence="clair"] .ev .eh { color: inherit; }
     html[data-apparence="sombre"] .ev {
       background: hsl(var(--h) calc(19% + var(--v) * 7%) calc(17% + var(--v) * 2%));
@@ -2668,7 +3036,7 @@ try {
       box-shadow: 0 0 0 1.5px hsl(var(--h) calc(45% - var(--v) * 8%) calc(62% + var(--v) * 5%)),
         0 12px 26px -14px rgba(0, 0, 0, .8);
     }
-    html[data-apparence="sombre"] .ev .es, html[data-apparence="sombre"] .ev .ep,
+    html[data-apparence="sombre"] .ev .es,
     html[data-apparence="sombre"] .ev .eh { color: #eef2f8; }
     html[data-apparence="clair"] .pdf-pages canvas {
       box-shadow: 0 1px 2px rgba(0,0,0,.08), 0 8px 24px -12px rgba(0,0,0,.25);
@@ -2680,7 +3048,7 @@ try {
 
   @media (prefers-reduced-motion: reduce) {
     .ev, #pop, .liste button { transition: none; }
-    .chev, .minichev, .detail, .csub,
+    .chev, .detail, .csub,
     .week, .thisweek, .days, #feuille { transition: none; }
     .ppop:not([hidden]) { animation: none; }
     .voile:not([hidden]), .voile:not([hidden]) .boite, .voile.sortie, .voile.sortie .boite { animation: none; }
@@ -2692,7 +3060,7 @@ try {
     .pdf-dezoom { transition: none; }
     .ap-ev { animation: none; }
     .pdf-pages canvas { animation: none; }
-    .btn-entree, .champs, .halo::before, .halo::after { transition: none; }
+    .btn-entree, .champs, .halo::before, .halo::after, .ech-choix-valider-zone, .ech-choix-valider { transition: none; }
   }
   /* ---------- Horaire sur mesure (fusion.js) ---------- */
   :root { --attention: #b26a00; }
@@ -2983,23 +3351,23 @@ try {
         <div class="ap-jour"><span>Ven</span><strong></strong></div>
       </div>
       <div class="ap-corps">
-        <div class="ap-heures"><span style="top:0%">8h</span><span style="top:10%">9h</span><span style="top:20%">10h</span><span style="top:30%">11h</span><span style="top:40%">12h</span><span style="top:50%">13h</span><span style="top:60%">14h</span><span style="top:70%">15h</span><span style="top:80%">16h</span><span style="top:90%">17h</span></div>
+        <div class="ap-heures"><span style="top:0%">08h</span><span style="top:10%">09h</span><span style="top:20%">10h</span><span style="top:30%">11h</span><span style="top:40%">12h</span><span style="top:50%">13h</span><span style="top:60%">14h</span><span style="top:70%">15h</span><span style="top:80%">16h</span><span style="top:90%">17h</span></div>
         <div class="ap-col">
-          <div class="ap-ev" style="--h:221;--t:5;--d:20"><b>Algorithmique</b><i>A.204</i><span class="ap-eb"><u>M. Dupont</u><em>8h30 – 10h30</em></span></div>
-          <div class="ap-ev" style="--h:18;--t:27.5;--d:20"><b>Analyse</b><i>B.112</i><span class="ap-eb"><u>Mme Leroy</u><em>10h45 – 12h45</em></span></div>
-          <div class="ap-ev" style="--h:152;--t:57.5;--d:30"><b>Labo web</b><i>L3.07</i><span class="ap-eb"><u>M. Martin</u><em>13h45 – 16h45</em></span></div>
+          <div class="ap-ev" style="--h:221;--t:5;--d:20"><b>Algorithmique</b><i>A.204</i><span class="ap-eb"><em>08h30 – 10h30</em></span></div>
+          <div class="ap-ev" style="--h:18;--t:27.5;--d:20"><b>Analyse</b><i>B.112</i><span class="ap-eb"><em>10h45 – 12h45</em></span></div>
+          <div class="ap-ev" style="--h:152;--t:57.5;--d:30"><b>Labo web</b><i>L3.07</i><span class="ap-eb"><em>13h45 – 16h45</em></span></div>
         </div>
         <div class="ap-col">
-          <div class="ap-ev" style="--h:262;--t:5;--d:30"><b>Réseaux</b><i>A.018</i><span class="ap-eb"><u>Mme Lambert</u><em>8h30 – 11h30</em></span></div>
-          <div class="ap-ev" style="--h:332;--t:57.5;--d:15"><b>Anglais</b><i>C.301</i><span class="ap-eb"><u>Mme Smith</u><em>13h45 – 15h15</em></span></div>
+          <div class="ap-ev" style="--h:262;--t:5;--d:30"><b>Réseaux</b><i>A.018</i><span class="ap-eb"><em>08h30 – 11h30</em></span></div>
+          <div class="ap-ev" style="--h:332;--t:57.5;--d:15"><b>Anglais</b><i>C.301</i><span class="ap-eb"><em>13h45 – 15h15</em></span></div>
         </div>
         <div class="ap-col">
-          <div class="ap-ev" style="--h:190;--t:10;--d:30"><b>Bases de données</b><i>L2.11</i><span class="ap-eb"><u>M. Peeters</u><em>9h00 – 12h00</em></span></div>
+          <div class="ap-ev" style="--h:190;--t:10;--d:30"><b>Bases de données</b><i>L2.11</i><span class="ap-eb"><em>09h00 – 12h00</em></span></div>
         </div>
         <div class="ap-col">
-          <div class="ap-ev" style="--h:40;--t:5;--d:20"><b>Systèmes</b><i>A.204</i><span class="ap-eb"><u>M. Janssens</u><em>8h30 – 10h30</em></span></div>
-          <div class="ap-ev" style="--h:221;--t:27.5;--d:20"><b>Algorithmique</b><i>A.204</i><span class="ap-eb"><u>M. Dupont</u><em>10h45 – 12h45</em></span></div>
-          <div class="ap-ev" style="--h:292;--t:60;--d:30"><b>Projet</b><i>L1.02</i><span class="ap-eb"><u>Mme Dubois</u><em>14h00 – 17h00</em></span></div>
+          <div class="ap-ev" style="--h:40;--t:5;--d:20"><b>Systèmes</b><i>A.204</i><span class="ap-eb"><em>08h30 – 10h30</em></span></div>
+          <div class="ap-ev" style="--h:221;--t:27.5;--d:20"><b>Algorithmique</b><i>A.204</i><span class="ap-eb"><em>10h45 – 12h45</em></span></div>
+          <div class="ap-ev" style="--h:292;--t:60;--d:30"><b>Projet</b><i>L1.02</i><span class="ap-eb"><em>14h00 – 17h00</em></span></div>
         </div>
         <div class="ap-col">
           <div class="ap-libre"><p><strong>Pas de cours</strong></p></div>
@@ -3520,12 +3888,41 @@ try {
      cours (son début), rappelées mais non modifiables. -->
 <div class="voile" id="voile-echeance" hidden>
   <form class="boite" id="boite-echeance" role="dialog" aria-modal="true" aria-labelledby="echeance-titre" novalidate>
+    <!-- Étape 1 : dans quel cours poser le devoir ou l'examen. -->
+    <div id="ech-etape-choix" hidden>
+      <h3 id="ech-choix-titre">Dans quel cours ?</h3>
+      <p class="ech-contexte" id="ech-choix-jour"></p>
+      <div id="ech-choix-liste"></div>
+      <!-- Devoir sans cours (ou hors des heures de cours) : on choisit
+           l'heure dans la journée, l'échéance se range sous la journée. -->
+      <div class="ech-choix-autre" id="ech-choix-autre">
+        <span class="ico" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9"/><path d="M12 7.5v5l3 2"/></svg></span>
+        <span class="ctxt"><span class="m">À une autre heure</span>
+        <span class="s">Dans la journée</span></span>
+        <input type="time" id="ech-choix-heure" aria-label="Heure du devoir ou de l'examen dans la journée">
+      </div>
+      <div class="ech-choix-valider-zone" id="ech-choix-valider-zone">
+        <svg class="ech-valider-conge" viewBox="0 0 14 14" aria-hidden="true">
+          <path class="ech-conge-fond" d="M 0 0 C 7.73 0 14 6.27 14 14 L 14 0 Z"/>
+          <path class="ech-conge-ligne" d="M 0 0.5 C 7.4 0.5 13.5 6.6 13.5 14"/>
+        </svg>
+        <button type="button" class="ech-choix-valider halo" id="ech-choix-valider" tabindex="-1">Valider</button>
+      </div>
+      <div class="boite-actions seule">
+        <button type="button" class="btn-sec" id="ech-choix-annuler">Annuler</button>
+      </div>
+    </div>
+    <!-- Étape 2 : le formulaire (rail Devoir / Examen, intitulé, date). -->
+    <div id="ech-etape-form">
     <div class="seg" id="echeance-rail" role="tablist" aria-label="Type d'échéance" style="--n:2;--idx:0">
       <span class="pill" aria-hidden="true"></span>
       <button type="button" role="tab" data-ech-type="devoir" aria-selected="true">Devoir</button>
       <button type="button" role="tab" data-ech-type="examen" aria-selected="false">Examen</button>
     </div>
     <h3 id="echeance-titre">Ajouter un devoir</h3>
+    <button type="button" id="ech-retour" hidden>‹ Changer de cours</button>
     <p class="ech-contexte" id="echeance-cours"></p>
     <label class="champ-titre" for="ech-titre">Intitulé</label>
     <div class="champs" id="ech-titre-bloc"><div class="champ-ligne">
@@ -3541,6 +3938,7 @@ try {
     <div class="boite-actions">
       <button type="button" class="btn-sec" id="echeance-annuler">Annuler</button>
       <button type="submit" class="btn-prim halo" id="echeance-ok">Ajouter</button>
+    </div>
     </div>
   </form>
 </div>
@@ -4860,7 +5258,7 @@ try {
     return d;
   }
   function fmtDate(d) { return d.getDate() + " " + MOIS[d.getMonth()]; }
-  function fmtH(h) { return String(h).replace(/^0/, ""); } // "08h15" -> "8h15"
+  function fmtH(h) { h = String(h); return h.charAt(1) === "h" ? "0" + h : h; } // "8h15" -> "08h15"
   // n° de jour de l'école : 1 = premier lundi (voir HP.feries côté API).
   function numJour(s, jour) { return (s - 1) * 7 + jour + 1; }
   function estFerie(s, jour) { return !!FERIES[numJour(s, jour)]; }
@@ -7605,7 +8003,33 @@ try {
     seg.hidden = false;
     var idx = 0;
     for (var i = 0; i < profils.length; i++) if (profils[i].id === profil.id) idx = i;
-    seg.style.setProperty("--n", Math.max(1, profils.length));
+    var n = Math.max(1, profils.length);
+    // Même liste qu'avant (mêmes horaires, même ordre) : on ne reconstruit
+    // rien, on déplace juste la pastille — c'est ce qui la fait glisser
+    // d'un onglet à l'autre (façon Horairelm). Reconstruire le innerHTML
+    // recréerait la pastille à sa position finale : aucun glissement.
+    var boutons = seg.querySelectorAll("button[data-profil]");
+    var memeStructure = boutons.length === profils.length;
+    if (memeStructure) {
+      for (var k = 0; k < profils.length; k++) {
+        if (boutons[k].getAttribute("data-profil") !== profils[k].id) { memeStructure = false; break; }
+      }
+    }
+    seg.style.setProperty("--n", n);
+    if (memeStructure) {
+      seg.style.setProperty("--idx", idx);
+      Array.prototype.forEach.call(boutons, function (b, j) {
+        var p = profils[j];
+        b.setAttribute("aria-selected", p.id === profil.id ? "true" : "false");
+        var neuf = semainesARevoir(p.id).length > 0;
+        if (neuf) b.classList.add("neuf"); else b.classList.remove("neuf");
+        var titre = libelleProfil(p);
+        if (b.getAttribute("title") !== titre) b.setAttribute("title", titre);
+        if (b.textContent !== p.surnom) b.textContent = p.surnom;
+      });
+      ajusterSeg();
+      return;
+    }
     seg.style.setProperty("--idx", idx);
     seg.classList.remove("defile");
     var html = '<span class="pill" aria-hidden="true"></span>';
@@ -8304,22 +8728,44 @@ try {
   }
   var ICONE_CROIX = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
     'stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+  var ICONE_CASE = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+    'stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4.5 4.5L19 7"/></svg>';
+  var ICONE_CRAYON_ECH = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+    'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg>';
+  var ICONE_CORBEILLE_ECH = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+    'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 4h4M7 7l1 13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-13"/></svg>';
   function listeEcheancesHTML(liste, cleCours, dateJour) {
     var items = trierEcheances(liste).filter(function (e) { return !echApresDate(e, dateJour); });
     if (!items.length) return "";
     var html = '<ul class="ech-liste">';
     for (var i = 0; i < items.length; i++) {
       var e = items[i], examen = e.type === "examen";
-      // Le jour affiché porte déjà la date : on ne la répète que pour une
-      // échéance qui tombe un autre jour (sinon, il ne reste que l'heure).
       var quand = (dateJour && memeJour(jourEch(e.date), dateJour)) ? heureEch(e.heure) : quandEch(e);
-      html += '<li class="ech' + (echPassee(e) ? " passe" : "") + (echNeuf === e.id ? " neuf" : "") +
-        '" data-ech-cle="' + txt(cleCours) + '">' +
-        '<span class="ech-type ' + (examen ? "examen" : "devoir") + '">' + (examen ? "Examen" : "Devoir") + "</span>" +
-        '<span class="ech-corps"><span class="ech-titre">' + txt(e.titre) + "</span>" +
-        (quand ? '<span class="ech-quand">' + txt(quand) + "</span>" : "") + "</span>" +
-        '<button type="button" class="ech-suppr" data-ech-suppr="' + txt(e.id) + '" aria-label="Supprimer : ' +
-        txt(e.titre) + '">' + ICONE_CROIX + "</button></li>";
+      var quoi = examen ? "l'examen" : "le devoir";
+      html += '<li class="ech-item' + (echPassee(e) ? " passe" : "") + '" data-ech-id="' + txt(e.id) + '" data-ech-cle="' + txt(cleCours) + '">' +
+        '<div class="ech-fond-modifier">' +
+          '<button type="button" class="ech-action-btn btn-action-edit" data-ech-edit="' + txt(e.id) + '" aria-label="Modifier ' + quoi + ' : ' + txt(e.titre) + '" title="Modifier">' +
+            ICONE_CRAYON_ECH +
+            '<span class="btn-libelle-normal">Modifier</span>' +
+            '<span class="btn-libelle-auto">Relâcher</span>' +
+          '</button>' +
+        '</div>' +
+        '<div class="ech-fond-suppr">' +
+          '<button type="button" class="ech-action-btn btn-action-del" data-ech-suppr="' + txt(e.id) + '" aria-label="Supprimer ' + quoi + ' : ' + txt(e.titre) + '" title="Supprimer">' +
+            ICONE_CORBEILLE_ECH +
+            '<span class="btn-libelle-normal">Suppr</span>' +
+            '<span class="btn-libelle-auto">Relâcher</span>' +
+          '</button>' +
+        '</div>' +
+        '<div class="ech' + (echNeuf === e.id ? " neuf" : "") + '" data-ech-cle="' + txt(cleCours) + '" data-ech-id="' + txt(e.id) + '" title="1 clic pour afficher les options">' +
+          '<span class="ech-type ' + (examen ? "examen" : "devoir") + '">' + (examen ? "Examen" : "Devoir") + "</span>" +
+          '<span class="ech-corps"><span class="ech-titre' + (e.fait ? " fait" : "") + '">' + txt(e.titre) + "</span>" +
+          (quand ? '<span class="ech-quand">' + txt(quand) + "</span>" : "") + "</span>" +
+          '<button type="button" class="ech-valide' + (e.fait ? " fait" : "") + '" data-ech-valide="' + txt(e.id) +
+          '" role="checkbox" aria-checked="' + (e.fait ? "true" : "false") + '" aria-label="' +
+          (e.fait ? "Ne plus valider " : "Valider ") + quoi + " : " + txt(e.titre) + '" title="' +
+          (e.fait ? "Annuler" : "C’est fait") + '">' + ICONE_CASE + "</button>" +
+        '</div></li>';
     }
     return html + "</ul>";
   }
@@ -8344,45 +8790,75 @@ try {
       txt(r.texte) + "</span>";
   }
 
+  /* Pastilles D / E d'un cours : une par type d'échéance en attente
+     (devoir bleu, examen orange), empilées. Elles remplacent la flèche :
+     un cours ne s'ouvre que s'il a quelque chose à montrer. */
+  function marquesEcheances(c) {
+    var dateJour = dateSemJour(sem, c.jour);
+    var liste = echeancesDe(c).filter(function (e) {
+      return !echPassee(e) && !echApresDate(e, dateJour);
+    });
+    var devoir = false, examen = false;
+    liste.forEach(function (e) { if (e.type === "examen") examen = true; else devoir = true; });
+    if (!devoir && !examen) return "";
+    var dit = devoir && examen ? "Un devoir et un examen en attente"
+            : examen ? "Un examen en attente" : "Un devoir en attente";
+    return '<span class="marques" role="img" aria-label="' + txt(dit) + '">' +
+      (devoir ? '<span class="ebadge">D</span>' : "") +
+      (examen ? '<span class="ebadge" style="--c:var(--attention)">E</span>' : "") +
+      "</span>";
+  }
+  /* Infos du cours, en lignes étiquetées : Salle, Prof, Groupe — et, quand
+     elles existent, Code et Source (horaire sur mesure). */
+  function infosCoursHTML(c) {
+    var sub = "";
+    if (c.salles) sub += '<div><span class="k">Salle : </span>' +
+      txt(c.salles.replace(/, ([^,]*)$/, " et $1")) + "</div>";
+    if (c.profs) sub += '<div><span class="k">Prof : </span>' + txt(c.profs) + "</div>";
+    if (c.groupes.length && groupesChoisisDe(c).length !== 1) {
+      sub += '<div><span class="k">Groupe : </span>' + txt(c.groupes.map(nomGroupe).join(", ")) + "</div>";
+    }
+    if (codeMatiere(c.matiere)) sub += '<div><span class="k">Code : </span>' + txt(codeMatiere(c.matiere)) + "</div>";
+    if (DATA.perso) {
+      var noms = (c.srcs || [c.src]).map(function (i) { return nomSource(profil.sources[i]); }).filter(Boolean);
+      if (noms.length) sub += '<div class="src"><span class="k">Source : </span>' + txt(noms.join(" et ")) + "</div>";
+    }
+    return sub ? '<div class="infos">' + sub + "</div>" : "";
+  }
+
   function detailJour(cours, jour) {
     var html = '<div><div class="box"><ol>';
     var dateJour = dateSemJour(sem, jour);
-    // Un seul cours dans le jour (téléphone) : déroulé d'office et non
-    // refermable, sinon la ligne est trop petite à taper.
-    var seul = cours.length === 1;
     for (var i = 0; i < cours.length; i++) {
       var c = cours[i];
       var cle = jour + ":" + i;
-      var estOuvert = seul || !!coursOuverts[cle];
       var choc = !!DATA.perso && enConflit(c, sem);
-      html += '<li class="c' + (estOuvert ? " open" : "") + (seul ? " seul" : "") + (choc ? " li-choc" : "") + '">';
-      html += '<button class="cbtn" data-cle="' + cle + '" aria-expanded="' + estOuvert + '"' + (seul ? " disabled" : "") + ">" +
-              '<span class="hcol"><span class="h">' + txt(fmtH(c.debut)) + " – " + txt(fmtH(c.fin)) + "</span>" +
-              tagEcheances(c) + "</span>" +
-              '<span class="cpoint" style="' + styleCours(c.matiere) + '" aria-hidden="true"></span>' +
-              '<span class="m">' + txt(nettoyerMatiere(c.matiere || "Cours")) + "</span>" +
-              (choc ? '<span class="choc-tag">Chevauche</span>' : "") +
-              (seul ? "" : '<span class="minichev" aria-hidden="true"></span>') + "</button>";
-      var sub = "";
-      if (codeMatiere(c.matiere)) sub += '<div><span class="k">Code : </span>' + txt(codeMatiere(c.matiere)) + "</div>";
-      if (c.profs) sub += '<div><span class="k">Prof : </span>' + txt(c.profs) + "</div>";
-      sub += '<div><span class="k">Salle : </span>' +
-             (c.salles ? txt(c.salles.replace(/, ([^,]*)$/, " et $1")) : '<span class="nc">non communiquée</span>') + "</div>";
-      if (c.groupes.length && groupesChoisisDe(c).length !== 1) {
-        sub += '<div><span class="k">Groupe : </span>' + txt(c.groupes.map(nomGroupe).join(", ")) + "</div>";
-      }
-      if (DATA.perso) {
-        var noms = (c.srcs || [c.src]).map(function (i) { return nomSource(profil.sources[i]); }).filter(Boolean);
-        if (noms.length) sub += '<div class="src"><span class="k">Source : </span>' + txt(noms.join(" et ")) + "</div>";
-      }
+      var infos = infosCoursHTML(c);
       var ech = listeEcheancesHTML(echeancesDe(c), cle, dateJour);
-      html += '<div class="csub"><div><div class="csub-in">' +
-        '<div class="infos">' + sub + "</div>" +
-        '<button type="button" class="ech-add" data-ech-cible="' + txt(cle) + '" ' +
-        'aria-label="Ajouter un devoir ou un examen à ce cours" title="Ajouter un devoir ou un examen">' +
-        ICONE_PLUS + "<span>Échéance</span></button>" +
-        ech +
-        "</div></div></div>";
+      var marques = marquesEcheances(c);
+      // Déroulable dès qu'''il y a des infos détaillées (salle, prof...) ou des échéances
+      var deroulable = !!infos || !!ech;
+      // Un seul cours dans le jour : déroulé d'''office et non refermable.
+      var seul = cours.length === 1 && deroulable;
+      var estOuvert = seul || !!coursOuverts[cle];
+      html += '<li class="c' + (estOuvert ? " open" : "") + (seul ? " seul" : "") + (choc ? " li-choc" : "") + '">';
+      html += '<button class="cbtn' + (deroulable ? "" : " inactif") + '" data-cle="' + cle + '"' +
+              (deroulable ? ' aria-expanded="' + estOuvert + '"' : ' aria-disabled="true"') +
+              (seul ? " disabled" : "") + ">" +
+              '<span class="hcol"><span class="h">' + txt(fmtH(c.debut)) + '</span><span class="h">' + txt(fmtH(c.fin)) + "</span></span>" +
+              '<span class="cpoint" style="' + styleCours(c.matiere) + '" aria-hidden="true"></span>' +
+              '<span class="ctxt"><span class="m">' + txt(nettoyerMatiere(c.matiere || "Cours")) + "</span>" +
+              (c.salles ? '<span class="s">' + txt(c.salles.replace(/, ([^,]*)$/, " et $1")) + "</span>" : "") +
+              "</span>" +
+              (choc ? '<span class="choc-tag">Chevauche</span>' : "") +
+              marques +
+              "</button>";
+      if (deroulable) {
+        html += '<div class="csub"><div><div class="csub-details">' +
+          infos +
+          (ech ? '<div class="fiches">' + ech + '</div>' : '') +
+          '</div></div></div>';
+      }
       html += "</li>";
       if (i < cours.length - 1) {
         var p = pauseEntre(c.fin, cours[i + 1].debut);
@@ -8390,32 +8866,40 @@ try {
       }
     }
     html += "</ol>";
-    // Une échéance posée un jour sans cours se range à part : si ce jour a
-    // des cours dans une autre semaine, on la liste quand même (sans le
-    // bouton, réservé aux jours vides).
+    // Une échéance posée sur la journée (devoir « à une autre heure ») se
+    // range sous les cours, sans titre : le bloc parle de lui-même.
     var echJour = listeEcheancesHTML(echeancesJour(jour), cleJourEch(jour), dateJour);
     if (echJour) {
-      html += '<div class="csub-in"><div class="infos jour-creux"><div>Échéance du jour</div></div>' +
-        echJour + "</div>";
+      html += '<div class="csub-in sans-ajout">' + echJour + "</div>";
     }
-    return html + "</div></div>";
+    html += "</div>"; // fin de la boîte des cours
+    // Bouton « Échéance » sous la boîte, à droite : il ouvre le choix du
+    // cours (ou « à une autre heure ») pour poser un devoir ou un examen.
+    html += '<div class="jour-ech">' +
+      '<button type="button" class="jour-ech-btn" data-ech-jour="' + jour + '" ' +
+      'aria-label="Ajouter un devoir ou un examen à un cours de ce jour" title="Ajouter un devoir ou un examen">' +
+      ICONE_PLUS + "<span>Échéance</span></button></div>";
+    return html + "</div>";
   }
 
   /* Jour sans cours (férié, libre) : la même zone d'échéances, sans cours
-     au-dessus — le bouton est le seul point d'entrée de ce jour-là. */
+     au-dessus — le bouton « Échéance » sous le bloc est le seul point
+     d'entrée de ce jour-là. */
   function detailJourVide(jour) {
     var cle = cleJourEch(jour);
     var ech = listeEcheancesHTML(echeancesJour(jour), cle, dateSemJour(sem, jour));
     var quoi = estFerie(sem, jour)
       ? "Jour férié" + (FERIES_NOMS[numJour(sem, jour)] ? " — " + txt(FERIES_NOMS[numJour(sem, jour)]) : "") + "."
       : "Aucun cours ce jour-là.";
-    return '<div><div class="box box-jour"><div class="csub-in">' +
+    return '<div><div class="box box-jour"><div class="csub-in sans-ajout">' +
       '<div class="infos jour-creux"><div>' + quoi + "</div></div>" +
+      ech +
+      "</div></div>" +
+      '<div class="jour-ech">' +
       '<button type="button" class="ech-add" data-ech-cible="' + txt(cle) + '" ' +
       'aria-label="Ajouter un devoir ou un examen à ce jour" title="Ajouter un devoir ou un examen">' +
-      ICONE_PLUS + "<span>Échéance</span></button>" +
-      ech +
-      "</div></div></div>";
+      ICONE_PLUS + "<span>Échéance</span></button></div>" +
+      "</div>";
   }
 
   function rendre(garderPop) {
@@ -8481,8 +8965,8 @@ try {
         '<button data-jour="' + j + '" aria-expanded="' + (!!joursOuverts[j]) + '">' +
         '<span class="dot" aria-hidden="true"></span>' +
         '<span class="dname"><strong>' + JOURS[j] + "</strong>" +
-        "<span>" + fmtDate(date) + "</span></span>" +
-        resume + tagEcheances(pseudoJour(j)) + '<span class="chev" aria-hidden="true"></span></button>' +
+        '<span class="ddate">' + fmtDate(date) + "</span></span>" +
+        resume + tagEcheances(pseudoJour(j)) + '</button>' +
         '<div class="detail">' +
         (liste.length ? detailJour(liste, j) : detailJourVide(j)) +
         "</div></li>";
@@ -8783,7 +9267,6 @@ try {
           '<span class="et">' + txt(nettoyerMatiere(c.matiere || "Cours")) + "</span>" +
           (c.salles ? '<span class="es"><span>' + txt(c.salles) + "</span></span>" : "") +
           '<span class="eb">' +
-          (c.profs ? '<span class="ep">' + txt(c.profs) + "</span>" : "") +
           '<span class="eh">' + fmtH(c.debut) + " – " + fmtH(c.fin) + "</span>" +
           (rEch ? '<span class="ev-ech" title="' + txt(rEch.texte + " — voir le détail") + '">' +
             txt(rEch.texte) + "</span>" : "") + "</span></button>";
@@ -8891,7 +9374,10 @@ try {
     if (popSource === b) fermerPop(); else ouvrirPop(b);
   });
   // Dans la bulle : ajouter ou supprimer une échéance sans la refermer.
-  pop.addEventListener("click", function (e) { clicEcheance(e); });
+  pop.addEventListener("click", function (e) {
+    e.stopPropagation();
+    clicEcheance(e);
+  });
   document.addEventListener("click", function (e) {
     if (confirmationOuverte() || editionOuverte() || bugOuvert() || exportOuvert() || echeanceOuverte()) return;
     if (popSource && !pop.contains(e.target) && !e.target.closest(".ev")) fermerPop();
@@ -9140,15 +9626,177 @@ try {
     if (edition && e.key === "Escape") { e.preventDefault(); e.stopPropagation(); fermerEdition(); }
   }, true);
 
-  /* Fenêtre « devoir ou examen », ouverte depuis un cours déplié.
+  /* Fenêtre « devoir ou examen » : étape 1 (dans quel cours, depuis le
+     bouton « Échéance » du jour), puis étape 2 (le formulaire). Ouverte
+     directement sur l'étape 2 depuis un jour sans cours ou le grand écran.
      Date et heure sont celles du créneau visé (le début du cours) : elles
      se rappellent, mais ne se règlent pas. */
   var echCours = null; // cours visé (objet de COURS)
+  var echIdModif = null; // id de l'échéance en cours d'édition (si modification)
   var echType = "devoir";
   var echDate = "";    // date du créneau (celle du cours)
   var echHeure = "";   // heure de début du cours
+  var echRetourJour = null; // jour d'où vient le choix du cours (retour possible vers l'étape 1)
   var echDernierFocus = null;
   var echTitreBloc = document.getElementById("ech-titre-bloc");
+  function montrerEtapeEch(n) {
+    document.getElementById("ech-etape-choix").hidden = n !== 1;
+    document.getElementById("ech-etape-form").hidden = n !== 2;
+  }
+  /* Étape 1 : la fenêtre s'ouvre sur les cours du jour `j`, des lignes
+     bien hautes pour viser juste du pouce. */
+  function remplirChoixCours(j) {
+    var cours = coursDe(sem, j);
+    var date = dateSemJour(sem, j);
+    document.getElementById("ech-choix-jour").textContent =
+      JOURS[j] + " " + fmtDate(date) + " · " + cours.length + " cours";
+    var h = "";
+    for (var k = 0; k < cours.length; k++) {
+      var cc = cours[k];
+      h += '<button type="button" class="ech-choix-cours" data-ech-cible="' + txt(j + ":" + k) + '" ' +
+        'aria-label="Ajouter un devoir ou un examen à ' + txt(nettoyerMatiere(cc.matiere || "ce cours")) + '">' +
+        '<span class="h">' + txt(fmtH(cc.debut)) + '</span>' +
+        '<span class="cpoint" style="' + styleCours(cc.matiere) + '" aria-hidden="true"></span>' +
+        '<span class="ctxt"><span class="m">' + txt(nettoyerMatiere(cc.matiere || "Cours")) + "</span>" +
+        (cc.salles ? '<span class="s">' + txt(cc.salles) + "</span>" : "") + "</span>";
+    }
+    document.getElementById("ech-choix-liste").innerHTML = h;
+    return cours.length;
+  }
+  function ouvrirChoixCours(j) {
+    if (!remplirChoixCours(j)) return;
+    fermerMenus();
+    echRetourJour = j;
+    echDernierFocus = document.activeElement;
+    document.getElementById("ech-choix-heure").value = ""; // choix d'heure neuf à chaque ouverture
+    if (echChoixZoneValider) echChoixZoneValider.classList.remove("ouvert");
+    var cAutre = document.getElementById("ech-choix-autre");
+    if (cAutre) cAutre.classList.remove("ouvert");
+    // La fenêtre prend d'emblée la hauteur de l'étape 2 (le formulaire) :
+    // elle ne saute pas quand on choisit un cours.
+    document.getElementById("boite-echeance").style.minHeight = hauteurEtapeForm(j) + "px";
+    montrerEtapeEch(1);
+    var voile = document.getElementById("voile-echeance");
+    voile.classList.remove("sortie");
+    voile.hidden = false;
+    document.body.classList.add("confirm-ouverte");
+    histOuvrir("echeance");
+  }
+  /* Ligne de contexte du formulaire : le cours visé et son créneau. */
+  function contexteEch(c, heure) {
+    var jour = dateSemJour(sem, c.jour);
+    if (c.debut) {
+      return "Pour <strong>" + txt(nettoyerMatiere(c.matiere || "ce cours")) + "</strong> · " +
+        txt(JOURS[c.jour] + " " + fmtH(c.debut) + " – " + fmtH(c.fin));
+    }
+    return "Pour <strong>" + txt(JOURS[c.jour] + " " + fmtDate(jour)) + "</strong> · " +
+      (heure ? txt(fmtH(String(heure).replace(":", "h")))
+             : txt(estFerie(sem, c.jour) ? nomFerie(sem, c.jour) : "pas de cours"));
+  }
+  /* Hauteur du formulaire (étape 2), mesurée hors écran : le temps d'un
+     calcul, rien n'est peint (tout est remis en place dans le même bloc).
+     Le contexte du cours le plus long du jour et le lien de retour sont
+     posés le temps de la mesure : la hauteur vaut pour n'importe quel
+     cours choisi ensuite. */
+  function hauteurEtapeForm(jour) {
+    var voile = document.getElementById("voile-echeance");
+    var boite = document.getElementById("boite-echeance");
+    var choix = document.getElementById("ech-etape-choix");
+    var form = document.getElementById("ech-etape-form");
+    var retour = document.getElementById("ech-retour");
+    var ctx = document.getElementById("echeance-cours");
+    var cours = coursDe(sem, jour), plusLong = "", k;
+    for (k = 0; k < cours.length; k++) {
+      var t = contexteEch(cours[k]);
+      if (t.length > plusLong.length) plusLong = t;
+    }
+    var voileCache = voile.hidden, choixCache = choix.hidden, formCache = form.hidden;
+    var retourCache = retour.hidden, ctxCache = ctx.innerHTML;
+    voile.style.visibility = "hidden";
+    voile.hidden = false;
+    choix.hidden = true;
+    form.hidden = false;
+    retour.hidden = false;
+    if (plusLong) ctx.innerHTML = plusLong;
+    var h = boite.offsetHeight;
+    voile.hidden = voileCache;
+    choix.hidden = choixCache;
+    form.hidden = formCache;
+    retour.hidden = retourCache;
+    ctx.innerHTML = ctxCache;
+    voile.style.visibility = "";
+    return h;
+  }
+  document.getElementById("ech-choix-liste").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-ech-cible]");
+    if (!b) return;
+    var cible = cibleDeCle(b.getAttribute("data-ech-cible"));
+    if (cible) ouvrirEcheance(cible.c);
+  });
+  // « À une autre heure » : le bouton « Valider » se déroule sous la case
+  // de l'heure dès qu'on commence à la régler ou la taper. Ça évite de
+  // basculer brutalement à l'étape suivante dès qu'un chiffre des minutes
+  // est saisi, et permet de valider posément son choix.
+  var echChoixZoneValider = document.getElementById("ech-choix-valider-zone");
+  var echChoixBtnValider = document.getElementById("ech-choix-valider");
+  var echChoixInpHeure = document.getElementById("ech-choix-heure");
+  function ajusterValiderHeure() {
+    if (!echChoixZoneValider || !echChoixInpHeure) return;
+    var estFocus = document.activeElement === echChoixInpHeure ||
+                   (echChoixBtnValider && document.activeElement === echChoixBtnValider);
+    var aValeur = !!echChoixInpHeure.value;
+    var ouvert = estFocus || aValeur;
+    echChoixZoneValider.classList.toggle("ouvert", ouvert);
+    var card = document.getElementById("ech-choix-autre");
+    if (card) card.classList.toggle("ouvert", ouvert);
+    if (echChoixBtnValider) echChoixBtnValider.tabIndex = ouvert ? 0 : -1;
+  }
+  function validerHeureChoisie() {
+    if (echRetourJour == null || !echChoixInpHeure) return;
+    if (echChoixInpHeure.value) {
+      ouvrirEcheance(pseudoJour(echRetourJour), echChoixInpHeure.value);
+    } else {
+      try { echChoixInpHeure.focus(); } catch (e) {}
+    }
+  }
+  echChoixInpHeure.addEventListener("focus", ajusterValiderHeure);
+  echChoixInpHeure.addEventListener("input", ajusterValiderHeure);
+  echChoixInpHeure.addEventListener("change", ajusterValiderHeure);
+  echChoixInpHeure.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      validerHeureChoisie();
+      return;
+    }
+    if (echChoixZoneValider) echChoixZoneValider.classList.add("ouvert");
+  });
+  echChoixInpHeure.addEventListener("blur", function () {
+    setTimeout(ajusterValiderHeure, 150);
+  });
+  if (echChoixBtnValider) {
+    echChoixBtnValider.addEventListener("pointerdown", function (e) {
+      e.preventDefault();
+    });
+    echChoixBtnValider.addEventListener("click", function (e) {
+      e.stopPropagation();
+      validerHeureChoisie();
+    });
+  }
+  // Un appui sur la rangée donne le focus au champ pour taper au clavier.
+  document.getElementById("ech-choix-autre").addEventListener("click", function (e) {
+    var inp = document.getElementById("ech-choix-heure");
+    if (inp) { try { inp.focus(); } catch (err) {} }
+  });
+  document.getElementById("ech-choix-annuler").addEventListener("click", function () { fermerEcheance(); });
+  document.getElementById("ech-retour").addEventListener("click", function () {
+    if (echRetourJour == null) return;
+    document.getElementById("ech-choix-heure").value = ""; // le choix d'heure repart à neuf
+    if (echChoixZoneValider) echChoixZoneValider.classList.remove("ouvert");
+    var cAutre = document.getElementById("ech-choix-autre");
+    if (cAutre) cAutre.classList.remove("ouvert");
+    remplirChoixCours(echRetourJour);
+    montrerEtapeEch(1);
+  });
 
   function echeanceOuverte() {
     var v = document.getElementById("voile-echeance");
@@ -9162,35 +9810,43 @@ try {
     for (var i = 0; i < boutons.length; i++) {
       boutons[i].setAttribute("aria-selected", boutons[i].getAttribute("data-ech-type") === echType ? "true" : "false");
     }
-    document.getElementById("echeance-titre").textContent = examen ? "Ajouter un examen" : "Ajouter un devoir";
+    document.getElementById("echeance-titre").textContent = echIdModif
+      ? (examen ? "Modifier l'examen" : "Modifier le devoir")
+      : (examen ? "Ajouter un examen" : "Ajouter un devoir");
     document.getElementById("ech-date-label").textContent = examen ? "Rappel pour le" : "À rendre pour le";
     document.getElementById("ech-titre").placeholder = examen
       ? "ex. Théorie des chapitres 1 à 4"
       : "ex. Exercices 1 à 8 du chapitre 3";
   }
-  function ouvrirEcheance(c) {
+  /* `heure` (facultatif) : heure choisie dans la journée pour un devoir
+     sans cours (« à une autre heure ») ; sinon c'est le début du cours. */
+  function ouvrirEcheance(c, heure) {
     fermerMenus();
     echCours = c;
+    echIdModif = null;
     echDernierFocus = document.activeElement;
-    var jour = dateSemJour(sem, c.jour);
-    document.getElementById("echeance-cours").innerHTML = c.debut
-      ? "Pour <strong>" + txt(nettoyerMatiere(c.matiere || "ce cours")) + "</strong> · " +
-        txt(JOURS[c.jour] + " " + fmtH(c.debut) + " – " + fmtH(c.fin))
-      : "Pour <strong>" + txt(JOURS[c.jour] + " " + fmtDate(jour)) + "</strong> · " +
-        txt(estFerie(sem, c.jour) ? nomFerie(sem, c.jour) : "pas de cours");
+    // Ouverture directe du formulaire (jour sans cours, grand écran) :
+    // aucune hauteur d'étape 1 à tenir, on repart de la hauteur naturelle.
+    if (echRetourJour == null) document.getElementById("boite-echeance").style.minHeight = "";
+    montrerEtapeEch(2);
+    document.getElementById("ech-retour").hidden = echRetourJour == null;
+    document.getElementById("echeance-cours").innerHTML = contexteEch(c, heure);
     document.getElementById("ech-titre").value = "";
+    document.getElementById("echeance-ok").textContent = "Ajouter";
     echTitreBloc.classList.remove("erreur");
     // Date et heure fixées au créneau du cours : le début, la prochaine
     // fois qu'il tombe (le jour affiché, ou la semaine suivante s'il est
     // déjà passé). Un jour sans cours n'a pas d'heure.
+    var jour = dateSemJour(sem, c.jour);
     var d = new Date(jour.getTime()), auj = new Date();
     if (d.getTime() < new Date(auj.getFullYear(), auj.getMonth(), auj.getDate()).getTime()) {
       d.setDate(d.getDate() + 7);
     }
     echDate = isoEch(d);
-    echHeure = c.debut ? String(c.debut).replace("h", ":") : "";
+    echHeure = heure || (c.debut ? String(c.debut).replace("h", ":") : "");
     document.getElementById("ech-quand").textContent =
-      JOURS[(d.getDay() + 6) % 7] + " " + fmtDate(d) + (c.debut ? " · " + fmtH(c.debut) : "");
+      JOURS[(d.getDay() + 6) % 7] + " " + fmtDate(d) +
+      (echHeure ? " · " + fmtH(String(echHeure).replace(":", "h")) : "");
     definirEchType("devoir");
     var voile = document.getElementById("voile-echeance");
     voile.classList.remove("sortie");
@@ -9206,6 +9862,13 @@ try {
     if (!voile || voile.hidden) return;
     histFermer("echeance");
     echCours = null;
+    echIdModif = null;
+    echRetourJour = null;
+    document.getElementById("echeance-ok").textContent = "Ajouter";
+    document.getElementById("ech-choix-heure").value = "";
+    if (echChoixZoneValider) echChoixZoneValider.classList.remove("ouvert");
+    var cAutre = document.getElementById("ech-choix-autre");
+    if (cAutre) cAutre.classList.remove("ouvert");
     function fin() {
       voile.hidden = true;
       voile.classList.remove("sortie");
@@ -9224,11 +9887,23 @@ try {
     echTitreBloc.classList.toggle("erreur", !titre);
     if (!titre) { try { document.getElementById("ech-titre").focus(); } catch (err) { /* jetable */ } return; }
     var liste = echeancesDe(echCours);
-    var id = nouveauId();
-    liste.push({
-      id: id, type: echType, titre: titre, date: echDate,
-      heure: echHeure, cree: Date.now()
-    });
+    var id;
+    if (echIdModif) {
+      id = echIdModif;
+      for (var k = 0; k < liste.length; k++) {
+        if (liste[k].id === echIdModif) {
+          liste[k].titre = titre;
+          liste[k].type = echType;
+          break;
+        }
+      }
+    } else {
+      id = nouveauId();
+      liste.push({
+        id: id, type: echType, titre: titre, date: echDate,
+        heure: echHeure, cree: Date.now()
+      });
+    }
     ecrireEcheances(echCours, liste);
     var coursMaj = echCours, depuisPop = pop.classList.contains("visible");
     fermerEcheance(true);
@@ -9237,6 +9912,43 @@ try {
     echNeuf = "";
     if (depuisPop) rafraichirPop(coursMaj);
   });
+
+  function ouvrirModifierEcheance(c, id) {
+    var liste = echeancesDe(c), cible = null;
+    for (var i = 0; i < liste.length; i++) if (liste[i].id === id) cible = liste[i];
+    if (!cible) return;
+    fermerMenus();
+    echCours = c;
+    echIdModif = id;
+    echDernierFocus = document.activeElement;
+    document.getElementById("boite-echeance").style.minHeight = "";
+    montrerEtapeEch(2);
+    document.getElementById("ech-retour").hidden = true;
+    document.getElementById("echeance-cours").innerHTML = contexteEch(c, cible.heure);
+    document.getElementById("ech-titre").value = cible.titre || "";
+    document.getElementById("echeance-titre").textContent = cible.type === "examen" ? "Modifier l'examen" : "Modifier le devoir";
+    document.getElementById("echeance-ok").textContent = "Enregistrer";
+    echTitreBloc.classList.remove("erreur");
+    echDate = cible.date;
+    echHeure = cible.heure || "";
+    var dj = jourEch(cible.date);
+    document.getElementById("ech-quand").textContent =
+      (dj && !isNaN(dj.getTime()) ? JOURS[(dj.getDay() + 6) % 7] + " " + fmtDate(dj) : cible.date) +
+      (echHeure ? " · " + fmtH(String(echHeure).replace(":", "h")) : "");
+    definirEchType(cible.type || "devoir");
+    var voile = document.getElementById("voile-echeance");
+    voile.classList.remove("sortie");
+    voile.hidden = false;
+    document.body.classList.add("confirm-ouverte");
+    histOuvrir("echeance");
+    setTimeout(function () {
+      try {
+        var inp = document.getElementById("ech-titre");
+        inp.focus({ preventScroll: true });
+        inp.select();
+      } catch (e) { /* jetable */ }
+    }, 60);
+  }
   document.getElementById("echeance-rail").addEventListener("click", function (e) {
     var b = e.target.closest("[data-ech-type]");
     if (b) definirEchType(b.getAttribute("data-ech-type"));
@@ -9268,6 +9980,27 @@ try {
       if (depuisPop) rafraichirPop(c);
     });
   }
+  /* Valider une échéance : le titre se barre. La mise à jour se fait sur
+     place (pas de re-rendu) pour que la barre grandisse vraiment ; l'état
+     est rangé sur l'appareil, le cloud n'a pas encore de colonne pour lui. */
+  function validerEcheance(c, id) {
+    var liste = echeancesDe(c), cible = null;
+    for (var i = 0; i < liste.length; i++) if (liste[i].id === id) cible = liste[i];
+    if (!cible) return;
+    cible.fait = !cible.fait;
+    ecrireEcheances(c, liste);
+    var cases = document.querySelectorAll('[data-ech-valide="' + id + '"]');
+    for (var k = 0; k < cases.length; k++) {
+      var fiche = cases[k].closest(".ech");
+      var titre = fiche && fiche.querySelector(".ech-titre");
+      if (titre) titre.classList.toggle("fait", !!cible.fait);
+      cases[k].classList.toggle("fait", !!cible.fait);
+      cases[k].setAttribute("aria-checked", cible.fait ? "true" : "false");
+      cases[k].setAttribute("aria-label", (cible.fait ? "Ne plus valider " : "Valider ") +
+        (cible.type === "examen" ? "l’examen : " : "le devoir : ") + cible.titre);
+      cases[k].setAttribute("title", cible.fait ? "Annuler" : "C’est fait");
+    }
+  }
   /* Retrouve la cible d'une échéance à partir de sa clé de rendez-vous :
      « jour:index » pour un cours, « jour|| » pour un jour sans cours. */
   function cibleDeCle(cle) {
@@ -9284,22 +10017,429 @@ try {
     if (i < 0 || i >= liste.length) return null;
     return { c: liste[i], cle: j + ":" + i };
   }
-  /* Ajout / suppression d'une échéance : même geste sur téléphone (liste
-     des jours), dans la grille du grand écran (jours sans cours) et dans
-     la bulle de détail d'un cours. Renvoie true si le clic est consommé. */
+  /* Ajout / validation / suppression d'une échéance : même geste sur
+     téléphone (liste des jours), dans la grille du grand écran (jours sans
+     cours) et dans la bulle de détail d'un cours. Renvoie true si le clic
+     est consommé. */
+  var LARGEUR_ACTION_ECH = 76;
+  var SEUIL_OUVERTURE_ECH = 34;
+  var SEUIL_AUTO_DECLENCHEMENT_ECH = 138;
+  var echItemEnCours = null;
+  var echStartX = 0, echStartY = 0, echCurrentX = 0;
+  var enGlissementEch = false, enDefilementEch = false, glissementEchEffectue = false;
+
+  function fermerTousItemsEch(garder) {
+    var tous = document.querySelectorAll(".ech-item");
+    for (var i = 0; i < tous.length; i++) {
+      if (tous[i] !== garder) fermerItemEch(tous[i], true);
+    }
+  }
+
+  function fermerItemEch(item, anime) {
+    if (!item) return;
+    var etat = item.getAttribute("data-ouvert") || "0";
+    if (etat === "0" && !item._timerFermeture) return;
+
+    if (item._timerFermeture) {
+      clearTimeout(item._timerFermeture);
+      item._timerFermeture = null;
+    }
+
+    var carte = item.querySelector(".ech");
+    var fondSuppr = item.querySelector(".ech-fond-suppr");
+    var fondEdit = item.querySelector(".ech-fond-modifier");
+    if (!carte) return;
+
+    item.classList.remove("arme-declenchement");
+
+    if (!anime) {
+      carte.style.transition = "none";
+      carte.style.transform = "translateX(0px)";
+      carte.style.margin = "";
+      carte.style.boxShadow = "";
+      item.setAttribute("data-ouvert", "0");
+      if (fondSuppr) {
+        fondSuppr.style.opacity = "";
+        fondSuppr.style.visibility = "";
+        fondSuppr.style.pointerEvents = "";
+      }
+      if (fondEdit) {
+        fondEdit.style.opacity = "";
+        fondEdit.style.visibility = "";
+        fondEdit.style.pointerEvents = "";
+      }
+      return;
+    }
+
+    // Fermeture animée : on conserve data-ouvert (notamment split 50%/50% et boutons 26px sans libellé)
+    // pendant l'animation de 260ms afin que les fonds restent stables et que le texte n'apparaisse pas
+    carte.style.transition = "transform .26s cubic-bezier(.16,1,.3,1), margin .26s cubic-bezier(.16,1,.3,1), box-shadow .26s cubic-bezier(.16,1,.3,1)";
+    carte.style.transform = "translateX(0px)";
+    carte.style.margin = "0";
+    carte.style.boxShadow = "inset 0 0 0 1px var(--line)";
+
+    if (fondSuppr) fondSuppr.style.pointerEvents = "none";
+    if (fondEdit) fondEdit.style.pointerEvents = "none";
+
+    item._timerFermeture = setTimeout(function () {
+      item._timerFermeture = null;
+      item.setAttribute("data-ouvert", "0");
+      carte.style.margin = "";
+      carte.style.boxShadow = "";
+      if (fondSuppr) {
+        fondSuppr.style.opacity = "";
+        fondSuppr.style.visibility = "";
+        fondSuppr.style.pointerEvents = "";
+      }
+      if (fondEdit) {
+        fondEdit.style.opacity = "";
+        fondEdit.style.visibility = "";
+        fondEdit.style.pointerEvents = "";
+      }
+    }, 260);
+  }
+
+  function ouvrirGaucheEch(item) {
+    if (item._timerFermeture) {
+      clearTimeout(item._timerFermeture);
+      item._timerFermeture = null;
+    }
+    var carte = item.querySelector(".ech");
+    var fondSuppr = item.querySelector(".ech-fond-suppr");
+    var fondEdit = item.querySelector(".ech-fond-modifier");
+    if (!carte) return;
+
+    item.classList.remove("arme-declenchement");
+    carte.style.transition = "transform .26s cubic-bezier(.16,1,.3,1), margin .26s cubic-bezier(.16,1,.3,1), box-shadow .26s cubic-bezier(.16,1,.3,1)";
+    carte.style.transform = "translateX(-" + LARGEUR_ACTION_ECH + "px)";
+    carte.style.margin = "";
+    carte.style.boxShadow = "inset 0 0 0 1px var(--line), 3px 0 14px rgba(0, 0, 0, .14)";
+    item.setAttribute("data-ouvert", "suppr");
+
+    if (fondSuppr) {
+      fondSuppr.style.opacity = "1";
+      fondSuppr.style.visibility = "visible";
+      fondSuppr.style.pointerEvents = "auto";
+    }
+    if (fondEdit) {
+      fondEdit.style.opacity = "0";
+      fondEdit.style.visibility = "hidden";
+      fondEdit.style.pointerEvents = "none";
+    }
+  }
+
+  function ouvrirDroiteEch(item) {
+    if (item._timerFermeture) {
+      clearTimeout(item._timerFermeture);
+      item._timerFermeture = null;
+    }
+    var carte = item.querySelector(".ech");
+    var fondSuppr = item.querySelector(".ech-fond-suppr");
+    var fondEdit = item.querySelector(".ech-fond-modifier");
+    if (!carte) return;
+
+    item.classList.remove("arme-declenchement");
+    carte.style.transition = "transform .26s cubic-bezier(.16,1,.3,1), margin .26s cubic-bezier(.16,1,.3,1), box-shadow .26s cubic-bezier(.16,1,.3,1)";
+    carte.style.transform = "translateX(" + LARGEUR_ACTION_ECH + "px)";
+    carte.style.margin = "";
+    carte.style.boxShadow = "inset 0 0 0 1px var(--line), -3px 0 14px rgba(0, 0, 0, .14)";
+    item.setAttribute("data-ouvert", "edit");
+
+    if (fondEdit) {
+      fondEdit.style.opacity = "1";
+      fondEdit.style.visibility = "visible";
+      fondEdit.style.pointerEvents = "auto";
+    }
+    if (fondSuppr) {
+      fondSuppr.style.opacity = "0";
+      fondSuppr.style.visibility = "hidden";
+      fondSuppr.style.pointerEvents = "none";
+    }
+  }
+
+  function ouvrirSplitEch(item) {
+    if (item._timerFermeture) {
+      clearTimeout(item._timerFermeture);
+      item._timerFermeture = null;
+    }
+    var carte = item.querySelector(".ech");
+    var fondSuppr = item.querySelector(".ech-fond-suppr");
+    var fondEdit = item.querySelector(".ech-fond-modifier");
+    if (!carte) return;
+
+    item.classList.remove("arme-declenchement");
+    carte.style.transition = "transform .26s cubic-bezier(.16,1,.3,1), margin .26s cubic-bezier(.16,1,.3,1), box-shadow .26s cubic-bezier(.16,1,.3,1)";
+    carte.style.transform = "translateX(0px)";
+    carte.style.margin = "";
+    carte.style.boxShadow = "";
+    item.setAttribute("data-ouvert", "split");
+
+    if (fondEdit) {
+      fondEdit.style.opacity = "1";
+      fondEdit.style.visibility = "visible";
+      fondEdit.style.pointerEvents = "auto";
+    }
+    if (fondSuppr) {
+      fondSuppr.style.opacity = "1";
+      fondSuppr.style.visibility = "visible";
+      fondSuppr.style.pointerEvents = "auto";
+    }
+  }
+
+  function getCoordEch(e) {
+    return e.touches ? e.touches[0] : e;
+  }
+
+  function echTouchDebut(e) {
+    if (e.button === 2) return;
+    if (e.target.closest("[data-ech-valide]")) return;
+    var item = e.target.closest(".ech-item");
+    if (!item) return;
+
+    if (item._timerFermeture) {
+      clearTimeout(item._timerFermeture);
+      item._timerFermeture = null;
+    }
+
+    var etat = item.getAttribute("data-ouvert") || "0";
+    // Si un tiroir d'action complet (76px) est déjà ouvert, un clic sur son bouton est réservé à l'action
+    if ((etat === "suppr" || etat === "edit") && e.target.closest(".ech-action-btn")) return;
+
+    echItemEnCours = item;
+    var c = getCoordEch(e);
+    echStartX = c.clientX;
+    echStartY = c.clientY;
+    echCurrentX = echStartX;
+    enGlissementEch = false;
+    enDefilementEch = false;
+
+    var base = 0;
+    if (etat === "suppr") base = -LARGEUR_ACTION_ECH;
+    else if (etat === "edit") base = LARGEUR_ACTION_ECH;
+    item.setAttribute("data-depart", base);
+  }
+
+  function echTouchBouge(e) {
+    if (!echItemEnCours) return;
+    var c = getCoordEch(e);
+    var dx = c.clientX - echStartX;
+    var dy = c.clientY - echStartY;
+
+    if (!enGlissementEch && !enDefilementEch) {
+      if (Math.abs(dy) > 7) {
+        enDefilementEch = true;
+        return;
+      }
+      if (Math.abs(dx) > 7) {
+        enGlissementEch = true;
+        fermerTousItemsEch(echItemEnCours);
+        echItemEnCours.classList.add("glissant");
+        if (echItemEnCours.getAttribute("data-ouvert") === "split") {
+          echItemEnCours.setAttribute("data-ouvert", "0");
+          var cCarte = echItemEnCours.querySelector(".ech");
+          if (cCarte) cCarte.style.margin = "0";
+        }
+      }
+    }
+
+    if (!enGlissementEch) return;
+    if (e.cancelable) e.preventDefault();
+
+    var base = parseFloat(echItemEnCours.getAttribute("data-depart") || "0");
+    var nx = base + dx;
+
+    var absNx = Math.abs(nx);
+    if (absNx > SEUIL_AUTO_DECLENCHEMENT_ECH) {
+      var surplus = absNx - SEUIL_AUTO_DECLENCHEMENT_ECH;
+      var damped = SEUIL_AUTO_DECLENCHEMENT_ECH + (surplus * 0.35);
+      nx = nx > 0 ? damped : -damped;
+    }
+
+    var depasseSeuil = Math.abs(nx) >= SEUIL_AUTO_DECLENCHEMENT_ECH;
+    var etaitArme = echItemEnCours.classList.contains("arme-declenchement");
+
+    if (depasseSeuil && !etaitArme) {
+      echItemEnCours.classList.add("arme-declenchement");
+      if (window.navigator && window.navigator.vibrate) {
+        try { window.navigator.vibrate(18); } catch(err) {}
+      }
+    } else if (!depasseSeuil && etaitArme) {
+      echItemEnCours.classList.remove("arme-declenchement");
+    }
+
+    var carte = echItemEnCours.querySelector(".ech");
+    var fondSuppr = echItemEnCours.querySelector(".ech-fond-suppr");
+    var fondEdit = echItemEnCours.querySelector(".ech-fond-modifier");
+
+    if (carte) carte.style.transform = "translateX(" + nx + "px)";
+
+    if (nx < 0) {
+      if (fondSuppr) {
+        fondSuppr.style.opacity = "1";
+        fondSuppr.style.visibility = "visible";
+      }
+      if (fondEdit) {
+        fondEdit.style.opacity = "0";
+        fondEdit.style.visibility = "hidden";
+      }
+      if (carte) carte.style.boxShadow = "inset 0 0 0 1px var(--line), 3px 0 14px rgba(0, 0, 0, .14)";
+    } else if (nx > 0) {
+      if (fondEdit) {
+        fondEdit.style.opacity = "1";
+        fondEdit.style.visibility = "visible";
+      }
+      if (fondSuppr) {
+        fondSuppr.style.opacity = "0";
+        fondSuppr.style.visibility = "hidden";
+      }
+      if (carte) carte.style.boxShadow = "inset 0 0 0 1px var(--line), -3px 0 14px rgba(0, 0, 0, .14)";
+    } else {
+      if (fondSuppr) { fondSuppr.style.opacity = "0"; fondSuppr.style.visibility = "hidden"; }
+      if (fondEdit) { fondEdit.style.opacity = "0"; fondEdit.style.visibility = "hidden"; }
+      if (carte) carte.style.boxShadow = "";
+    }
+
+    echCurrentX = nx;
+  }
+
+  function echTouchFin(e) {
+    if (!echItemEnCours) return;
+    echItemEnCours.classList.remove("glissant");
+    var item = echItemEnCours;
+    var etaitArme = item.classList.contains("arme-declenchement");
+    item.classList.remove("arme-declenchement");
+    echItemEnCours = null;
+
+    if (!enGlissementEch) return;
+
+    glissementEchEffectue = true;
+    setTimeout(function () { glissementEchEffectue = false; }, 120);
+
+    var base = parseFloat(item.getAttribute("data-depart") || "0");
+    var id = item.getAttribute("data-ech-id");
+    var cle = item.getAttribute("data-ech-cle");
+    var cible = cibleDeCle(cle);
+
+    if (etaitArme) {
+      if (echCurrentX < 0) {
+        if (cible) supprimerEcheance(cible.c, id);
+      } else {
+        fermerItemEch(item, true);
+        if (cible) ouvrirModifierEcheance(cible.c, id);
+      }
+      return;
+    }
+
+    if (base === 0) {
+      if (echCurrentX < -SEUIL_OUVERTURE_ECH) {
+        ouvrirGaucheEch(item);
+      } else if (echCurrentX > SEUIL_OUVERTURE_ECH) {
+        ouvrirDroiteEch(item);
+      } else {
+        fermerItemEch(item, true);
+      }
+    } else if (base < 0) {
+      if (echCurrentX > -LARGEUR_ACTION_ECH + 20) {
+        fermerItemEch(item, true);
+      } else {
+        ouvrirGaucheEch(item);
+      }
+    } else {
+      if (echCurrentX < LARGEUR_ACTION_ECH - 20) {
+        fermerItemEch(item, true);
+      } else {
+        ouvrirDroiteEch(item);
+      }
+    }
+  }
+
+  document.addEventListener("touchstart", echTouchDebut, { passive: true });
+  window.addEventListener("touchmove", echTouchBouge, { passive: false });
+  window.addEventListener("touchend", echTouchFin);
+  window.addEventListener("touchcancel", echTouchFin);
+
+  document.addEventListener("mousedown", echTouchDebut);
+  window.addEventListener("mousemove", echTouchBouge);
+  window.addEventListener("mouseup", echTouchFin);
+
+  document.addEventListener("contextmenu", function (e) {
+    if (e.target.closest("[data-ech-valide]") || e.target.closest(".ech-action-btn")) return;
+    var item = e.target.closest(".ech-item");
+    if (!item) return;
+    e.preventDefault();
+    var dejaOuvert = item.getAttribute("data-ouvert") === "split";
+    fermerTousItemsEch(null);
+    if (!dejaOuvert) ouvrirSplitEch(item);
+  });
+
+  document.addEventListener("click", function (e) {
+    if (!e.target.closest(".ech-item") && !e.target.closest(".voile")) {
+      fermerTousItemsEch(null);
+    }
+  });
+
+  window.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") {
+      fermerTousItemsEch(null);
+    }
+  });
+
+  /* Ajout / validation / suppression / modification d'une échéance.
+     Renvoie true si le clic est consommé. */
   function clicEcheance(e) {
     var ajout = e.target.closest(".ech-add");
     if (ajout) {
+      e.stopPropagation();
       var cible = cibleDeCle(ajout.getAttribute("data-ech-cible"));
-      if (cible) ouvrirEcheance(cible.c);
+      if (cible) { echRetourJour = null; ouvrirEcheance(cible.c); }
       return true;
     }
-    var suppr = e.target.closest(".ech-suppr");
-    if (suppr) {
-      var ligne = suppr.closest(".ech");
-      var cibleSuppr = ligne && cibleDeCle(ligne.getAttribute("data-ech-cle"));
-      if (cibleSuppr) supprimerEcheance(cibleSuppr.c, suppr.getAttribute("data-ech-suppr"));
+    var valide = e.target.closest("[data-ech-valide]");
+    if (valide) {
+      e.stopPropagation();
+      var itemValide = valide.closest(".ech-item") || valide.closest(".ech");
+      var cibleValide = itemValide && cibleDeCle(itemValide.getAttribute("data-ech-cle"));
+      if (cibleValide) validerEcheance(cibleValide.c, valide.getAttribute("data-ech-valide"));
       return true;
+    }
+    var suppr = e.target.closest("[data-ech-suppr]");
+    if (suppr) {
+      e.stopPropagation();
+      var ligneSuppr = suppr.closest(".ech-item") || suppr.closest(".ech");
+      var cibleSuppr = ligneSuppr && cibleDeCle(ligneSuppr.getAttribute("data-ech-cle"));
+      if (cibleSuppr) {
+        if (ligneSuppr && ligneSuppr.classList.contains("ech-item")) fermerItemEch(ligneSuppr, true);
+        supprimerEcheance(cibleSuppr.c, suppr.getAttribute("data-ech-suppr"));
+      }
+      return true;
+    }
+    var edit = e.target.closest("[data-ech-edit]");
+    if (edit) {
+      e.stopPropagation();
+      var ligneEdit = edit.closest(".ech-item") || edit.closest(".ech");
+      var cibleEdit = ligneEdit && cibleDeCle(ligneEdit.getAttribute("data-ech-cle"));
+      if (cibleEdit) {
+        if (ligneEdit && ligneEdit.classList.contains("ech-item")) fermerItemEch(ligneEdit, true);
+        ouvrirModifierEcheance(cibleEdit.c, edit.getAttribute("data-ech-edit"));
+      }
+      return true;
+    }
+    var carte = e.target.closest(".ech");
+    if (carte) {
+      if (glissementEchEffectue) return true;
+      var item = carte.closest(".ech-item");
+      if (item) {
+        e.stopPropagation();
+        if (item._timerFermeture) return true;
+        var etat = item.getAttribute("data-ouvert");
+        if (etat && etat !== "0") {
+          fermerItemEch(item, true);
+        } else {
+          fermerTousItemsEch(item);
+          ouvrirSplitEch(item);
+        }
+        return true;
+      }
     }
     return false;
   }
@@ -10111,10 +11251,14 @@ try {
   }
   document.getElementById("jours").addEventListener("click", function (e) {
     if (clicEcheance(e)) return;
+    var je = e.target.closest(".jour-ech-btn");
+    if (je) { ouvrirChoixCours(+je.getAttribute("data-ech-jour")); return; }
     var c = e.target.closest(".cbtn");
     if (c) {
-      // Jour à un seul cours : déjà déroulé et non refermable.
-      if (c.disabled || (c.closest && c.closest("li.c.seul"))) return;
+      // Cours sans échéance : rien à ouvrir. Jour à un seul cours : déjà
+      // déroulé et non refermable.
+      if (c.disabled || c.classList.contains("inactif") ||
+          (c.closest && c.closest("li.c.seul"))) return;
       basculerCours(c.getAttribute("data-cle"));
       return;
     }

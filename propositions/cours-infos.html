@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>EzHoraire — Salle, prof, groupe : 5 systèmes</title>
+<style>
+  :root {
+    --bg: #eaf0fa;
+    --surface: #ffffff;
+    --ink: #17191d;
+    --muted: #626977;
+    --line: #e4e7ec;
+    --accent: #1d4fd7;
+    --attention: #b26a00;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0d1322;
+      --surface: #171a20;
+      --ink: #f0f3f7;
+      --muted: #98a1b1;
+      --line: #262b34;
+      --accent: #8ba6ff;
+      --attention: #f0b866;
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    --relief-haut: color-mix(in srgb, var(--bg), #fff 78%);
+    --relief-bas: color-mix(in srgb, var(--bg), #fff 44%);
+    --reflet: rgba(255, 255, 255, .9);
+    --ombre-btn: 0 1px 2px rgba(23, 32, 68, .06), 0 2px 8px -4px rgba(23, 32, 68, .08);
+    --creux: color-mix(in srgb, var(--bg), #fff 60%);
+    --creux-ombre: rgba(23, 32, 68, .07);
+    margin: 0; color: var(--ink); background: var(--bg);
+    font-family: var(--font); font-size: 17px; line-height: 1.45;
+  }
+  @media (prefers-color-scheme: dark) {
+    body {
+      --relief-haut: color-mix(in srgb, var(--bg), #fff 7%);
+      --relief-bas: color-mix(in srgb, var(--bg), #fff 2.5%);
+      --reflet: rgba(255, 255, 255, .06);
+      --ombre-btn: 0 1px 2px rgba(0, 0, 0, .4), 0 4px 12px -6px rgba(0, 0, 0, .6);
+      --creux: color-mix(in srgb, var(--bg), #000 26%);
+      --creux-ombre: rgba(0, 0, 0, .4);
+    }
+  }
+  .page { max-width: 460px; margin: 0 auto; padding: 26px 16px 60px; }
+  h1 { font-size: 1.3rem; letter-spacing: -.02em; margin: 0 0 6px; }
+  .intro { color: var(--muted); font-size: .9rem; margin: 0 0 8px; }
+  .regle {
+    margin: 0 0 26px; padding: 12px 14px; border-radius: 14px; font-size: .85rem;
+    background: var(--creux); box-shadow: inset 0 0 0 1px var(--line);
+    color: var(--muted); line-height: 1.5;
+  }
+  .regle b { color: var(--ink); }
+  .prop { margin: 0 0 30px; }
+  .prop h2 {
+    font-size: .95rem; margin: 0 0 4px; letter-spacing: -.01em;
+    display: flex; align-items: baseline; gap: 8px;
+  }
+  .prop h2 b {
+    flex: none; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%;
+    font-size: .78rem; background: var(--ink); color: var(--bg);
+  }
+  .prop h2 em { font-style: normal; color: var(--muted); font-size: .78rem; font-weight: 500; }
+  .avis { margin: 0 0 12px 30px; color: var(--muted); font-size: .82rem; line-height: 1.5; }
+  .avis b { color: var(--ink); font-weight: 600; }
+  .box {
+    margin: 0 0 10px; padding: 12px 14px; border-radius: 13px;
+    background: var(--creux);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre);
+  }
+  .cas { margin: 0 0 4px 30px; color: var(--muted); font-size: .72rem; letter-spacing: .03em; text-transform: uppercase; font-weight: 650; }
+  ol.cours { list-style: none; margin: 0; padding: 0; }
+  ol.cours > li + li { border-top: 1px solid var(--line); }
+
+  /* ---- Base : heures à gauche (colonne réservée), le reste à droite ---- */
+  .cbtn {
+    width: 100%; border: none; background: none; font: inherit; color: inherit;
+    display: flex; gap: 10px; align-items: flex-start; text-align: left;
+    padding: 9px 0; cursor: pointer;
+  }
+  .cpoint {
+    flex: none; width: 8px; height: 8px; border-radius: 50%; margin-top: 6px;
+    background: hsl(var(--h) calc(52% - var(--v) * 10%) calc(52% + var(--v) * 7%));
+  }
+  .cbtn .h {
+    flex: none; min-width: 0; font-variant-numeric: tabular-nums;
+    color: var(--muted); font-size: .82rem; line-height: 1.25; white-space: nowrap;
+  }
+  .cbtn .hcol {
+    flex: none; min-width: 52px; display: flex; flex-direction: column;
+    align-items: flex-start; gap: 8px;
+  }
+  .cbtn .ctxt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .cbtn .m {
+    font-weight: 550; font-size: .96rem; min-width: 0;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .chevwrap { flex: none; position: relative; width: 20px; height: 20px; display: grid; place-items: center; margin-top: 2px; }
+  .minichev {
+    flex: none; width: 7px; height: 7px;
+    border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted);
+    transform: rotate(45deg);
+  }
+  .edot {
+    position: absolute; top: -4px; right: -6px; min-width: 15px; height: 15px; padding: 0 3px;
+    border-radius: 999px; display: grid; place-items: center;
+    font-size: .58rem; font-weight: 750; font-variant-numeric: tabular-nums;
+    color: var(--surface); background: var(--c, var(--accent));
+    box-shadow: 0 0 0 2px var(--creux);
+  }
+
+  /* 1 — Colonne de texte, sans habillage : salle, prof, groupe à la suite. */
+  .txt { font-size: .76rem; line-height: 1.3; color: var(--muted); }
+
+  /* 2 — Libellés courts en tête de ligne, alignés. */
+  .lab { display: flex; gap: 8px; font-size: .74rem; line-height: 1.3; }
+  .lab dt { flex: none; width: 42px; color: color-mix(in srgb, var(--muted) 75%, transparent); }
+  .lab dd { margin: 0; min-width: 0; color: var(--muted); }
+  dl.labs { margin: 0; display: flex; flex-direction: column; gap: 2px; }
+
+  /* 3 — Icônes en tête de ligne. */
+  .ico { display: flex; gap: 7px; font-size: .74rem; line-height: 1.3; }
+  .ico svg { flex: none; width: 14px; height: 14px; margin-top: 2px; color: var(--muted); opacity: .8; }
+  .ico span { min-width: 0; color: var(--muted); }
+
+  /* 4 — Pastilles : une par information. */
+  .pastilles { display: flex; flex-wrap: wrap; gap: 4px; }
+  .pastille {
+    max-width: 100%; font-size: .68rem; line-height: 1.45; padding: 1px 8px; border-radius: 10px;
+    color: var(--muted); background: var(--surface);
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+
+  /* 5 — Bloc en creux, salle en avant. */
+  .bloc {
+    padding: 6px 9px; border-radius: 10px; font-size: .74rem; line-height: 1.35;
+    background: var(--surface); box-shadow: inset 0 0 0 1px var(--line);
+  }
+  .bloc .fort { color: var(--ink); font-weight: 550; }
+  .bloc .faible { color: var(--muted); }
+  .mesure { margin: 4px 0 0 30px; color: var(--muted); font-size: .72rem; font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>Salle, prof, groupe : 5 systèmes</h1>
+  <p class="intro">La colonne de gauche reste aux heures ; tout se joue dans la colonne de droite, large d'environ 220 px sur un écran de 390 px.</p>
+  <p class="regle">
+    Deux cours réels servent de test, et chaque système doit les afficher <b>en entier</b> :<br>
+    <b>A.</b> S.R42.5.503 - Auditoire Pierre DRION (bâtiment R) — DE VALERIOLA Sébastien<br>
+    <b>B.</b> S.NB7.BOUT — LO GIUDICE Christophe — Allison — S.NB7.BOUT
+  </p>
+
+  <!-- 1 -->
+  <div class="prop" data-prop="1">
+    <h2><b>1</b> Colonne de texte <em>— salle, prof, groupe à la suite, sans habillage</em></h2>
+    <p class="avis"><b>Principe :</b> l'information se lit comme un paragraphe ; chaque valeur prend les lignes dont elle a besoin. <b>Le plus sobre et le plus compact.</b></p>
+    <p class="cas">A — très longue salle</p>
+    <div class="box">
+      <ol class="cours">
+        <li><button class="cbtn">
+          <span class="hcol"><span class="h">08h15</span><span class="h">10h15</span></span>
+          <span class="cpoint" style="--h:221;--v:0"></span>
+          <span class="ctxt">
+            <span class="m">Droit constitutionnel</span>
+            <span class="txt">S.R42.5.503 - Auditoire Pierre DRION (bâtiment R)<br>DE VALERIOLA Sébastien</span>
+          </span>
+          <span class="chevwrap"><span class="minichev"></span><span class="edot">1</span></span>
+        </button></li>
+      </ol>
+    </div>
+    <p class="cas">B — salle, prof et groupe</p>
+    <div class="box">
+      <ol class="cours">
+        <li><button class="cbtn">
+          <span class="hcol"><span class="h">10h30</span><span class="h">12h30</span></span>
+          <span class="cpoint" style="--h:152;--v:0"></span>
+          <span class="ctxt">
+            <span class="m">Introduction à la sociologie</span>
+            <span class="txt">S.NB7.BOUT<br>LO GIUDICE Christophe · Allison — S.NB7.BOUT</span>
+          </span>
+          <span class="chevwrap"><span class="minichev"></span><span class="edot" style="--c:var(--attention)">2</span></span>
+        </button></li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 2 -->
+  <div class="prop" data-prop="2">
+    <h2><b>2</b> Libellés alignés <em>— Salle / Prof / Groupe en tête de ligne</em></h2>
+    <p class="avis"><b>Principe :</b> chaque valeur est annoncée par son mot, dans une petite colonne fixe. On sait toujours ce qu'on lit, même pour une valeur longue. <b>Coût :</b> 42 px de large en moins, donc des valeurs plus souvent sur deux lignes.</p>
+    <p class="cas">A — très longue salle</p>
+    <div class="box">
+      <ol class="cours">
+        <li><button class="cbtn">
+          <span class="hcol"><span class="h">08h15</span><span class="h">10h15</span></span>
+          <span class="cpoint" style="--h:221;--v:0"></span>
+          <span class="ctxt">
+            <span class="m">Droit constitutionnel</span>
+            <dl class="labs">
+              <div class="lab"><dt>Salle</dt><dd>S.R42.5.503 - Auditoire Pierre DRION (bâtiment R)</dd></div>
+              <div class="lab"><dt>Prof</dt><dd>DE VALERIOLA Sébastien</dd></div>
+            </dl>
+          </span>
+          <span class="chevwrap"><span class="minichev"></span><span class="edot">1</span></span>
+        </button></li>
+      </ol>
+    </div>
+    <p class="cas">B — salle, prof et groupe</p>
+    <div class="box">
+      <ol class="cours">
+        <li><button class="cbtn">
+          <span class="hcol"><span class="h">10h30</span><span class="h">12h30</span></span>
+          <span class="cpoint" style="--h:152;--v:0"></span>
+          <span class="ctxt">
+            <span class="m">Introduction à la sociologie</span>
+            <dl class="labs">
+              <div class="lab"><dt>Salle</dt><dd>S.NB7.BOUT</dd></div>
+              <div class="lab"><dt>Prof</dt><dd>LO GIUDICE Christophe</dd></div>
+              <div class="lab"><dt>Groupe</dt><dd>Allison — S.NB7.BOUT</dd></div>
+            </dl>
+          </span>
+          <span class="chevwrap"><span class="minichev"></span><span class="edot" style="--c:var(--attention)">2</span></span>
+        </button></li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 3 -->
+  <div class="prop" data-prop="3">
+    <h2><b>3</b> Icônes <em>— épingle, personne, personnes</em></h2>
+    <p class="avis"><b>Principe :</b> même rôle que les libellés, mais l'icône prend 14 px au lieu de 42 : les valeurs respirent. <b>Coût :</b> le sens de l'icône doit être évident (il l'est).</p>
+    <p class="cas">A — très longue salle</p>
+    <div class="box">
+      <ol class="cours">
+        <li><button class="cbtn">
+          <span class="hcol"><span class="h">08h15</span><span class="h">10h15</span></span>
+          <span class="cpoint" style="--h:221;--v:0"></span>
+          <span class="ctxt">
+            <span class="m">Droit constitutionnel</span>
+            <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.6-7-11a7 7 0 0 1 14 0c0 5.4-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>S.R42.5.503 - Auditoire Pierre DRION (bâtiment R)</span></span>
+            <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M5 20a7 7 0 0 1 14 0"/></svg><span>DE VALERIOLA Sébastien</span></span>
+          </span>
+          <span class="chevwrap"><span class="minichev"></span><span class="edot">1</span></span>
+        </button></li>
+      </ol>
+    </div>
+    <p class="cas">B — salle, prof et groupe</p>
+    <div class="box">
+      <ol class="cours">
+        <li><button class="cbtn">
+          <span class="hcol"><span class="h">10h30</span><span class="h">12h30</span></span>
+          <span class="cpoint" style="--h:152;--v:0"></span>
+          <span class="ctxt">
+            <span class="m">Introduction à la sociologie</span>
+            <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.6-7-11a7 7 0 0 1 14 0c0 5.4-7 11-7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><span>S.NB7.BOUT</span></span>
+            <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M5 20a7 7 0 0 1 14 0"/></svg><span>LO GIUDICE Christophe</span></span>
+            <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9" r="3.2"/><path d="M3 19a6 6 0 0 1 12 0"/><path d="M16 7.5a3.2 3.2 0 0 1 0 6.4"/><path d="M17.5 19a6 6 0 0 0-2-4.5"/></svg><span>Allison — S.NB7.BOUT</span></span>
+          </span>
+          <span class="chevwrap"><span class="minichev"></span><span class="edot" style="--c:var(--attention)">2</span></span>
+        </button></li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 4 -->
+  <div class="prop" data-prop="4">
+    <h2><b>4</b> Pastilles <em>— une information, une forme</em></h2>
+    <p class="avis"><b>Principe :</b> chaque valeur devient une forme fermée ; la salle prend la largeur et se replie dans sa pastille. On repère le nombre d'informations d'un coup d'œil. <b>Coût :</b> le plus haut des cinq.</p>
+    <p class="cas">A — très longue salle</p>
+    <div class="box">
+      <ol class="cours">
+        <li><button class="cbtn">
+          <span class="hcol"><span class="h">08h15</span><span class="h">10h15</span></span>
+          <span class="cpoint" style="--h:221;--v:0"></span>
+          <span class="ctxt">
+            <span class="m">Droit constitutionnel</span>
+            <span class="pastilles">
+              <span class="pastille">S.R42.5.503 - Auditoire Pierre DRION (bâtiment R)</span>
+              <span class="pastille">DE VALERIOLA Sébastien</span>
+            </span>
+          </span>
+          <span class="chevwrap"><span class="minichev"></span><span class="edot">1</span></span>
+        </button></li>
+      </ol>
+    </div>
+    <p class="cas">B — salle, prof et groupe</p>
+    <div class="box">
+      <ol class="cours">
+        <li><button class="cbtn">
+          <span class="hcol"><span class="h">10h30</span><span class="h">12h30</span></span>
+          <span class="cpoint" style="--h:152;--v:0"></span>
+          <span class="ctxt">
+            <span class="m">Introduction à la sociologie</span>
+            <span class="pastilles">
+              <span class="pastille">S.NB7.BOUT</span>
+              <span class="pastille">LO GIUDICE Christophe</span>
+              <span class="pastille">Allison — S.NB7.BOUT</span>
+            </span>
+          </span>
+          <span class="chevwrap"><span class="minichev"></span><span class="edot" style="--c:var(--attention)">2</span></span>
+        </button></li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- 5 -->
+  <div class="prop" data-prop="5">
+    <h2><b>5</b> Bloc en creux <em>— les infos forment un encart, la salle en avant</em></h2>
+    <p class="avis"><b>Principe :</b> les trois valeurs sont réunies dans un petit encart en creux sous le titre, la salle en encre (elle ressort), le prof et le groupe en gris. <b>Coût :</b> le cadre ajoute ~12 px de haut.</p>
+    <p class="cas">A — très longue salle</p>
+    <div class="box">
+      <ol class="cours">
+        <li><button class="cbtn">
+          <span class="hcol"><span class="h">08h15</span><span class="h">10h15</span></span>
+          <span class="cpoint" style="--h:221;--v:0"></span>
+          <span class="ctxt">
+            <span class="m">Droit constitutionnel</span>
+            <span class="bloc"><span class="fort">S.R42.5.503 - Auditoire Pierre DRION (bâtiment R)</span><br><span class="faible">DE VALERIOLA Sébastien</span></span>
+          </span>
+          <span class="chevwrap"><span class="minichev"></span><span class="edot">1</span></span>
+        </button></li>
+      </ol>
+    </div>
+    <p class="cas">B — salle, prof et groupe</p>
+    <div class="box">
+      <ol class="cours">
+        <li><button class="cbtn">
+          <span class="hcol"><span class="h">10h30</span><span class="h">12h30</span></span>
+          <span class="cpoint" style="--h:152;--v:0"></span>
+          <span class="ctxt">
+            <span class="m">Introduction à la sociologie</span>
+            <span class="bloc"><span class="fort">S.NB7.BOUT</span><br><span class="faible">LO GIUDICE Christophe · Allison — S.NB7.BOUT</span></span>
+          </span>
+          <span class="chevwrap"><span class="minichev"></span><span class="edot" style="--c:var(--attention)">2</span></span>
+        </button></li>
+      </ol>
+    </div>
+  </div>
+
+  <p class="mesure" id="mesure-globale"></p>
+</div>
+<script>
+  (function () {
+    var out = [];
+    document.querySelectorAll(".prop").forEach(function (p) {
+      var hs = [];
+      p.querySelectorAll(".box .cbtn").forEach(function (b) { hs.push(Math.round(b.getBoundingClientRect().height)); });
+      out.push(p.getAttribute("data-prop") + " → " + hs.join(" / ") + " px");
+    });
+    document.getElementById("mesure-globale").textContent =
+      "Hauteurs mesurées (A / B), la ligne actuelle en fait 60 — " + out.join(" · ");
+  })();
+</script>
+</body>
+</html>
