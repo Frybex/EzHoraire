@@ -10,10 +10,10 @@
   "use strict";
   var FORME = "M18 26.5A5 5 0 0 1 23 21.5L77 21.5A5 5 0 0 1 82 26.5L82 32.12A7 7 0 0 1 80.55 36.39L62.52 59.87A3.5 3.5 0 0 0 65.3 65.5L77 65.5A5 5 0 0 1 82 70.5L82 73.5A5 5 0 0 1 77 78.5L23 78.5A5 5 0 0 1 18 73.5L18 70.5A5 5 0 0 1 23 65.5L40.08 65.5A3.5 3.5 0 0 0 42.86 64.13L47.23 58.43A1.2 1.2 0 0 0 46.28 56.5L23 56.5A5 5 0 0 1 18 51.5L18 48.5A5 5 0 0 1 23 43.5L58.11 43.5A1.2 1.2 0 0 0 59.06 43.03L64.13 36.43A1.2 1.2 0 0 0 63.17 34.5L23 34.5A5 5 0 0 1 18 29.5Z";
   var THEMES = {
-    "1": { bande: "#4cc38a", favicon: "", png16: "/favicon-16x16-vert.png?v=2", png32: "/favicon-32x32-vert.png?v=2", apple: "/apple-touch-icon-vert.png", manifest: "/site-vert.webmanifest" },
-    "3": { bande: "#ffa8d0", favicon: "", png16: "/favicon-16x16-rose.png?v=2", png32: "/favicon-32x32-rose.png?v=2", apple: "/apple-touch-icon-rose.png", manifest: "/site-rose.webmanifest" }
+    "1": { bande: "#4cc38a", favicon: "", png16: "/assets/icons/favicon-16x16-vert.png?v=2", png32: "/assets/icons/favicon-32x32-vert.png?v=2", apple: "/assets/icons/apple-touch-icon-vert.png", manifest: "/assets/icons/site-vert.webmanifest" },
+    "3": { bande: "#ffa8d0", favicon: "", png16: "/assets/icons/favicon-16x16-rose.png?v=2", png32: "/assets/icons/favicon-32x32-rose.png?v=2", apple: "/assets/icons/apple-touch-icon-rose.png", manifest: "/assets/icons/site-rose.webmanifest" }
   };
-  var DEFAUT = { bande: null, favicon: "/favicon.svg?v=2", png16: "/favicon-16x16.png?v=2", png32: "/favicon-32x32.png?v=2", ico: "/favicon.ico?v=2", apple: "/apple-touch-icon.png", manifest: "/site.webmanifest" };
+  var DEFAUT = { bande: null, favicon: "/assets/icons/favicon.svg?v=2", png16: "/assets/icons/favicon-16x16.png?v=2", png32: "/assets/icons/favicon-32x32.png?v=2", ico: "/assets/icons/favicon.ico?v=2", apple: "/assets/icons/apple-touch-icon.png", manifest: "/assets/icons/site.webmanifest" };
   var lien = document.querySelector('link[rel~="icon"][type="image/svg+xml"]');
   /* Safari ignore le SVG et prend un raster (.ico / .png) : ces liens sont
      donc repointés eux aussi vers la variante du thème, sinon l'onglet

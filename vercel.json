@@ -1,7 +1,11 @@
 {
   "redirects": [
     { "source": "/app.html", "destination": "/", "permanent": true },
-    { "source": "/app", "destination": "/", "permanent": true }
+    { "source": "/app", "destination": "/", "permanent": true },
+    { "source": "/favicon.ico", "destination": "/assets/icons/favicon.ico", "permanent": true },
+    { "source": "/apple-touch-icon.png", "destination": "/assets/icons/apple-touch-icon.png", "permanent": true },
+    { "source": "/og-image.png", "destination": "/assets/icons/og-image.png", "permanent": true },
+    { "source": "/logo-email.png", "destination": "/assets/icons/logo-email.png", "permanent": true }
   ],
   "headers": [
     {
@@ -41,75 +45,75 @@
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=300, stale-while-revalidate=86400" }]
     },
     {
-      "source": "/favicon.ico",
+      "source": "/assets/icons/favicon.ico",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }]
     },
     {
-      "source": "/favicon.svg",
+      "source": "/assets/icons/favicon.svg",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }]
     },
     {
-      "source": "/favicon-16x16.png",
+      "source": "/assets/icons/favicon-16x16.png",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }]
     },
     {
-      "source": "/favicon-32x32.png",
+      "source": "/assets/icons/favicon-32x32.png",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }]
     },
     {
-      "source": "/favicon-16x16-vert.png",
+      "source": "/assets/icons/favicon-16x16-vert.png",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }]
     },
     {
-      "source": "/favicon-32x32-vert.png",
+      "source": "/assets/icons/favicon-32x32-vert.png",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }]
     },
     {
-      "source": "/favicon-16x16-rose.png",
+      "source": "/assets/icons/favicon-16x16-rose.png",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }]
     },
     {
-      "source": "/favicon-32x32-rose.png",
+      "source": "/assets/icons/favicon-32x32-rose.png",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }]
     },
     {
-      "source": "/safari-pinned-tab.svg",
+      "source": "/assets/icons/safari-pinned-tab.svg",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }]
     },
     {
-      "source": "/apple-touch-icon.png",
+      "source": "/assets/icons/apple-touch-icon.png",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }]
     },
     {
-      "source": "/apple-touch-icon-vert.png",
+      "source": "/assets/icons/apple-touch-icon-vert.png",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }]
     },
     {
-      "source": "/apple-touch-icon-rose.png",
+      "source": "/assets/icons/apple-touch-icon-rose.png",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }]
     },
     {
-      "source": "/icon-192.png",
+      "source": "/assets/icons/icon-192.png",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }]
     },
     {
-      "source": "/icon-512.png",
+      "source": "/assets/icons/icon-512.png",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }]
     },
     {
-      "source": "/icon-maskable-512.png",
+      "source": "/assets/icons/icon-maskable-512.png",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }]
     },
     {
-      "source": "/site.webmanifest",
+      "source": "/assets/icons/site.webmanifest",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }]
     },
     {
-      "source": "/site-vert.webmanifest",
+      "source": "/assets/icons/site-vert.webmanifest",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }]
     },
     {
-      "source": "/site-rose.webmanifest",
+      "source": "/assets/icons/site-rose.webmanifest",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }]
     },
     {

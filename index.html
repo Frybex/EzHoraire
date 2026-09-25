@@ -23,25 +23,25 @@
 <meta property="og:url" content="https://www.ezhoraire.be/">
 <meta property="og:title" content="EzHoraire — Horaire étudiant HEH, UMONS, Condorcet, HELB, ULB, UCLouvain">
 <meta property="og:description" content="Ton horaire de cours en Belgique, clair sur téléphone et à jour à chaque visite. HEH, UMONS, Condorcet, HELB, ULB, UCLouvain. Gratuit, sans pub.">
-<meta property="og:image" content="https://www.ezhoraire.be/og-image.png">
+<meta property="og:image" content="https://www.ezhoraire.be/assets/icons/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="EzHoraire : une semaine de cours affichée en cases de couleur.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="EzHoraire — Horaire étudiant HEH, UMONS, Condorcet, HELB, ULB, UCLouvain">
 <meta name="twitter:description" content="Ton horaire de cours en Belgique, clair sur téléphone et à jour à chaque visite. Gratuit, sans pub.">
-<meta name="twitter:image" content="https://www.ezhoraire.be/og-image.png">
+<meta name="twitter:image" content="https://www.ezhoraire.be/assets/icons/og-image.png">
 <meta name="twitter:image:alt" content="EzHoraire : une semaine de cours affichée en cases de couleur.">
-<link rel="icon" href="/favicon.ico" sizes="48x48 32x32 16x16">
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="icon" href="/favicon-48x48.png" type="image/png" sizes="48x48">
-<link rel="icon" href="/favicon-96x96.png" type="image/png" sizes="96x96">
-<link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192">
-<link rel="icon" href="/favicon-32x32.png" type="image/png" sizes="32x32">
-<link rel="icon" href="/favicon-16x16.png" type="image/png" sizes="16x16">
-<link rel="mask-icon" href="/safari-pinned-tab.svg?v=2" color="#2456e0">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="manifest" href="/site.webmanifest">
+<link rel="icon" href="/assets/icons/favicon.ico" sizes="48x48 32x32 16x16">
+<link rel="icon" href="/assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/assets/icons/favicon-48x48.png" type="image/png" sizes="48x48">
+<link rel="icon" href="/assets/icons/favicon-96x96.png" type="image/png" sizes="96x96">
+<link rel="icon" href="/assets/icons/icon-192.png" type="image/png" sizes="192x192">
+<link rel="icon" href="/assets/icons/favicon-32x32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="/assets/icons/favicon-16x16.png" type="image/png" sizes="16x16">
+<link rel="mask-icon" href="/assets/icons/safari-pinned-tab.svg?v=2" color="#2456e0">
+<link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
+<link rel="manifest" href="/assets/icons/site.webmanifest">
 <!-- Le SDK Supabase vient de jsdelivr : on ouvre la connexion tôt. -->
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <!-- En « defer » : rien ici ne bloque le premier rendu. -->
@@ -1051,6 +1051,28 @@ try {
     color: var(--accent); font-weight: 650;
     max-width: 46%; overflow: hidden; text-overflow: ellipsis;
   }
+  /* Étiquettes verticales d'échéances du jour (devoir / examen) : alignées
+     à droite, largeur réservée pour aligner les heures sur tous les jours. */
+  .day-echs {
+    flex: none; width: 38px; display: flex; justify-content: flex-end;
+    align-items: center; gap: 4px; align-self: center;
+  }
+  .day-ech {
+    flex: none; width: 17px; height: 46px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 750; text-transform: uppercase;
+    font-size: .53rem; letter-spacing: .07em; line-height: 1; text-align: center;
+    border-radius: 6px;
+    writing-mode: vertical-rl; transform: rotate(180deg);
+    user-select: none; box-sizing: border-box;
+  }
+  .day-ech.devoir {
+    color: var(--accent); background: var(--accent-soft);
+  }
+  .day-ech.examen {
+    color: var(--attention);
+    background: color-mix(in srgb, var(--attention) 14%, var(--surface));
+  }
   .chev {
     flex: none; width: 9px; height: 9px; margin: 0 4px 0 2px;
     border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted);
@@ -1107,15 +1129,30 @@ try {
     line-height: 1.25;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  /* Nom de la salle sous le titre quand le cours est replié */
-  .cbtn .s {
-    min-width: 0; font-size: .82rem; font-weight: 450; color: var(--muted);
-    line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  /* Ligne de la salle sous le titre : toujours en place (repliée comme dépliée)
+     pour que la hauteur de la ligne ne saute jamais. Repliée, elle n'affiche
+     que le lieu. Dépliée, le libellé « Salle : » glisse en douceur à sa gauche
+     pendant que le numéro de salle glisse de manière fluide vers la droite. */
+  .cinfo-salle {
+    display: flex; align-items: baseline; min-width: 0;
+    padding: 1px 0; font-size: .86rem; line-height: 1.35;
   }
-  /* Quand on ouvre le cours, la salle courte disparaît et les détails complets s'affichent */
-  li.c.open .cbtn .s { display: none; }
+  .cinfo-salle .k {
+    flex: none; color: var(--muted);
+    max-width: 0; opacity: 0; overflow: hidden; white-space: nowrap; margin-right: 0;
+    transition: max-width .28s cubic-bezier(.16,1,.3,1), opacity .22s, margin-right .28s cubic-bezier(.16,1,.3,1);
+  }
+  li.c.open .cinfo-salle .k {
+    max-width: 50px; opacity: 1; margin-right: 6px;
+  }
+  .cinfo-salle .s, .cbtn .s {
+    flex: 1; min-width: 0; font-size: .86rem; font-weight: 450;
+    line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    color: var(--muted); transition: color .22s;
+  }
+  li.c.open .cinfo-salle .s { color: inherit; }
   .cinfos {
-    display: grid; grid-template-rows: 0fr; opacity: 0; visibility: hidden;
+    display: grid; grid-template-rows: 0fr; opacity: 0; visibility: hidden; overflow: hidden;
     transition: grid-template-rows .28s cubic-bezier(.16,1,.3,1), opacity .22s, visibility 0s .28s;
   }
   li.c.open .cinfos {
@@ -1131,15 +1168,26 @@ try {
   .cinfo-row .nc { color: var(--muted); font-style: italic; }
   /* Pastilles D / E : une par type d'échéance en attente (devoir, examen),
      empilées et centrées sur la hauteur. */
-  .marques { flex: none; display: flex; flex-direction: column; gap: 4px; align-self: center; }
+  .marques {
+    flex: none; display: flex; flex-direction: column; gap: 4px; align-self: center;
+    transition: opacity .2s;
+  }
   .ebadge {
     width: 19px; height: 19px; border-radius: 50%;
-    display: grid; place-items: center; font-size: .62rem; font-weight: 750;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .62rem; font-weight: 750; line-height: 1; text-align: center;
     color: var(--c, var(--accent));
     background: color-mix(in srgb, var(--c, var(--accent)) 12%, var(--surface));
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c, var(--accent)) 32%, transparent);
   }
-  li.c.open .marques { display: none; }
+  .ebadge > span {
+    display: block;
+    transform: translateY(1px);
+  }
+  li.c.open .marques {
+    opacity: 0; pointer-events: none; visibility: hidden;
+    transition: opacity .18s, visibility 0s .18s;
+  }
   /* Étiquette « Chevauche » (horaire sur mesure) : centrée sur la ligne. */
   .cbtn .choc-tag { align-self: flex-start; margin-top: 2px; }
   /* Jour à un seul cours (téléphone) : déjà déroulé et non refermable. */
@@ -1487,19 +1535,19 @@ try {
     border-radius: 0 12px 12px 0;
   }
   .ech-item[data-ouvert="split"] .ech-action-btn {
-    width: 26px;
+    width: 36px;
   }
   .ech-item[data-ouvert="split"] .ech-action-btn span {
     display: none !important;
   }
   .ech-item[data-ouvert="split"] .ech-action-btn svg {
-    width: 15px;
-    height: 15px;
+    width: 22px;
+    height: 22px;
     transform: none !important;
     animation: none !important;
   }
   .ech-item[data-ouvert="split"] .ech {
-    margin: 0 26px;
+    margin: 0 36px;
     transform: translateX(0px);
     box-shadow: inset 0 0 0 1px var(--line), 0 3px 18px rgba(0, 0, 0, .16);
   }
@@ -3050,7 +3098,7 @@ try {
 
   @media (prefers-reduced-motion: reduce) {
     .ev, #pop, .liste button { transition: none; }
-    .chev, .detail, .csub, .cinfos,
+    .chev, .detail, .csub, .cinfos, .cinfo-salle .k, .cinfo-salle .s, .marques,
     .week, .thisweek, .days, #feuille { transition: none; }
     .ppop:not([hidden]) { animation: none; }
     .voile:not([hidden]), .voile:not([hidden]) .boite, .voile.sortie, .voile.sortie .boite { animation: none; }
@@ -8791,6 +8839,36 @@ try {
     return '<span class="ech-tag" style="--c:' + (r.examen ? "var(--attention)" : "var(--accent)") + '">' +
       txt(r.texte) + "</span>";
   }
+  /* Résumé des échéances d'un jour replié : celles posées sur la journée
+     (« à une autre heure », clé « jour|| ») ET celles de chaque cours du
+     jour. Avant, seul pseudoJour(j) était regardé : un devoir posé sur un
+     cours n'apparaissait qu'une fois le jour déroulé. */
+  function resumeEcheancesJour(jour, listeCours) {
+    var dateJour = dateSemJour(sem, jour);
+    var toutes = echeancesJour(jour).slice();
+    (listeCours || []).forEach(function (c) {
+      var l = echeancesDe(c);
+      for (var i = 0; i < l.length; i++) toutes.push(l[i]);
+    });
+    var liste = trierEcheances(toutes.filter(function (e) {
+      return !echPassee(e) && !echApresDate(e, dateJour);
+    }));
+    var devoir = false, examen = false;
+    liste.forEach(function (e) {
+      if (e.type === "examen") examen = true;
+      else devoir = true;
+    });
+    return { devoir: devoir, examen: examen, total: liste.length };
+  }
+  function tagEcheancesJour(jour, listeCours) {
+    var r = resumeEcheancesJour(jour, listeCours);
+    var tags = "";
+    if (r) {
+      if (r.devoir) tags += '<span class="day-ech devoir">Devoir</span>';
+      if (r.examen) tags += '<span class="day-ech examen">Examen</span>';
+    }
+    return '<span class="day-echs">' + tags + '</span>';
+  }
 
   /* Pastilles D / E d'un cours : une par type d'échéance en attente
      (devoir bleu, examen orange), empilées. Elles remplacent la flèche :
@@ -8806,16 +8884,22 @@ try {
     var dit = devoir && examen ? "Un devoir et un examen en attente"
             : examen ? "Un examen en attente" : "Un devoir en attente";
     return '<span class="marques" role="img" aria-label="' + txt(dit) + '">' +
-      (devoir ? '<span class="ebadge">D</span>' : "") +
-      (examen ? '<span class="ebadge" style="--c:var(--attention)">E</span>' : "") +
+      (devoir ? '<span class="ebadge"><span>D</span></span>' : "") +
+      (examen ? '<span class="ebadge" style="--c:var(--attention)"><span>E</span></span>' : "") +
       "</span>";
   }
-  /* Infos du cours, en lignes étiquetées : Salle, Prof, Groupe — et, quand
-     elles existent, Code et Source (horaire sur mesure). */
+  /* Ligne de la salle : présente dès l'état replié (nom court de la salle)
+     et reste stable à l'ouverture pendant que « Salle : » glisse à sa gauche. */
+  function salleCoursHTML(c) {
+    if (!c.salles) return "";
+    return '<span class="cinfo-salle"><span class="k">Salle :</span><span class="s">' +
+      txt(c.salles.replace(/, ([^,]*)$/, " et $1")) + "</span></span>";
+  }
+
+  /* Infos détaillées du cours (prof, groupe, code, source) : s'ouvrent en
+     accordéon sous le titre et la salle. */
   function infosCoursHTML(c) {
     var sub = "";
-    if (c.salles) sub += '<span class="cinfo-row"><span class="k">Salle : </span>' +
-      txt(c.salles.replace(/, ([^,]*)$/, " et $1")) + "</span>";
     if (c.profs) sub += '<span class="cinfo-row"><span class="k">Prof : </span>' + txt(c.profs) + "</span>";
     if (c.groupes.length && groupesChoisisDe(c).length !== 1) {
       sub += '<span class="cinfo-row"><span class="k">Groupe : </span>' + txt(c.groupes.map(nomGroupe).join(", ")) + "</span>";
@@ -8835,11 +8919,12 @@ try {
       var c = cours[i];
       var cle = jour + ":" + i;
       var choc = !!DATA.perso && enConflit(c, sem);
+      var salle = salleCoursHTML(c);
       var infos = infosCoursHTML(c);
       var ech = listeEcheancesHTML(echeancesDe(c), cle, dateJour);
       var marques = marquesEcheances(c);
       // Déroulable dès qu'il y a des infos détaillées (salle, prof...) ou des échéances
-      var deroulable = !!infos || !!ech;
+      var deroulable = !!salle || !!infos || !!ech;
       // Un seul cours dans le jour : déroulé d'office et non refermable.
       var seul = cours.length === 1 && deroulable;
       var estOuvert = seul || !!coursOuverts[cle];
@@ -8850,7 +8935,7 @@ try {
               '<span class="hcol"><span class="h">' + txt(fmtH(c.debut)) + '</span><span class="h">' + txt(fmtH(c.fin)) + "</span></span>" +
               '<span class="cpoint" style="' + styleCours(c.matiere) + '" aria-hidden="true"></span>' +
               '<span class="ctxt"><span class="m">' + txt(nettoyerMatiere(c.matiere || "Cours")) + "</span>" +
-              (c.salles ? '<span class="s">' + txt(c.salles.replace(/, ([^,]*)$/, " et $1")) + "</span>" : "") +
+              salle +
               infos +
               "</span>" +
               (choc ? '<span class="choc-tag">Chevauche</span>' : "") +
@@ -8966,7 +9051,7 @@ try {
         '<span class="dot" aria-hidden="true"></span>' +
         '<span class="dname"><strong>' + JOURS[j] + "</strong>" +
         '<span class="ddate">' + fmtDate(date) + "</span></span>" +
-        resume + tagEcheances(pseudoJour(j)) + '</button>' +
+        resume + tagEcheancesJour(j, liste) + '</button>' +
         '<div class="detail">' +
         (liste.length ? detailJour(liste, j) : detailJourVide(j)) +
         "</div></li>";
@@ -9831,6 +9916,7 @@ try {
   /* `heure` (facultatif) : heure choisie dans la journée pour un devoir
      sans cours (« à une autre heure ») ; sinon c'est le début du cours. */
   function ouvrirEcheance(c, heure) {
+    fermerTousItemsEch(null);
     fermerMenus();
     echCours = c;
     echIdModif = null;
@@ -9874,6 +9960,7 @@ try {
     echCours = null;
     echIdModif = null;
     echRetourJour = null;
+    fermerTousItemsEch(null);
     document.getElementById("echeance-ok").textContent = "Ajouter";
     document.getElementById("ech-choix-heure").value = "";
     if (echChoixZoneValider) echChoixZoneValider.classList.remove("ouvert");
@@ -9927,6 +10014,7 @@ try {
     var liste = echeancesDe(c), cible = null;
     for (var i = 0; i < liste.length; i++) if (liste[i].id === id) cible = liste[i];
     if (!cible) return;
+    fermerTousItemsEch(null);
     fermerMenus();
     echCours = c;
     echIdModif = id;
@@ -9981,7 +10069,10 @@ try {
       message: "<strong>" + txt(cible.titre) + "</strong><br>" + txt(quandEch(cible)),
       confirmer: "Supprimer"
     }).then(function (ok) {
-      if (!ok) return;
+      if (!ok) {
+        fermerTousItemsEch(null);
+        return;
+      }
       if (profil) fileSupprEch({ profil: profil.id, cle: cleCoursEch(c), id: id });
       oublierSyncEch([id]);
       ecrireEcheances(c, echeancesDe(c).filter(function (x) { return x.id !== id; }));
@@ -10048,23 +10139,28 @@ try {
   function fermerItemEch(item, anime) {
     if (!item) return;
     var etat = item.getAttribute("data-ouvert") || "0";
-    if (etat === "0" && !item._timerFermeture) return;
+    var carte = item.querySelector(".ech");
+    var fondSuppr = item.querySelector(".ech-fond-suppr");
+    var fondEdit = item.querySelector(".ech-fond-modifier");
+    if (!carte) return;
+
+    var aTransform = !!(carte.style.transform && carte.style.transform !== "translateX(0px)" && carte.style.transform !== "none");
+    var aFond = !!((fondSuppr && fondSuppr.style.opacity && fondSuppr.style.opacity !== "0") ||
+                   (fondEdit && fondEdit.style.opacity && fondEdit.style.opacity !== "0"));
+    if (etat === "0" && !item._timerFermeture && !aTransform && !aFond) return;
 
     if (item._timerFermeture) {
       clearTimeout(item._timerFermeture);
       item._timerFermeture = null;
     }
 
-    var carte = item.querySelector(".ech");
-    var fondSuppr = item.querySelector(".ech-fond-suppr");
-    var fondEdit = item.querySelector(".ech-fond-modifier");
-    if (!carte) return;
-
     item.classList.remove("arme-declenchement");
+    item.classList.remove("glissant");
+    item.removeAttribute("data-depart");
 
     if (!anime) {
       carte.style.transition = "none";
-      carte.style.transform = "translateX(0px)";
+      carte.style.transform = "";
       carte.style.margin = "";
       carte.style.boxShadow = "";
       item.setAttribute("data-ouvert", "0");
@@ -10081,7 +10177,7 @@ try {
       return;
     }
 
-    // Fermeture animée : on conserve data-ouvert (notamment split 50%/50% et boutons 26px sans libellé)
+    // Fermeture animée : on conserve data-ouvert (notamment split 50%/50% et boutons 36px sans libellé)
     // pendant l'animation de 260ms afin que les fonds restent stables et que le texte n'apparaisse pas
     carte.style.transition = "transform .26s cubic-bezier(.16,1,.3,1), margin .26s cubic-bezier(.16,1,.3,1), box-shadow .26s cubic-bezier(.16,1,.3,1)";
     carte.style.transform = "translateX(0px)";
@@ -10094,6 +10190,8 @@ try {
     item._timerFermeture = setTimeout(function () {
       item._timerFermeture = null;
       item.setAttribute("data-ouvert", "0");
+      carte.style.transform = "";
+      carte.style.transition = "";
       carte.style.margin = "";
       carte.style.boxShadow = "";
       if (fondSuppr) {
@@ -10331,10 +10429,10 @@ try {
     var cible = cibleDeCle(cle);
 
     if (etaitArme) {
+      fermerItemEch(item, true);
       if (echCurrentX < 0) {
         if (cible) supprimerEcheance(cible.c, id);
       } else {
-        fermerItemEch(item, true);
         if (cible) ouvrirModifierEcheance(cible.c, id);
       }
       return;
@@ -11311,11 +11409,23 @@ try {
   document.getElementById("btn-auj").addEventListener("click", function () {
     sem = semaineCourante(); semaineAuto = true; resetDepliage(); fermerPdf(); rendre();
   });
-  // Auto-déplier aujourd'hui s'il est affiché et qu'il y a cours.
+  // Auto-déplier aujourd'hui s'il est affiché, qu'il y a cours et que le
+  // dernier n'est pas fini. Passée la fin, rien ne s'ouvre — et le lendemain
+  // ne s'ouvre qu'à minuit, quand il devient « aujourd'hui ».
   function deplierAujourdhui() {
     var auj = new Date();
+    var maintenant = auj.getHours() * 60 + auj.getMinutes();
     for (var j = 0; j < 7; j++) {
-      if (memeJour(dateSemJour(sem, j), auj) && coursDe(sem, j).length) { joursOuverts[j] = true; break; }
+      if (!memeJour(dateSemJour(sem, j), auj)) continue;
+      var liste = coursDe(sem, j);
+      if (!liste.length) break;
+      var fin = 0, k;
+      for (k = 0; k < liste.length; k++) {
+        var f = liste[k] && liste[k].fin ? mins(liste[k].fin) : NaN;
+        if (isFinite(f) && f > fin) fin = f;
+      }
+      if (!isFinite(fin) || fin <= 0 || maintenant < fin) joursOuverts[j] = true;
+      break;
     }
   }
 
@@ -12171,7 +12281,10 @@ try {
     var memo = memoProfil(profil);
     if (memo) {
       installer(memo);
-      sem = semaineCourante();
+      // Retour sur l'onglet (SIGNED_IN réémis) : on garde la semaine
+      // choisie par l'utilisateur ; seul un rechargement (semaineAuto
+      // encore vrai) ou une semaine devenue inconnue repart du courant.
+      if (semaineAuto) sem = semaineCourante();
       deplierAujourdhui();
     }
     afficherHoraire();

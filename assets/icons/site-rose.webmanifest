@@ -3,17 +3,17 @@
   "short_name": "EzHoraire",
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "/assets/icons/icon-192-rose.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/icon-512.png",
+      "src": "/assets/icons/icon-512-rose.png",
       "sizes": "512x512",
       "type": "image/png"
     },
     {
-      "src": "/icon-maskable-512.png",
+      "src": "/assets/icons/icon-maskable-512-rose.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
