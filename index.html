@@ -45,7 +45,7 @@
 <!-- Le SDK Supabase vient de jsdelivr : on ouvre la connexion tôt. -->
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <!-- En « defer » : rien ici ne bloque le premier rendu. -->
-<script defer src="/favicon.js?v=3"></script>
+<script defer src="/assets/js/favicon.js?v=3"></script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
 {"@type":"Organization","@id":"https://www.ezhoraire.be/#org","name":"EzHoraire","alternateName":["Ez Horaire","ezhoraire","Easy Horaire","EzHoraire Belgique"],"url":"https://www.ezhoraire.be/","logo":{"@type":"ImageObject","url":"https://www.ezhoraire.be/icon-512.png","width":512,"height":512},"email":"contact@ezhoraire.be","areaServed":{"@type":"Country","name":"Belgique"},"description":"Application et plateforme gratuite de consultation des horaires d'étudiants en Belgique (HEH, UMONS, Condorcet, HELB, ULB, UCLouvain)."},
@@ -2651,6 +2651,9 @@ try {
        (plus large que lui) il reste collé à gauche, alors que sous
        « Férié » (plus étroit) il paraît centré. */
     .libre-add { margin: 0; align-self: center; }
+    /* Le « + » d'en-tête reprend le bouton « Échéance » du téléphone, en
+       version icône seule (la colonne est trop étroite pour le libellé). */
+    .cal-jour-ech { align-self: center; margin: 0 0 0 2px; padding: 7px; }
     /* Cours : fond mat teinté (une couleur par
        intitulé, jamais deux intitulés avec la même — voir preparerCouleurs). */
     .ev {
@@ -4038,10 +4041,10 @@ try {
 <!-- « defer » : le SDK (~100 ko) ne retarde plus l'affichage ; l'app
      l'attend en arrière-plan (voir chargerSdkSupabase). -->
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0" integrity="sha384-JBR+x8blGwjDRO63aHCGiZMD4VNiTR4ZUGA+N6ZKLf3zNt1fK8IBpcgPaMrxqWBp" crossorigin="anonymous" data-supabase></script>
-<script src="/suivi.js?v=3"></script>
-<script src="/fusion.js?v=3"></script>
-<script src="/export_ics.js?v=3"></script>
-<script src="/semaine.js?v=3"></script>
+<script src="/assets/js/suivi.js?v=3"></script>
+<script src="/assets/js/fusion.js?v=3"></script>
+<script src="/assets/js/export_ics.js?v=3"></script>
+<script src="/assets/js/semaine.js?v=3"></script>
 <script>
 (function () {
   "use strict";
@@ -9236,7 +9239,14 @@ try {
             ? '<small class="libre ferie" title="' + txt(nomFerie(sem, d.j)) + '">' + txt(nomFerie(sem, d.j)) + "</small>"
             : '<small class="libre">Libre</small>');
       tete += '<div class="cal-jour' + (estAuj ? " today" : "") + '" title="' + JOURS[d.j] + " " + fmtDate(date) + '">' +
-              "<span>" + JOURS[d.j].slice(0, 3) + "</span><strong>" + date.getDate() + "</strong>" + resume + "</div>";
+              "<span>" + JOURS[d.j].slice(0, 3) + "</span><strong>" + date.getDate() + "</strong>" + resume +
+              // Même entrée que sur téléphone : le « + » ouvre le choix du
+              // cours du jour (ouvrirChoixCours), pas le formulaire direct.
+              (d.cours.length
+                ? '<button type="button" class="jour-ech-btn cal-jour-ech" data-ech-jour="' + d.j + '" ' +
+                  'aria-label="Ajouter un devoir ou un examen à un cours de ce jour" title="Ajouter un devoir ou un examen">' +
+                  ICONE_PLUS + "</button>"
+                : "") + "</div>";
       corps += '<div class="cal-col' + (estAuj ? " today" : "") + '">';
       if (!d.cours.length) {
         // Jour sans cours : mêmes échéances que sur téléphone (rangées
@@ -9366,6 +9376,9 @@ try {
   }
   document.getElementById("cal").addEventListener("click", function (e) {
     if (clicEcheance(e)) return;
+    // Même bouton « Échéance » que sur téléphone : le choix du cours du jour.
+    var je = e.target.closest(".jour-ech-btn");
+    if (je) { ouvrirChoixCours(+je.getAttribute("data-ech-jour")); return; }
     var b = e.target.closest(".ev");
     if (!b) return;
     if (popSource === b) fermerPop(); else ouvrirPop(b);

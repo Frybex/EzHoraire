@@ -1,6 +1,5 @@
 # Fichiers utilitaires : ne pas déployer sur Vercel
-serve.py
-maj_sitemap.py
+tools/
 README.md
 AGENTS.md
 CLAUDE.md
@@ -37,22 +36,13 @@ logos/preview.html
 # ni aucune page ne les référence.
 qr/
 
-# Prototypes & propositions en cours de conception (non publiés sur Vercel)
-propositions/
-propositions-grands-ecrans.html
-test-bug.html
-capture-*.png
+# Labo : prototypes, propositions, démo locale et captures (non publiés).
+# La démo pose des horaires de test puis ouvre ?essai=1 (localhost only).
+lab/
 
-# Brouillons de calcul des logos (scripts Python à la racine)
-/test_*.py
-
-# Démo locale : pose des horaires de test puis ouvre ?essai=1 (localhost only)
-demo.html
-
-# Tests Node du moteur sur mesure : pas à servir en ligne.
-/test_*.mjs
+# Tests Python et Node : pas à servir en ligne.
+tests/
 
 # Rapports et surveillance SEO (captures, logs, script Node local) : générés
 # hors ligne, aucune page ni l'app ne les référence. 31 Mo en moins à déployer.
-rapports-seo/
-surveillance-seo/
+seo/

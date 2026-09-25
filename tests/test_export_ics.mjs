@@ -1,9 +1,9 @@
-// Tests de l'export agenda (export_ics.js) : node --test test_export_ics.mjs
+// Tests de l'export agenda (export_ics.js) : node --test tests/test_export_ics.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 
-const E = createRequire(import.meta.url)("./export_ics.js");
+const E = createRequire(import.meta.url)("../assets/js/export_ics.js");
 
 function cours(extra = {}) {
   return {

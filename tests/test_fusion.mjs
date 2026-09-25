@@ -1,9 +1,9 @@
-// Tests du moteur de l'horaire sur mesure (fusion.js) : node --test test_fusion.mjs
+// Tests du moteur de l'horaire sur mesure (fusion.js) : node --test tests/test_fusion.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 
-const F = createRequire(import.meta.url)("./fusion.js");
+const F = createRequire(import.meta.url)("../assets/js/fusion.js");
 
 function horaire(lundi, cours, extra = {}) {
   return {

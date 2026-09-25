@@ -1,7 +1,7 @@
 """Régénère les <lastmod> de sitemap.xml depuis l'historique git :
 
-    python3 maj_sitemap.py          # écrit sitemap.xml
-    python3 maj_sitemap.py --check  # n'écrit rien, code 1 si écart
+    python3 tools/maj_sitemap.py          # écrit sitemap.xml
+    python3 tools/maj_sitemap.py --check  # n'écrit rien, code 1 si écart
 
 Le <lastmod> d'une page est la date du dernier commit qui a touché son
 fichier HTML — aujourd'hui tant que ce fichier est modifié mais pas
@@ -16,7 +16,7 @@ import subprocess
 import sys
 from datetime import date
 
-RACINE = os.path.dirname(os.path.abspath(__file__))
+RACINE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DOMAINE = "https://www.ezhoraire.be"
 RE_LIGNE_URL = re.compile(
     r"^\s*<url>\s*<loc>(?P<loc>[^<]+)</loc>\s*"
@@ -114,7 +114,7 @@ def main():
         return 0
     if verification:
         sys.stdout.flush()
-        print("sitemap.xml périmé : lancer python3 maj_sitemap.py", file=sys.stderr)
+        print("sitemap.xml périmé : lancer python3 tools/maj_sitemap.py", file=sys.stderr)
         return 1
 
     with open(chemin, "w", encoding="utf-8") as f:

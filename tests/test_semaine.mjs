@@ -1,10 +1,10 @@
 // Tests du choix de la semaine affichée d'office (semaine.js) :
-// node --test test_semaine.mjs
+// node --test tests/test_semaine.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 
-const S = createRequire(import.meta.url)("./semaine.js");
+const S = createRequire(import.meta.url)("../assets/js/semaine.js");
 
 // Lundi 14 septembre 2026 : ancre des semaines 1..6.
 const LUNDI0 = new Date(2026, 8, 14);

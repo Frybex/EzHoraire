@@ -21,23 +21,23 @@
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=3600, stale-while-revalidate=86400" }]
     },
     {
-      "source": "/suivi.js",
+      "source": "/assets/js/suivi.js",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=300, stale-while-revalidate=86400" }]
     },
     {
-      "source": "/fusion.js",
+      "source": "/assets/js/fusion.js",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=300, stale-while-revalidate=86400" }]
     },
     {
-      "source": "/export_ics.js",
+      "source": "/assets/js/export_ics.js",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=300, stale-while-revalidate=86400" }]
     },
     {
-      "source": "/semaine.js",
+      "source": "/assets/js/semaine.js",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=300, stale-while-revalidate=86400" }]
     },
     {
-      "source": "/favicon.js",
+      "source": "/assets/js/favicon.js",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=300, stale-while-revalidate=86400" }]
     },
     {
@@ -117,15 +117,15 @@
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, stale-while-revalidate=86400" }]
     },
     {
-      "source": "/propositions/(.*)",
+      "source": "/lab/propositions/(.*)",
       "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
     },
     {
-      "source": "/propositions-grands-ecrans.html",
+      "source": "/lab/propositions-grands-ecrans.html",
       "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
     },
     {
-      "source": "/test-bug.html",
+      "source": "/lab/test-bug.html",
       "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
     },
     {

@@ -6,8 +6,8 @@ import { execSync } from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const projectRoot = path.resolve(__dirname, '..');
-const reportsDir = path.join(projectRoot, 'rapports-seo');
+const projectRoot = path.resolve(__dirname, '../..');
+const reportsDir = path.join(projectRoot, 'seo/rapports-seo');
 const archivesDir = path.join(reportsDir, 'archives');
 
 for (const dir of [reportsDir, archivesDir]) {

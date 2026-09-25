@@ -1,6 +1,6 @@
 """Sert l'app en local, avec la même API qu'en ligne.
 
-Usage :  python3 serve.py [--lan] [--port 8902]
+Usage :  python3 tools/serve.py [--lan] [--port 8902]
 App :    http://localhost:8902 (8901 est pris par Horairelm)
 
 --lan : accepte aussi les autres appareils du réseau local (téléphone,
@@ -23,7 +23,8 @@ import sys
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import unquote
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "api"))
+RACINE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(RACINE, "api"))
 
 # Le serveur local montre toutes les écoles, y compris celles en test
 # (UCLouvain) : sur Vercel, sans EZH_UCL, elles restent invisibles.
@@ -198,7 +199,7 @@ class Handler(SimpleHTTPRequestHandler):
 
     def send_error(self, code, message=None, explain=None):
         # Comme Vercel : une adresse inconnue reçoit la page 404 du site.
-        page = os.path.join(os.path.dirname(os.path.abspath(__file__)), "404.html")
+        page = os.path.join(RACINE, "404.html")
         if code != 404 or not os.path.isfile(page):
             return super().send_error(code, message, explain)
         with open(page, "rb") as f:
@@ -266,7 +267,7 @@ def main(argv):
         except (IndexError, ValueError):
             sys.exit("--port attend un numéro, ex. --port 8912.")
     Handler.LAN = lan
-    os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    os.chdir(RACINE)
     charger_env_local()
     try:
         srv = Serveur(("::", port), Handler)
