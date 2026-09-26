@@ -1031,11 +1031,21 @@ try {
   }
   .day > button {
     width: 100%; border: none; background: none; font: inherit; color: inherit;
-    display: flex; align-items: center; gap: 12px; text-align: left;
-    padding: 14px 14px; min-height: 62px; cursor: pointer; border-radius: 16px;
+    position: relative;
+    display: flex; align-items: center; gap: 8px; text-align: left;
+    /* Symétrie exacte sans chevron : le point « aujourd'hui » est en
+       absolu (il ne mange plus d'espace à gauche), les étiquettes sont à
+       10px des deux bords comme le bloc de détail en dessous, le texte
+       à 35px (10 + 17 + 8) de chaque côté. */
+    padding: 12px 10px 12px 10px; min-height: 62px; cursor: pointer; border-radius: 16px;
   }
   .day > button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-  .dot { width: 7px; height: 7px; border-radius: 50%; background: transparent; flex: none; }
+  /* Point du jour : hors flux (centré dans le padding gauche), pour ne
+     pas décaler le nom du jour ni casser la symétrie. */
+  .dot {
+    position: absolute; left: 2px; top: 50%; transform: translateY(-50%);
+    width: 7px; height: 7px; border-radius: 50%; background: transparent; flex: none;
+  }
   .day.today .dot { background: var(--accent); }
   .dname { flex: none; min-width: 112px; }
   .dname strong { display: block; font-size: 1.02rem; font-weight: 600; letter-spacing: -.01em; }
@@ -1051,11 +1061,13 @@ try {
     color: var(--accent); font-weight: 650;
     max-width: 46%; overflow: hidden; text-overflow: ellipsis;
   }
-  /* Étiquettes verticales d'échéances du jour (devoir / examen) : alignées
-     à droite, largeur réservée pour aligner les heures sur tous les jours. */
-  .day-echs {
-    flex: none; width: 38px; display: flex; justify-content: flex-end;
-    align-items: center; gap: 4px; align-self: center;
+  /* Piliers d'échéances du jour : examen à gauche, devoir à droite.
+     Un slot fixe de chaque côté (17px) : largeur toujours réservée pour
+     aligner les heures sur tous les jours, slot vide = 17×0 (ne force
+     pas la hauteur). */
+  .day-ech-slot {
+    flex: none; width: 17px; display: flex; justify-content: center;
+    align-items: center; align-self: center; min-height: 0;
   }
   .day-ech {
     flex: none; width: 17px; height: 46px;
@@ -1129,6 +1141,11 @@ try {
     line-height: 1.25;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
+  /* Cours déroulé : le titre s'étale sur plusieurs lignes (fini l'ellipse). */
+  li.c.open .cbtn .m {
+    white-space: normal; overflow: visible; text-overflow: clip;
+    overflow-wrap: break-word;
+  }
   /* Ligne de la salle sous le titre : toujours en place (repliée comme dépliée)
      pour que la hauteur de la ligne ne saute jamais. Repliée, elle n'affiche
      que le lieu. Dépliée, le libellé « Salle : » glisse en douceur à sa gauche
@@ -1174,7 +1191,7 @@ try {
   }
   .ebadge {
     width: 19px; height: 19px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
+    display: grid; place-items: center;
     font-size: .62rem; font-weight: 750; line-height: 1; text-align: center;
     color: var(--c, var(--accent));
     background: color-mix(in srgb, var(--c, var(--accent)) 12%, var(--surface));
@@ -1182,7 +1199,9 @@ try {
   }
   .ebadge > span {
     display: block;
-    transform: translateY(1px);
+    line-height: 1;
+    letter-spacing: 0;
+    transform: translateY(.06em);
   }
   li.c.open .marques {
     opacity: 0; pointer-events: none; visibility: hidden;
@@ -8860,14 +8879,15 @@ try {
     });
     return { devoir: devoir, examen: examen, total: liste.length };
   }
-  function tagEcheancesJour(jour, listeCours) {
+  function slotsEcheancesJour(jour, listeCours) {
     var r = resumeEcheancesJour(jour, listeCours);
-    var tags = "";
-    if (r) {
-      if (r.devoir) tags += '<span class="day-ech devoir">Devoir</span>';
-      if (r.examen) tags += '<span class="day-ech examen">Examen</span>';
-    }
-    return '<span class="day-echs">' + tags + '</span>';
+    var g = (r && r.examen)
+      ? '<span class="day-ech-slot"><span class="day-ech examen">Examen</span></span>'
+      : '<span class="day-ech-slot" aria-hidden="true"></span>';
+    var d = (r && r.devoir)
+      ? '<span class="day-ech-slot"><span class="day-ech devoir">Devoir</span></span>'
+      : '<span class="day-ech-slot" aria-hidden="true"></span>';
+    return { gauche: g, droite: d };
   }
 
   /* Pastilles D / E d'un cours : une par type d'échéance en attente
@@ -9046,12 +9066,13 @@ try {
         : (estFerie(sem, j)
             ? '<span class="dsum free ferie" title="' + txt(nomFerie(sem, j)) + '">' + txt(nomFerie(sem, j)) + "</span>"
             : '<span class="dsum free">Libre</span>');
+      var ech = slotsEcheancesJour(j, liste);
       html += '<li class="day' + (estAuj ? " today" : "") + (joursOuverts[j] ? " open" : "") + '">' +
         '<button data-jour="' + j + '" aria-expanded="' + (!!joursOuverts[j]) + '">' +
-        '<span class="dot" aria-hidden="true"></span>' +
+        '<span class="dot" aria-hidden="true"></span>' + ech.gauche +
         '<span class="dname"><strong>' + JOURS[j] + "</strong>" +
         '<span class="ddate">' + fmtDate(date) + "</span></span>" +
-        resume + tagEcheancesJour(j, liste) + '</button>' +
+        resume + ech.droite + '</button>' +
         '<div class="detail">' +
         (liste.length ? detailJour(liste, j) : detailJourVide(j)) +
         "</div></li>";
