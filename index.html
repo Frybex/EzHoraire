@@ -2189,11 +2189,13 @@ try {
   .avatar { display: grid; place-items: center; }
 
   /* Contenu SEO et présentation sur la vue d'accueil (v-compte) */
+  /* Masqué aux visiteurs (page de connexion épurée) mais gardé dans le
+     DOM pour que Google l'indexe. Pour réafficher : supprimer ce display. */
   .compte-seo {
+    display: none;
     margin-top: 48px;
     padding-top: 48px;
     border-top: 1px solid var(--line);
-    display: flex;
     flex-direction: column;
     gap: 48px;
   }
@@ -2425,6 +2427,25 @@ try {
     font-size: .82rem;
     text-align: center;
   }
+  /* Pied minimal visible sous la connexion (le gros bloc SEO est caché). */
+  .compte-pied-simple {
+    margin-top: 40px;
+    padding: 24px 8px 8px;
+    border-top: 1px solid var(--line);
+    text-align: center;
+    color: var(--muted);
+    font-size: .85rem;
+  }
+  .compte-pied-simple nav {
+    display: flex; flex-wrap: wrap; justify-content: center; align-items: center;
+    gap: 8px 10px; margin-bottom: 10px;
+  }
+  .compte-pied-simple a, .compte-pied-simple .lien-pied-simple {
+    color: var(--muted); text-decoration: none; font-size: .85rem;
+    background: none; border: none; padding: 0; cursor: pointer; font: inherit;
+  }
+  .compte-pied-simple a:hover, .compte-pied-simple .lien-pied-simple:hover { color: var(--ink); }
+  .compte-pied-simple p { margin: 0; font-size: .8rem; }
 
   /* ================= Ordinateur =================
      Une vraie app de bureau : barre fixe en haut, semaine en grille
@@ -3595,6 +3616,19 @@ try {
         </div>
       </footer>
     </div>
+    <!-- Pied minimal visible : le bloc SEO ci-dessus est masqué en CSS. -->
+    <footer class="compte-pied-simple">
+      <nav aria-label="Liens utiles">
+        <a href="/aide/">Aide & FAQ</a>
+        <span aria-hidden="true">·</span>
+        <button type="button" class="lien-pied-simple" data-bug>Signaler une idée ou un bug</button>
+        <span aria-hidden="true">·</span>
+        <a href="/confidentialite.html">Confidentialité</a>
+        <span aria-hidden="true">·</span>
+        <a href="/cgu.html">CGU</a>
+      </nav>
+      <p>© 2026 EzHoraire</p>
+    </footer>
   </section>
 
   <!-- 0b. Identité (demandée une fois, après la connexion) -->
