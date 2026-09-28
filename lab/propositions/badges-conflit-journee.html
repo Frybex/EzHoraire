@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>EzHoraire — Journée en conflit : propositions</title>
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --ink: #17191d;
+    --muted: #626977;
+    --line: #e4e7ec;
+    --accent: #2456e0;
+    --accent-soft: rgba(36, 86, 224, .09);
+    --attention: #b26a00;
+    --conflit: #d42a3c;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #101216;
+      --surface: #171a20;
+      --ink: #f0f3f7;
+      --muted: #98a1b1;
+      --line: #262b34;
+      --accent: #8ba6ff;
+      --accent-soft: rgba(139, 166, 255, .13);
+      --attention: #f0b866;
+      --conflit: #ff6b7a;
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    --relief-haut: color-mix(in srgb, var(--bg), #fff 78%);
+    --relief-bas: color-mix(in srgb, var(--bg), #fff 44%);
+    --reflet: rgba(255, 255, 255, .9);
+    --ombre-btn: 0 1px 2px rgba(23, 32, 68, .06), 0 2px 8px -4px rgba(23, 32, 68, .08);
+    --creux: color-mix(in srgb, var(--bg), #fff 60%);
+    --creux-ombre: rgba(23, 32, 68, .07);
+    margin: 0; color: var(--ink); background: var(--bg);
+    font-family: var(--font); font-size: 17px; line-height: 1.45;
+  }
+  @media (prefers-color-scheme: dark) {
+    body {
+      --relief-haut: color-mix(in srgb, var(--bg), #fff 7%);
+      --relief-bas: color-mix(in srgb, var(--bg), #fff 2.5%);
+      --reflet: rgba(255, 255, 255, .06);
+      --ombre-btn: 0 1px 2px rgba(0, 0, 0, .4), 0 4px 12px -6px rgba(0, 0, 0, .6);
+      --creux: color-mix(in srgb, var(--bg), #000 26%);
+      --creux-ombre: rgba(0, 0, 0, .4);
+    }
+  }
+  .page { max-width: 420px; margin: 0 auto; padding: 26px 16px 60px; }
+  h1 { font-size: 1.3rem; letter-spacing: -.02em; margin: 0 0 6px; }
+  .intro { color: var(--muted); font-size: .88rem; margin: 0 0 26px; line-height: 1.55; }
+  .prop { margin: 0 0 30px; }
+  .prop h2 { font-size: .95rem; margin: 0 0 5px; letter-spacing: -.01em; display: flex; align-items: baseline; gap: 8px; }
+  .prop h2 b {
+    flex: none; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%;
+    font-size: .78rem; background: var(--ink); color: var(--bg);
+  }
+  .avis { margin: 0 0 12px 30px; color: var(--muted); font-size: .82rem; line-height: 1.5; }
+  .avis b { color: var(--ink); font-weight: 600; }
+
+  /* ---- Cartes de jour : copie de index.html ---- */
+  .days { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .day {
+    border-radius: 16px;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  /* Aujourd'hui : le contour du thème, seul repère (plus de rond à gauche). */
+  .day.today {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 50%, transparent),
+      inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  .day.today .dname strong { font-weight: 700; }
+  .day > button {
+    width: 100%; border: none; background: none; font: inherit; color: inherit;
+    position: relative; display: flex; align-items: center; gap: 8px; text-align: left;
+    padding: 12px 10px; min-height: 62px; border-radius: 16px;
+  }
+  .dname { flex: none; min-width: 112px; }
+  .dname strong { display: block; font-size: 1.02rem; font-weight: 600; letter-spacing: -.01em; }
+  .ddate { font-size: .85rem; color: var(--muted); }
+  .dsum {
+    margin-left: auto; font-size: .96rem; color: var(--muted);
+    font-variant-numeric: tabular-nums; white-space: nowrap; letter-spacing: -.01em;
+  }
+  .dsum.busy { color: var(--ink); font-weight: 600; }
+  .day-ech-slot {
+    flex: none; width: 17px; display: flex; justify-content: center;
+    align-items: center; align-self: center; min-height: 0;
+  }
+  .day-ech {
+    flex: none; width: 17px; height: 46px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 750; text-transform: uppercase;
+    font-size: .53rem; letter-spacing: .07em; line-height: 1; text-align: center;
+    border-radius: 6px; writing-mode: vertical-rl; transform: rotate(180deg);
+  }
+  .day-ech.devoir { color: var(--accent); background: var(--accent-soft); }
+  .day-ech.examen {
+    color: var(--attention);
+    background: color-mix(in srgb, var(--attention) 14%, var(--surface));
+  }
+
+  /* ---- Détail du jour ouvert : copie de index.html ---- */
+  .detail { display: grid; grid-template-rows: 0fr; opacity: 0; }
+  .day.open .detail { grid-template-rows: 1fr; opacity: 1; }
+  .detail > div { overflow: hidden; }
+  .detail .box {
+    margin: 0 10px 10px; padding: 14px 14px 14px 23px; border-radius: 13px;
+    background: var(--creux);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre);
+  }
+  .detail ol { list-style: none; margin: 0; padding: 0; }
+  .cbtn {
+    width: 100%; border: none; background: none; font: inherit; color: inherit;
+    display: flex; gap: 10px; align-items: stretch; text-align: left;
+    padding: 8px 0; cursor: pointer;
+  }
+  .hcol {
+    flex: none; min-width: 52px; display: flex; flex-direction: column;
+    align-items: flex-start; align-self: stretch; justify-content: space-between;
+  }
+  .cbtn .h {
+    flex: none; font-variant-numeric: tabular-nums; color: var(--muted);
+    font-size: .82rem; line-height: 1.25; white-space: nowrap;
+  }
+  .cpoint { flex: none; width: 8px; height: 8px; border-radius: 50%; align-self: flex-start; margin-top: 6px; }
+  .ctxt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .ctxt .m {
+    font-weight: 550; font-size: .96rem; line-height: 1.25; min-width: 0;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .cinfo-salle { display: flex; align-items: baseline; min-width: 0; padding: 1px 0; font-size: .86rem; line-height: 1.35; }
+  .cinfo-salle .s {
+    flex: 1; min-width: 0; font-size: .86rem; font-weight: 450; line-height: 1.35;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted);
+  }
+  /* Étiquette « Conflit » des lignes de cours : teinte conflit, pas l'ambre des examens. */
+  .choc-tag {
+    flex: none; align-self: flex-start; margin: 2px 0 0 6px;
+    font-size: .64rem; font-weight: 750; text-transform: uppercase;
+    letter-spacing: .02em; border-radius: 6px; padding: 2.5px 6px 0; height: 18px;
+    display: inline-flex; align-items: center; justify-content: center;
+    line-height: 1; text-align: center; box-sizing: border-box;
+    color: var(--conflit);
+    background: color-mix(in srgb, var(--conflit) 12%, var(--surface));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--conflit) 30%, transparent);
+  }
+  .marques { flex: none; display: flex; flex-direction: column; gap: 4px; align-self: center; }
+  .ebadge {
+    width: 19px; height: 19px; border-radius: 50%; display: grid; place-items: center;
+    font-size: .62rem; font-weight: 750; line-height: 1; text-align: center;
+    color: var(--c, var(--accent));
+    background: color-mix(in srgb, var(--c, var(--accent)) 12%, var(--surface));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c, var(--accent)) 32%, transparent);
+  }
+  .jour-ech { display: flex; justify-content: flex-end; padding: 0 12px 12px; }
+  .jour-ech-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    margin: 1px 0 0; padding: 7px 10px 7px 9px;
+    border: none; border-radius: 11px; font: inherit; cursor: pointer;
+    font-size: .76rem; font-weight: 650; letter-spacing: -.005em; color: var(--muted);
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  .jour-ech-btn svg { flex: none; color: var(--muted); }
+
+  /* Textes du jour en alerte, communs à toutes les pistes. */
+  .conflit .dname strong,
+  .conflit .ddate,
+  .conflit .dsum { color: var(--conflit); }
+  .conflit .ddate { font-weight: 600; }
+
+  /* ---- 1. Rayures (celle qui est gardée) ---- */
+  /* Rayures et textes, sans contour : le contour de la carte reste réservé
+     à « aujourd'hui ». */
+  .b1 .day.conflit,
+  .couleurs .day.conflit {
+    background:
+      repeating-linear-gradient(-45deg,
+        color-mix(in srgb, var(--conflit) 6%, transparent) 0 5px,
+        transparent 5px 11px),
+      linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+  }
+
+  /* ---- 2. Textes seuls ---- */
+  /* Rien d'autre que les mots. */
+
+  /* ---- 3. Fond uni teinté ---- */
+  .b3 .day.conflit {
+    background: linear-gradient(180deg,
+      color-mix(in srgb, var(--conflit) 7%, var(--surface)),
+      color-mix(in srgb, var(--conflit) 3%, var(--surface)));
+  }
+
+  /* ---- 4. Carte gravée ---- */
+  .b4 .day.conflit {
+    background: linear-gradient(180deg,
+      color-mix(in srgb, var(--conflit) 10%, var(--creux)),
+      color-mix(in srgb, var(--conflit) 4%, var(--creux)));
+    box-shadow: inset 0 0 0 1px var(--line),
+      inset 0 3px 7px -2px color-mix(in srgb, var(--conflit) 40%, var(--creux-ombre)),
+      inset 0 -1px 0 var(--reflet);
+  }
+
+  /* ---- 5. Ombre portée ---- */
+  .b5 .day.conflit {
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet),
+      0 10px 22px -12px color-mix(in srgb, var(--conflit) 65%, transparent);
+  }
+
+  /* ---- Couleurs du conflit : quatre teintes, examen ambre à côté ---- */
+  .couleurs { margin: 0 0 30px; }
+  .couleurs h2 { font-size: .95rem; margin: 0 0 5px; letter-spacing: -.01em; }
+  .teinte {
+    margin: 0 0 5px; font-size: .74rem; letter-spacing: .02em; text-transform: uppercase;
+    font-weight: 650; color: var(--muted);
+  }
+  .teinte b { color: var(--ink); }
+  .essai { margin: 0 0 22px; }
+
+  body.solo .entete { display: none; }
+  body.solo .prop { margin-bottom: 0; }
+  body.solo .couleurs { display: none; }
+  body.couleurs-seules .prop { display: none; }
+  body.couleurs-seules .couleurs { display: block; margin-bottom: 0; }
+  body[data-seul="1"] .prop:not(.b1),
+  body[data-seul="2"] .prop:not(.b2),
+  body[data-seul="3"] .prop:not(.b3),
+  body[data-seul="4"] .prop:not(.b4),
+  body[data-seul="5"] .prop:not(.b5) { display: none; }
+  /* ?p=12 : uniquement rayures (1) et textes seuls (2). */
+  body[data-seul="12"] .prop:not(.b1):not(.b2) { display: none; }
+  body[data-seul="12"] .prop { margin-bottom: 30px; }
+</style>
+</head>
+<body>
+<main class="page">
+  <div class="entete">
+    <h1>Journée en conflit — propositions</h1>
+    <p class="intro">Lundi est aujourd'hui : le contour bleu du thème le cible, sans rond à
+      gauche. Les traitements de conflit n'ont donc plus aucun contour — rayures, texte,
+      fond, relief ou ombre. La teinte du conflit passe au rouge en attendant ton choix
+      (quatre alternatives plus bas).</p>
+  </div>
+
+  <section class="prop b1">
+    <h2><b>1</b>Rayures (gardée)</h2>
+    <p class="avis">Fond teinté pâle <b>à fines hachures</b> et textes colorés,
+      sans contour. Aujourd'hui, le liseré bleu du thème reste seul au bord.</p>
+    <ul class="days">
+      <li class="day today conflit open">
+        <button type="button" aria-expanded="true">
+          <span class="day-ech-slot"><span class="day-ech examen">Examen</span></span>
+          <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+          <span class="dsum busy">08h15 → 12h30</span>
+          <span class="day-ech-slot"><span class="day-ech devoir">Devoir</span></span>
+        </button>
+        <div class="detail"><div>
+          <div class="box"><ol>
+            <li class="c">
+              <button class="cbtn inactif">
+                <span class="hcol"><span class="h">08h15</span><span class="h">10h15</span></span>
+                <span class="cpoint" style="background:#3f9e5e"></span>
+                <span class="ctxt"><span class="m">Programmation orientée objet</span>
+                  <span class="cinfo-salle"><span class="s">1/36A</span></span></span>
+                <span class="choc-tag">Conflit</span>
+              </button>
+            </li>
+            <li class="c">
+              <button class="cbtn inactif">
+                <span class="hcol"><span class="h">08h15</span><span class="h">12h30</span></span>
+                <span class="cpoint" style="background:#c08a2e"></span>
+                <span class="ctxt"><span class="m">Comptabilité générale</span>
+                  <span class="cinfo-salle"><span class="s">1/10B</span></span></span>
+                <span class="choc-tag">Conflit</span>
+              </button>
+            </li>
+            <li class="c">
+              <button class="cbtn inactif">
+                <span class="hcol"><span class="h">09h00</span><span class="h">12h00</span></span>
+                <span class="cpoint" style="background:#7a4fd1"></span>
+                <span class="ctxt"><span class="m">Droit civil</span></span>
+                <span class="choc-tag">Conflit</span>
+                <span class="marques"><span class="ebadge"><span>D</span></span></span>
+              </button>
+            </li>
+            <li class="c">
+              <button class="cbtn inactif">
+                <span class="hcol"><span class="h">10h30</span><span class="h">12h30</span></span>
+                <span class="cpoint" style="background:#2456e0"></span>
+                <span class="ctxt"><span class="m">Analyse</span>
+                  <span class="cinfo-salle"><span class="s">1/14</span></span></span>
+                <span class="choc-tag">Conflit</span>
+              </button>
+            </li>
+          </ol></div>
+          <div class="jour-ech">
+            <button type="button" class="jour-ech-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Échéance</button>
+          </div>
+        </div></div>
+      </li>
+      <li class="day">
+        <button type="button">
+          <span class="day-ech-slot"></span>
+          <span class="dname"><strong>Jeudi</strong><span class="ddate">1 oct.</span></span>
+          <span class="dsum busy">09h00 → 12h00</span>
+          <span class="day-ech-slot"></span>
+        </button>
+      </li>
+    </ul>
+  </section>
+
+  <section class="prop b2">
+    <h2><b>2</b>Textes seuls</h2>
+    <p class="avis">Sans rayures ni fond : <b>tous les mots du jour</b> passent en
+      couleur de conflit — le nom, la date et l'heure. Seul le contour bleu
+      d'aujourd'hui s'ajoute.</p>
+    <ul class="days">
+      <li class="day today conflit open">
+        <button type="button" aria-expanded="true">
+          <span class="day-ech-slot"><span class="day-ech examen">Examen</span></span>
+          <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+          <span class="dsum busy">08h15 → 12h30</span>
+          <span class="day-ech-slot"><span class="day-ech devoir">Devoir</span></span>
+        </button>
+        <div class="detail"><div>
+          <div class="box"><ol>
+            <li class="c">
+              <button class="cbtn inactif">
+                <span class="hcol"><span class="h">08h15</span><span class="h">10h15</span></span>
+                <span class="cpoint" style="background:#3f9e5e"></span>
+                <span class="ctxt"><span class="m">Programmation orientée objet</span>
+                  <span class="cinfo-salle"><span class="s">1/36A</span></span></span>
+                <span class="choc-tag">Conflit</span>
+              </button>
+            </li>
+            <li class="c">
+              <button class="cbtn inactif">
+                <span class="hcol"><span class="h">08h15</span><span class="h">12h30</span></span>
+                <span class="cpoint" style="background:#c08a2e"></span>
+                <span class="ctxt"><span class="m">Comptabilité générale</span>
+                  <span class="cinfo-salle"><span class="s">1/10B</span></span></span>
+                <span class="choc-tag">Conflit</span>
+              </button>
+            </li>
+            <li class="c">
+              <button class="cbtn inactif">
+                <span class="hcol"><span class="h">09h00</span><span class="h">12h00</span></span>
+                <span class="cpoint" style="background:#7a4fd1"></span>
+                <span class="ctxt"><span class="m">Droit civil</span></span>
+                <span class="choc-tag">Conflit</span>
+                <span class="marques"><span class="ebadge"><span>D</span></span></span>
+              </button>
+            </li>
+            <li class="c">
+              <button class="cbtn inactif">
+                <span class="hcol"><span class="h">10h30</span><span class="h">12h30</span></span>
+                <span class="cpoint" style="background:#2456e0"></span>
+                <span class="ctxt"><span class="m">Analyse</span>
+                  <span class="cinfo-salle"><span class="s">1/14</span></span></span>
+                <span class="choc-tag">Conflit</span>
+              </button>
+            </li>
+          </ol></div>
+          <div class="jour-ech">
+            <button type="button" class="jour-ech-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Échéance</button>
+          </div>
+        </div></div>
+      </li>
+      <li class="day">
+        <button type="button">
+          <span class="day-ech-slot"></span>
+          <span class="dname"><strong>Jeudi</strong><span class="ddate">1 oct.</span></span>
+          <span class="dsum busy">09h00 → 12h00</span>
+          <span class="day-ech-slot"></span>
+        </button>
+      </li>
+    </ul>
+  </section>
+
+  <section class="prop b3">
+    <h2><b>3</b>Fond uni teinté</h2>
+    <p class="avis">La carte s'imbibe de la teinte du conflit, <b>sans motif ni
+      contour</b> : teinte pleine très pâle. Les textes suivent la même teinte.</p>
+    <ul class="days">
+      <li class="day conflit">
+        <button type="button">
+          <span class="day-ech-slot"><span class="day-ech examen">Examen</span></span>
+          <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+          <span class="dsum busy">08h15 → 12h30</span>
+          <span class="day-ech-slot"><span class="day-ech devoir">Devoir</span></span>
+        </button>
+      </li>
+      <li class="day">
+        <button type="button">
+          <span class="day-ech-slot"></span>
+          <span class="dname"><strong>Jeudi</strong><span class="ddate">1 oct.</span></span>
+          <span class="dsum busy">09h00 → 12h00</span>
+          <span class="day-ech-slot"></span>
+        </button>
+      </li>
+    </ul>
+  </section>
+
+  <section class="prop b4">
+    <h2><b>4</b>Carte gravée</h2>
+    <p class="avis">Relief inversé : la journée semble <b>enfoncée</b> dans la page
+      (ombre intérieure, teinte sourde), sans contour là non plus.</p>
+    <ul class="days">
+      <li class="day conflit">
+        <button type="button">
+          <span class="day-ech-slot"><span class="day-ech examen">Examen</span></span>
+          <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+          <span class="dsum busy">08h15 → 12h30</span>
+          <span class="day-ech-slot"><span class="day-ech devoir">Devoir</span></span>
+        </button>
+      </li>
+      <li class="day">
+        <button type="button">
+          <span class="day-ech-slot"></span>
+          <span class="dname"><strong>Jeudi</strong><span class="ddate">1 oct.</span></span>
+          <span class="dsum busy">09h00 → 12h00</span>
+          <span class="day-ech-slot"></span>
+        </button>
+      </li>
+    </ul>
+  </section>
+
+  <section class="prop b5">
+    <h2><b>5</b>Ombre portée</h2>
+    <p class="avis">La carte projette une <b>ombre colorée</b> sous elle, sans anneau
+      autour : aucun contour ne vient concurrencer le ciblage d'aujourd'hui.</p>
+    <ul class="days">
+      <li class="day today conflit open">
+        <button type="button" aria-expanded="true">
+          <span class="day-ech-slot"><span class="day-ech examen">Examen</span></span>
+          <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+          <span class="dsum busy">08h15 → 12h30</span>
+          <span class="day-ech-slot"><span class="day-ech devoir">Devoir</span></span>
+        </button>
+        <div class="detail"><div>
+          <div class="box"><ol>
+            <li class="c">
+              <button class="cbtn inactif">
+                <span class="hcol"><span class="h">08h15</span><span class="h">10h15</span></span>
+                <span class="cpoint" style="background:#3f9e5e"></span>
+                <span class="ctxt"><span class="m">Programmation orientée objet</span>
+                  <span class="cinfo-salle"><span class="s">1/36A</span></span></span>
+                <span class="choc-tag">Conflit</span>
+              </button>
+            </li>
+            <li class="c">
+              <button class="cbtn inactif">
+                <span class="hcol"><span class="h">08h15</span><span class="h">12h30</span></span>
+                <span class="cpoint" style="background:#c08a2e"></span>
+                <span class="ctxt"><span class="m">Comptabilité générale</span>
+                  <span class="cinfo-salle"><span class="s">1/10B</span></span></span>
+                <span class="choc-tag">Conflit</span>
+              </button>
+            </li>
+            <li class="c">
+              <button class="cbtn inactif">
+                <span class="hcol"><span class="h">09h00</span><span class="h">12h00</span></span>
+                <span class="cpoint" style="background:#7a4fd1"></span>
+                <span class="ctxt"><span class="m">Droit civil</span></span>
+                <span class="choc-tag">Conflit</span>
+                <span class="marques"><span class="ebadge"><span>D</span></span></span>
+              </button>
+            </li>
+            <li class="c">
+              <button class="cbtn inactif">
+                <span class="hcol"><span class="h">10h30</span><span class="h">12h30</span></span>
+                <span class="cpoint" style="background:#2456e0"></span>
+                <span class="ctxt"><span class="m">Analyse</span>
+                  <span class="cinfo-salle"><span class="s">1/14</span></span></span>
+                <span class="choc-tag">Conflit</span>
+              </button>
+            </li>
+          </ol></div>
+          <div class="jour-ech">
+            <button type="button" class="jour-ech-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Échéance</button>
+          </div>
+        </div></div>
+      </li>
+      <li class="day">
+        <button type="button">
+          <span class="day-ech-slot"></span>
+          <span class="dname"><strong>Jeudi</strong><span class="ddate">1 oct.</span></span>
+          <span class="dsum busy">09h00 → 12h00</span>
+          <span class="day-ech-slot"></span>
+        </button>
+      </li>
+    </ul>
+  </section>
+
+  <section class="couleurs">
+    <h2>Quatre teintes pour le conflit</h2>
+    <p class="avis">Même carte que la 1 (rayures, aujourd'hui, examen ambre et devoir
+      bleu) dans quatre couleurs. L'examen garde l'ambre : à toi de dire laquelle
+      tranche le mieux.</p>
+
+    <div class="essai" style="--conflit:#d42a3c">
+      <p class="teinte"><b>Rouge</b> — l'alerte franche</p>
+      <ul class="days">
+        <li class="day today conflit">
+          <button type="button">
+            <span class="day-ech-slot"><span class="day-ech examen">Examen</span></span>
+            <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+            <span class="dsum busy">08h15 → 12h30</span>
+            <span class="day-ech-slot"><span class="day-ech devoir">Devoir</span></span>
+          </button>
+        </li>
+      </ul>
+    </div>
+
+    <div class="essai" style="--conflit:#b52e73">
+      <p class="teinte"><b>Framboise</b> — chaude, mais loin de l'ambre</p>
+      <ul class="days">
+        <li class="day today conflit">
+          <button type="button">
+            <span class="day-ech-slot"><span class="day-ech examen">Examen</span></span>
+            <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+            <span class="dsum busy">08h15 → 12h30</span>
+            <span class="day-ech-slot"><span class="day-ech devoir">Devoir</span></span>
+          </button>
+        </li>
+      </ul>
+    </div>
+
+    <div class="essai" style="--conflit:#c24812">
+      <p class="teinte"><b>Vermillon</b> — la plus proche de l'examen, à juger</p>
+      <ul class="days">
+        <li class="day today conflit">
+          <button type="button">
+            <span class="day-ech-slot"><span class="day-ech examen">Examen</span></span>
+            <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+            <span class="dsum busy">08h15 → 12h30</span>
+            <span class="day-ech-slot"><span class="day-ech devoir">Devoir</span></span>
+          </button>
+        </li>
+      </ul>
+    </div>
+
+    <div class="essai" style="--conflit:#5a3fd6">
+      <p class="teinte"><b>Violet</b> — froide, très distincte du reste</p>
+      <ul class="days">
+        <li class="day today conflit">
+          <button type="button">
+            <span class="day-ech-slot"><span class="day-ech examen">Examen</span></span>
+            <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+            <span class="dsum busy">08h15 → 12h30</span>
+            <span class="day-ech-slot"><span class="day-ech devoir">Devoir</span></span>
+          </button>
+        </li>
+      </ul>
+    </div>
+  </section>
+</main>
+<script>
+  var p = (/[?&]p=(12|[1-5])(?:&|$)/.exec(location.search) || [])[1];
+  var k = /[?&]k=1(?:&|$)/.test(location.search);
+  if (p) {
+    document.body.classList.add("solo");
+    document.body.setAttribute("data-seul", p);
+  } else if (k) {
+    document.body.classList.add("solo", "couleurs-seules");
+  }
+</script>
+</body>
+</html>

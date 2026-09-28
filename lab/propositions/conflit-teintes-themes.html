@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>EzHoraire — Teintes de conflit adaptées au thème</title>
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --ink: #17191d;
+    --muted: #626977;
+    --line: #e4e7ec;
+    --accent: #2456e0;
+    --accent-soft: rgba(36, 86, 224, .09);
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #101216;
+      --surface: #171a20;
+      --ink: #f0f3f7;
+      --muted: #98a1b1;
+      --line: #262b34;
+      --accent: #8ba6ff;
+      --accent-soft: rgba(139, 166, 255, .13);
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    --relief-haut: color-mix(in srgb, var(--bg), #fff 78%);
+    --relief-bas: color-mix(in srgb, var(--bg), #fff 44%);
+    --reflet: rgba(255, 255, 255, .9);
+    --ombre-btn: 0 1px 2px rgba(23, 32, 68, .06), 0 2px 8px -4px rgba(23, 32, 68, .08);
+    margin: 0; color: var(--ink); background: var(--bg);
+    font-family: var(--font); font-size: 17px; line-height: 1.45;
+  }
+  @media (prefers-color-scheme: dark) {
+    body {
+      --relief-haut: color-mix(in srgb, var(--bg), #fff 7%);
+      --relief-bas: color-mix(in srgb, var(--bg), #fff 2.5%);
+      --reflet: rgba(255, 255, 255, .06);
+      --ombre-btn: 0 1px 2px rgba(0, 0, 0, .4), 0 4px 12px -6px rgba(0, 0, 0, .6);
+    }
+  }
+  .page { max-width: 780px; margin: 0 auto; padding: 26px 16px 50px; }
+  h1 { font-size: 1.3rem; letter-spacing: -.02em; margin: 0 0 6px; }
+  .intro { color: var(--muted); font-size: .88rem; margin: 0 0 24px; line-height: 1.55; }
+
+  /* ---- Thèmes : mêmes fonds, accents et couleurs d'examen que l'app.
+     Cinq teintes candidates par thème (c1…c5), adaptées à son devoir
+     et à son examen. ---- */
+  .theme { border-radius: 18px; padding: 14px 12px 12px; margin: 0 0 24px; background: var(--bg); }
+  .theme h2 {
+    display: flex; align-items: center; gap: 8px;
+    font-size: .95rem; margin: 2px 2px 12px; letter-spacing: -.01em;
+  }
+  .pastille { width: 14px; height: 14px; border-radius: 50%; background: var(--accent); flex: none; }
+  .th-bleu { --accent: #1d4fd7; --accent-soft: rgba(29, 79, 215, .09); --bg: #eaf0fa; --examen: #a27a12;
+    --c1: #c62828; --c2: #b52e73; --c3: #7c3aed; --c4: #c24812; --c5: #790a37;
+    --relief-haut: color-mix(in srgb, var(--bg), #fff 78%); --relief-bas: color-mix(in srgb, var(--bg), #fff 44%); }
+  .th-vert { --accent: #0e8655; --accent-soft: rgba(14, 134, 85, .10); --bg: #ebf2ec; --examen: #790a37;
+    --c1: #c62828; --c2: #c24812; --c3: #a2700a; --c4: #7c3aed; --c5: #2456e0;
+    --relief-haut: color-mix(in srgb, var(--bg), #fff 78%); --relief-bas: color-mix(in srgb, var(--bg), #fff 44%); }
+  .th-rose { --accent: #d14d8a; --accent-soft: rgba(209, 77, 138, .12); --bg: #fdf1f6; --examen: #0d6a78;
+    --c1: #c62828; --c2: #c24812; --c3: #a2700a; --c4: #7c3aed; --c5: #790a37;
+    --relief-haut: color-mix(in srgb, var(--bg), #fff 78%); --relief-bas: color-mix(in srgb, var(--bg), #fff 44%); }
+  @media (prefers-color-scheme: dark) {
+    .th-bleu { --accent: #8ba6ff; --bg: #0d1322; --examen: #f1d67e;
+      --c1: #ff6b7a; --c2: #f47fb4; --c3: #a391ff; --c4: #ff9358; --c5: #d9729f; }
+    .th-vert { --accent: #4cc38a; --bg: #0c1411; --examen: #c34c85;
+      --c1: #ff6b7a; --c2: #ff9358; --c3: #f0b866; --c4: #a391ff; --c5: #8ba6ff; }
+    .th-rose { --accent: #ffa8d0; --bg: #24141d; --examen: #4ecdd8;
+      --c1: #ff6b7a; --c2: #ff9358; --c3: #f0b866; --c4: #a391ff; --c5: #d9729f; }
+    .th-bleu, .th-vert, .th-rose {
+      --relief-haut: color-mix(in srgb, var(--bg), #fff 7%);
+      --relief-bas: color-mix(in srgb, var(--bg), #fff 2.5%);
+    }
+  }
+  .c1 { --conflit: var(--c1); }
+  .c2 { --conflit: var(--c2); }
+  .c3 { --conflit: var(--c3); }
+  .c4 { --conflit: var(--c4); }
+  .c5 { --conflit: var(--c5); }
+
+  .grille { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 10px; }
+  .essai { min-width: 0; }
+  .teinte {
+    margin: 0 0 5px 2px; font-size: .74rem; letter-spacing: .02em; text-transform: uppercase;
+    font-weight: 650; color: var(--muted);
+  }
+  .teinte b { color: var(--ink); }
+
+  /* ---- Cartes de jour : copie de index.html ---- */
+  .days { list-style: none; margin: 0; padding: 0; }
+  .day {
+    border-radius: 16px;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  /* Aujourd'hui : liseré du thème, seul repère. */
+  .day.today {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 50%, transparent),
+      inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  .day > button {
+    width: 100%; border: none; background: none; font: inherit; color: inherit;
+    display: flex; align-items: center; gap: 8px; text-align: left;
+    padding: 12px 10px; min-height: 62px; border-radius: 16px;
+  }
+  .dname { flex: none; min-width: 100px; }
+  .dname strong { display: block; font-size: 1.02rem; font-weight: 600; letter-spacing: -.01em; }
+  .ddate { font-size: .85rem; color: var(--muted); }
+  .dsum {
+    margin-left: auto; font-size: .96rem; color: var(--muted);
+    font-variant-numeric: tabular-nums; white-space: nowrap; letter-spacing: -.01em;
+  }
+  .dsum.busy { color: var(--ink); font-weight: 600; }
+  .day-ech-slot {
+    flex: none; width: 17px; display: flex; justify-content: center;
+    align-items: center; align-self: center; min-height: 0;
+  }
+  .day-ech {
+    flex: none; width: 17px; height: 46px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 750; text-transform: uppercase;
+    font-size: .53rem; letter-spacing: .07em; line-height: 1; text-align: center;
+    border-radius: 6px; writing-mode: vertical-rl; transform: rotate(180deg);
+  }
+  .day-ech.devoir { color: var(--accent); background: var(--accent-soft); }
+  .day-ech.examen {
+    color: var(--examen);
+    background: color-mix(in srgb, var(--examen) 14%, var(--surface));
+  }
+
+  /* Rayures pâles + tous les mots du jour teintés, sans contour. */
+  .day.conflit {
+    background:
+      repeating-linear-gradient(-45deg,
+        color-mix(in srgb, var(--conflit) 6%, transparent) 0 5px,
+        transparent 5px 11px),
+      linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+  }
+  .conflit .dname strong,
+  .conflit .ddate,
+  .conflit .dsum { color: var(--conflit); }
+  .conflit .ddate { font-weight: 600; }
+</style>
+</head>
+<body>
+<main class="page">
+  <h1>Teintes de conflit adaptées au thème</h1>
+  <p class="intro">Fini le rouge imposé : cinq teintes candidates par thème, chacune
+    distincte du devoir et de l'examen du thème. Même carte que la piste retenue
+    (rayures et textes, journée d'aujourd'hui cerclée par le thème).</p>
+
+  <section class="theme th-bleu">
+    <h2><span class="pastille"></span>Thème Bleu</h2>
+    <div class="grille">
+
+      <div class="essai c1">
+        <p class="teinte"><b>Rouge</b> — l'alerte franche</p>
+        <ul class="days"><li class="day today conflit"><button type="button">
+          <span class="day-ech-slot"><span class="day-ech examen">Examen</span></span>
+          <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+          <span class="dsum busy">08h15 → 12h30</span>
+          <span class="day-ech-slot"><span class="day-ech devoir">Devoir</span></span>
+        </button></li></ul>
+      </div>
+
+      <div class="essai c2">
+        <p class="teinte"><b>Framboise</b> — baie chaude</p>
+        <ul class="days"><li class="day today conflit"><button type="button">
+          <span class="day-ech-slot"><span class="day-ech examen">Examen</span></span>
+          <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+          <span class="dsum busy">08h15 → 12h30</span>
+          <span class="day-ech-slot"><span class="day-ech devoir">Devoir</span></span>
+        </button></li></ul>
+      </div>
+
+      <div class="essai c3">
+        <p class="teinte"><b>Violet</b> — froide, tranchée du bleu</p>
+        <ul class="days"><li class="day today conflit"><button type="button">
+          <span class="day-ech-slot"><span class="day-ech examen">Examen</span></span>
+          <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+          <span class="dsum busy">08h15 → 12h30</span>
+          <span class="day-ech-slot"><span class="day-ech devoir">Devoir</span></span>
+        </button></li></ul>
+      </div>
+
+      <div class="essai c4">
+        <p class="teinte"><b>Vermillon</b> — proche de l'or de l'examen</p>
+        <ul class="days"><li class="day today conflit"><button type="button">
+          <span class="day-ech-slot"><span class="day-ech examen">Examen</span></span>
+          <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+          <span class="dsum busy">08h15 → 12h30</span>
+          <span class="day-ech-slot"><span class="day-ech devoir">Devoir</span></span>
+        </button></li></ul>
+      </div>
+
+      <div class="essai c5">
+        <p class="teinte"><b>Prune</b> — vin très profond</p>
+        <ul class="days"><li class="day today conflit"><button type="button">
+          <span class="day-ech-slot"><span class="day-ech examen">Examen</span></span>
+          <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+          <span class="dsum busy">08h15 → 12h30</span>
+          <span class="day-ech-slot"><span class="day-ech devoir">Devoir</span></span>
+        </button></li></ul>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="theme th-vert">
+    <h2><span class="pastille"></span>Thème Vert</h2>
+    <div class="grille">
+
+      <div class="essai c1">
+        <p class="teinte"><b>Rouge</b> — plus vive que le prune</p>
+        <ul class="days"><li class="day today conflit"><button type="button">
+          <span class="day-ech-slot"><span class="day-ech examen">Examen</span></span>
+          <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+          <span class="dsum busy">08h15 → 12h30</span>
+          <span class="day-ech-slot"><span class="day-ech devoir">Devoir</span></span>
+        </button></li></ul>
+      </div>
+
+      <div class="essai c2">
+        <p class="teinte"><b>Vermillon</b> — orange brûlé</p>
+        <ul class="days"><li class="day today conflit"><button type="button">
+          <span class="day-ech-slot"><span class="day-ech examen">Examen</span></span>
+          <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+          <span class="dsum busy">08h15 → 12h30</span>
+          <span class="day-ech-slot"><span class="day-ech devoir">Devoir</span></span>
+        </button></li></ul>
+      </div>
+
+      <div class="essai c3">
+        <p class="teinte"><b>Ambre</b> — chaud, sans urgence</p>
+        <ul class="days"><li class="day today conflit"><button type="button">
+          <span class="day-ech-slot"><span class="day-ech examen">Examen</span></span>
+          <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+          <span class="dsum busy">08h15 → 12h30</span>
+          <span class="day-ech-slot"><span class="day-ech devoir">Devoir</span></span>
+        </button></li></ul>
+      </div>
+
+      <div class="essai c4">
+        <p class="teinte"><b>Violet</b> — froid, tranché</p>
+        <ul class="days"><li class="day today conflit"><button type="button">
+          <span class="day-ech-slot"><span class="day-ech examen">Examen</span></span>
+          <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+          <span class="dsum busy">08h15 → 12h30</span>
+          <span class="day-ech-slot"><span class="day-ech devoir">Devoir</span></span>
+        </button></li></ul>
+      </div>
+
+      <div class="essai c5">
+        <p class="teinte"><b>Bleu</b> — hors famille</p>
+        <ul class="days"><li class="day today conflit"><button type="button">
+          <span class="day-ech-slot"><span class="day-ech examen">Examen</span></span>
+          <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+          <span class="dsum busy">08h15 → 12h30</span>
+          <span class="day-ech-slot"><span class="day-ech devoir">Devoir</span></span>
+        </button></li></ul>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="theme th-rose">
+    <h2><span class="pastille"></span>Thème Rose</h2>
+    <div class="grille">
+
+      <div class="essai c1">
+        <p class="teinte"><b>Rouge</b> — l'alerte franche</p>
+        <ul class="days"><li class="day today conflit"><button type="button">
+          <span class="day-ech-slot"><span class="day-ech examen">Examen</span></span>
+          <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+          <span class="dsum busy">08h15 → 12h30</span>
+          <span class="day-ech-slot"><span class="day-ech devoir">Devoir</span></span>
+        </button></li></ul>
+      </div>
+
+      <div class="essai c2">
+        <p class="teinte"><b>Vermillon</b> — orange brûlé</p>
+        <ul class="days"><li class="day today conflit"><button type="button">
+          <span class="day-ech-slot"><span class="day-ech examen">Examen</span></span>
+          <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+          <span class="dsum busy">08h15 → 12h30</span>
+          <span class="day-ech-slot"><span class="day-ech devoir">Devoir</span></span>
+        </button></li></ul>
+      </div>
+
+      <div class="essai c3">
+        <p class="teinte"><b>Ambre</b> — chaud, sans urgence</p>
+        <ul class="days"><li class="day today conflit"><button type="button">
+          <span class="day-ech-slot"><span class="day-ech examen">Examen</span></span>
+          <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+          <span class="dsum busy">08h15 → 12h30</span>
+          <span class="day-ech-slot"><span class="day-ech devoir">Devoir</span></span>
+        </button></li></ul>
+      </div>
+
+      <div class="essai c4">
+        <p class="teinte"><b>Violet</b> — tranche rose et turquoise</p>
+        <ul class="days"><li class="day today conflit"><button type="button">
+          <span class="day-ech-slot"><span class="day-ech examen">Examen</span></span>
+          <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+          <span class="dsum busy">08h15 → 12h30</span>
+          <span class="day-ech-slot"><span class="day-ech devoir">Devoir</span></span>
+        </button></li></ul>
+      </div>
+
+      <div class="essai c5">
+        <p class="teinte"><b>Prune</b> — plus sombre que le devoir</p>
+        <ul class="days"><li class="day today conflit"><button type="button">
+          <span class="day-ech-slot"><span class="day-ech examen">Examen</span></span>
+          <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+          <span class="dsum busy">08h15 → 12h30</span>
+          <span class="day-ech-slot"><span class="day-ech devoir">Devoir</span></span>
+        </button></li></ul>
+      </div>
+
+    </div>
+  </section>
+</main>
+</body>
+</html>

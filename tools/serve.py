@@ -1,14 +1,31 @@
 """Sert l'app en local, avec la même API qu'en ligne.
 
-Usage :  python3 tools/serve.py [--lan] [--port 8902]
+Usage :  python3 tools/serve.py [--lan] [--tunnel] [--port 8902] [--log|--no-log]
 App :    http://localhost:8902 (8901 est pris par Horairelm)
 
 --lan : accepte aussi les autres appareils du réseau local (téléphone,
-        second ordinateur) et affiche l'adresse à ouvrir. Sans lui, seules
-        les connexions de la machine répondent : en production c'est
-        Vercel qui protège, ici c'est ce garde-fou qui tient le rôle.
+        second ordinateur) et affiche l'adresse à ouvrir (avec un QR
+        code à scanner) — c'est ce qui remplace l'ancien « localhost sur
+        l'IP du réseau ». Sans lui, seules les connexions de la machine
+        répondent : en production c'est Vercel qui protège, ici c'est ce
+        garde-fou qui tient le rôle.
 --port : change le port (utile quand deux dossiers de travail tournent
         en même temps).
+--log / --no-log : journal des accès activé (une ligne par requête, IP
+        et agent) ou désactivé. Par défaut : activé avec --lan (c'est
+        là qu'on veut voir un appareil arriver), sinon silencieux.
+--tunnel : ouvre aussi un tunnel cloudflared vers ce serveur et affiche
+        l'URL https à ouvrir de l'extérieur (4G, autre réseau). La
+        connexion part de la machine, donc rien à percer dans le
+        firewall ; l'URL est aléatoire à chaque lancement. Attention à
+        ne jamais y brancher un simple « python -m http.server » : ce
+        serveur filtre les fichiers cachés (.env, .git), l'autre les
+        sert tous.
+
+L'adresse affichée porte `?essai=1` : l'app ouvre directement l'horaire,
+sans page de connexion, pourvu que l'hôte soit une origine locale
+(index.html, MODE_ESSAI) — localhost, 10., 192.168., 172.16-31. — ou un
+tunnel de preview (*.trycloudflare.com).
 
 GET /api/formations?ecole=heh                      formations de l'école
 GET /api/horaires?ecole=heh&formation=..           horaire complet d'une formation
@@ -17,9 +34,17 @@ GET /api/ical?lien=..                              horaire d'un lien d'abonnemen
 POST /api/importer  {"ecole":"ulb","liste":"…"}     liste de cours collée -> cours
 GET /api/pdf?ecole=heh&formation=..&groupe=..&semaine=..   PDF officiel
 """
+import glob
 import os
+import queue
+import re
+import shutil
+import signal
 import socket
+import subprocess
 import sys
+import threading
+import time
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import unquote
 
@@ -30,6 +55,10 @@ sys.path.insert(0, os.path.join(RACINE, "api"))
 # (UCLouvain) : sur Vercel, sans EZH_UCL, elles restent invisibles.
 # `EZH_UCL=0 python3 serve.py` simule la production.
 os.environ.setdefault("EZH_UCL", "1")
+
+# Idem pour l'école de simulation (horaires fictifs, lab/simulation.html) :
+# `EZH_SIM=0` permet de vérifier que la production ne la propose pas.
+os.environ.setdefault("EZH_SIM", "1")
 
 import formations  # noqa: E402
 import horaires  # noqa: E402
@@ -108,7 +137,8 @@ class Serveur(ThreadingHTTPServer):
 
 
 class Handler(SimpleHTTPRequestHandler):
-    LAN = False  # réglé par --lan : accepte les autres appareils du réseau
+    LAN = False     # réglé par --lan : accepte les autres appareils du réseau
+    JOURNAL = False  # réglé par --log / --no-log (voir main)
 
     def _chemin_autorise(self):
         """Chemin décodé si l'accès est permis et qu'il ne vise pas un
@@ -194,8 +224,34 @@ class Handler(SimpleHTTPRequestHandler):
         self.statique = True
         super().do_HEAD()
 
-    def log_message(self, *args):
-        pass  # silencieux
+    def log_message(self, format, *args):
+        """Journal des accès : la preuve qu'un appareil a ouvert la page,
+        sans aller demander une capture d'écran. Une ligne par requête :
+        heure, IP, requête, code, agent. Tout y passe (send_response et
+        send_error appellent log_request / log_error), API comprise.
+        Silencieux sans JOURNAL (voir --log / --no-log)."""
+        if not Handler.JOURNAL:
+            return
+        # Serveur dual-stack : une connexion IPv4 arrive en ::ffff:a.b.c.d.
+        locale = self.client_address[0].replace("::ffff:", "")
+        ip = locale
+        if getattr(self, "headers", None):
+            agent = self.headers.get("User-Agent") or "-"
+            # Derrière le tunnel, tout arrive en 127.0.0.1 (cloudflared) :
+            # l'IP réelle de l'appareil voyage dans CF-Connecting-IP. On ne
+            # la croit que si la connexion vient bien de la machine (sinon
+            # un client du LAN pourrait la falsifier).
+            distante = self.headers.get("CF-Connecting-IP")
+            if distante and locale in ("127.0.0.1", "::1"):
+                ip = f"{distante} (tunnel)"
+        else:
+            agent = "-"
+        # Agent tronqué : la ligne reste lisible dans un terminal étroit
+        # (on y cherche l'IP et le code, pas la string complète).
+        if len(agent) > 60:
+            agent = agent[:59] + "…"
+        print(f"{time.strftime('%H:%M:%S')}  {ip:<15}  {format % args}  ·  {agent}",
+              flush=True)
 
     def send_error(self, code, message=None, explain=None):
         # Comme Vercel : une adresse inconnue reçoit la page 404 du site.
@@ -258,8 +314,120 @@ def adresse_reseau():
         return ""
 
 
+def afficher_qr(url):
+    """QR code de l'URL, dessiné en ANSI dans le terminal (qrencode) :
+    on le scanne depuis le téléphone au lieu de taper une adresse.
+    Repli silencieux sans qrencode : l'URL reste affichée au-dessus."""
+    if not shutil.which("qrencode"):
+        return
+    try:
+        sortie = subprocess.run(["qrencode", "-t", "ANSIUTF8", url],
+                                capture_output=True, text=True, timeout=15)
+    except (OSError, subprocess.SubprocessError):
+        return
+    if sortie.returncode == 0 and sortie.stdout.strip():
+        print(sortie.stdout.rstrip("\n"), flush=True)
+
+
+def chemin_cloudflared():
+    """Binaire cloudflared : celui du PATH, sinon la copie du harness T3.
+    Sans aucun des deux, le tunnel est simplement impossible."""
+    exe = shutil.which("cloudflared")
+    if exe:
+        return exe
+    candidats = sorted(glob.glob(
+        os.path.expanduser("~/.t3/tools/cloudflared/*/linux-x64/cloudflared")))
+    return candidats[-1] if candidats else ""
+
+
+def demarrer_tunnel(port, delai=45):
+    """« cloudflared tunnel --url http://127.0.0.1:<port> » (tunnel rapide,
+    aucune configuration) : renvoie (procès, url_https).
+
+    L'URL est imprimée par cloudflared au démarrage, sur sa sortie
+    standard mêlée à ses logs — on la cherche pendant `delai` secondes.
+    url vide si le tunnel n'a pas démarré : les dernières lignes de
+    cloudflared sont alors affichées pour qu'on comprenne pourquoi.
+    L'appelant tue le procès (voir main)."""
+    exe = chemin_cloudflared()
+    if not exe:
+        print("Tunnel : cloudflared introuvable (ni dans le PATH, ni dans "
+              "~/.t3/tools) — accès extérieur désactivé.", flush=True)
+        return None, ""
+    proc = subprocess.Popen([exe, "tunnel", "--url", f"http://127.0.0.1:{port}"],
+                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                            text=True, bufsize=1)
+    lignes = queue.Queue()
+
+    def lire():
+        for ligne in proc.stdout:
+            lignes.put(ligne)
+
+    threading.Thread(target=lire, daemon=True).start()
+    url, trace, motif = "", [], re.compile(r"https://[a-z0-9-]+\.trycloudflare\.com")
+    fin = time.time() + delai
+    while time.time() < fin:
+        try:
+            ligne = lignes.get(timeout=0.5)
+        except queue.Empty:
+            if proc.poll() is not None:
+                break
+            continue
+        trace.append(ligne.rstrip())
+        trace = trace[-8:]
+        trouve = motif.search(ligne)
+        if trouve:
+            url = trouve.group(0)
+            break
+        if proc.poll() is not None and lignes.empty():
+            break
+    if not url:
+        print("Tunnel : démarrage échoué (sortie de cloudflared) :",
+              flush=True)
+        for ligne in trace:
+            print(f"    cloudflared | {ligne}", flush=True)
+    return proc, url
+
+
+FICHIER_LIENS = "/tmp/ezhoraire-preview.txt"
+
+
+def ecrire_liens(liens, argv):
+    """Recopie les liens de preview dans un fichier : le journal du tmux
+    enfouit l'URL en quelques minutes de test, un agent (ou vous) la
+    relit ici d'un `cat`. Effacé à l'arrêt du serveur (voir main)."""
+    lignes = [f"# EzHoraire preview — démarré {time.strftime('%Y-%m-%d %H:%M:%S')}",
+              f"# {' '.join(argv) or '(sans argument)'}"]
+    lignes += [f"{cle}={url}" for cle, url in liens.items()]
+    try:
+        with open(FICHIER_LIENS, "w", encoding="utf-8") as f:
+            f.write("\n".join(lignes) + "\n")
+    except OSError:
+        return
+    print(f"Liens relisibles dans {FICHIER_LIENS} (le journal du tmux les "
+          f"enfouit vite).", flush=True)
+
+
+def retirer_liens(liens):
+    """Efface la liasse à l'arrêt — mais seulement si elle est encore la
+    nôtre : un autre serve.py du dépôt peut avoir tourné entre-temps et
+    l'avoir remplacée."""
+    try:
+        with open(FICHIER_LIENS, encoding="utf-8") as f:
+            contenu = f.read()
+    except OSError:
+        return
+    if not all(url in contenu for url in liens.values()):
+        return
+    try:
+        os.remove(FICHIER_LIENS)
+    except OSError:
+        pass
+
+
 def main(argv):
     lan = "--lan" in argv or os.environ.get("EZH_LAN") == "1"
+    tunnel = "--tunnel" in argv or os.environ.get("EZH_TUNNEL") == "1"
     port = PORT_DEFAUT
     if "--port" in argv:
         try:
@@ -267,6 +435,15 @@ def main(argv):
         except (IndexError, ValueError):
             sys.exit("--port attend un numéro, ex. --port 8912.")
     Handler.LAN = lan
+    # Journal : par défaut dès qu'un appareil extérieur peut arriver (LAN
+    # ou tunnel), silencieux sinon. --log / --no-log forcent.
+    Handler.JOURNAL = "--no-log" not in argv and ("--log" in argv or lan or tunnel)
+    # Arrêt propre : Ctrl+C (KeyboardInterrupt), mais aussi SIGHUP/SIGTERM
+    # (fin de session tmux). SystemExit fait tourner les `finally` qui
+    # tuent le tunnel et effacent la liasse de liens, sinon un lien mort
+    # reste écrit dans /tmp après `tmux kill-session`.
+    for num in (signal.SIGHUP, signal.SIGTERM):
+        signal.signal(num, lambda *_: sys.exit(0))
     os.chdir(RACINE)
     charger_env_local()
     try:
@@ -275,15 +452,48 @@ def main(argv):
         sys.exit(f"Le port {port} est déjà utilisé : un autre serve.py tourne sans doute "
                  f"encore (voir `lsof -i :{port}`) — `--port 8912` en prend un autre.")
     with srv:
+        essai = "/?essai=1"
+        proc_tunnel, liens = None, {}
         print(f"EzHoraire : http://localhost:{port}", flush=True)
+        print(f"Sans connexion : http://localhost:{port}{essai}", flush=True)
         if lan:
             ip = adresse_reseau()
             if ip:
-                print(f"Réseau local : http://{ip}:{port}", flush=True)
-            print("Mode réseau local : tout appareil du réseau peut lire l'app "
-                  "(pas d'authentification côté serveur).", flush=True)
+                url = f"http://{ip}:{port}{essai}"
+                print(f"Réseau local : {url}", flush=True)
+                print("Mode réseau local : tout appareil du réseau peut lire l'app "
+                      "(pas d'authentification côté serveur).", flush=True)
+                afficher_qr(url)
+                liens["local"] = url
+        if tunnel:
+            proc_tunnel, url = demarrer_tunnel(port)
+            if url:
+                # URL seule sur sa ligne : elle fait ~70 caractères, elle
+                # ne doit pas être coupée par le terminal pour être copiée.
+                print("Tunnel (depuis l'extérieur, tout réseau) :", flush=True)
+                print(f"{url}{essai}", flush=True)
+                print("Nouvelle URL à chaque lancement : à recopier quand on "
+                      "change de réseau.", flush=True)
+                liens["tunnel"] = url + essai
+            elif proc_tunnel is not None:
+                proc_tunnel.terminate()
+        if liens:
+            # Un serveur lancé en localhost seul n'écrit pas (et surtout ne
+            # supprime pas : un autre serve.py du dépôt peut tourner en
+            # parallèle et sa liasse lui appartient).
+            ecrire_liens(liens, argv)
+        if Handler.JOURNAL:
+            print("Journal des accès : une ligne par requête (heure, IP, code, "
+                  "agent) — c'est ici qu'on voit qu'un appareil a ouvert l'app.",
+                  flush=True)
         print("Ctrl+C pour arrêter.", flush=True)
-        srv.serve_forever()
+        try:
+            srv.serve_forever()
+        finally:
+            if proc_tunnel is not None and proc_tunnel.poll() is None:
+                proc_tunnel.terminate()
+            if liens:
+                retirer_liens(liens)
 
 
 if __name__ == "__main__":

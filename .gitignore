@@ -74,6 +74,9 @@ Thumbs.db
 # Journal du serveur local
 serve.log
 
+# État local du CLI Supabase (ref projet liée, pas de secrets)
+supabase/.temp/
+
 # Plans et notes locales (non versionnés)
 dashboard.md
 

@@ -48,6 +48,14 @@ if os.environ.get("EZH_UCL") == "1":
 
     ECOLES["ucl"] = ucl
 
+# L'école de simulation (horaires fictifs, lab/simulation.html) suit la
+# même règle : serve.py la pose pour le développement, Vercel ne la voit
+# jamais. `EZH_SIM=0` permet de vérifier que la production ne l'expose pas.
+if os.environ.get("EZH_SIM") == "1":
+    from . import sim  # noqa: E402
+
+    ECOLES["sim"] = sim
+
 
 def requete(h, ordre, erreur):
     """Paramètres d'une requête publique, ou None si une réponse est partie.

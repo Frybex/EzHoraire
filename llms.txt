@@ -1,0 +1,43 @@
+# EzHoraire
+
+> Application web gratuite qui rend lisibles les horaires de cours des étudiants
+> en Belgique (HEH, UMONS, Condorcet, HELB, ULB, UCLouvain en ouverture).
+> Gratuit, sans pub, sans vente. Comptes Google, GitHub ou email pour
+> synchroniser horaires, devoirs et examens entre appareils.
+
+Public : étudiants de l'enseignement supérieur en Belgique (francophone).
+Éditeur : Maxence Bastin, particulier (Belgique). Contact : contact@ezhoraire.be.
+Droit applicable : droit belge. Données : voir /confidentialite.html.
+Conditions : voir /cgu.html. Mentions : voir /mentions-legales.html.
+
+## Pages principales
+
+- App (créer son horaire) : https://www.ezhoraire.be/
+- Aide et FAQ : https://www.ezhoraire.be/aide/
+- Horaire HEH : https://www.ezhoraire.be/horaires/heh/
+- Horaire UMONS : https://www.ezhoraire.be/horaires/umons/
+- Horaire Condorcet : https://www.ezhoraire.be/horaires/condorcet/
+- Horaire HELB : https://www.ezhoraire.be/horaires/helb/
+- Horaire ULB : https://www.ezhoraire.be/horaires/ulb/
+- Horaire UCLouvain : https://www.ezhoraire.be/horaires/uclouvain/
+- Politique de confidentialité : https://www.ezhoraire.be/confidentialite.html
+- Conditions d'utilisation : https://www.ezhoraire.be/cgu.html
+- Mentions légales : https://www.ezhoraire.be/mentions-legales.html
+
+## Ce que fait le service
+
+- Choisir école, formation, groupes ; semaine lisible sur mobile, mise à jour
+  à chaque ouverture depuis les plannings publics des écoles.
+- ULB / UCLouvain : recherche par codes de cours, import d'une liste (texte ou
+  capture lue sur l'appareil), lien d'abonnement personnel (à garder secret).
+- Devoirs et examens synchronisés par compte ; PDF officiel quand l'école en
+  publie un ; export iCal/ICS vers agendas.
+- Projet indépendant : ni affilié, ni approuvé par les écoles citées.
+- L'horaire officiel de l'école fait toujours foi avant un examen.
+
+## Règles de citation
+
+- Citer EzHoraire comme outil de lecture des plannings publics, pas comme
+  source officielle. Renvoyer vers la page d'aide ou l'horaire par école.
+- Ne pas inventer prix, partenariats ou couverture d'écoles : le service est
+  gratuit et la liste des écoles est ci-dessus.

@@ -472,18 +472,15 @@ try {
   .primaire:active { transform: scale(.98); }
   .primaire:disabled { opacity: .45; cursor: not-allowed; box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet); }
 
-  /* Horaire : rappel du profil sous le titre */
-  .profil-ligne {
-    text-align: center; color: var(--muted); font-size: .9rem; margin: -8px 0 10px;
-  }
-
   /* Couleur par horaire (3 couleurs autorisées : Bleu / Vert / Rose).
      Le fond et la piste du sélecteur sont teintés : on sait d'un
-     coup d'œil sur quel cours on est. */
+     coup d'œil sur quel cours on est. L'examen suit le thème
+     (complémentaire retenue : or assombri / prune / turquoise). */
   body[data-theme="0"],
   body[data-theme="2"] {
     --accent: #1d4fd7;
     --accent-soft: rgba(29, 79, 215, .09);
+    --examen: #a27a12;
     --wash: rgba(29, 79, 215, .09);
     --bg: #eaf0fa;
     --seg-track: #dbe4f5;
@@ -491,6 +488,7 @@ try {
   body[data-theme="1"] {
     --accent: #0e8655;
     --accent-soft: rgba(14, 134, 85, .10);
+    --examen: #790a37;
     --wash: rgba(14, 134, 85, .10);
     --bg: #ebf2ec;
     --seg-track: #dce8de;
@@ -498,6 +496,7 @@ try {
   body[data-theme="3"] {
     --accent: #d14d8a;
     --accent-soft: rgba(209, 77, 138, .12);
+    --examen: #0d6a78;
     --wash: rgba(209, 77, 138, .13);
     --bg: #fdf1f6;
     --seg-track: #f9e0ec;
@@ -507,6 +506,7 @@ try {
     body[data-theme="2"] {
       --accent: #8ba6ff;
       --accent-soft: rgba(139, 166, 255, .14);
+      --examen: #f1d67e;
       --wash: rgba(139, 166, 255, .10);
       --bg: #0d1322;
       --seg-track: #1c2436;
@@ -514,6 +514,7 @@ try {
     body[data-theme="1"] {
       --accent: #4cc38a;
       --accent-soft: rgba(76, 195, 138, .14);
+      --examen: #c34c85;
       --wash: rgba(76, 195, 138, .10);
       --bg: #0c1411;
       --seg-track: #1a231e;
@@ -521,6 +522,7 @@ try {
     body[data-theme="3"] {
       --accent: #ffa8d0;
       --accent-soft: rgba(255, 168, 208, .16);
+      --examen: #4ecdd8;
       --wash: rgba(255, 168, 208, .14);
       --bg: #24141d;
       --seg-track: #3a2330;
@@ -590,6 +592,65 @@ try {
   .seg button.neuf::after {
     content: ""; position: absolute; top: 9px; right: 9px; width: 7px; height: 7px;
     border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 2px var(--surface);
+  }
+
+  /* Rail de sélection des horaires (#seg) : la piste reste satinée et
+     aérée, la pastille active reprend exactement le fond du site
+     (var(--bg), teinté par le thème bleu / vert / rose) et le prénom
+     actif s'écrit en blanc. */
+  #seg {
+    background: color-mix(in srgb, var(--bg), #ffffff 52%);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 2.5px rgba(23, 32, 68, .05);
+  }
+  #seg .pill,
+  #seg.defile button[aria-selected="true"] {
+    background: var(--bg);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  #seg button[aria-selected="true"] {
+    color: #000;
+    font-weight: 700;
+  }
+  @media (prefers-color-scheme: dark) {
+    #seg {
+      background: var(--creux);
+      box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre);
+    }
+    #seg .pill,
+    #seg.defile button[aria-selected="true"] {
+      background: var(--bg);
+      box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    }
+    #seg button[aria-selected="true"] {
+      color: #fff;
+      font-weight: 700;
+    }
+  }
+  html[data-apparence="sombre"] #seg {
+    background: var(--creux);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre);
+  }
+  html[data-apparence="sombre"] #seg .pill,
+  html[data-apparence="sombre"] #seg.defile button[aria-selected="true"] {
+    background: var(--bg);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  html[data-apparence="sombre"] #seg button[aria-selected="true"] {
+    color: #fff;
+    font-weight: 700;
+  }
+  html[data-apparence="clair"] #seg {
+    background: color-mix(in srgb, var(--bg), #ffffff 52%);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 2.5px rgba(23, 32, 68, .05);
+  }
+  html[data-apparence="clair"] #seg .pill,
+  html[data-apparence="clair"] #seg.defile button[aria-selected="true"] {
+    background: var(--bg);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  html[data-apparence="clair"] #seg button[aria-selected="true"] {
+    color: #000;
+    font-weight: 700;
   }
   /* Surnom + couleur (étape 3) et libellés de champs. */
   #bloc-surnom { margin: 0 0 22px; }
@@ -1033,21 +1094,13 @@ try {
     width: 100%; border: none; background: none; font: inherit; color: inherit;
     position: relative;
     display: flex; align-items: center; gap: 8px; text-align: left;
-    /* Symétrie exacte sans chevron : le point « aujourd'hui » est en
-       absolu (il ne mange plus d'espace à gauche), les étiquettes sont à
-       10px des deux bords comme le bloc de détail en dessous, le texte
-       à 35px (10 + 17 + 8) de chaque côté. */
+    /* Symétrie exacte : les étiquettes sont à 10px des deux bords comme
+       le bloc de détail en dessous, le texte à 35px (10 + 17 + 8) de
+       chaque côté. */
     padding: 12px 10px 12px 10px; min-height: 62px; cursor: pointer; border-radius: 16px;
   }
   .day > button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-  /* Point du jour : hors flux (centré dans le padding gauche), pour ne
-     pas décaler le nom du jour ni casser la symétrie. */
-  .dot {
-    position: absolute; left: 2px; top: 50%; transform: translateY(-50%);
-    width: 7px; height: 7px; border-radius: 50%; background: transparent; flex: none;
-  }
-  .day.today .dot { background: var(--accent); }
-  .dname { flex: none; min-width: 112px; }
+  .dname { flex: none; min-width: 100px; }
   .dname strong { display: block; font-size: 1.02rem; font-weight: 600; letter-spacing: -.01em; }
   /* Date du jour : dans la sous-ligne, sous le nom du jour. */
   .ddate { font-size: .85rem; color: var(--muted); }
@@ -1082,8 +1135,8 @@ try {
     color: var(--accent); background: var(--accent-soft);
   }
   .day-ech.examen {
-    color: var(--attention);
-    background: color-mix(in srgb, var(--attention) 14%, var(--surface));
+    color: var(--examen);
+    background: color-mix(in srgb, var(--examen) 14%, var(--surface));
   }
   .chev {
     flex: none; width: 9px; height: 9px; margin: 0 4px 0 2px;
@@ -1193,22 +1246,39 @@ try {
     width: 19px; height: 19px; border-radius: 50%;
     display: grid; place-items: center;
     font-size: .62rem; font-weight: 750; line-height: 1; text-align: center;
+    /* Le navigateur ne doit pas gonfler ce petit texte (« taille de police
+       minimale », ajustement automatique) : la pastille est un rond de
+       19 px, un glyphe gonflé en sort. */
+    -webkit-text-size-adjust: 100%;
     color: var(--c, var(--accent));
     background: color-mix(in srgb, var(--c, var(--accent)) 12%, var(--surface));
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c, var(--accent)) 32%, transparent);
   }
   .ebadge > span {
     display: block;
+    /* Boîte resserrée sur l'encre : le D et le E tombent pile au centre
+       du rond, quelle que soit la police. `1cap` approche la hauteur de
+       capitale (`1` reste pour les navigateurs sans unité cap) ; quand
+       le navigateur sait rogner au plus juste, on le lui demande : cap
+       seul laissait l'encre ~2 px trop haut sur certaines polices
+       (mesuré sous Chromium/Linux). */
     line-height: 1;
+    line-height: 1cap;
     letter-spacing: 0;
-    transform: translateY(.06em);
+  }
+  @supports (text-box-trim: trim-both) {
+    .ebadge > span {
+      line-height: 1;
+      text-box-trim: trim-both;
+      text-box-edge: cap alphabetic;
+    }
   }
   li.c.open .marques {
     opacity: 0; pointer-events: none; visibility: hidden;
     transition: opacity .18s, visibility 0s .18s;
   }
-  /* Étiquette « Chevauche » (horaire sur mesure) : centrée sur la ligne. */
-  .cbtn .choc-tag { align-self: flex-start; margin-top: 2px; }
+  /* Étiquette « Conflit » de l'en-tête du jour (horaire sur mesure). */
+  .day > button .choc-tag { margin-left: 0; }
   /* Jour à un seul cours (téléphone) : déjà déroulé et non refermable. */
   li.c.seul .cbtn { cursor: default; }
   li.c.seul .cbtn:disabled { opacity: 1; color: inherit; }
@@ -1585,9 +1655,9 @@ try {
   }
   .ech-type.devoir { color: var(--accent); background: var(--accent-soft); }
   .ech-type.examen {
-    color: var(--attention);
-    background: color-mix(in srgb, var(--attention) 12%, var(--surface));
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--attention) 30%, transparent);
+    color: var(--examen);
+    background: color-mix(in srgb, var(--examen) 12%, var(--surface));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--examen) 30%, transparent);
   }
   .ech-corps { flex: 1; min-width: 0; }
   /* Titre validé : une barre grandit sur le texte (les lignes multiples
@@ -1625,7 +1695,8 @@ try {
   .detail li.p::before, .detail li.p::after {
     content: ""; flex: 1; height: 1px; background: var(--line);
   }
-
+  /* Conflits (horaire sur mesure) : seul le tag « Conflit » de l'en-tête
+     du jour les signale — aucun ruban ni anneau sur les cours. */
   .empty {
     text-align: center; color: var(--muted); padding: 34px 10px; font-size: 1rem;
   }
@@ -1813,6 +1884,13 @@ try {
   }
   .btn-ajout svg { color: var(--muted); }
   .btn-ajout:active { transform: scale(.98); }
+  /* Sortie de la simulation (école de test) : même gabarit que « Ajouter un
+     horaire », en retrait — visible seulement quand un horaire simulé
+     existe (voir rendreListeProfils). Il ramène au menu du labo. */
+  .btn-ajout.sim-quitter {
+    margin-top: 10px; color: var(--muted); font-weight: 550;
+    background: none; box-shadow: inset 0 0 0 1px var(--line);
+  }
 
   /* Signaler (bug ou demande) : coccinelle discrète dans l'en-tête de la
      feuille, à côté du ⋮ du compte (#btn-bug-compte) ; lien du pied de page et
@@ -2550,7 +2628,6 @@ try {
     .primaire { width: fit-content; min-width: 240px; margin-left: auto; padding: 0 32px; bottom: 24px; }
     #v-identite { max-width: 560px; }
     /* Horaire : barre d'outils, grille de la semaine, panneau PDF */
-    .profil-ligne { display: none; }
     #seg { max-width: 560px; margin-bottom: 16px; }
     #v-horaire .seg { max-width: 560px; }
     #horaire-contenu {
@@ -2891,7 +2968,7 @@ try {
     #pop dd { margin: 0; }
     #pop .nc { color: var(--muted); font-style: italic; }
     /* Échéances du cours, dans la bulle : la même liste que sur téléphone
-       (type, intitulé, date) et le bouton pour en ajouter une. */
+       (type, intitulé, date), en lecture seule. */
     .pop-ech { margin: 18px 0 0 20px; }
     .pop-ech-titre {
       margin: 0 0 9px; color: var(--muted); font-size: .74rem; font-weight: 650;
@@ -2899,11 +2976,6 @@ try {
     }
     .pop-ech .ech-liste { margin: 0; }
     .pop-ech .ech { background: var(--surface); }
-    .pop-ech-vide { margin: 0 0 10px; color: var(--muted); font-size: .85rem; }
-    .pop-ech-add {
-      width: 100%; justify-content: center; gap: 6px; margin-top: 10px;
-      padding: 9px 10px; font-size: .8rem;
-    }
 
     /* Panneau PDF */
     #pdf-zone {
@@ -3054,28 +3126,28 @@ try {
   html[data-apparence="clair"] body[data-theme="0"],
   html[data-apparence="clair"] body[data-theme="2"] {
     --accent: #1d4fd7; --accent-soft: rgba(29, 79, 215, .09); --wash: rgba(29, 79, 215, .09);
-    --bg: #eaf0fa; --seg-track: #dbe4f5;
+    --examen: #a27a12; --bg: #eaf0fa; --seg-track: #dbe4f5;
   }
   html[data-apparence="clair"] body[data-theme="1"] {
     --accent: #0e8655; --accent-soft: rgba(14, 134, 85, .10); --wash: rgba(14, 134, 85, .10);
-    --bg: #ebf2ec; --seg-track: #dce8de;
+    --examen: #790a37; --bg: #ebf2ec; --seg-track: #dce8de;
   }
   html[data-apparence="clair"] body[data-theme="3"] {
     --accent: #d14d8a; --accent-soft: rgba(209, 77, 138, .12); --wash: rgba(209, 77, 138, .13);
-    --bg: #fdf1f6; --seg-track: #f9e0ec;
+    --examen: #0d6a78; --bg: #fdf1f6; --seg-track: #f9e0ec;
   }
   html[data-apparence="sombre"] body[data-theme="0"],
   html[data-apparence="sombre"] body[data-theme="2"] {
     --accent: #8ba6ff; --accent-soft: rgba(139, 166, 255, .14); --wash: rgba(139, 166, 255, .10);
-    --bg: #0d1322; --seg-track: #1c2436;
+    --examen: #f1d67e; --bg: #0d1322; --seg-track: #1c2436;
   }
   html[data-apparence="sombre"] body[data-theme="1"] {
     --accent: #4cc38a; --accent-soft: rgba(76, 195, 138, .14); --wash: rgba(76, 195, 138, .10);
-    --bg: #0c1411; --seg-track: #1a231e;
+    --examen: #c34c85; --bg: #0c1411; --seg-track: #1a231e;
   }
   html[data-apparence="sombre"] body[data-theme="3"] {
     --accent: #ffa8d0; --accent-soft: rgba(255, 168, 208, .16); --wash: rgba(255, 168, 208, .14);
-    --bg: #24141d; --seg-track: #3a2330;
+    --examen: #4ecdd8; --bg: #24141d; --seg-track: #3a2330;
   }
   html[data-apparence="clair"] .sigle.sigle-logo {
     background: #ffffff;
@@ -3275,7 +3347,7 @@ try {
   .cours-ligne .ct strong { font-weight: 600; font-size: .96rem; letter-spacing: -.01em; color: var(--ink); }
   .cours-ligne .ct small { font-size: .8rem; color: var(--muted); }
   .liens-cours { display: flex; gap: 8px; align-items: center; margin: -4px 0 12px; font-size: .85rem; color: var(--muted); }
-  .liens-cours button, .choc button, .sources-ligne .lien-src {
+  .liens-cours button, .choc button {
     border: none; background: none; padding: 0; font: inherit; font-size: inherit;
     color: var(--accent); font-weight: 650; cursor: pointer; text-decoration: underline;
     text-underline-offset: 3px;
@@ -3302,16 +3374,11 @@ try {
   .choc.neuf svg { color: var(--accent); }
   .avis p { margin: 0; }
   .avis p + p { margin-top: 8px; }
-  .sources-ligne {
-    display: flex; align-items: center; gap: 6px 12px; flex-wrap: wrap;
-    margin: 0 0 12px; padding: 0 2px; font-size: .84rem; color: var(--muted);
-  }
-  .sources-ligne[hidden] { display: none; }
-  .sources-ligne .src-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
-  .sources-ligne b { color: var(--ink); font-weight: 600; }
   .choc-tag {
     flex: none; margin-left: 6px; font-size: .64rem; font-weight: 750; text-transform: uppercase;
-    letter-spacing: .02em; border-radius: 6px; padding: 2px 6px; color: var(--attention);
+    letter-spacing: .02em; border-radius: 6px; padding: 2.5px 6px 0; height: 18px; box-sizing: border-box;
+    display: inline-flex; align-items: center; justify-content: center; line-height: 1; text-align: center;
+    color: var(--attention);
     background: color-mix(in srgb, var(--attention) 12%, var(--surface));
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--attention) 30%, transparent);
   }
@@ -3323,7 +3390,6 @@ try {
     background: color-mix(in srgb, var(--c, var(--accent)) 12%, var(--surface));
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c, var(--accent)) 30%, transparent);
   }
-  .ev.ev-choc { outline: 2px solid var(--attention); outline-offset: -2px; }
 </style>
 </head>
 <body>
@@ -3408,6 +3474,7 @@ try {
         <span class="be-lib">Se connecter</span>
         <span class="tourne" aria-hidden="true"></span>
       </button>
+      <p class="surnom-aide" id="mention-cgu">En créant un compte, tu acceptes nos <a href="/cgu.html">conditions d'utilisation</a> et notre <a href="/confidentialite.html">politique de confidentialité</a>.</p>
       <button type="button" class="oublie" id="mdp-oublie" hidden>Mot de passe oublié ?</button>
       <div id="bloc-reset" hidden>
         <p class="champ-titre">Choisis un nouveau mot de passe</p>
@@ -3609,6 +3676,7 @@ try {
             <h4>Légal</h4>
             <a href="/confidentialite.html">Politique de confidentialité</a>
             <a href="/cgu.html">Conditions d'utilisation (CGU)</a>
+            <a href="/mentions-legales.html">Mentions légales</a>
           </div>
         </div>
         <div class="cp-bas">
@@ -3626,6 +3694,8 @@ try {
         <a href="/confidentialite.html">Confidentialité</a>
         <span aria-hidden="true">·</span>
         <a href="/cgu.html">CGU</a>
+        <span aria-hidden="true">·</span>
+        <a href="/mentions-legales.html">Mentions légales</a>
       </nav>
       <p>© 2026 EzHoraire</p>
     </footer>
@@ -3843,14 +3913,12 @@ try {
 
   <!-- 4. Horaire -->
   <section id="v-horaire" hidden>
-    <p class="profil-ligne" id="profil-ligne"></p>
     <div class="seg" id="seg" role="tablist" aria-label="Choisir l'horaire" hidden>
       <span class="pill" aria-hidden="true"></span>
     </div>
     <div class="avis" id="avis" hidden></div>
     <div class="choc" id="chocs" role="status" hidden></div>
     <div class="choc neuf" id="semaines-avis" role="status" hidden></div>
-    <p class="sources-ligne" id="sources-ligne" hidden></p>
     <p class="pdf-status" id="horaire-status" role="status" hidden></p>
     <div id="horaire-contenu">
       <div class="week">
@@ -3892,7 +3960,7 @@ try {
       <footer>
         <p id="maj"></p>
         <span class="sep" aria-hidden="true">·</span>
-        <p><a href="/aide/">Aide</a> · <a href="/confidentialite.html">Confidentialité</a> · <a href="/cgu.html">Conditions d'utilisation</a> · <button type="button" class="lien-pied" id="lien-bug-footer">Bug ou idée ? Signaler</button></p>
+        <p><a href="/aide/">Aide</a> · <a href="/confidentialite.html">Confidentialité</a> · <a href="/cgu.html">Conditions d'utilisation</a> · <a href="/mentions-legales.html">Mentions légales</a> · <button type="button" class="lien-pied" id="lien-bug-footer">Bug ou idée ? Signaler</button></p>
       </footer>
     </div>
   </section>
@@ -3958,6 +4026,10 @@ try {
   <button class="btn-ajout halo" id="btn-ajouter" type="button">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
     Ajouter un horaire
+  </button>
+  <button class="btn-ajout sim-quitter" id="btn-quitter-sim" type="button" hidden>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/></svg>
+    Quitter la simulation
   </button>
 </div>
 
@@ -4132,6 +4204,7 @@ try {
       <input id="bug-site-web" type="text" tabindex="-1" autocomplete="off">
     </div>
     <p id="bug-status" role="status"></p>
+    <p class="surnom-aide" id="mention-bug">En envoyant, tu acceptes que ton message (et tes images) soient conservés pour traiter ton signalement. Détails : <a href="/confidentialite.html">confidentialité</a>.</p>
     <div class="boite-actions">
       <button type="button" class="btn-sec" id="bug-annuler">Annuler</button>
       <button type="submit" class="btn-prim halo" id="bug-envoyer">Envoyer</button>
@@ -4166,7 +4239,12 @@ try {
       logo: "logos/ecoles/helb.svg", beta: true },
     { id: "ulb", nom: "ULB", detail: "Université libre de Bruxelles · Bruxelles, Charleroi", logo: "logos/ecoles/ulb.svg", recherche: true, beta: true },
     { id: "ucl", nom: "UCLouvain", detail: "Université catholique de Louvain · Louvain-la-Neuve, Bruxelles, Mons…",
-      logo: "logos/ecoles/ucl.svg", recherche: true, pdf: false, beta: true }
+      logo: "logos/ecoles/ucl.svg", recherche: true, pdf: false, beta: true },
+    /* École de test (horaires fictifs, voir api/_ecoles/sim.py) : proposée
+       seulement si le serveur la liste (/api/config), donc jamais en ligne —
+       serve.py la pose pour la simulation locale (lab/simulation.html). */
+    { id: "sim", nom: "Simulation", detail: "École de test · horaires fictifs (développement local)",
+      logo: "logos/ecoles/sim.svg", sim: true }
   ];
   function ecoleDe(id) {
     for (var i = 0; i < ECOLES.length; i++) if (ECOLES[i].id === id) return ECOLES[i];
@@ -4237,6 +4315,9 @@ try {
   var CLE_PROFIL_LEGACY = "ezh_profil";
   var CLE_PWA_PROPOSE = "ezh_pwa_propose";
   var CLE_BROUILLON = "ezh_brouillon";
+  // Horaires mis de côté par lab/simulation.html avant la simulation,
+  // rendus par « Quitter la simulation » (voir btn-quitter-sim).
+  var CLE_SIM_SAUVE = "ezh_sim_sauve";
 
   /* Ajout à l'écran d'accueil : proposé une seule fois, à la première
      connexion du compte sur mobile (plus à la création d'horaire). Le
@@ -4762,10 +4843,14 @@ try {
   }
   var EN_LOCAL = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
   // Mode essai (?essai=1) : uniquement depuis une origine locale (cette
-  // machine ou le réseau privé), jamais depuis le site en ligne. Aucun
-  // compte, aucun cloud : tout reste dans ce navigateur.
+  // machine ou le réseau privé) ou un tunnel de preview jetable
+  // (*.trycloudflare.com, lancé par serve.py --tunnel pour ouvrir la
+  // preview de l'extérieur), jamais depuis le site en ligne ni un
+  // domaine durable. Aucun compte, aucun cloud : tout reste dans ce
+  // navigateur.
   var MODE_ESSAI = /[?&]essai=1(?:&|$)/.test(location.search) &&
-    /^(localhost|127\.0\.0\.1|\[::1\]|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(location.hostname);
+    (/^(localhost|127\.0\.0\.1|\[::1\]|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(location.hostname) ||
+     /(\.|^)trycloudflare\.com$/.test(location.hostname));
   /* Erreurs Supabase Auth → phrase claire (le code est stable, le texte non). */
   function codeAuth(err) {
     if (!err) return "";
@@ -7779,7 +7864,7 @@ try {
     zone.hidden = false;
     zone.classList.toggle("ok", !chocs.length);
     if (!chocs.length) {
-      zone.innerHTML = ICONE_OK + "<div><strong>Aucun cours en double</strong><p>Tes sources s'emboîtent sans se chevaucher.</p></div>";
+      zone.innerHTML = ICONE_OK + "<div><strong>Aucun cours en double</strong><p>Tes sources s'emboîtent sans conflit.</p></div>";
       return;
     }
     var x = chocs[0], a = x.a, b = x.b;
@@ -7788,8 +7873,8 @@ try {
     chocs.forEach(function (c) { c.semaines.forEach(function (w) { semaines[w] = true; }); });
     var nSem = Object.keys(semaines).length;
     zone.innerHTML = ICONE_ATTENTION + "<div><strong>" +
-      txt(chocs.length === 1 ? JOURS[a.jour] + " " + fmtH(debut) + " : deux cours se chevauchent"
-                             : chocs.length + " chevauchements, sur " + nSem + " semaine" + (nSem > 1 ? "s" : "")) +
+      txt(chocs.length === 1 ? JOURS[a.jour] + " " + fmtH(debut) + " : deux cours en conflit"
+                             : chocs.length + " conflits, sur " + nSem + " semaine" + (nSem > 1 ? "s" : "")) +
       "</strong><p><b>" + txt(nettoyerMatiere(a.matiere)) + "</b> (" + txt(nomSource(perso.sources[a.src])) + ") et <b>" +
       txt(nettoyerMatiere(b.matiere)) + "</b> (" + txt(nomSource(perso.sources[b.src])) + ") tombent en même temps le " +
       JOURS[a.jour].toLowerCase() + " à " + fmtH(debut) + (chocs.length > 1 ? ", entre autres" : "") +
@@ -8099,7 +8184,8 @@ try {
   }
   function rendreSeg() {
     var seg = document.getElementById("seg");
-    // Un seul horaire : pas de nom, pas de choix, rien — juste l'horaire classique.
+    // Un seul horaire : rien au-dessus de la semaine — on sait à quoi on
+    // est inscrit ; la barre ne sert qu'à choisir entre plusieurs.
     // L'ajout d'un horaire se fait uniquement depuis le menu du compte
     // (bouton « + Ajouter un horaire » dans la feuille) : jamais ici.
     if (!profil || profils.length < 2) { seg.hidden = true; seg.innerHTML = '<span class="pill" aria-hidden="true"></span>'; return; }
@@ -8348,13 +8434,6 @@ try {
     rendreSeg();
     rendreAvatar();
     var multi = profils.length > 1;
-    var ligne = estPerso(profil) ? (multi ? profil.surnom + " · " : "") + libelleProfil(profil)
-      : (multi ? profil.surnom + " · " : "") + joliFormation(profil.formation) + (profil.groupes.length
-      ? " · " + (profil.groupes.length === 1 ? nomGroupe(profil.groupes[0]) : profil.groupes.length + " groupes")
-      : "");
-    var pl = document.getElementById("profil-ligne");
-    pl.hidden = multi; // plusieurs : la barre du haut dit déjà où on est
-    pl.textContent = ligne;
     // En haut à droite : toujours juste la bulle avec les initiales,
     // jamais le nom du cours. Le menu se déroule au clic comme avant.
     document.getElementById("moi-txt").textContent = "";
@@ -8889,7 +8968,7 @@ try {
   function tagEcheances(c) {
     var r = resumeEcheances(c);
     if (!r) return "";
-    return '<span class="ech-tag" style="--c:' + (r.examen ? "var(--attention)" : "var(--accent)") + '">' +
+    return '<span class="ech-tag" style="--c:' + (r.examen ? "var(--examen)" : "var(--accent)") + '">' +
       txt(r.texte) + "</span>";
   }
   /* Résumé des échéances d'un jour replié : celles posées sur la journée
@@ -8925,7 +9004,7 @@ try {
   }
 
   /* Pastilles D / E d'un cours : une par type d'échéance en attente
-     (devoir bleu, examen orange), empilées. Elles remplacent la flèche :
+     (devoir couleur du thème, examen complémentaire du thème), empilées. Elles remplacent la flèche :
      un cours ne s'ouvre que s'il a quelque chose à montrer. */
   function marquesEcheances(c) {
     var dateJour = dateSemJour(sem, c.jour);
@@ -8939,7 +9018,7 @@ try {
             : examen ? "Un examen en attente" : "Un devoir en attente";
     return '<span class="marques" role="img" aria-label="' + txt(dit) + '">' +
       (devoir ? '<span class="ebadge"><span>D</span></span>' : "") +
-      (examen ? '<span class="ebadge" style="--c:var(--attention)"><span>E</span></span>' : "") +
+      (examen ? '<span class="ebadge" style="--c:var(--examen)"><span>E</span></span>' : "") +
       "</span>";
   }
   /* Ligne de la salle : présente dès l'état replié (nom court de la salle)
@@ -8972,7 +9051,6 @@ try {
     for (var i = 0; i < cours.length; i++) {
       var c = cours[i];
       var cle = jour + ":" + i;
-      var choc = !!DATA.perso && enConflit(c, sem);
       var salle = salleCoursHTML(c);
       var infos = infosCoursHTML(c);
       var ech = listeEcheancesHTML(echeancesDe(c), cle, dateJour);
@@ -8982,7 +9060,7 @@ try {
       // Un seul cours dans le jour : déroulé d'office et non refermable.
       var seul = cours.length === 1 && deroulable;
       var estOuvert = seul || !!coursOuverts[cle];
-      html += '<li class="c' + (estOuvert ? " open" : "") + (seul ? " seul" : "") + (choc ? " li-choc" : "") + '">';
+      html += '<li class="c' + (estOuvert ? " open" : "") + (seul ? " seul" : "") + '">';
       html += '<button class="cbtn' + (deroulable ? "" : " inactif") + '" data-cle="' + cle + '"' +
               (deroulable ? ' aria-expanded="' + estOuvert + '"' : ' aria-disabled="true"') +
               (seul ? " disabled" : "") + ">" +
@@ -8992,7 +9070,6 @@ try {
               salle +
               infos +
               "</span>" +
-              (choc ? '<span class="choc-tag">Chevauche</span>' : "") +
               marques +
               "</button>";
       if (ech) {
@@ -9054,7 +9131,6 @@ try {
     var avis = document.getElementById("avis");
     avis.hidden = !perdus.length;
     if (DATA.perso) rendreAvisPerso(avis);
-    rendreChocs();
     rendreSemaines();
     if (perdus.length) {
       avis.innerHTML = (perdus.length === profil.groupes.length
@@ -9100,12 +9176,14 @@ try {
         : (estFerie(sem, j)
             ? '<span class="dsum free ferie" title="' + txt(nomFerie(sem, j)) + '">' + txt(nomFerie(sem, j)) + "</span>"
             : '<span class="dsum free">Libre</span>');
+      var chocJour = !!DATA.perso && liste.some(function (c) { return enConflit(c, sem); });
       var ech = slotsEcheancesJour(j, liste);
       html += '<li class="day' + (estAuj ? " today" : "") + (joursOuverts[j] ? " open" : "") + '">' +
         '<button data-jour="' + j + '" aria-expanded="' + (!!joursOuverts[j]) + '">' +
-        '<span class="dot" aria-hidden="true"></span>' + ech.gauche +
+        ech.gauche +
         '<span class="dname"><strong>' + JOURS[j] + "</strong>" +
         '<span class="ddate">' + fmtDate(date) + "</span></span>" +
+        (chocJour ? '<span class="choc-tag">Conflit</span>' : "") +
         resume + ech.droite + '</button>' +
         '<div class="detail">' +
         (liste.length ? detailJour(liste, j) : detailJourVide(j)) +
@@ -9138,10 +9216,6 @@ try {
     function nom(i) { return "« " + txt(nomSource(profil.sources[i])) + " »"; }
     (inf.manquantes || []).forEach(function (i) {
       lignes.push("L'horaire de " + nom(i) + " n'a pas pu être chargé : ses cours manquent. " +
-        '<button type="button" data-avis="reessayer">Réessayer</button>');
-    });
-    (inf.echecs || []).filter(function (i) { return (inf.manquantes || []).indexOf(i) < 0; }).forEach(function (i) {
-      lignes.push("L'horaire de " + nom(i) + " n'a pas pu être mis à jour : dernière version affichée. " +
         '<button type="button" data-avis="reessayer">Réessayer</button>');
     });
     (inf.ecartees || []).forEach(function (i) {
@@ -9250,33 +9324,6 @@ try {
       rendre();
     }
   });
-  /* Bandeau des chevauchements de la semaine + ligne des sources. */
-  function rendreChocs() {
-    var zone = document.getElementById("chocs");
-    var ligne = document.getElementById("sources-ligne");
-    if (!DATA || !DATA.perso) { zone.hidden = true; ligne.hidden = true; return; }
-    ligne.hidden = false;
-    ligne.innerHTML = profil.sources.map(function (src, i) {
-      return '<span><span class="src-dot" style="background:' + COULEURS_SOURCES[i % COULEURS_SOURCES.length] +
-        '"></span><b>' + txt(nomSource(src)) + "</b> · " + txt(detailSource(src)) + "</span>";
-    }).join("") + '<button type="button" class="lien-src" id="sources-modifier">Modifier</button>';
-    var chocs = chocsSemaine(sem);
-    zone.hidden = !chocs.length;
-    if (!chocs.length) { zone.innerHTML = ""; return; }
-    var x = chocs[0];
-    var a = x.a, b = x.b;
-    var debut = a.debut > b.debut ? a.debut : b.debut;
-    var titre = chocs.length === 1
-      ? JOURS[a.jour] + " " + fmtH(debut) + " : deux cours se chevauchent"
-      : chocs.length + " chevauchements cette semaine";
-    zone.innerHTML = ICONE_ATTENTION + "<div><strong>" + txt(titre) + "</strong><p><b>" +
-      txt(nettoyerMatiere(a.matiere)) + "</b> (" + txt(nomSource(profil.sources[a.src])) + ") et <b>" +
-      txt(nettoyerMatiere(b.matiere)) + "</b> (" + txt(nomSource(profil.sources[b.src])) + ")" +
-      (chocs.length > 1 ? ", entre autres," : "") +
-      " tombent en même temps " + (chocs.length === 1 ? "" : "le " + JOURS[a.jour].toLowerCase() + " ") +
-      "à " + fmtH(debut) + ". Garde les deux ou change de groupe. " +
-      '<button type="button" data-voir-jour="' + a.jour + '">Voir ' + JOURS[a.jour].toLowerCase() + "</button></p></div>";
-  }
   var ICONE_ATTENTION = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ' +
     'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5 2.8 19.5a1.5 1.5 0 0 0 1.3 2.2h15.8a1.5 1.5 0 0 0 1.3-2.2z"/>' +
     '<path d="M12 9.5v5M12 18h.01"/></svg>';
@@ -9286,9 +9333,6 @@ try {
     var b = e.target.closest("button[data-voir-jour]");
     if (!b) return;
     basculerJour(+b.getAttribute("data-voir-jour"), true);
-  });
-  document.getElementById("sources-ligne").addEventListener("click", function (e) {
-    if (e.target.closest("#sources-modifier") && profil && estPerso(profil)) modifierPerso(profil.id);
   });
 
   /* ---------- Grille de la semaine (ordinateur) ----------
@@ -9407,7 +9451,6 @@ try {
         var i = evCal.push(c) - 1;
         var rEch = resumeEcheances(c);
         corps += '<button type="button" class="ev' + (b - a < 75 ? " court" : "") +
-          (DATA.perso && enConflit(c, sem) ? " ev-choc" : "") +
           (mins(c.fin) > fin ? " coupe" : "") + '" data-ev="' + i + '"' +
           ' style="' + styleCours(c.matiere) + ";--t:" + pc(a) + ";--d:" + (pc(b) - pc(a)) +
           ";--l:" + (x.k / x.n) + ";--w:" + (1 / x.n) + '">' +
@@ -9448,18 +9491,14 @@ try {
     if (DATA && DATA.perso) {
       var nomsSrc = (c.srcs || [c.src]).map(function (i) { return nomSource(profil.sources[i]); }).filter(Boolean);
       if (nomsSrc.length) d += "<dt>Source</dt><dd>" + txt(nomsSrc.join(" et ")) + "</dd>";
-      if (enConflit(c, sem)) d += '<dt>Attention</dt><dd>Chevauche un cours d\'une autre source</dd>';
     }
     if (codeMatiere(c.matiere)) d += "<dt>Code</dt><dd>" + txt(codeMatiere(c.matiere)) + "</dd>";
-    // Échéances du cours : la même liste que sur téléphone, et de quoi en
-    // ajouter une sans quitter la bulle.
-    var cleEch = cleRenduCours(c);
-    var listeEch = listeEcheancesHTML(echeancesDe(c), cleEch, date);
-    var blocEch = '<div class="pop-ech">' +
-      '<p class="pop-ech-titre">Échéances</p>' +
-      (listeEch || '<p class="pop-ech-vide">Aucune échéance pour ce cours.</p>') +
-      '<button type="button" class="ech-add pop-ech-add" data-ech-cible="' + txt(cleEch) + '">' +
-      ICONE_PLUS + "<span>Ajouter un devoir ou un examen</span></button></div>";
+    // Échéances du cours : la même liste que sur téléphone, en lecture
+    // seule. L'ajout passe par le bouton « Échéance » en haut du jour ;
+    // sans échéance, pas de section du tout.
+    var listeEch = listeEcheancesHTML(echeancesDe(c), cleRenduCours(c), date);
+    var blocEch = listeEch ? '<div class="pop-ech">' +
+      '<p class="pop-ech-titre">Échéances</p>' + listeEch + "</div>" : "";
     return '<p class="pt">' + txt(nettoyerMatiere(c.matiere || "Cours")) + "</p>" +
       '<p class="ph">' + JOURS[c.jour] + " " + fmtDate(date) + " · " + fmtH(c.debut) + " – " + fmtH(c.fin) + "</p>" +
       "<dl>" + d + "</dl>" + blocEch;
@@ -9602,6 +9641,12 @@ try {
   function rendreListeProfils() {
     var zone = document.getElementById("liste-profils");
     if (!zone) return;
+    // Sortie de la simulation : proposée dès qu'un horaire de l'école de
+    // test est là (voir lab/simulation.html pour l'entrée).
+    var quitter = document.getElementById("btn-quitter-sim");
+    if (quitter) {
+      quitter.hidden = !profils.some(function (p) { return p.ecole === "sim"; });
+    }
     var note = document.getElementById("note-perso-local");
     var local = baseSansSources && profils.some(estPerso);
     if (local && !note) {
@@ -11440,7 +11485,22 @@ try {
     if (ouvrir) joursOuverts[j] = true; else delete joursOuverts[j];
     li.classList.toggle("open", ouvrir);
     btn.setAttribute("aria-expanded", !!ouvrir);
-    if (ouvrir) calerDansEcran(li, true);
+    if (ouvrir) { calerDansEcran(li, true); return; }
+    // Refermer le jour referme aussi ses cours (et l'état mémorisé, pour
+    // qu'un rendu pendant que le jour est fermé les redessine repliés) et
+    // les tiroirs d'échéance. Le cours « seul » garde son dépliage d'office.
+    var prefixe = j + ":";
+    Object.keys(coursOuverts).forEach(function (cle) {
+      if (cle.indexOf(prefixe) === 0) delete coursOuverts[cle];
+    });
+    var cours = li.querySelectorAll("li.c.open:not(.seul)");
+    for (var i = 0; i < cours.length; i++) {
+      cours[i].classList.remove("open");
+      var b = cours[i].querySelector(".cbtn");
+      if (b) b.setAttribute("aria-expanded", "false");
+    }
+    var echs = li.querySelectorAll(".ech-item");
+    for (var k = 0; k < echs.length; k++) fermerItemEch(echs[k], false);
   }
   function basculerCours(cle, ouvrir) {
     var btn = document.querySelector('#jours .cbtn[data-cle="' + cle + '"]');
@@ -11847,6 +11907,41 @@ try {
   document.getElementById("btn-ajouter").addEventListener("click", function () {
     fermerFeuille();
     demarrerAjout();
+  });
+  /* Quitter la simulation (école de test) : retire les horaires simulés et
+     leur cache, remet ceux mis de côté à l'entrée (ezh_sim_sauve, voir
+     lab/simulation.html) et rend le menu du labo, d'où l'on choisit 1 ou 4
+     horaires. Sans horaire simulé, le bouton est caché. */
+  document.getElementById("btn-quitter-sim").addEventListener("click", function () {
+    var sauve = lire(CLE_SIM_SAUVE);
+    profils = profils.filter(function (p) {
+      if (p.ecole !== "sim") return true;
+      try { localStorage.removeItem(cleHoraire(p.ecole, p.formation, p.ical)); } catch (e) { /* jetable */ }
+      return false;
+    });
+    if (Array.isArray(sauve) && sauve.length) {
+      sauve.forEach(function (p) { if (profilValide(p)) profils.push(p); });
+      try { localStorage.removeItem(CLE_SIM_SAUVE); } catch (e) { /* jetable */ }
+    }
+    // Échéances de la simulation : elles partent avec elle (celles des
+    // vrais horaires restent intactes).
+    var tousEch = lireEcheancesTout(), vu = false;
+    Object.keys(tousEch).forEach(function (pid) {
+      if (pid.indexOf("sim-") === 0) { delete tousEch[pid]; vu = true; }
+    });
+    if (vu) ecrire(CLE_ECHEANCES, tousEch);
+    if (!profils.length) {
+      profil = null;
+      // Compte de circonstance du mode essai : on repart propre.
+      if (compte && compte.fournisseur === "essai") {
+        compte = null;
+        try { localStorage.removeItem(CLE_COMPTE); } catch (e) { /* jetable */ }
+      }
+    } else if (!profils.some(function (p) { return profil && p.id === profil.id; })) {
+      profil = profils[0];
+    }
+    sauverProfils();
+    location.href = "lab/simulation.html";
   });
   /* ⋮ du compte : menu Modifier mon nom (fenêtre) / Se déconnecter.
      Un clic ailleurs dans les réglages referme les menus ouverts. */

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>EzHoraire — Simulation d'horaires (local)</title>
+<link rel="icon" href="/assets/icons/favicon.ico" sizes="48x48 32x32 16x16">
+<link rel="icon" href="/assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/assets/icons/favicon-48x48.png" type="image/png" sizes="48x48">
+<link rel="icon" href="/assets/icons/favicon-96x96.png" type="image/png" sizes="96x96">
+<link rel="icon" href="/assets/icons/icon-192.png" type="image/png" sizes="192x192">
+<link rel="icon" href="/assets/icons/favicon-32x32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="/assets/icons/favicon-16x16.png" type="image/png" sizes="16x16">
+<link rel="mask-icon" href="/assets/icons/safari-pinned-tab.svg?v=2" color="#2456e0">
+<style>
+  /* Menu de la simulation (labo, jamais déployé : voir .vercelignore).
+     Deux choix, puis c'est la vraie app en mode essai : les horaires
+     viennent de l'école de test (api/_ecoles/sim.py), servie par
+     tools/serve.py (EZH_SIM=1). La sortie se fait depuis les Réglages
+     de l'app (« Quitter la simulation »). */
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; display: grid; place-items: center;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: #f4f5f7; color: #17191d;
+  }
+  @media (prefers-color-scheme: dark) { body { background: #101216; color: #f0f3f7; } }
+  .page { width: 100%; max-width: 460px; padding: 28px 18px 40px; }
+  .badge { display: inline-block; margin: 0 0 12px; padding: 4px 12px; border-radius: 999px;
+    font-size: .78rem; font-weight: 650; background: rgba(36, 86, 224, .09); color: #2456e0; }
+  @media (prefers-color-scheme: dark) { .badge { background: rgba(139, 166, 255, .13); color: #8ba6ff; } }
+  h1 { margin: 0 0 8px; font-size: 1.45rem; letter-spacing: -.02em; }
+  .aide { margin: 0 0 22px; font-size: .92rem; line-height: 1.55; color: #626977; }
+  @media (prefers-color-scheme: dark) { .aide { color: #98a1b1; } }
+  .choix { display: grid; gap: 12px; }
+  .choix button {
+    display: flex; align-items: center; gap: 14px; width: 100%; padding: 18px 16px;
+    border: 0; border-radius: 18px; cursor: pointer; font: inherit; text-align: left;
+    color: #17191d; background: #ffffff;
+    box-shadow: inset 0 0 0 1px #e4e7ec, 0 1px 2px rgba(23, 32, 68, .06), 0 2px 8px -4px rgba(23, 32, 68, .08);
+    transition: transform .12s ease;
+  }
+  @media (prefers-color-scheme: dark) {
+    .choix button { color: #f0f3f7; background: #171a20; box-shadow: inset 0 0 0 1px #262b34; }
+  }
+  .choix button:active { transform: scale(.985); }
+  .choix button:focus-visible { outline: 2px solid #2456e0; outline-offset: 2px; }
+  .nombre { flex: none; width: 44px; height: 44px; border-radius: 13px; display: grid; place-items: center;
+    font-size: 1.15rem; font-weight: 700; color: #2456e0; background: rgba(36, 86, 224, .09); }
+  @media (prefers-color-scheme: dark) { .nombre { color: #8ba6ff; background: rgba(139, 166, 255, .13); } }
+  .textes { flex: 1; min-width: 0; }
+  .textes strong { display: block; font-size: 1.02rem; letter-spacing: -.01em; }
+  .textes small { display: block; margin-top: 3px; font-size: .84rem; line-height: 1.4; color: #626977; }
+  @media (prefers-color-scheme: dark) { .textes small { color: #98a1b1; } }
+  .chev { flex: none; width: 10px; height: 10px; margin-right: 6px; opacity: .45;
+    border-right: 2px solid currentColor; border-top: 2px solid currentColor; transform: rotate(45deg); }
+  .erreur { margin: 16px 0 0; padding: 10px 14px; border-radius: 12px; font-size: .88rem;
+    background: rgba(212, 42, 60, .10); color: #d42a3c; }
+  @media (prefers-color-scheme: dark) { .erreur { background: rgba(255, 107, 122, .15); color: #ff6b7a; } }
+</style>
+</head>
+<body>
+<main class="page">
+  <p class="badge">Simulation locale — page de test, non déployée</p>
+  <h1>Simulation d'horaires</h1>
+  <p class="aide">Choisis l'affichage : l'app s'ouvre en mode essai, avec de vrais
+    horaires fictifs — salle, prof et groupe selon les cours. Pour en sortir :
+    <strong>Réglages → Quitter la simulation</strong>.</p>
+  <div class="choix" id="choix">
+    <button type="button" data-n="1">
+      <span class="nombre">1</span>
+      <span class="textes"><strong>Un horaire</strong>
+        <small>Informatique : salle, prof et groupe selon les cours.</small></span>
+      <span class="chev" aria-hidden="true"></span>
+    </button>
+    <button type="button" data-n="4">
+      <span class="nombre">4</span>
+      <span class="textes"><strong>Quatre horaires</strong>
+        <small>Info · Droit · Compta · Soins, avec la barre de sélection.</small></span>
+      <span class="chev" aria-hidden="true"></span>
+    </button>
+    <button type="button" data-n="conflits">
+      <span class="nombre">≠</span>
+      <span class="textes"><strong>Sur mesure — conflits</strong>
+        <small>Info + Droit + Compta : 7 conflits horaires, dont un triple,
+          pour travailler le rendu (pastilles « Conflit », cours côte à côte).</small></span>
+      <span class="chev" aria-hidden="true"></span>
+    </button>
+  </div>
+  <p class="erreur" id="sim-erreur" hidden></p>
+</main>
+<script>
+/* Entrée de la simulation : pose les horaires de l'école de test dans
+   localStorage, puis ouvre l'app en mode essai (aucune connexion, aucun
+   cloud). La simulation part d'une page blanche — exactement 1 ou 4
+   horaires —, mais les horaires déjà présents sur l'appareil sont mis de
+   côté (ezh_sim_sauve) et rendus par « Quitter la simulation », dans les
+   Réglages. Recharger cette page ramène simplement au menu. */
+(function () {
+  "use strict";
+  var PROFILS = {
+    "1": [
+      { id: "sim-info", surnom: "Info", ecole: "sim", formation: "BA1 Informatique",
+        groupes: ["Groupe 1 BA1 Informatique", "Groupe 2 BA1 Informatique"], ical: "", theme: 2 }
+    ],
+    "4": [
+      { id: "sim-info", surnom: "Info", ecole: "sim", formation: "BA1 Informatique",
+        groupes: ["Groupe 1 BA1 Informatique", "Groupe 2 BA1 Informatique"], ical: "", theme: 2 },
+      { id: "sim-droit", surnom: "Droit", ecole: "sim", formation: "BA1 Droit belge",
+        groupes: [], ical: "", theme: 1 },
+      { id: "sim-compta", surnom: "Compta", ecole: "sim", formation: "BA1 Comptabilité",
+        groupes: ["Groupe 1 BA1 Comptabilité"], ical: "", theme: 3 },
+      { id: "sim-soins", surnom: "Soins", ecole: "sim", formation: "BA1 Soins infirmiers",
+        groupes: ["Groupe 1 BA1 Soins infirmiers"], ical: "", theme: 0 }
+    ],
+    /* Horaire sur mesure : trois sources de l'école de test (comme un
+       étudiant qui fusionne une année principale et des cours d'ailleurs).
+       Droit civil (lundi 09h00-12h00) tombe sur le cours d'informatique
+       (08h15-10h15) et sur Comptabilité générale (08h15-12h30) : trois
+       cours en même temps le lundi matin, plus des paires le mardi
+       (08h15) et le mercredi (13h30-15h30, même créneau). De quoi voir
+       les pastilles « Conflit » et les cours côte à côte dans la grille. */
+    "conflits": [
+      { id: "sim-perso", surnom: "Sur mesure", ecole: "sim", formation: "", groupes: [],
+        ical: "", theme: 2,
+        sources: [
+          { ecole: "sim", formation: "BA1 Informatique", ical: "", role: "principale",
+            groupes: ["Groupe 1 BA1 Informatique"], sans: [], surnom: "" },
+          { ecole: "sim", formation: "BA1 Droit belge", ical: "", role: "ajout",
+            groupes: [], avec: ["Droit civil", "Droit constitutionnel", "Histoire du droit"],
+            surnom: "Droit" },
+          { ecole: "sim", formation: "BA1 Comptabilité", ical: "", role: "ajout",
+            groupes: [], avec: ["Comptabilité générale"], surnom: "Compta" }
+        ] }
+    ]
+  };
+  /* Échéances : devoirs et examens fictifs, posés sur des cours précis de
+     l'école de test (mêmes clés que l'app : « jour|début|matière »), plus
+     deux posés sur la journée (« jour|| », « à une autre heure »). Les
+     dates visent la prochaine occurrence de leur jour, aujourd'hui
+     compris — le geste par défaut de l'app — donc toujours à venir :
+     pastilles D/E visibles, jamais grisées. Recalculées à chaque entrée.
+     Un exemplaire passe par l'état « c'est fait » (titre barré) et un
+     autre porte une heure. */
+  function dateDuJour(jourSemaine) {
+    var d = new Date();
+    d.setDate(d.getDate() + (jourSemaine - ((d.getDay() + 6) % 7) + 7) % 7);
+    return d.getFullYear() + "-" +
+      String(d.getMonth() + 1).padStart(2, "0") + "-" +
+      String(d.getDate()).padStart(2, "0");
+  }
+  function echeance(id, type, titre, jourSemaine, heure, fait) {
+    return { id: id, type: type, titre: titre, date: dateDuJour(jourSemaine),
+             heure: heure || "", cree: Date.now(), fait: !!fait };
+  }
+  function echeancesSim() {
+    return {
+      "sim-info": {
+        "0|8h15|Programmation orientée objet": [
+          echeance("sim-ech-info-1", "devoir", "Exercices 1 à 8 du chapitre 3", 0)
+        ],
+        "2|13h30|Introduction au droit": [
+          echeance("sim-ech-info-2", "examen", "Examen écrit : théorie et exercices", 2, "08:30")
+        ],
+        "0||": [
+          echeance("sim-ech-info-3", "devoir", "Rendre le rapport de stage", 0, "18:00")
+        ]
+      },
+      "sim-droit": {
+        "0|9h00|Droit civil": [
+          echeance("sim-ech-droit-1", "devoir", "Synthèse de jurisprudence (remis)", 0, "", true)
+        ]
+      },
+      "sim-compta": {
+        "0|08h15|Comptabilité générale": [
+          echeance("sim-ech-compta-1", "examen", "Interrogation : bilan et compte de résultat", 0, "10:00")
+        ]
+      },
+      "sim-perso": {
+        "0|09h00|Droit civil": [
+          echeance("sim-ech-perso-1", "devoir", "Casus à rendre (cours en conflit)", 0)
+        ]
+      },
+      "sim-soins": {
+        "0|8h15|Anatomie": [
+          echeance("sim-ech-soins-1", "devoir", "Schéma commenté du système nerveux", 0)
+        ],
+        "2||": [
+          echeance("sim-ech-soins-2", "devoir", "Préparer les travaux pratiques", 2, "17:30")
+        ]
+      }
+    };
+  }
+  function lancer(n) {
+    var liste = PROFILS[n];
+    if (!liste) return;
+    try {
+      var existants = JSON.parse(localStorage.getItem("ezh_profils") || "[]");
+      var vrais = Array.isArray(existants)
+        ? existants.filter(function (p) { return p && p.ecole !== "sim"; })
+        : [];
+      if (vrais.length) localStorage.setItem("ezh_sim_sauve", JSON.stringify(vrais));
+      localStorage.setItem("ezh_profils", JSON.stringify(liste));
+      localStorage.setItem("ezh_courant", liste[0].id);
+      localStorage.removeItem("ezh_brouillon");
+      localStorage.removeItem("ezh_profil");
+      // Échéances : seules celles de la simulation sont remplacées.
+      var tous = JSON.parse(localStorage.getItem("ezh_echeances") || "null");
+      if (!tous || typeof tous !== "object" || Array.isArray(tous)) tous = {};
+      Object.keys(tous).forEach(function (pid) {
+        if (pid.indexOf("sim-") === 0) delete tous[pid];
+      });
+      var neuves = echeancesSim();
+      liste.forEach(function (p) { if (neuves[p.id]) tous[p.id] = neuves[p.id]; });
+      localStorage.setItem("ezh_echeances", JSON.stringify(tous));
+    } catch (e) {
+      var err = document.getElementById("sim-erreur");
+      err.hidden = false;
+      err.textContent = "Le navigateur bloque le stockage local (navigation privée ?) : " +
+        String((e && e.message) || e);
+      return;
+    }
+    location.href = "/?essai=1";
+  }
+  document.getElementById("choix").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-n]");
+    if (b) lancer(b.getAttribute("data-n"));
+  });
+  /* Raccourci de partage : « ?n=1 », « ?n=4 » ou « ?n=conflits » ouvre
+     directement le scénario, sans passer par le menu. */
+  var auto = (/[?&]n=(1|4|conflits)(?:&|$)/.exec(location.search) || [])[1];
+  if (auto) lancer(auto);
+})();
+</script>
+</body>
+</html>

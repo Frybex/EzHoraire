@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>EzHoraire — Couleur de l'examen selon le thème</title>
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --ink: #17191d;
+    --muted: #626977;
+    --line: #e4e7ec;
+    --accent: #1d4fd7;
+    --accent-soft: rgba(29, 79, 215, .09);
+    --attention: #b26a00;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #101216;
+      --surface: #171a20;
+      --ink: #f0f3f7;
+      --muted: #98a1b1;
+      --line: #262b34;
+      --accent: #8ba6ff;
+      --accent-soft: rgba(139, 166, 255, .13);
+      --attention: #f0b866;
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    --relief-haut: color-mix(in srgb, var(--bg), #fff 78%);
+    --relief-bas: color-mix(in srgb, var(--bg), #fff 44%);
+    --reflet: rgba(255, 255, 255, .9);
+    --ombre-btn: 0 1px 2px rgba(23, 32, 68, .06), 0 2px 8px -4px rgba(23, 32, 68, .08);
+    margin: 0; color: var(--ink); background: var(--bg);
+    font-family: var(--font); font-size: 17px; line-height: 1.45;
+  }
+  @media (prefers-color-scheme: dark) {
+    body {
+      --relief-haut: color-mix(in srgb, var(--bg), #fff 7%);
+      --relief-bas: color-mix(in srgb, var(--bg), #fff 2.5%);
+      --reflet: rgba(255, 255, 255, .06);
+      --ombre-btn: 0 1px 2px rgba(0, 0, 0, .4), 0 4px 12px -6px rgba(0, 0, 0, .6);
+    }
+  }
+  .page { max-width: 420px; margin: 0 auto; padding: 26px 16px 60px; }
+  h1 { font-size: 1.3rem; letter-spacing: -.02em; margin: 0 0 6px; }
+  .intro { color: var(--muted); font-size: .88rem; margin: 0 0 24px; line-height: 1.55; }
+
+  /* ---- Thèmes : mêmes fonds et accents que l'app ---- */
+  .theme { border-radius: 18px; padding: 14px 12px 4px; margin: 0 0 24px; background: var(--bg); }
+  .theme h2 {
+    display: flex; align-items: center; gap: 8px;
+    font-size: .95rem; margin: 2px 2px 14px; letter-spacing: -.01em;
+  }
+  .pastille { width: 14px; height: 14px; border-radius: 50%; background: var(--accent); flex: none; }
+  .th-bleu { --accent: #1d4fd7; --accent-soft: rgba(29, 79, 215, .09); --bg: #eaf0fa;
+    --relief-haut: color-mix(in srgb, var(--bg), #fff 78%); --relief-bas: color-mix(in srgb, var(--bg), #fff 44%); }
+  .th-vert { --accent: #0e8655; --accent-soft: rgba(14, 134, 85, .10); --bg: #ebf2ec;
+    --relief-haut: color-mix(in srgb, var(--bg), #fff 78%); --relief-bas: color-mix(in srgb, var(--bg), #fff 44%); }
+  .th-rose { --accent: #d14d8a; --accent-soft: rgba(209, 77, 138, .12); --bg: #fdf1f6;
+    --relief-haut: color-mix(in srgb, var(--bg), #fff 78%); --relief-bas: color-mix(in srgb, var(--bg), #fff 44%); }
+  @media (prefers-color-scheme: dark) {
+    .th-bleu { --accent: #8ba6ff; --accent-soft: rgba(139, 166, 255, .14); --bg: #0d1322;
+      --relief-haut: color-mix(in srgb, var(--bg), #fff 7%); --relief-bas: color-mix(in srgb, var(--bg), #fff 2.5%); }
+    .th-vert { --accent: #4cc38a; --accent-soft: rgba(76, 195, 138, .14); --bg: #0c1411;
+      --relief-haut: color-mix(in srgb, var(--bg), #fff 7%); --relief-bas: color-mix(in srgb, var(--bg), #fff 2.5%); }
+    .th-rose { --accent: #ffa8d0; --accent-soft: rgba(255, 168, 208, .16); --bg: #24141d;
+      --relief-haut: color-mix(in srgb, var(--bg), #fff 7%); --relief-bas: color-mix(in srgb, var(--bg), #fff 2.5%); }
+  }
+
+  /* ---- Cartes de jour : copie de index.html ---- */
+  .days { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .day {
+    border-radius: 16px;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  .day > button {
+    width: 100%; border: none; background: none; font: inherit; color: inherit;
+    display: flex; align-items: center; gap: 8px; text-align: left;
+    padding: 12px 10px; min-height: 62px; border-radius: 16px;
+  }
+  .dname { flex: none; min-width: 112px; }
+  .dname strong { display: block; font-size: 1.02rem; font-weight: 600; letter-spacing: -.01em; }
+  .ddate { font-size: .85rem; color: var(--muted); }
+  .dsum {
+    margin-left: auto; font-size: .96rem; color: var(--ink);
+    font-variant-numeric: tabular-nums; white-space: nowrap; letter-spacing: -.01em; font-weight: 600;
+  }
+  .day-ech-slot {
+    flex: none; width: 17px; display: flex; justify-content: center;
+    align-items: center; align-self: center; min-height: 0;
+  }
+  .day-ech {
+    flex: none; width: 17px; height: 46px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 750; text-transform: uppercase;
+    font-size: .53rem; letter-spacing: .07em; line-height: 1; text-align: center;
+    border-radius: 6px; writing-mode: vertical-rl; transform: rotate(180deg);
+  }
+  .day-ech.devoir { color: var(--accent); background: var(--accent-soft); }
+  /* L'examen suit le candidat : --c. */
+  .day-ech.examen {
+    color: var(--c, var(--attention));
+    background: color-mix(in srgb, var(--c, var(--attention)) 14%, var(--surface));
+  }
+  .ebadge {
+    width: 19px; height: 19px; border-radius: 50%; display: grid; place-items: center;
+    font-size: .62rem; font-weight: 750; line-height: 1; text-align: center;
+    color: var(--c, var(--accent));
+    background: color-mix(in srgb, var(--c, var(--accent)) 12%, var(--surface));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c, var(--accent)) 32%, transparent);
+  }
+
+  .essai { margin: 0 0 20px; }
+  .teinte {
+    margin: 0 0 6px 2px; font-size: .74rem; letter-spacing: .02em; text-transform: uppercase;
+    font-weight: 650; color: var(--muted);
+  }
+  .teinte b { color: var(--ink); }
+  .badges { display: flex; align-items: center; gap: 7px; margin: 8px 2px 0; }
+  .badges .mini { font-size: .76rem; color: var(--muted); }
+
+  /* ---- Candidats : couleur claire, et sa version sombre ---- */
+  .ex-bleu-froide { --examen: #5e19c8; }
+  .ex-bleu-comp { --examen: #a27a12; }
+  .ex-bleu-encre { --examen: #0b297b; }
+  .ex-vert-froide { --examen: #0c5f7c; }
+  .ex-vert-comp { --examen: #790a37; }
+  .ex-vert-encre { --examen: #044d2f; }
+  .ex-rose-froide { --examen: #bb39ce; }
+  .ex-rose-jade { --examen: #0e7350; }
+  .ex-rose-sapin { --examen: #14503a; }
+  .ex-rose-olive { --examen: #5c6b1f; }
+  .ex-rose-turquoise { --examen: #0d6a78; }
+  .ex-rose-encre { --examen: #821c4b; }
+  @media (prefers-color-scheme: dark) {
+    .ex-bleu-froide { --examen: #be94f6; }
+    .ex-bleu-comp { --examen: #f1d67e; }
+    .ex-bleu-encre { --examen: #97acf3; }
+    .ex-vert-froide { --examen: #4cadc3; }
+    .ex-vert-comp { --examen: #c34c85; }
+    .ex-vert-encre { --examen: #a3dcc0; }
+    .ex-rose-froide { --examen: #eeaaf8; }
+    .ex-rose-jade { --examen: #5fd9a7; }
+    .ex-rose-sapin { --examen: #74c69d; }
+    .ex-rose-olive { --examen: #cbd97a; }
+    .ex-rose-turquoise { --examen: #4ecdd8; }
+    .ex-rose-encre { --examen: #f6b1d1; }
+  }
+
+  body.solo .entete { display: none; }
+  body[data-seul="1"] .theme:not(.th-bleu),
+  body[data-seul="2"] .theme:not(.th-vert),
+  body[data-seul="3"] .theme:not(.th-rose) { display: none; }
+  body[data-seul] .theme { margin-bottom: 0; }
+  /* ?c=1 : récap des seules formules retenues, un thème par carte. */
+  body.choix .entete { display: none; }
+  body.choix .essai:not(.choisi) { display: none; }
+</style>
+</head>
+<body>
+<main class="page">
+  <div class="entete">
+    <h1>Couleur de l'examen selon le thème</h1>
+    <p class="intro">L'examen quitte l'ambre fixe pour une couleur dérivée du thème de
+      l'horaire, toujours différente du devoir. Trois formules par thème : la voisine
+      froide (recommandée), la complémentaire, et l'encre (la même teinte en plus
+      soutenu). Le devoir garde la couleur du thème. Pour le rose, la menthe est
+      écartée : quatre complémentaires restent à départager.</p>
+  </div>
+
+  <section class="theme th-bleu">
+    <h2><span class="pastille"></span>Thème Bleu</h2>
+
+    <div class="essai ex-bleu-froide">
+      <p class="teinte"><b>Voisine froide</b> — violet</p>
+      <ul class="days">
+        <li class="day"><button type="button">
+          <span class="day-ech-slot"><span class="day-ech examen" style="--c:var(--examen)">Examen</span></span>
+          <span class="dname"><strong>Mardi</strong><span class="ddate">29 sept.</span></span>
+          <span class="dsum">08h15 → 15h30</span>
+          <span class="day-ech-slot"><span class="day-ech devoir">Devoir</span></span>
+        </button></li>
+      </ul>
+      <p class="badges"><span class="ebadge" style="--c:var(--examen)"><span>E</span></span>
+        <span class="ebadge"><span>D</span></span><span class="mini">les deux badges des lignes de cours</span></p>
+    </div>
+
+    <div class="essai choisi ex-bleu-comp">
+      <p class="teinte"><b>Complémentaire</b> — or assombri</p>
+      <ul class="days">
+        <li class="day"><button type="button">
+          <span class="day-ech-slot"><span class="day-ech examen" style="--c:var(--examen)">Examen</span></span>
+          <span class="dname"><strong>Mardi</strong><span class="ddate">29 sept.</span></span>
+          <span class="dsum">08h15 → 15h30</span>
+          <span class="day-ech-slot"><span class="day-ech devoir">Devoir</span></span>
+        </button></li>
+      </ul>
+      <p class="badges"><span class="ebadge" style="--c:var(--examen)"><span>E</span></span>
+        <span class="ebadge"><span>D</span></span><span class="mini">les deux badges des lignes de cours</span></p>
+    </div>
+
+    <div class="essai ex-bleu-encre">
+      <p class="teinte"><b>Encre</b> — le bleu du thème, plus profond</p>
+      <ul class="days">
+        <li class="day"><button type="button">
+          <span class="day-ech-slot"><span class="day-ech examen" style="--c:var(--examen)">Examen</span></span>
+          <span class="dname"><strong>Mardi</strong><span class="ddate">29 sept.</span></span>
+          <span class="dsum">08h15 → 15h30</span>
+          <span class="day-ech-slot"><span class="day-ech devoir">Devoir</span></span>
+        </button></li>
+      </ul>
+      <p class="badges"><span class="ebadge" style="--c:var(--examen)"><span>E</span></span>
+        <span class="ebadge"><span>D</span></span><span class="mini">les deux badges des lignes de cours</span></p>
+    </div>
+  </section>
+
+  <section class="theme th-vert">
+    <h2><span class="pastille"></span>Thème Vert</h2>
+
+    <div class="essai ex-vert-froide">
+      <p class="teinte"><b>Voisine froide</b> — bleu sarcelle</p>
+      <ul class="days">
+        <li class="day"><button type="button">
+          <span class="day-ech-slot"><span class="day-ech examen" style="--c:var(--examen)">Examen</span></span>
+          <span class="dname"><strong>Mardi</strong><span class="ddate">29 sept.</span></span>
+          <span class="dsum">08h15 → 15h30</span>
+          <span class="day-ech-slot"><span class="day-ech devoir">Devoir</span></span>
+        </button></li>
+      </ul>
+      <p class="badges"><span class="ebadge" style="--c:var(--examen)"><span>E</span></span>
+        <span class="ebadge"><span>D</span></span><span class="mini">les deux badges des lignes de cours</span></p>
+    </div>
+
+    <div class="essai choisi ex-vert-comp">
+      <p class="teinte"><b>Complémentaire</b> — prune</p>
+      <ul class="days">
+        <li class="day"><button type="button">
+          <span class="day-ech-slot"><span class="day-ech examen" style="--c:var(--examen)">Examen</span></span>
+          <span class="dname"><strong>Mardi</strong><span class="ddate">29 sept.</span></span>
+          <span class="dsum">08h15 → 15h30</span>
+          <span class="day-ech-slot"><span class="day-ech devoir">Devoir</span></span>
+        </button></li>
+      </ul>
+      <p class="badges"><span class="ebadge" style="--c:var(--examen)"><span>E</span></span>
+        <span class="ebadge"><span>D</span></span><span class="mini">les deux badges des lignes de cours</span></p>
+    </div>
+
+    <div class="essai ex-vert-encre">
+      <p class="teinte"><b>Encre</b> — le vert du thème, plus profond</p>
+      <ul class="days">
+        <li class="day"><button type="button">
+          <span class="day-ech-slot"><span class="day-ech examen" style="--c:var(--examen)">Examen</span></span>
+          <span class="dname"><strong>Mardi</strong><span class="ddate">29 sept.</span></span>
+          <span class="dsum">08h15 → 15h30</span>
+          <span class="day-ech-slot"><span class="day-ech devoir">Devoir</span></span>
+        </button></li>
+      </ul>
+      <p class="badges"><span class="ebadge" style="--c:var(--examen)"><span>E</span></span>
+        <span class="ebadge"><span>D</span></span><span class="mini">les deux badges des lignes de cours</span></p>
+    </div>
+  </section>
+
+  <section class="theme th-rose">
+    <h2><span class="pastille"></span>Thème Rose</h2>
+
+    <div class="essai ex-rose-froide">
+      <p class="teinte"><b>Voisine froide</b> — violet</p>
+      <ul class="days">
+        <li class="day"><button type="button">
+          <span class="day-ech-slot"><span class="day-ech examen" style="--c:var(--examen)">Examen</span></span>
+          <span class="dname"><strong>Mardi</strong><span class="ddate">29 sept.</span></span>
+          <span class="dsum">08h15 → 15h30</span>
+          <span class="day-ech-slot"><span class="day-ech devoir">Devoir</span></span>
+        </button></li>
+      </ul>
+      <p class="badges"><span class="ebadge" style="--c:var(--examen)"><span>E</span></span>
+        <span class="ebadge"><span>D</span></span><span class="mini">les deux badges des lignes de cours</span></p>
+    </div>
+
+    <div class="essai ex-rose-jade">
+      <p class="teinte"><b>Complémentaire</b> — jade (le vrai complément)</p>
+      <ul class="days">
+        <li class="day"><button type="button">
+          <span class="day-ech-slot"><span class="day-ech examen" style="--c:var(--examen)">Examen</span></span>
+          <span class="dname"><strong>Mardi</strong><span class="ddate">29 sept.</span></span>
+          <span class="dsum">08h15 → 15h30</span>
+          <span class="day-ech-slot"><span class="day-ech devoir">Devoir</span></span>
+        </button></li>
+      </ul>
+      <p class="badges"><span class="ebadge" style="--c:var(--examen)"><span>E</span></span>
+        <span class="ebadge"><span>D</span></span><span class="mini">les deux badges des lignes de cours</span></p>
+    </div>
+
+    <div class="essai ex-rose-sapin">
+      <p class="teinte"><b>Complémentaire</b> — sapin (complément profond)</p>
+      <ul class="days">
+        <li class="day"><button type="button">
+          <span class="day-ech-slot"><span class="day-ech examen" style="--c:var(--examen)">Examen</span></span>
+          <span class="dname"><strong>Mardi</strong><span class="ddate">29 sept.</span></span>
+          <span class="dsum">08h15 → 15h30</span>
+          <span class="day-ech-slot"><span class="day-ech devoir">Devoir</span></span>
+        </button></li>
+      </ul>
+      <p class="badges"><span class="ebadge" style="--c:var(--examen)"><span>E</span></span>
+        <span class="ebadge"><span>D</span></span><span class="mini">les deux badges des lignes de cours</span></p>
+    </div>
+
+    <div class="essai ex-rose-olive">
+      <p class="teinte"><b>Complémentaire</b> — olive (vert chaud, proche de l'avocat)</p>
+      <ul class="days">
+        <li class="day"><button type="button">
+          <span class="day-ech-slot"><span class="day-ech examen" style="--c:var(--examen)">Examen</span></span>
+          <span class="dname"><strong>Mardi</strong><span class="ddate">29 sept.</span></span>
+          <span class="dsum">08h15 → 15h30</span>
+          <span class="day-ech-slot"><span class="day-ech devoir">Devoir</span></span>
+        </button></li>
+      </ul>
+      <p class="badges"><span class="ebadge" style="--c:var(--examen)"><span>E</span></span>
+        <span class="ebadge"><span>D</span></span><span class="mini">les deux badges des lignes de cours</span></p>
+    </div>
+
+    <div class="essai choisi ex-rose-turquoise">
+      <p class="teinte"><b>Complémentaire</b> — turquoise (la plus froide, voisine du thème vert)</p>
+      <ul class="days">
+        <li class="day"><button type="button">
+          <span class="day-ech-slot"><span class="day-ech examen" style="--c:var(--examen)">Examen</span></span>
+          <span class="dname"><strong>Mardi</strong><span class="ddate">29 sept.</span></span>
+          <span class="dsum">08h15 → 15h30</span>
+          <span class="day-ech-slot"><span class="day-ech devoir">Devoir</span></span>
+        </button></li>
+      </ul>
+      <p class="badges"><span class="ebadge" style="--c:var(--examen)"><span>E</span></span>
+        <span class="ebadge"><span>D</span></span><span class="mini">les deux badges des lignes de cours</span></p>
+    </div>
+
+    <div class="essai ex-rose-encre">
+      <p class="teinte"><b>Encre</b> — le rose du thème, plus profond</p>
+      <ul class="days">
+        <li class="day"><button type="button">
+          <span class="day-ech-slot"><span class="day-ech examen" style="--c:var(--examen)">Examen</span></span>
+          <span class="dname"><strong>Mardi</strong><span class="ddate">29 sept.</span></span>
+          <span class="dsum">08h15 → 15h30</span>
+          <span class="day-ech-slot"><span class="day-ech devoir">Devoir</span></span>
+        </button></li>
+      </ul>
+      <p class="badges"><span class="ebadge" style="--c:var(--examen)"><span>E</span></span>
+        <span class="ebadge"><span>D</span></span><span class="mini">les deux badges des lignes de cours</span></p>
+    </div>
+  </section>
+</main>
+<script>
+  var t = (/[?&]t=([1-3])(?:&|$)/.exec(location.search) || [])[1];
+  var c = /[?&]c=1(?:&|$)/.test(location.search);
+  if (t) {
+    document.body.classList.add("solo");
+    document.body.setAttribute("data-seul", t);
+  } else if (c) {
+    document.body.classList.add("choix");
+  }
+</script>
+</body>
+</html>

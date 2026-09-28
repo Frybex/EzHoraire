@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light">
+<title>EzHoraire — 2 Propositions de Rail en Mode Clair</title>
+<style>
+  :root {
+    --bg-page: #f4f6fa;
+    --surface: #ffffff;
+    --ink: #17191d;
+    --muted: #626977;
+    --line: #e4e7ec;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    color: var(--ink);
+    background: var(--bg-page);
+    font-family: var(--font);
+    font-size: 16px;
+    line-height: 1.5;
+    padding: 32px 18px 80px;
+  }
+  .page {
+    max-width: 520px;
+    margin: 0 auto;
+  }
+  
+  header {
+    margin-bottom: 28px;
+  }
+  .badge-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    background: #e9edfa;
+    color: #1d4fd7;
+    margin-bottom: 10px;
+  }
+  h1 {
+    font-size: 1.5rem;
+    font-weight: 750;
+    letter-spacing: -0.025em;
+    margin: 0 0 8px;
+    color: var(--ink);
+  }
+  .desc {
+    color: var(--muted);
+    font-size: 0.92rem;
+    line-height: 1.55;
+    margin: 0;
+  }
+
+  /* Cartouche de proposition */
+  .section-card {
+    background: #ffffff;
+    border-radius: 22px;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: 0 4px 20px -6px rgba(23, 32, 68, 0.06);
+    padding: 22px 18px 18px;
+    margin-bottom: 28px;
+  }
+  .section-card.actuel {
+    background: #fbfbfc;
+    border-style: dashed;
+    border-color: #d8dbe2;
+    box-shadow: none;
+  }
+  .card-header {
+    margin-bottom: 16px;
+  }
+  .card-header h2 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    margin: 0 0 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .badge-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    font-size: 0.78rem;
+    font-weight: 750;
+    background: #17191d;
+    color: #fff;
+  }
+  .card-header p {
+    color: var(--muted);
+    font-size: 0.86rem;
+    line-height: 1.5;
+    margin: 0;
+  }
+  .points-cles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .point-chip {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: #f1f3f7;
+    color: #434a57;
+  }
+
+  .demo-block {
+    border-radius: 16px;
+    padding: 14px 12px;
+    margin-bottom: 12px;
+    transition: background-color 0.25s ease;
+  }
+  .demo-block:last-child {
+    margin-bottom: 0;
+  }
+  .demo-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    padding: 0 2px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .theme-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 5px;
+  }
+
+  /* ---- Variables des thèmes EzHoraire (mode clair) ---- */
+  .th-bleu {
+    --accent: #1d4fd7;
+    --accent-soft: rgba(29, 79, 215, .09);
+    --bg: #eaf0fa;
+    --seg-track: #dbe4f5;
+  }
+  .th-vert {
+    --accent: #0e8655;
+    --accent-soft: rgba(14, 134, 85, .10);
+    --bg: #ebf2ec;
+    --seg-track: #dce8de;
+  }
+  .th-rose {
+    --accent: #d14d8a;
+    --accent-soft: rgba(209, 77, 138, .12);
+    --bg: #fdf1f6;
+    --seg-track: #f9e0ec;
+  }
+
+  .th-bleu .theme-dot { background: #1d4fd7; }
+  .th-vert .theme-dot { background: #0e8655; }
+  .th-rose .theme-dot { background: #d14d8a; }
+
+  /* Appliquer le background de page EzHoraire au demo-block */
+  .demo-block {
+    background-color: var(--bg);
+  }
+
+  /* =========================================================
+     STRUCTURE COMMUNE DU SÉLECTEUR (.seg)
+     ========================================================= */
+  .seg {
+    --n: 4;
+    --idx: 1;
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+    border-radius: 999px;
+    padding: 4px;
+    margin: 0;
+    user-select: none;
+  }
+  .seg .pill {
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    left: 4px;
+    width: calc((100% - 8px) / var(--n));
+    border-radius: 999px;
+    transform: translateX(calc(var(--idx) * 100%));
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    pointer-events: none;
+  }
+  .seg button {
+    position: relative;
+    z-index: 1;
+    border: none;
+    background: none;
+    font: inherit;
+    font-size: 0.95rem;
+    font-weight: 550;
+    color: var(--muted);
+    padding: 9px 6px;
+    border-radius: 999px;
+    cursor: pointer;
+    min-height: 44px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transition: color 0.2s, font-weight 0.2s;
+  }
+  .seg button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* =========================================================
+     0. ACTUEL (Rappel : blanc sur blanc)
+     ========================================================= */
+  .seg-actuel {
+    background: color-mix(in srgb, var(--bg), #fff 60%);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px rgba(23, 32, 68, .07);
+  }
+  .seg-actuel .pill {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--bg), #fff 78%), color-mix(in srgb, var(--bg), #fff 44%));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 rgba(255, 255, 255, .9), 0 1px 2px rgba(23, 32, 68, .06), 0 2px 8px -4px rgba(23, 32, 68, .08);
+  }
+  .seg-actuel button[aria-selected="true"] {
+    color: var(--ink);
+    font-weight: 650;
+  }
+
+  /* =========================================================
+     PROPOSITION 1 : « PISTE ENCRE POUDRÉE & PASTILLE CRAIE »
+     L'esprit : La piste en creux prend la teinte signature de
+     l'horaire (--seg-track / mix d'accent doux). La pastille
+     reste un blanc pur éclatant en relief qui pop nettement.
+     Le prénom actif prend la couleur d'accent (comme le logo).
+     ========================================================= */
+  .seg-prop1 {
+    background: color-mix(in srgb, var(--accent) 10%, var(--bg));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 16%, var(--line)),
+                inset 0 1.5px 3.5px rgba(23, 32, 68, .08);
+  }
+  .seg-prop1 .pill {
+    background: linear-gradient(180deg, #ffffff 0%, #f7f9fd 100%);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .9),
+                inset 0 1px 0 #ffffff,
+                0 1px 2px rgba(23, 32, 68, .06),
+                0 3px 8px -1px rgba(23, 32, 68, .12);
+  }
+  .seg-prop1 button {
+    color: color-mix(in srgb, var(--accent) 26%, var(--muted));
+  }
+  .seg-prop1 button[aria-selected="true"] {
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  /* =========================================================
+     PROPOSITION 2 : « PASTILLE MACARON VELOURS & PISTE CLAIRE »
+     L'esprit : La piste reste très minérale et sobre (fond satiné),
+     mais c'est la pastille coulissante qui s'habille d'un voile
+     pastel soyeux, avec un liseré teinté précieux et une ombre
+     légèrement teintée. Le prénom actif est contrasté et riche.
+     ========================================================= */
+  .seg-prop2 {
+    background: color-mix(in srgb, var(--bg), #ffffff 52%);
+    box-shadow: inset 0 0 0 1px var(--line),
+                inset 0 1px 2.5px rgba(23, 32, 68, .05);
+  }
+  .seg-prop2 .pill {
+    background: linear-gradient(180deg, 
+      color-mix(in srgb, var(--accent) 15%, #ffffff) 0%, 
+      color-mix(in srgb, var(--accent) 8%, #ffffff) 100%);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 24%, rgba(0, 0, 0, .04)),
+                inset 0 1px 0 rgba(255, 255, 255, .95),
+                0 1px 2px rgba(23, 32, 68, .05),
+                0 3px 10px -2px color-mix(in srgb, var(--accent) 25%, transparent);
+  }
+  .seg-prop2 button {
+    color: var(--muted);
+  }
+  .seg-prop2 button[aria-selected="true"] {
+    color: color-mix(in srgb, var(--accent) 85%, #0e1726);
+    font-weight: 700;
+  }
+
+  /* Modes focus */
+  body[data-focus="prop1"] .section-card:not(.prop1-card) { display: none; }
+  body[data-focus="prop2"] .section-card:not(.prop2-card) { display: none; }
+  body[data-focus="actuel"] .section-card:not(.actuel) { display: none; }
+  body[data-focus="compare"] .section-card:not(.compare-card) { display: none; }
+  body[data-focus] header, body[data-focus] .hint-box { display: none; }
+  body[data-focus] { padding: 12px; background: #ffffff; }
+  body[data-focus] .section-card { margin-bottom: 0; box-shadow: none; border-color: rgba(0, 0, 0, 0.08); }
+
+  .compare-row {
+    margin-bottom: 16px;
+  }
+  .compare-row:last-child {
+    margin-bottom: 0;
+  }
+  .compare-titre {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* Bouton d'aide interactif */
+  .hint-box {
+    margin-top: 14px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: #edf1f7;
+    font-size: 0.82rem;
+    color: #4b5563;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <div class="badge-tag">Design System · EzHoraire</div>
+    <h1>Rail sélecteur en mode clair</h1>
+    <p class="desc">
+      En Dark Mode, le rail possède un creux profond et un contraste fort. En Light Mode, il manquait de personnalité (« tout blanc / blond »). Voici <b>2 propositions délicates</b> qui restent fidèles à la texture tactile et au relief de l'app.
+    </p>
+  </header>
+
+  <!-- CARTE COMPARATIVE COTE A COTE -->
+  <section class="section-card compare-card">
+    <div class="card-header">
+      <h2>Comparatif direct (Thème Bleu)</h2>
+      <p>Mise en regard de l'actuel et des deux nouvelles pistes créatives.</p>
+    </div>
+    
+    <div class="compare-row">
+      <div class="compare-titre">⚪ Actuel (Blanc sur blanc)</div>
+      <div class="demo-block th-bleu">
+        <div class="seg seg-actuel" role="tablist">
+          <span class="pill"></span>
+          <button type="button" role="tab" aria-selected="false">Maxence</button>
+          <button type="button" role="tab" aria-selected="true">Lilian</button>
+          <button type="button" role="tab" aria-selected="false">Laura</button>
+          <button type="button" role="tab" aria-selected="false">Anthony</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="compare-row">
+      <div class="compare-titre">🔵 Proposition 1 : Piste Poudrée & Pastille Craie</div>
+      <div class="demo-block th-bleu">
+        <div class="seg seg-prop1" role="tablist">
+          <span class="pill"></span>
+          <button type="button" role="tab" aria-selected="false">Maxence</button>
+          <button type="button" role="tab" aria-selected="true">Lilian</button>
+          <button type="button" role="tab" aria-selected="false">Laura</button>
+          <button type="button" role="tab" aria-selected="false">Anthony</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="compare-row">
+      <div class="compare-titre">✨ Proposition 2 : Pastille Macaron Velours & Piste Claire</div>
+      <div class="demo-block th-bleu">
+        <div class="seg seg-prop2" role="tablist">
+          <span class="pill"></span>
+          <button type="button" role="tab" aria-selected="false">Maxence</button>
+          <button type="button" role="tab" aria-selected="true">Lilian</button>
+          <button type="button" role="tab" aria-selected="false">Laura</button>
+          <button type="button" role="tab" aria-selected="false">Anthony</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROPOSITION 1 -->
+  <section class="section-card prop1-card">
+    <div class="card-header">
+      <h2><span class="badge-num">1</span> Proposition 1 : « Piste Encre Poudrée & Pastille Craie »</h2>
+      <p>
+        <b>La piste porte la couleur :</b> Le creux est doucement teinté dans la couleur du thème (comme le <code>--seg-track</code> prévu dans l'app). La pastille mobile reste d'un blanc craie immaculé qui se détache nettement en relief (effet "dock" iOS). Le prénom actif s'illumine dans la couleur d'accent.
+      </p>
+      <div class="points-cles">
+        <span class="point-chip">Piste feutrée teintée (10%)</span>
+        <span class="point-chip">Pastille blanc éclatant (#fff)</span>
+        <span class="point-chip">Prénom actif en couleur d'accent</span>
+        <span class="point-chip">Noms inactifs harmonisés</span>
+      </div>
+    </div>
+
+    <!-- Bleu -->
+    <div class="demo-block th-bleu">
+      <div class="demo-label"><span><span class="theme-dot"></span>Thème Bleu</span></div>
+      <div class="seg seg-prop1" role="tablist">
+        <span class="pill"></span>
+        <button type="button" role="tab" aria-selected="false">Maxence</button>
+        <button type="button" role="tab" aria-selected="true">Lilian</button>
+        <button type="button" role="tab" aria-selected="false">Laura</button>
+        <button type="button" role="tab" aria-selected="false">Anthony</button>
+      </div>
+    </div>
+
+    <!-- Vert -->
+    <div class="demo-block th-vert">
+      <div class="demo-label"><span><span class="theme-dot"></span>Thème Vert</span></div>
+      <div class="seg seg-prop1" role="tablist">
+        <span class="pill"></span>
+        <button type="button" role="tab" aria-selected="false">Maxence</button>
+        <button type="button" role="tab" aria-selected="true">Lilian</button>
+        <button type="button" role="tab" aria-selected="false">Laura</button>
+        <button type="button" role="tab" aria-selected="false">Anthony</button>
+      </div>
+    </div>
+
+    <!-- Rose -->
+    <div class="demo-block th-rose">
+      <div class="demo-label"><span><span class="theme-dot"></span>Thème Rose</span></div>
+      <div class="seg seg-prop1" role="tablist">
+        <span class="pill"></span>
+        <button type="button" role="tab" aria-selected="false">Maxence</button>
+        <button type="button" role="tab" aria-selected="true">Lilian</button>
+        <button type="button" role="tab" aria-selected="false">Laura</button>
+        <button type="button" role="tab" aria-selected="false">Anthony</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROPOSITION 2 -->
+  <section class="section-card prop2-card">
+    <div class="card-header">
+      <h2><span class="badge-num">2</span> Proposition 2 : « Pastille Macaron Velours & Piste Claire »</h2>
+      <p>
+        <b>La pastille mobile porte la couleur :</b> La piste reste très minérale, sobre et aérée. C'est la pastille coulissante qui devient un coussinet pastel délicatement infusé de la couleur de l'horaire, avec un fin liseré teinté et une ombre douce colorée.
+      </p>
+      <div class="points-cles">
+        <span class="point-chip">Piste neutre satinée & épurée</span>
+        <span class="point-chip">Pastille dégradée pastel de soie</span>
+        <span class="point-chip">Liseré teinté soigné</span>
+        <span class="point-chip">Prénom actif contrasté et riche</span>
+      </div>
+    </div>
+
+    <!-- Bleu -->
+    <div class="demo-block th-bleu">
+      <div class="demo-label"><span><span class="theme-dot"></span>Thème Bleu</span></div>
+      <div class="seg seg-prop2" role="tablist">
+        <span class="pill"></span>
+        <button type="button" role="tab" aria-selected="false">Maxence</button>
+        <button type="button" role="tab" aria-selected="true">Lilian</button>
+        <button type="button" role="tab" aria-selected="false">Laura</button>
+        <button type="button" role="tab" aria-selected="false">Anthony</button>
+      </div>
+    </div>
+
+    <!-- Vert -->
+    <div class="demo-block th-vert">
+      <div class="demo-label"><span><span class="theme-dot"></span>Thème Vert</span></div>
+      <div class="seg seg-prop2" role="tablist">
+        <span class="pill"></span>
+        <button type="button" role="tab" aria-selected="false">Maxence</button>
+        <button type="button" role="tab" aria-selected="true">Lilian</button>
+        <button type="button" role="tab" aria-selected="false">Laura</button>
+        <button type="button" role="tab" aria-selected="false">Anthony</button>
+      </div>
+    </div>
+
+    <!-- Rose -->
+    <div class="demo-block th-rose">
+      <div class="demo-label"><span><span class="theme-dot"></span>Thème Rose</span></div>
+      <div class="seg seg-prop2" role="tablist">
+        <span class="pill"></span>
+        <button type="button" role="tab" aria-selected="false">Maxence</button>
+        <button type="button" role="tab" aria-selected="true">Lilian</button>
+        <button type="button" role="tab" aria-selected="false">Laura</button>
+        <button type="button" role="tab" aria-selected="false">Anthony</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="hint-box">
+    💡 <b>Astuce :</b> Tu peux cliquer sur n'importe quel prénom ci-dessus pour voir la pastille glisser avec l'animation physique de l'app.
+  </div>
+</div>
+
+<script>
+  var pFocus = (/[?&]focus=(actuel|prop1|prop2|compare)(?:&|$)/.exec(location.search) || [])[1];
+  if (pFocus) document.body.setAttribute("data-focus", pFocus);
+
+  document.querySelectorAll(".seg").forEach(function (seg) {
+    var btns = Array.prototype.slice.call(seg.querySelectorAll("button"));
+    seg.style.setProperty("--n", btns.length);
+    btns.forEach(function (b, i) {
+      b.addEventListener("click", function () {
+        seg.style.setProperty("--idx", i);
+        btns.forEach(function (x) {
+          x.setAttribute("aria-selected", x === b ? "true" : "false");
+        });
+      });
+    });
+  });
+</script>
+</body>
+</html>

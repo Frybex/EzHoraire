@@ -60,8 +60,8 @@ try { var _a = localStorage.getItem("ezh_apparence"); if (_a === "clair" || _a =
       <h1>Politique de <em>confidentialité</em></h1>
       <p class="chapeau">Ce qu'EzHoraire fait de tes données, pourquoi, chez qui elles vivent et comment en garder la main. Écrit pour être lu, conforme au Règlement général sur la protection des données (RGPD) et au droit belge.</p>
       <ul class="meta">
-        <li>En vigueur le 18 septembre 2026</li>
-        <li>Version 2</li>
+        <li>En vigueur le 27 septembre 2026</li>
+        <li>Version 3</li>
         <li>Lecture : 8 min</li>
       </ul>
     </div>
@@ -134,6 +134,8 @@ try { var _a = localStorage.getItem("ezh_apparence"); if (_a === "clair" || _a =
             <li><strong>Ton compte :</strong> adresse email, prénom, nom, identifiant technique du compte, mode de connexion (Google, GitHub ou email), date de création et de dernière connexion. Avec Google ou GitHub, le fournisseur transmet aussi le nom affiché, la photo de profil et, pour GitHub, le pseudo : ces informations restent dans les métadonnées du compte, l'app ne les affiche pas.</li>
             <li><strong>Ton mot de passe</strong> (connexion par email) : il est chiffré (haché) par notre prestataire d'authentification. Personne, pas même l'éditeur, ne peut le lire.</li>
             <li><strong>Les horaires que tu suis :</strong> école, formation ou programme, groupes cochés, surnom et couleur de chaque horaire.</li>
+            <li><strong>Tes devoirs et examens :</strong> titre, date, heure et cours rattaché, synchronisés entre tes appareils (table « échéances »).</li>
+            <li><strong>Tes signalements :</strong> si tu signales un bug ou une idée, le titre, le message, l'étape, le type (bug ou demande), ton email si tu le donnes et jusqu'à 3 captures jointes.</li>
             <li><strong>Ton lien d'abonnement personnel</strong> (facultatif, ULB et UCLouvain) : si tu colles le lien « S'abonner » de ton horaire universitaire, nous le gardons pour relire ton horaire à chaque ouverture. Ce lien donne accès à ton horaire personnel : traite-le comme un mot de passe.</li>
             <li><strong>Une liste de cours collée ou photographiée</strong> (facultatif, voir la section <a href="#import">Import</a>).</li>
             <li><strong>Tes messages</strong> si tu nous écris.</li>
@@ -161,6 +163,16 @@ try { var _a = localStorage.getItem("ezh_apparence"); if (_a === "clair" || _a =
                   <td>Créer ton compte, te connecter, afficher et synchroniser tes horaires sur tous tes appareils</td>
                   <td data-label="Données">Compte, horaires suivis, lien d'abonnement</td>
                   <td data-label="Base légale"><span class="pastille">Contrat</span> exécution du service que tu demandes (art. 6.1.b), selon les <a href="/cgu.html">conditions d'utilisation</a></td>
+                </tr>
+                <tr>
+                  <td>Afficher et synchroniser tes devoirs et examens entre tes appareils</td>
+                  <td data-label="Données">Échéances (titre, date, heure, cours rattaché)</td>
+                  <td data-label="Base légale"><span class="pastille">Contrat</span> art. 6.1.b, fonction que tu utilises toi-même</td>
+                </tr>
+                <tr>
+                  <td>Traiter tes signalements de bug ou tes idées d'amélioration</td>
+                  <td data-label="Données">Titre, message, étape, captures jointes, email si donné</td>
+                  <td data-label="Base légale"><span class="pastille">Consentement</span> art. 6.1.a : l'envoi du signalement vaut accord ; tu peux demander sa suppression à tout moment</td>
                 </tr>
                 <tr>
                   <td>Reconnaître les cours d'une liste que tu importes</td>
@@ -243,7 +255,7 @@ try { var _a = localStorage.getItem("ezh_apparence"); if (_a === "clair" || _a =
             <table class="tableau">
               <thead><tr><th scope="col">Prestataire</th><th scope="col">Rôle</th><th scope="col">Données concernées</th></tr></thead>
               <tbody>
-                <tr><td>Supabase, Inc.</td><td data-label="Rôle">Authentification et base de données</td><td data-label="Données concernées">Compte, horaires suivis (dont devoirs et examens), consultations, PDF ouverts, étapes de visite anonymes, journaux de connexion (dont l'adresse IP)</td></tr>
+                <tr><td>Supabase, Inc.</td><td data-label="Rôle">Authentification et base de données</td><td data-label="Données concernées">Compte, horaires suivis, devoirs et examens, signalements (dont captures), consultations, PDF ouverts, étapes de visite anonymes, journaux de connexion (dont l'adresse IP)</td></tr>
                 <tr><td>Vercel, Inc.</td><td data-label="Rôle">Hébergement du site et des API</td><td data-label="Données concernées">Données techniques, contenu des requêtes le temps de les traiter</td></tr>
                 <tr><td>Resend (Plus Five Five, Inc.)</td><td data-label="Rôle">Envoi des emails du service, réception des messages à contact@ezhoraire.be</td><td data-label="Données concernées">Email, contenu des messages</td></tr>
                 <tr><td>TypeSafe</td><td data-label="Rôle">Aide à la reconnaissance des cours importés (Jev)</td><td data-label="Données concernées">Lignes de la liste importée, sans identité</td></tr>
@@ -266,6 +278,8 @@ try { var _a = localStorage.getItem("ezh_apparence"); if (_a === "clair" || _a =
               <thead><tr><th scope="col">Données</th><th scope="col">Durée</th></tr></thead>
               <tbody>
                 <tr><td>Compte et horaires suivis</td><td data-label="Durée">Tant que le compte existe. Supprimés sous 30 jours après ta demande de suppression.</td></tr>
+                <tr><td>Devoirs et examens</td><td data-label="Durée">Tant que le compte existe, comme les horaires. Supprimés avec le compte sous 30 jours.</td></tr>
+                <tr><td>Signalements (bugs et demandes)</td><td data-label="Durée">24 mois maximum, puis suppression. Sur suppression de ton compte, le signalement est dissocié du compte (identifiant effacé) mais le message reste jusqu'au bout de ces 24 mois.</td></tr>
                 <tr><td>Consultations</td><td data-label="Durée">180 jours, puis effacement automatique</td></tr>
                 <tr><td>PDF officiels ouverts</td><td data-label="Durée">180 jours, puis effacement automatique</td></tr>
                 <tr><td>Étapes de visite anonymes</td><td data-label="Durée">90 jours, puis effacement automatique</td></tr>
@@ -275,7 +289,7 @@ try { var _a = localStorage.getItem("ezh_apparence"); if (_a === "clair" || _a =
               </tbody>
             </table>
           </div>
-          <p>Supprimer ton compte efface aussi, en cascade, tes horaires, ton historique de consultations et tes PDF ouverts. Les sauvegardes techniques éventuelles du prestataire s'écrasent ensuite selon leur propre cycle.</p>
+          <p>Supprimer ton compte efface aussi, en cascade, tes horaires, tes devoirs et examens, ton historique de consultations et tes PDF ouverts. Tes signalements sont dissociés de ton compte (l'identifiant est effacé) mais conservés 24 mois maximum pour suivre les corrections. Les sauvegardes techniques éventuelles du prestataire s'écrasent ensuite selon leur propre cycle.</p>
         </section>
 
         <section id="securite">
@@ -330,6 +344,7 @@ try { var _a = localStorage.getItem("ezh_apparence"); if (_a === "clair" || _a =
       <a href="/aide/">Aide</a>
       <a href="/confidentialite.html" aria-current="page">Confidentialité</a>
       <a href="/cgu.html">Conditions d'utilisation</a>
+      <a href="/mentions-legales.html">Mentions légales</a>
       <a href="mailto:contact@ezhoraire.be">contact@ezhoraire.be</a>
     </nav>
   </footer>

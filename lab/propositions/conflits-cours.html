@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>EzHoraire — Cours en conflit : cinq pistes sobres</title>
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --ink: #17191d;
+    --muted: #626977;
+    --line: #e4e7ec;
+    --accent: #2456e0;
+    --accent-soft: rgba(36, 86, 224, .09);
+    --attention: #b26a00;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #101216;
+      --surface: #171a20;
+      --ink: #f0f3f7;
+      --muted: #98a1b1;
+      --line: #262b34;
+      --accent: #8ba6ff;
+      --accent-soft: rgba(139, 166, 255, .13);
+      --attention: #f0b866;
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    --relief-haut: color-mix(in srgb, var(--bg), #fff 78%);
+    --relief-bas: color-mix(in srgb, var(--bg), #fff 44%);
+    --reflet: rgba(255, 255, 255, .9);
+    --ombre-btn: 0 1px 2px rgba(23, 32, 68, .06), 0 2px 8px -4px rgba(23, 32, 68, .08);
+    --creux: color-mix(in srgb, var(--bg), #fff 60%);
+    --creux-ombre: rgba(23, 32, 68, .07);
+    margin: 0; color: var(--ink); background: var(--bg);
+    font-family: var(--font); font-size: 17px; line-height: 1.45;
+  }
+  @media (prefers-color-scheme: dark) {
+    body {
+      --relief-haut: color-mix(in srgb, var(--bg), #fff 7%);
+      --relief-bas: color-mix(in srgb, var(--bg), #fff 2.5%);
+      --reflet: rgba(255, 255, 255, .06);
+      --ombre-btn: 0 1px 2px rgba(0, 0, 0, .4), 0 4px 12px -6px rgba(0, 0, 0, .6);
+      --creux: color-mix(in srgb, var(--bg), #000 26%);
+      --creux-ombre: rgba(0, 0, 0, .4);
+    }
+  }
+  .page { max-width: 420px; margin: 0 auto; padding: 26px 16px 60px; }
+  h1 { font-size: 1.3rem; letter-spacing: -.02em; margin: 0 0 6px; }
+  .intro { color: var(--muted); font-size: .88rem; margin: 0 0 26px; line-height: 1.55; }
+  .intro b { color: var(--ink); }
+  .prop { margin: 0 0 30px; }
+  .prop h2 { font-size: .95rem; margin: 0 0 5px; letter-spacing: -.01em; display: flex; align-items: baseline; gap: 8px; }
+  .prop h2 b {
+    flex: none; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%;
+    font-size: .78rem; background: var(--ink); color: var(--bg);
+  }
+  .avis { margin: 0 0 12px 30px; color: var(--muted); font-size: .82rem; line-height: 1.5; }
+  .avis b { color: var(--ink); font-weight: 600; }
+
+  /* ---- Carte de jour : copie de index.html ---- */
+  .days { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .day {
+    border-radius: 16px;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  .day > button {
+    width: 100%; border: none; background: none; font: inherit; color: inherit;
+    position: relative; display: flex; align-items: center; gap: 8px; text-align: left;
+    padding: 12px 10px; min-height: 62px; border-radius: 16px;
+  }
+  .dname { flex: none; min-width: 112px; }
+  .dname strong { display: block; font-size: 1.02rem; font-weight: 600; letter-spacing: -.01em; }
+  .ddate { font-size: .85rem; color: var(--muted); }
+  .choc-tag {
+    flex: none; margin-left: 6px; font-size: .64rem; font-weight: 750; text-transform: uppercase;
+    letter-spacing: .02em; border-radius: 6px; padding: 2.5px 6px 0; height: 18px; box-sizing: border-box;
+    display: inline-flex; align-items: center; justify-content: center; line-height: 1; text-align: center;
+    color: var(--attention);
+    background: color-mix(in srgb, var(--attention) 12%, var(--surface));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--attention) 30%, transparent);
+  }
+  .day > button .choc-tag { margin-left: 0; }
+  .dsum {
+    margin-left: auto; font-size: .96rem; color: var(--muted);
+    font-variant-numeric: tabular-nums; white-space: nowrap; letter-spacing: -.01em;
+  }
+  .dsum.busy { color: var(--ink); font-weight: 600; }
+
+  /* ---- Détail du jour ouvert : copie de index.html ---- */
+  .detail { display: grid; grid-template-rows: 1fr; opacity: 1; }
+  .detail > div { overflow: hidden; }
+  .detail .box {
+    margin: 0 10px 10px; padding: 14px 14px 14px 23px; border-radius: 13px;
+    background: var(--creux);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre);
+  }
+  .detail ol { list-style: none; margin: 0; padding: 0; }
+  .detail li.c { padding: 0; }
+  .cbtn {
+    width: 100%; border: none; background: none; font: inherit; color: inherit;
+    display: flex; gap: 10px; align-items: stretch; text-align: left;
+    padding: 8px 0; cursor: pointer;
+  }
+  .hcol {
+    flex: none; min-width: 52px; display: flex; flex-direction: column;
+    align-items: flex-start; align-self: stretch; justify-content: space-between;
+  }
+  .cbtn .h {
+    flex: none; min-width: 0; font-variant-numeric: tabular-nums; color: var(--muted);
+    font-size: .82rem; line-height: 1.25; white-space: nowrap;
+  }
+  .cpoint {
+    flex: none; width: 8px; height: 8px; border-radius: 50%;
+    align-self: flex-start; margin-top: 6px;
+    background: hsl(var(--h) calc(52% - var(--v) * 10%) calc(52% + var(--v) * 7%));
+  }
+  .ctxt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .ctxt .m {
+    font-weight: 550; font-size: .96rem; line-height: 1.25; min-width: 0;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .cinfo-salle { display: flex; align-items: baseline; min-width: 0; padding: 1px 0; font-size: .86rem; line-height: 1.35; }
+  .cinfo-salle .k { flex: none; color: var(--muted); max-width: 0; opacity: 0; overflow: hidden; white-space: nowrap; }
+  .cinfo-salle .s {
+    flex: 1; min-width: 0; font-weight: 450; line-height: 1.35; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis; color: var(--muted);
+  }
+  .detail li.p {
+    display: flex; align-items: center; gap: 10px;
+    padding: 6px 0; color: var(--muted);
+    font-size: .7rem; font-weight: 600; letter-spacing: .02em; white-space: nowrap;
+  }
+  .detail li.p::before, .detail li.p::after {
+    content: ""; flex: 1; height: 1px; background: var(--line);
+  }
+
+  /* ============================================================
+     1 — Heures en ambre : seules les heures des cours concernés
+     changent de couleur. Rien d'autre ne bouge.
+     ============================================================ */
+  .p1 li.choc .h { color: var(--attention); font-weight: 650; }
+
+  /* ============================================================
+     2 — Liseré : une petite barre ambre à gauche de la ligne.
+     ============================================================ */
+  .p2 li.choc { position: relative; }
+  .p2 li.choc::before {
+    content: ""; position: absolute; left: -12px; top: 5px; bottom: 5px;
+    width: 3px; border-radius: 3px; background: var(--attention);
+  }
+
+  /* ============================================================
+     3 — Fond très légèrement ambré sur toute la ligne.
+     ============================================================ */
+  .p3 li.choc .cbtn { background: color-mix(in srgb, var(--attention) 7%, transparent); }
+
+  /* ============================================================
+     4 — Pastille « ≠ » à droite, dans la colonne des marques D/E.
+     ============================================================ */
+  .neq {
+    flex: none; align-self: center; width: 19px; height: 19px; border-radius: 50%;
+    display: grid; place-items: center; font-size: .7rem; font-weight: 800; line-height: 1;
+    -webkit-text-size-adjust: 100%;
+    color: var(--attention);
+    background: color-mix(in srgb, var(--attention) 12%, var(--surface));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--attention) 32%, transparent);
+  }
+
+  /* ============================================================
+     5 — Filet discret entre les deux cours, à gauche des pastilles.
+     ============================================================ */
+  .p5 li.choc { position: relative; }
+  .p5 li.choc::before {
+    content: ""; position: absolute; left: 55px; width: 2px; border-radius: 2px;
+    top: 18px; bottom: 0; background: var(--attention);
+  }
+  .p5 li.choc.haut::before { top: 0; bottom: auto; height: 18px; }
+
+  /* Un seul scénario à l'écran : « ?p=1 » … « ?p=5 ». */
+  body[data-seul="1"] .prop:not(.p1),
+  body[data-seul="2"] .prop:not(.p2),
+  body[data-seul="3"] .prop:not(.p3),
+  body[data-seul="4"] .prop:not(.p4),
+  body[data-seul="5"] .prop:not(.p5) { display: none; }
+  body.solo .intro { display: none; }
+  body.solo h1 { display: none; }
+</style>
+</head>
+<body>
+<main class="page">
+  <h1>Cours en conflit — cinq pistes sobres</h1>
+  <p class="intro">Le même mercredi : un cours normal le matin, deux cours en conflit
+    l'après-midi (13h30 – 15h30). Le tag <b>Conflit</b> de l'en-tête du jour reste tel quel
+    dans toutes les pistes — il s'agit seulement de repérer <b>quels cours</b> se bloquent.
+    Rien n'est implémenté : <b>dis quel numéro</b> (ou quelle combinaison) tu veux.</p>
+
+  <section class="prop p1">
+    <h2><b>1</b>Heures en ambre</h2>
+    <p class="avis">Seules les heures des cours concernés passent à l'ambre. Zéro décoration :
+      l'œil tombe sur la colonne des heures, et les deux 13h30 se répondent.</p>
+    <ul class="days">
+      <li class="day open">
+        <button type="button">
+          <span class="dname"><strong>Mercredi</strong><span class="ddate">30 sept.</span></span>
+          <span class="choc-tag">Conflit</span>
+          <span class="dsum busy">08h15 → 15h30</span>
+        </button>
+        <div class="detail"><div>
+          <div class="box"><ol>
+            <li class="c"><button class="cbtn">
+              <span class="hcol"><span class="h">08h15</span><span class="h">10h15</span></span>
+              <span class="cpoint" style="--h:96;--v:0"></span>
+              <span class="ctxt"><span class="m">Programmation orientée objet</span>
+                <span class="cinfo-salle"><span class="k">Salle : </span><span class="s">1/36A</span></span></span>
+            </button></li>
+            <li class="p">Pause · 10h15 – 13h30</li>
+            <li class="c choc"><button class="cbtn">
+              <span class="hcol"><span class="h">13h30</span><span class="h">15h30</span></span>
+              <span class="cpoint" style="--h:190;--v:0"></span>
+              <span class="ctxt"><span class="m">Introduction au droit</span>
+                <span class="cinfo-salle"><span class="k">Salle : </span><span class="s">1/29A</span></span></span>
+            </button></li>
+            <li class="c choc"><button class="cbtn">
+              <span class="hcol"><span class="h">13h30</span><span class="h">15h30</span></span>
+              <span class="cpoint" style="--h:292;--v:0"></span>
+              <span class="ctxt"><span class="m">Histoire du droit</span>
+                <span class="cinfo-salle"><span class="k">Salle : </span><span class="s">2/09A</span></span></span>
+            </button></li>
+          </ol></div>
+        </div></div>
+      </li>
+    </ul>
+  </section>
+
+  <section class="prop p2">
+    <h2><b>2</b>Liseré à gauche</h2>
+    <p class="avis">Une petite barre ambre au bord gauche des lignes concernées. Verte, elle
+      marque, mais ne touche ni le texte ni les couleurs des cours.</p>
+    <ul class="days">
+      <li class="day open">
+        <button type="button">
+          <span class="dname"><strong>Mercredi</strong><span class="ddate">30 sept.</span></span>
+          <span class="choc-tag">Conflit</span>
+          <span class="dsum busy">08h15 → 15h30</span>
+        </button>
+        <div class="detail"><div>
+          <div class="box"><ol>
+            <li class="c"><button class="cbtn">
+              <span class="hcol"><span class="h">08h15</span><span class="h">10h15</span></span>
+              <span class="cpoint" style="--h:96;--v:0"></span>
+              <span class="ctxt"><span class="m">Programmation orientée objet</span>
+                <span class="cinfo-salle"><span class="k">Salle : </span><span class="s">1/36A</span></span></span>
+            </button></li>
+            <li class="p">Pause · 10h15 – 13h30</li>
+            <li class="c choc"><button class="cbtn">
+              <span class="hcol"><span class="h">13h30</span><span class="h">15h30</span></span>
+              <span class="cpoint" style="--h:190;--v:0"></span>
+              <span class="ctxt"><span class="m">Introduction au droit</span>
+                <span class="cinfo-salle"><span class="k">Salle : </span><span class="s">1/29A</span></span></span>
+            </button></li>
+            <li class="c choc"><button class="cbtn">
+              <span class="hcol"><span class="h">13h30</span><span class="h">15h30</span></span>
+              <span class="cpoint" style="--h:292;--v:0"></span>
+              <span class="ctxt"><span class="m">Histoire du droit</span>
+                <span class="cinfo-salle"><span class="k">Salle : </span><span class="s">2/09A</span></span></span>
+            </button></li>
+          </ol></div>
+        </div></div>
+      </li>
+    </ul>
+  </section>
+
+  <section class="prop p3">
+    <h2><b>3</b>Fond très léger</h2>
+    <p class="avis">Les lignes concernées reçoivent un fond ambré à peine visible. Les deux
+      lignes voisines se touchent : la paire se lit comme un seul bloc.</p>
+    <ul class="days">
+      <li class="day open">
+        <button type="button">
+          <span class="dname"><strong>Mercredi</strong><span class="ddate">30 sept.</span></span>
+          <span class="choc-tag">Conflit</span>
+          <span class="dsum busy">08h15 → 15h30</span>
+        </button>
+        <div class="detail"><div>
+          <div class="box"><ol>
+            <li class="c"><button class="cbtn">
+              <span class="hcol"><span class="h">08h15</span><span class="h">10h15</span></span>
+              <span class="cpoint" style="--h:96;--v:0"></span>
+              <span class="ctxt"><span class="m">Programmation orientée objet</span>
+                <span class="cinfo-salle"><span class="k">Salle : </span><span class="s">1/36A</span></span></span>
+            </button></li>
+            <li class="p">Pause · 10h15 – 13h30</li>
+            <li class="c choc"><button class="cbtn">
+              <span class="hcol"><span class="h">13h30</span><span class="h">15h30</span></span>
+              <span class="cpoint" style="--h:190;--v:0"></span>
+              <span class="ctxt"><span class="m">Introduction au droit</span>
+                <span class="cinfo-salle"><span class="k">Salle : </span><span class="s">1/29A</span></span></span>
+            </button></li>
+            <li class="c choc"><button class="cbtn">
+              <span class="hcol"><span class="h">13h30</span><span class="h">15h30</span></span>
+              <span class="cpoint" style="--h:292;--v:0"></span>
+              <span class="ctxt"><span class="m">Histoire du droit</span>
+                <span class="cinfo-salle"><span class="k">Salle : </span><span class="s">2/09A</span></span></span>
+            </button></li>
+          </ol></div>
+        </div></div>
+      </li>
+    </ul>
+  </section>
+
+  <section class="prop p4">
+    <h2><b>4</b>Pastille « ≠ »</h2>
+    <p class="avis">Une petite pastille ambre à droite de la ligne, dans la colonne des
+      pastilles D/E. Explicite (« pas compatible »), sans toucher au texte ni aux heures.</p>
+    <ul class="days">
+      <li class="day open">
+        <button type="button">
+          <span class="dname"><strong>Mercredi</strong><span class="ddate">30 sept.</span></span>
+          <span class="choc-tag">Conflit</span>
+          <span class="dsum busy">08h15 → 15h30</span>
+        </button>
+        <div class="detail"><div>
+          <div class="box"><ol>
+            <li class="c"><button class="cbtn">
+              <span class="hcol"><span class="h">08h15</span><span class="h">10h15</span></span>
+              <span class="cpoint" style="--h:96;--v:0"></span>
+              <span class="ctxt"><span class="m">Programmation orientée objet</span>
+                <span class="cinfo-salle"><span class="k">Salle : </span><span class="s">1/36A</span></span></span>
+            </button></li>
+            <li class="p">Pause · 10h15 – 13h30</li>
+            <li class="c choc"><button class="cbtn">
+              <span class="hcol"><span class="h">13h30</span><span class="h">15h30</span></span>
+              <span class="cpoint" style="--h:190;--v:0"></span>
+              <span class="ctxt"><span class="m">Introduction au droit</span>
+                <span class="cinfo-salle"><span class="k">Salle : </span><span class="s">1/29A</span></span></span>
+              <span class="neq" aria-hidden="true">≠</span>
+            </button></li>
+            <li class="c choc"><button class="cbtn">
+              <span class="hcol"><span class="h">13h30</span><span class="h">15h30</span></span>
+              <span class="cpoint" style="--h:292;--v:0"></span>
+              <span class="ctxt"><span class="m">Histoire du droit</span>
+                <span class="cinfo-salle"><span class="k">Salle : </span><span class="s">2/09A</span></span></span>
+              <span class="neq" aria-hidden="true">≠</span>
+            </button></li>
+          </ol></div>
+        </div></div>
+      </li>
+    </ul>
+  </section>
+
+  <section class="prop p5">
+    <h2><b>5</b>Filet entre les deux</h2>
+    <p class="avis">Un simple trait ambre relie les deux pastilles, posé entre les heures et
+      les points de couleur. Sans halo, sans nœud, sans couleur par cours.</p>
+    <ul class="days">
+      <li class="day open">
+        <button type="button">
+          <span class="dname"><strong>Mercredi</strong><span class="ddate">30 sept.</span></span>
+          <span class="choc-tag">Conflit</span>
+          <span class="dsum busy">08h15 → 15h30</span>
+        </button>
+        <div class="detail"><div>
+          <div class="box"><ol>
+            <li class="c"><button class="cbtn">
+              <span class="hcol"><span class="h">08h15</span><span class="h">10h15</span></span>
+              <span class="cpoint" style="--h:96;--v:0"></span>
+              <span class="ctxt"><span class="m">Programmation orientée objet</span>
+                <span class="cinfo-salle"><span class="k">Salle : </span><span class="s">1/36A</span></span></span>
+            </button></li>
+            <li class="p">Pause · 10h15 – 13h30</li>
+            <li class="c choc bas"><button class="cbtn">
+              <span class="hcol"><span class="h">13h30</span><span class="h">15h30</span></span>
+              <span class="cpoint" style="--h:190;--v:0"></span>
+              <span class="ctxt"><span class="m">Introduction au droit</span>
+                <span class="cinfo-salle"><span class="k">Salle : </span><span class="s">1/29A</span></span></span>
+            </button></li>
+            <li class="c choc haut"><button class="cbtn">
+              <span class="hcol"><span class="h">13h30</span><span class="h">15h30</span></span>
+              <span class="cpoint" style="--h:292;--v:0"></span>
+              <span class="ctxt"><span class="m">Histoire du droit</span>
+                <span class="cinfo-salle"><span class="k">Salle : </span><span class="s">2/09A</span></span></span>
+            </button></li>
+          </ol></div>
+        </div></div>
+      </li>
+    </ul>
+  </section>
+</main>
+<script>
+  var p = (/[?&]p=([1-5])(?:&|$)/.exec(location.search) || [])[1];
+  if (p) {
+    document.body.classList.add("solo");
+    document.body.setAttribute("data-seul", p);
+  }
+</script>
+</body>
+</html>

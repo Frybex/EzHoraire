@@ -458,7 +458,7 @@ les sources. `logos/ecoles/` est déployé, `logos/da/` et `logos/ez/`
   les **moteurs** partagés dans `api/_moteurs/` (`hyperplanning.py`,
   `timeedit.py`, `ical.py`, `export_ics.py`, `import_liste.py`,
   `typesafe.py`).
-- `serve.py` — serveur local avec la même API (http://localhost:8902).
+- `tools/serve.py` — serveur local avec la même API (http://localhost:8902).
 
 Chercher quelque chose qui touche une école précise ? Tout ce qui lui est
 propre tient dans `api/_ecoles/<école>.py` côté serveur, et dans les
@@ -468,22 +468,77 @@ app. Le reste est commun à toutes.
 ## Sur l'ordinateur
 
 ```bash
-pip install -r requirements.txt   # une seule fois
-python3 serve.py
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt  # une seule fois
+.venv/bin/python tools/serve.py
 ```
 
 Pour ouvrir l'app depuis un autre appareil du réseau local (téléphone,
-second ordinateur), `--lan` affiche l'adresse à utiliser et accepte ces
-connexions ; sans lui, seul `localhost` répond. `--port` change le port
-quand deux dossiers de travail tournent en même temps :
+second ordinateur), `--lan` accepte ces connexions et affiche l'adresse
+prête à l'emploi — `http://<ip>:8902/?essai=1`, donc **aucune page de
+connexion** — suivie d'un QR code à scanner depuis le téléphone ;
+sans lui, seul `localhost` répond. `--port` change le port quand deux
+dossiers de travail tournent en même temps :
 
 ```bash
-python3 serve.py --lan --port 8912
+.venv/bin/python tools/serve.py --lan --port 8912
 ```
 
-La connexion Google/GitHub depuis cette adresse demande d'ajouter
-`http://<ip>:8902/**` aux Redirect URLs de Supabase (email + mot de passe
-marche sans rien changer).
+`10.0.0.x` n'existe que sur le réseau local : de l'extérieur (4G, autre
+Wi-Fi), il faut `--tunnel`, qui ouvre un tunnel cloudflared **sortant**
+(rien à percer dans le firewall) vers ce serveur et affiche une URL
+`https://…trycloudflare.com/?essai=1` :
+
+```bash
+.venv/bin/python tools/serve.py --lan --tunnel
+```
+
+L'URL est aléatoire à chaque lancement (à recopier quand on change de
+réseau) et ne dessert que ce serveur : ne jamais y brancher un simple
+`python -m http.server` — `tools/serve.py` refuse les fichiers cachés
+(`.env.local`, `.git/`), l'autre les envoie à qui demande.
+
+Le journal des accès s'active tout seul dès qu'un appareil extérieur
+peut arriver (`--lan` ou `--tunnel`) : une ligne par requête (heure,
+IP, code, agent) — l'IP réelle est lue dans `CF-Connecting-IP` quand la
+requête arrive par le tunnel. C'est la preuve, sans capture d'écran,
+qu'un appareil a bien ouvert l'app — `--log` l'active partout,
+`--no-log` l'éteint. En pratique le serveur tourne dans un tmux :
+
+```bash
+tmux new-session -d -s ezhoraire-serve '.venv/bin/python tools/serve.py --lan --tunnel'
+tmux attach -t ezhoraire-serve   # QR + journal ; Ctrl+B puis D pour se détacher
+```
+
+Les deux liens sont aussi écrits dans `/tmp/ezhoraire-preview.txt`
+(`local=` et `tunnel=`) : le journal enfouit l'URL en quelques minutes
+de test, le fichier la garde — il est supprimé à l'arrêt du serveur.
+
+`?essai=1` n'ouvre l'app sans compte que depuis une origine locale
+(`MODE_ESSAI` dans `index.html` : `localhost`, `10.`, `192.168.`,
+`172.16-31.`) ou un tunnel de preview (`*.trycloudflare.com`) ; un
+domaine en ligne, lui, retombe sur la page de connexion.
+
+La connexion Google/GitHub depuis l'adresse locale demande d'ajouter
+`http://<ip>:8902/**` aux Redirect URLs de Supabase (email + mot de
+passe marche sans rien changer). Elle n'est pas pensée pour le tunnel :
+son URL change à chaque lancement.
+
+### Simulation d'horaires (menu local)
+
+`lab/simulation.html` propose un menu — **1 horaire**, **4 horaires** ou
+**sur mesure (conflits)** — puis ouvre l'app en mode essai, exactement
+comme un utilisateur :
+les cours viennent de l'école de test `sim` (servie par `serve.py`,
+salle, prof et groupe selon les cours), pas d'un fichier statique. La
+sortie est dans l'app : **Réglages → Quitter la simulation**, qui rend le
+menu et remet les horaires de l'appareil (mis de côté à l'entrée). Le
+mode « sur mesure » fusionne trois sources et provoque des chevauchements
+volontaires (dont un triple le lundi matin) : de quoi régler le rendu des
+conflits (pastilles « Conflit », cours côte à côte dans la grille).
+
+L'école `sim` n'est exposée que si `EZH_SIM=1` (posé par `serve.py` ; en
+ligne, `/api/config` ne la liste pas et l'app ne la propose jamais), et
+la page de menu n'est pas déployée (`lab/` est exclu de Vercel).
 
 ## En ligne (Vercel)
 

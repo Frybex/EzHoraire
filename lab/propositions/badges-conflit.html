@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>EzHoraire — Badge conflit : cinq propositions</title>
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --ink: #17191d;
+    --muted: #626977;
+    --line: #e4e7ec;
+    --accent: #2456e0;
+    --accent-soft: rgba(36, 86, 224, .09);
+    --attention: #b26a00;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #101216;
+      --surface: #171a20;
+      --ink: #f0f3f7;
+      --muted: #98a1b1;
+      --line: #262b34;
+      --accent: #8ba6ff;
+      --accent-soft: rgba(139, 166, 255, .13);
+      --attention: #f0b866;
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    --relief-haut: color-mix(in srgb, var(--bg), #fff 78%);
+    --relief-bas: color-mix(in srgb, var(--bg), #fff 44%);
+    --reflet: rgba(255, 255, 255, .9);
+    --ombre-btn: 0 1px 2px rgba(23, 32, 68, .06), 0 2px 8px -4px rgba(23, 32, 68, .08);
+    --creux: color-mix(in srgb, var(--bg), #fff 60%);
+    --creux-ombre: rgba(23, 32, 68, .07);
+    margin: 0; color: var(--ink); background: var(--bg);
+    font-family: var(--font); font-size: 17px; line-height: 1.45;
+  }
+  @media (prefers-color-scheme: dark) {
+    body {
+      --relief-haut: color-mix(in srgb, var(--bg), #fff 7%);
+      --relief-bas: color-mix(in srgb, var(--bg), #fff 2.5%);
+      --reflet: rgba(255, 255, 255, .06);
+      --ombre-btn: 0 1px 2px rgba(0, 0, 0, .4), 0 4px 12px -6px rgba(0, 0, 0, .6);
+      --creux: color-mix(in srgb, var(--bg), #000 26%);
+      --creux-ombre: rgba(0, 0, 0, .4);
+    }
+  }
+  .page { max-width: 420px; margin: 0 auto; padding: 26px 16px 60px; }
+  h1 { font-size: 1.3rem; letter-spacing: -.02em; margin: 0 0 6px; }
+  .intro { color: var(--muted); font-size: .88rem; margin: 0 0 26px; line-height: 1.55; }
+  .prop { margin: 0 0 30px; }
+  .prop h2 { font-size: .95rem; margin: 0 0 5px; letter-spacing: -.01em; display: flex; align-items: baseline; gap: 8px; }
+  .prop h2 b {
+    flex: none; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%;
+    font-size: .78rem; background: var(--ink); color: var(--bg);
+  }
+  .avis { margin: 0 0 12px 30px; color: var(--muted); font-size: .82rem; line-height: 1.5; }
+  .avis b { color: var(--ink); font-weight: 600; }
+
+  /* ---- Cartes de jour : copie de index.html ---- */
+  .days { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .day {
+    border-radius: 16px;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  .day > button {
+    width: 100%; border: none; background: none; font: inherit; color: inherit;
+    position: relative; display: flex; align-items: center; gap: 8px; text-align: left;
+    padding: 12px 10px; min-height: 62px; border-radius: 16px;
+  }
+  .dot {
+    position: absolute; left: 2px; top: 50%; transform: translateY(-50%);
+    width: 7px; height: 7px; border-radius: 50%; background: transparent; flex: none;
+  }
+  .dname { flex: none; min-width: 112px; }
+  .dname strong { display: block; font-size: 1.02rem; font-weight: 600; letter-spacing: -.01em; }
+  .ddate { font-size: .85rem; color: var(--muted); }
+  .dsum {
+    margin-left: auto; font-size: .96rem; color: var(--muted);
+    font-variant-numeric: tabular-nums; white-space: nowrap; letter-spacing: -.01em;
+  }
+  .dsum.busy { color: var(--ink); font-weight: 600; }
+  .day-ech-slot {
+    flex: none; width: 17px; display: flex; justify-content: center;
+    align-items: center; align-self: center; min-height: 0;
+  }
+  .day-ech {
+    flex: none; width: 17px; height: 46px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 750; text-transform: uppercase;
+    font-size: .53rem; letter-spacing: .07em; line-height: 1; text-align: center;
+    border-radius: 6px; writing-mode: vertical-rl; transform: rotate(180deg);
+  }
+  .day-ech.devoir { color: var(--accent); background: var(--accent-soft); }
+
+  /* ---- 1. Liseré + légende sous la date ---- */
+  .p1 .day.conflit { position: relative; }
+  .p1 .day.conflit::before {
+    content: ""; position: absolute; left: 1px; top: 10px; bottom: 10px; width: 3px;
+    border-radius: 0 3px 3px 0; background: var(--attention);
+  }
+  .dconflit {
+    display: flex; align-items: center; gap: 4px; margin-top: 2px;
+    color: var(--attention); font-size: .76rem; font-weight: 600; letter-spacing: 0;
+  }
+
+  /* ---- 2. L'heure en alerte + chevauchement ---- */
+  .p2 .day.conflit .dsum.alerte {
+    color: var(--attention); font-weight: 650;
+    display: inline-flex; align-items: center; gap: 7px;
+  }
+  .p2 .day.conflit .dsum.alerte svg { flex: none; }
+
+  /* ---- 3. Repère du jour : double point + date ambre ---- */
+  .p3 .day.conflit .dot { background: transparent; }
+  .p3 .day.conflit .dot::before,
+  .p3 .day.conflit .dot::after {
+    content: ""; position: absolute; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--attention);
+  }
+  .p3 .day.conflit .dot::before { left: 0; top: 0; }
+  .p3 .day.conflit .dot::after { right: -3px; bottom: -3px; opacity: .5; }
+  .p3 .day.conflit .ddate { color: var(--attention); font-weight: 600; }
+
+  /* ---- 4. La carte en alerte (trame) ---- */
+  .p4 .day.conflit {
+    background:
+      repeating-linear-gradient(-45deg,
+        color-mix(in srgb, var(--attention) 6%, transparent) 0 5px,
+        transparent 5px 11px),
+      linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--attention) 34%, transparent),
+      inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  .p4 .day.conflit .dname strong { color: var(--attention); }
+  .p4 .day.conflit .dsum { color: var(--attention); font-weight: 600; }
+
+  /* ---- 5. Carte dédoublée + compte sous l'heure ---- */
+  .p5 .day.conflit {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--attention) 34%, transparent),
+      inset 0 1px 0 var(--reflet), 0 5px 0 -2px color-mix(in srgb, var(--attention) 26%, var(--surface)),
+      0 7px 0 -4px color-mix(in srgb, var(--attention) 14%, var(--surface));
+    margin-bottom: 6px;
+  }
+  .dcol { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; }
+  .dcol .dsum { margin-left: 0; }
+  .dnote { margin-top: 1px; color: var(--attention); font-size: .74rem; font-weight: 600; letter-spacing: -.01em; white-space: nowrap; }
+
+  body.solo .entete { display: none; }
+  body.solo .prop { margin-bottom: 0; }
+  body[data-seul="1"] .prop:not(.p1),
+  body[data-seul="2"] .prop:not(.p2),
+  body[data-seul="3"] .prop:not(.p3),
+  body[data-seul="4"] .prop:not(.p4),
+  body[data-seul="5"] .prop:not(.p5) { display: none; }
+</style>
+</head>
+<body>
+<main class="page">
+  <div class="entete">
+    <h1>Badge conflit — cinq propositions</h1>
+    <p class="intro">Même carte que dans l'app : lundi 28 sept., 08h15 → 12h30 avec un
+      devoir, face à jeudi sans conflit. Aucune pastille posée au milieu de la ligne :
+      la carte, le repère, l'heure ou le fond portent le signal.</p>
+  </div>
+
+  <section class="prop p1">
+    <h2><b>1</b>Liseré et légende</h2>
+    <p class="avis">Un filet ambre borde la carte et la colonne du jour <b>nomme le
+      problème</b> sous la date. Le milieu de la ligne reste vide.</p>
+    <ul class="days">
+      <li class="day conflit">
+        <button type="button">
+          <span class="dot"></span>
+          <span class="day-ech-slot"></span>
+          <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span>
+            <span class="dconflit"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4.5 13.5H11L10 22l8.5-11.5H12z"/></svg>Conflit horaire</span></span>
+          <span class="dsum busy">08h15 → 12h30</span>
+          <span class="day-ech-slot"><span class="day-ech devoir">Devoir</span></span>
+        </button>
+      </li>
+      <li class="day">
+        <button type="button">
+          <span class="dot"></span>
+          <span class="day-ech-slot"></span>
+          <span class="dname"><strong>Jeudi</strong><span class="ddate">1 oct.</span></span>
+          <span class="dsum busy">09h00 → 12h00</span>
+          <span class="day-ech-slot"></span>
+        </button>
+      </li>
+    </ul>
+  </section>
+
+  <section class="prop p2">
+    <h2><b>2</b>L'heure en alerte</h2>
+    <p class="avis">Devant la plage horaire, <b>deux barres qui se chevauchent</b> —
+      deux cours sur le même créneau — et l'heure passe en ambre. Le signal vit là
+      où l'œil lit les horaires.</p>
+    <ul class="days">
+      <li class="day conflit">
+        <button type="button">
+          <span class="dot"></span>
+          <span class="day-ech-slot"></span>
+          <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+          <span class="dsum busy alerte"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="2.5" y="5.5" width="13" height="5" rx="2.5"/><rect x="8.5" y="13.5" width="13" height="5" rx="2.5"/></svg>08h15 → 12h30</span>
+          <span class="day-ech-slot"><span class="day-ech devoir">Devoir</span></span>
+        </button>
+      </li>
+      <li class="day">
+        <button type="button">
+          <span class="dot"></span>
+          <span class="day-ech-slot"></span>
+          <span class="dname"><strong>Jeudi</strong><span class="ddate">1 oct.</span></span>
+          <span class="dsum busy">09h00 → 12h00</span>
+          <span class="day-ech-slot"></span>
+        </button>
+      </li>
+    </ul>
+  </section>
+
+  <section class="prop p3">
+    <h2><b>3</b>Le repère du jour</h2>
+    <p class="avis">Le point du jour devient <b>double</b> — deux cours à la même
+      heure — et la date prend l'ambre. Discret, à gauche, comme le repère
+      « aujourd'hui ».</p>
+    <ul class="days">
+      <li class="day conflit">
+        <button type="button">
+          <span class="dot"></span>
+          <span class="day-ech-slot"></span>
+          <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+          <span class="dsum busy">08h15 → 12h30</span>
+          <span class="day-ech-slot"><span class="day-ech devoir">Devoir</span></span>
+        </button>
+      </li>
+      <li class="day">
+        <button type="button">
+          <span class="dot"></span>
+          <span class="day-ech-slot"></span>
+          <span class="dname"><strong>Jeudi</strong><span class="ddate">1 oct.</span></span>
+          <span class="dsum busy">09h00 → 12h00</span>
+          <span class="day-ech-slot"></span>
+        </button>
+      </li>
+    </ul>
+  </section>
+
+  <section class="prop p4">
+    <h2><b>4</b>La carte en alerte</h2>
+    <p class="avis">Tout le jour signale : fond ambre très pâle <b>à fines
+      hachures</b>, contour et heure ambre foncé. Aucun mot, aucun badge.</p>
+    <ul class="days">
+      <li class="day conflit">
+        <button type="button">
+          <span class="dot"></span>
+          <span class="day-ech-slot"></span>
+          <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+          <span class="dsum busy">08h15 → 12h30</span>
+          <span class="day-ech-slot"><span class="day-ech devoir">Devoir</span></span>
+        </button>
+      </li>
+      <li class="day">
+        <button type="button">
+          <span class="dot"></span>
+          <span class="day-ech-slot"></span>
+          <span class="dname"><strong>Jeudi</strong><span class="ddate">1 oct.</span></span>
+          <span class="dsum busy">09h00 → 12h00</span>
+          <span class="day-ech-slot"></span>
+        </button>
+      </li>
+    </ul>
+  </section>
+
+  <section class="prop p5">
+    <h2><b>5</b>Carte dédoublée</h2>
+    <p class="avis">La carte se décolle d'un <b>bord ambre pâle</b> — deux cours
+      empilés dans la même journée — et le compte s'affiche sous l'heure, à droite.</p>
+    <ul class="days">
+      <li class="day conflit">
+        <button type="button">
+          <span class="dot"></span>
+          <span class="day-ech-slot"></span>
+          <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+          <span class="dcol"><span class="dsum busy">08h15 → 12h30</span>
+            <span class="dnote">3 cours en conflit</span></span>
+          <span class="day-ech-slot"><span class="day-ech devoir">Devoir</span></span>
+        </button>
+      </li>
+      <li class="day">
+        <button type="button">
+          <span class="dot"></span>
+          <span class="day-ech-slot"></span>
+          <span class="dname"><strong>Jeudi</strong><span class="ddate">1 oct.</span></span>
+          <span class="dsum busy">09h00 → 12h00</span>
+          <span class="day-ech-slot"></span>
+        </button>
+      </li>
+    </ul>
+  </section>
+</main>
+<script>
+  var seul = (/[?&]p=([1-5])(?:&|$)/.exec(location.search) || [])[1];
+  if (seul) {
+    document.body.classList.add("solo");
+    document.body.setAttribute("data-seul", seul);
+  }
+</script>
+</body>
+</html>
