@@ -118,7 +118,7 @@ def cache_fichier(chemin):
     """En-tête de cache d'un fichier servi, d'après son extension."""
     chemin = chemin.split("?")[0]
     extension = chemin.rsplit(".", 1)[-1].lower() if "." in chemin.split("/")[-1] else ""
-    if extension == "js":
+    if extension in ("js", "css"):
         return CACHE_SCRIPT
     if extension in EXTENSIONS_IMAGE:
         return CACHE_IMAGE
