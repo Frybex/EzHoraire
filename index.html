@@ -1261,11 +1261,13 @@ try {
   li.c.open .cinfo-salle .s { color: inherit; max-height: var(--s-ouvert, 8em); }
   .cinfos {
     display: grid; grid-template-rows: 0fr; opacity: 0; visibility: hidden; overflow: hidden;
-    transition: grid-template-rows .28s cubic-bezier(.16,1,.3,1), opacity .22s, visibility 0s .28s;
+    /* Même raison que la salle : une progression régulière, pour que
+       l'heure de fin descende de façon fluide avec Prof et Groupe. */
+    transition: grid-template-rows .28s ease, opacity .22s, visibility 0s .28s;
   }
   li.c.open .cinfos {
     grid-template-rows: 1fr; opacity: 1; visibility: visible;
-    transition: grid-template-rows .28s cubic-bezier(.16,1,.3,1), opacity .22s, visibility 0s;
+    transition: grid-template-rows .28s ease, opacity .22s, visibility 0s;
   }
   .cinfos > span {
     overflow: hidden; display: flex; flex-direction: column; gap: 2px;

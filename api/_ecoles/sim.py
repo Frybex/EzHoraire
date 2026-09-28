@@ -49,16 +49,16 @@ def _cours(jour, debut, fin, matiere, salle="", prof="", groupes=(),
 
 _SEMAINES = {
     "BA1 Informatique": [
-        # Lundi : les trois (salle, prof, groupe), puis salle seule avec un
-        # nom volontairement long (trois lignes sur téléphone une fois le
-        # cours déroulé) : les vraies écoles ont des libellés pareils
-        # (« Auditoire Pierre Drion (bâtiment R) »), et ça permet de voir
-        # que l'heure de fin descend en douceur.
+        # Lundi : les trois (salle, prof, groupe) deux fois, dont une avec
+        # un nom de salle volontairement long (trois lignes sur téléphone
+        # une fois le cours déroulé) : les vraies écoles ont des libellés
+        # pareils (« Auditoire Pierre Drion (bâtiment R) »), et ça permet
+        # de voir que l'heure de fin descend en douceur.
         _cours(0, "08h15", "10h15", "Programmation orientée objet",
                "1/36A", "Delcourt", ("Groupe 1 BA1 Informatique",)),
         _cours(0, "10h30", "12h30", "Analyse",
                "Grand auditoire 1/14 du bâtiment Z, deuxième étage, aile Nord, fond du couloir",
-               type_="Cours"),
+               "Delcourt", ("Groupe 1 BA1 Informatique",), type_="Cours"),
         # Mardi : profs seuls (plusieurs), puis groupe seul.
         _cours(1, "08h15", "12h30", "Bases de données", prof="Martin, Leroy"),
         _cours(1, "13h30", "15h30", "Anglais",
