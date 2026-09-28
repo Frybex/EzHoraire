@@ -730,9 +730,14 @@
     z-index: 2; padding: 1px;
     background: radial-gradient(110px circle at var(--mx, 50%) var(--my, 50%),
       color-mix(in srgb, var(--ink) 50%, transparent), transparent 75%);
-    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask: linear-gradient(#000, #000) content-box, linear-gradient(#000, #000);
     -webkit-mask-composite: xor;
-    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+    /* Longhands (et non le raccourci « mask ») : même rendu, mais le
+       validateur W3C ne comprend pas le composite dans le raccourci. */
+    mask-image: linear-gradient(#000, #000), linear-gradient(#000, #000);
+    mask-clip: content-box, border-box;
+    mask-origin: content-box, border-box;
+    mask-composite: exclude, add;
   }
   @media (hover: hover) and (pointer: fine) {
     .halo:hover::before, .halo:hover::after { opacity: 1; }
@@ -1014,6 +1019,10 @@
     /* Ancre pour le recentrage auto à l'ouverture : la carte se cale
        un peu sous le haut de l'écran, jamais collée au bord. */
     scroll-margin-top: 12px;
+    /* Pas de `contain: layout` ici : essayé, mesuré à la trace, sans
+       effet (le moteur remet de toute façon les 600 objets en cause au
+       changement de semaine, qui recrée les colonnes). Laisser la
+       contenance ajouterait un contexte de blocage sans rien gagner. */
   }
   .day.today {
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 50%, transparent),
@@ -1234,12 +1243,14 @@
     line-height: 1;
     line-height: 1cap;
     letter-spacing: 0;
+    transform: translateY(0.5px);
   }
   @supports (text-box-trim: trim-both) {
     .ebadge > span {
       line-height: 1;
       text-box-trim: trim-both;
       text-box-edge: cap alphabetic;
+      transform: none;
     }
   }
   li.c.open .marques {
@@ -1304,6 +1315,60 @@
      (rien en dessous d'elle, contrairement à un cours). */
   .detail .box-jour { padding: 10px 14px 10px 23px; }
   .box-jour .csub-in { padding: 0; align-items: center; }
+  /* Section déroulante « Supplément » : devoirs et examens posés en dehors
+     des heures de cours. */
+  .detail .box-supp {
+    margin: 8px 10px 10px; padding: 12px 14px 12px 23px; border: none; border-radius: 13px;
+    background: var(--creux);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre);
+    transition: padding .25s ease;
+  }
+  .detail .box-supp.open { padding: 12px 14px 14px 23px; }
+  .supp-btn {
+    width: 100%; border: none; background: none; font: inherit; color: inherit;
+    display: flex; gap: 9px; align-items: center; text-align: left;
+    padding: 4px 0; cursor: pointer; border-radius: 8px;
+  }
+  .supp-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .supp-ico {
+    flex: none; display: flex; align-items: center; justify-content: center;
+    width: 15px; height: 15px; color: var(--muted);
+    transform: translateY(-0.75px);
+  }
+  .supp-ico svg { display: block; }
+  .supp-titre {
+    flex: 1; min-width: 0; font-weight: 600; font-size: .95rem; letter-spacing: -.01em;
+    line-height: 1.15;
+    color: var(--ink);
+  }
+  .box-supp .marques {
+    margin-left: auto;
+  }
+  .box-supp .chev {
+    margin: 0 4px 0 2px;
+  }
+  .box-supp:not(.open) .marques ~ .chev {
+    display: none;
+  }
+  .box-supp.open .marques {
+    display: none;
+  }
+  .box-supp.open .chev {
+    margin-left: auto;
+    transform: rotate(225deg);
+    border-color: var(--ink);
+  }
+  .supp-sub {
+    display: grid; grid-template-rows: 0fr; opacity: 0; visibility: hidden;
+    transition: grid-template-rows .28s cubic-bezier(.16,1,.3,1), opacity .22s, visibility 0s .28s;
+  }
+  .box-supp.open .supp-sub {
+    grid-template-rows: 1fr; opacity: 1; visibility: visible;
+    transition: grid-template-rows .28s cubic-bezier(.16,1,.3,1), opacity .22s, visibility 0s;
+  }
+  .supp-sub > div { overflow: hidden; }
+  .box-supp .fiches { padding: 8px 0 2px; width: 100%; }
+  .box-supp .fiches .ech-liste { margin: 0; width: 100%; }
   /* Ajouter une échéance : pastille douce, alignée sous l'heure (jours
      sans cours) ou en bas du jour déroulé (jours avec cours). */
   .ech-add, .jour-ech-btn {
@@ -1734,6 +1799,9 @@
   .empty {
     text-align: center; color: var(--muted); padding: 34px 10px; font-size: 1rem;
   }
+  .empty.semaine-vide {
+    padding: 14px 10px 4px; font-size: .95rem; font-weight: 500;
+  }
 
   /* PDF officiel de la semaine */
   .official {
@@ -2085,7 +2153,13 @@
     -webkit-backdrop-filter: blur(12px) saturate(120%); backdrop-filter: blur(12px) saturate(120%);
     overscroll-behavior: contain;
   }
-  .voile:not([hidden]) { animation: voile-apparait .22s ease-out; }
+  .voile:not([hidden]) { animation: voile-apparait .22s ease-out;
+    /* Promu avant la première image : le voile (dont le `backdrop-filter`
+       coûte une rastérisation) a déjà son calque quand l'animation démarre,
+       et l'opacité se joue ensuite sur le compositeur sans toucher au
+       contenu dessous. La règle cesse de correspondre à la fermeture :
+       le calque est rendu au navigateur aussitôt. */
+    will-change: opacity; }
   .voile.sortie { animation: voile-part .18s ease-in forwards; }
   @keyframes voile-apparait { from { opacity: 0; } to { opacity: 1; } }
   @keyframes voile-part { to { opacity: 0; } }
@@ -2095,7 +2169,10 @@
     background: var(--feuille); color: var(--ink); border-radius: 26px;
     box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), 0 40px 90px -30px rgba(0, 0, 0, .6);
   }
-  .voile:not([hidden]) .boite { animation: boite-apparait .34s cubic-bezier(.16,1,.3,1); }
+  .voile:not([hidden]) .boite { animation: boite-apparait .34s cubic-bezier(.16,1,.3,1);
+    /* Idem : la carte monte et grandit sur le compositeur, jamais sur le
+       thread de mise en page. */
+    will-change: transform, opacity; }
   .voile.sortie .boite { animation: boite-part .18s ease-in forwards; }
   @keyframes boite-apparait {
     from { opacity: 0; transform: translateY(14px) scale(.96); }
@@ -2151,12 +2228,6 @@
   #voile-echeance { place-items: start center; padding-top: max(20px, 9vh); }
   @media (min-width: 1024px) { #voile-echeance { place-items: center; padding-top: 20px; } }
   #echeance-rail { margin: 0 0 16px; }
-  .ech-contexte {
-    margin: 0 0 18px; padding: 10px 12px; border-radius: 12px; font-size: .86rem;
-    background: var(--creux); box-shadow: inset 0 0 0 1px var(--line);
-    color: var(--muted); line-height: 1.4;
-  }
-  .ech-contexte strong { color: var(--ink); font-weight: 600; }
   #voile-echeance .champs { margin: 0 0 16px; }
   /* Date et heure de l'échéance : celles du créneau du cours, rappelées
      dans un bloc gravé — rien à modifier, l'ajout se fait là. */
@@ -2891,9 +2962,11 @@
        (plus large que lui) il reste collé à gauche, alors que sous
        « Férié » (plus étroit) il paraît centré. */
     .libre-add { margin: 0; align-self: center; }
-    /* Le « + » d'en-tête reprend le bouton « Échéance » du téléphone, en
-       version icône seule (la colonne est trop étroite pour le libellé). */
-    .cal-jour-ech { display: none; }
+    .cal-ech-item {
+      list-style: none;
+      box-sizing: border-box;
+      box-shadow: 0 2px 10px -2px rgba(0, 0, 0, .1);
+    }
     /* Cours : fond mat teinté (une couleur par
        intitulé, jamais deux intitulés avec la même — voir preparerCouleurs). */
     .ev {
@@ -2929,7 +3002,7 @@
        chevaucher, même quand la journée est longue. */
     .ev { container: ev / size; }
     @container ev (max-height: 84px) { .ev .et { -webkit-line-clamp: 2; } }
-    @container ev (max-height: 66px) { .ev .et { -webkit-line-clamp: 1; } }
+    @container ev (max-height: 66px) { .ev .et { -webkit-line-clamp: 1; } .ev .es { display: none; } }
     /* Séance qui dépasse la grille (tard le soir) : bord bas pointillé. */
     .ev.coupe { border-bottom-left-radius: 3px; border-bottom-right-radius: 3px; }
     .ev.coupe::after {
@@ -3285,7 +3358,7 @@
 
   @media (prefers-reduced-motion: reduce) {
     .ev, #pop, .liste button { transition: none; }
-    .chev, .detail, .csub, .cinfos, .cinfo-salle .k, .cinfo-salle .s, .marques,
+    .chev, .detail, .csub, .supp-sub, .cinfos, .cinfo-salle .k, .cinfo-salle .s, .marques,
     .week, .thisweek, .days, #feuille { transition: none; }
     .ppop:not([hidden]) { animation: none; }
     .voile:not([hidden]), .voile:not([hidden]) .boite, .voile.sortie, .voile.sortie .boite { animation: none; }

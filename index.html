@@ -42,11 +42,15 @@
 <link rel="mask-icon" href="/assets/icons/safari-pinned-tab.svg?v=2" color="#2456e0">
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
 <link rel="manifest" href="/assets/icons/site.webmanifest">
-<!-- Le SDK Supabase vient de jsdelivr : on ouvre la connexion tôt. -->
-<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<link rel="preload" href="/assets/js/app.js?v=4" as="script">
-<!-- En « defer » : rien ici ne bloque le premier rendu. -->
-<script defer src="/assets/js/favicon.js?v=3"></script>
+<!-- Feuille de style au-dessus des scripts : elle démarre avant tout
+     texte exécuté, le premier rendu n'attend que elle. -->
+<link rel="stylesheet" href="/assets/dist/app.91fddb99aa.css">
+<!-- Un seul bundle, découvert tôt et exécuté après le parse : le premier
+     rendu ne dépend que de la feuille de style. Le SDK Supabase, lui,
+     n'est plus téléchargé d'office : l'app le demande au premier besoin
+     (clic de connexion, retour OAuth ou session déjà enregistrée). -->
+<link rel="preload" href="/assets/dist/app.8d4433b118.js" as="script">
+<script defer src="/assets/dist/app.8d4433b118.js"></script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
 {"@type":"Organization","@id":"https://www.ezhoraire.be/#org","name":"EzHoraire","alternateName":["Ez Horaire","ezhoraire","Easy Horaire","EzHoraire Belgique"],"url":"https://www.ezhoraire.be/","logo":{"@type":"ImageObject","url":"https://www.ezhoraire.be/icon-512.png","width":512,"height":512},"email":"contact@ezhoraire.be","areaServed":{"@type":"Country","name":"Belgique"},"description":"Application et plateforme gratuite de consultation des horaires d'étudiants en Belgique (HEH, UMONS, Condorcet, HELB, ULB, UCLouvain)."},
@@ -77,14 +81,13 @@ try {
     /Android/i.test(_ua) ? "android" : /iPad|iPhone|iPod/.test(_ua) ? "ios" : "autre");
 } catch (e) { document.documentElement.setAttribute("data-os", "autre"); }
 </script>
-<link rel="stylesheet" href="/assets/css/app.css?v=4">
 </head>
 <body>
 <div id="barre-recharge" aria-hidden="true"></div>
 <div class="wrap">
   <div class="topbar">
     <button class="gauche" id="btn-retour" type="button" hidden>‹ Retour</button>
-    <h1 class="title"><button type="button" id="btn-reload" title="Recharger" aria-label="Recharger la page">Ez<span>Horaire</span></button></h1>
+    <h1 class="title"><button type="button" id="btn-reload" title="Recharger" aria-label="EzHoraire — Recharger la page">Ez<span>Horaire</span></button></h1>
     <button class="droite" id="btn-moi" type="button" aria-label="Réglages" hidden>
       <span class="moi-txt" id="moi-txt"></span>
       <span class="avatar" id="avatar"><span id="avatar-init" hidden></span><svg id="avatar-icone" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -92,6 +95,7 @@ try {
     </button>
   </div>
 
+  <main>
   <!-- 0. Connexion (écran d'entrée : on se connecte avant tout) -->
   <section id="v-compte">
     <div class="compte-hero">
@@ -657,6 +661,7 @@ try {
       </footer>
     </div>
   </section>
+  </main>
 </div>
 
 <div id="pop" role="dialog" aria-label="Détail du cours"></div>
@@ -906,13 +911,5 @@ try {
   </form>
 </div>
 
-<!-- « defer » : le SDK (~100 ko) ne retarde plus l'affichage ; l'app
-     l'attend en arrière-plan (voir chargerSdkSupabase). -->
-<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0" integrity="sha384-JBR+x8blGwjDRO63aHCGiZMD4VNiTR4ZUGA+N6ZKLf3zNt1fK8IBpcgPaMrxqWBp" crossorigin="anonymous" data-supabase></script>
-<script src="/assets/js/suivi.js?v=3"></script>
-<script src="/assets/js/fusion.js?v=3"></script>
-<script src="/assets/js/export_ics.js?v=3"></script>
-<script src="/assets/js/semaine.js?v=3"></script>
-<script src="/assets/js/app.js?v=4"></script>
 </body>
 </html>

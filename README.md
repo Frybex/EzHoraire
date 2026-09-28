@@ -420,19 +420,27 @@ les sources. `logos/ecoles/` est déployé, `logos/da/` et `logos/ez/`
   puis horaire).
 - `demo.html` — page de démonstration (ouvre l'app en mode essai, sans
   compte).
-- `semaine.js` — semaine affichée d'office : celle du jour, passée à la
-  suivante le week-end une fois le dernier cours de la semaine en cours
-  (fonctions pures, chargée par `index.html`) ; tests : `node --test
-  test_semaine.mjs`.
-- `fusion.js` — fusion des horaires sur mesure (fonctions pures, chargée
-  par `index.html`) ; tests : `node --test test_fusion.mjs`.
-- `export_ics.js` — export d'un horaire vers une application d'agenda
-  (fichier iCalendar fabriqué sur l'appareil, sans serveur ; fonctions
-  pures, chargée par `index.html`) ; tests : `node --test
-  test_export_ics.mjs`.
-- `suivi.js` — mesure anonyme du parcours (arrivée → clic → compte →
-  horaire) et des frictions, chargée par `index.html` ; voir le dashboard
-  admin.
+- `assets/js/`, `assets/css/` — sources des scripts et styles (jamais
+  servies telles quelles) : `python3 tools/build_assets.py` les concatène
+  et les minifie dans `assets/dist/<nom>.<empreinte>.js|css`, puis réécrit
+  les références des pages. Les fichiers produits sont committés (Vercel
+  sert l'arbre tel quel) ; le hook de pré-commit et `serve.py` refusent un
+  bundle périmé.
+- `assets/js/semaine.js` — semaine affichée d'office : celle du jour,
+  passée à la suivante le week-end une fois le dernier cours de la semaine
+  en cours (fonctions pures) ; tests : `node --test test_semaine.mjs`.
+- `assets/js/fusion.js` — fusion des horaires sur mesure (fonctions pures) ;
+  tests : `node --test test_fusion.mjs`.
+- `assets/js/export_ics.js` — export d'un horaire vers une application
+  d'agenda (fichier iCalendar fabriqué sur l'appareil, sans serveur ;
+  fonctions pures) ; tests : `node --test test_export_ics.mjs`.
+- `assets/js/suivi.js` — mesure anonyme du parcours (arrivée → clic →
+  compte → horaire) et des frictions ; voir le dashboard admin.
+- `assets/js/dashboard.js`, `assets/js/motdepasse.js` — les scripts des
+  deux pages à compte (`dashboard.html`, `mot-de-passe.html`), sortis du
+  HTML en `defer` : le document finit de se construire sans qu'un tiers
+  externe (le SDK Supabase) retarde le premier rendu, et le code se
+  minifie comme les autres bundles.
 - `confidentialite.html`, `cgu.html` — politique de confidentialité et
   conditions d'utilisation (mentions légales incluses), stylées par
   `legal.css` + `legal.js` (sommaire). À relire à chaque nouveau
@@ -445,9 +453,9 @@ les sources. `logos/ecoles/` est déployé, `logos/da/` et `logos/ez/`
   page de mot de passe sont exclus). Les `<lastmod>` se régénèrent depuis
   l'historique git : `python3 maj_sitemap.py` (à lancer après une
   retouche de page, `--check` pour vérifier sans écrire) ; tests :
-  `python3 test_sitemap.py`. Le hook `.githooks/pre-commit` refuse un
-  commit qui laisserait un `<lastmod>` périmé (activer une fois :
-  `git config core.hooksPath .githooks`).
+  `python3 test_sitemap.py`. Le hook `.githooks/pre-commit` refuse aussi un
+  commit dont `assets/dist/` ne reflète plus les sources (activer une
+  fois : `git config core.hooksPath .githooks`).
 - `mot-de-passe.html` — page d'atterrissage du lien « mot de passe oublié »
   (vérification du jeton, adresse du compte, choix et enregistrement du
   nouveau mot de passe, renvoi d'un lien si celui-ci a expiré).
@@ -467,14 +475,24 @@ les sources. `logos/ecoles/` est déployé, `logos/da/` et `logos/ez/`
 
 Chercher quelque chose qui touche une école précise ? Tout ce qui lui est
 propre tient dans `api/_ecoles/<école>.py` côté serveur, et dans les
-tableaux `ECOLES` / `RECHERCHE` en haut du script de `index.html` côté
-app. Le reste est commun à toutes.
+tableaux `ECOLES` / `RECHERCHE` en haut de `assets/js/app.js` côté app.
+Le reste est commun à toutes.
 
 ## Sur l'ordinateur
 
 ```bash
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt  # une seule fois
 .venv/bin/python tools/serve.py
+```
+
+`serve.py` reconstruit `assets/dist/` au démarrage si une source a changé
+(esbuild via `npx`, mis en cache par npm) et sert les fichiers compressés
+en gzip, comme Vercel en ligne — les mesures locales reflètent donc ce que
+reçoit un téléphone. Reconstruire à la main :
+
+```bash
+python3 tools/build_assets.py          # concatène, minifie, réécrit les pages
+python3 tools/build_assets.py --check  # vérifie sans écrire (hook de commit)
 ```
 
 Pour ouvrir l'app depuis un autre appareil du réseau local (téléphone,

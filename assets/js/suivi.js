@@ -87,7 +87,7 @@
   function chargerConfig() {
     if (configPromise) return configPromise;
     var partagee = window.EZH_CONFIG_PROMESSE;
-    configPromise = (partagee ? Promise.resolve(partagee) : fetch("api/config", { cache: "default" }).then(function (r) {
+    configPromise = (partagee ? Promise.resolve(partagee) : fetch("/api/config", { cache: "default" }).then(function (r) {
       return r.json();
     }).then(function (rep) {
       var s = (rep && rep.supabase) || {};

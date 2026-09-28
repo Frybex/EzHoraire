@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "bundles": {
+    "app.js": {
+      "fichier": "app.8d4433b118.js",
+      "octets": 222195,
+      "sources": {
+        "assets/js/favicon.js": "eb4fb1b6d5b31a954731d93d5721ba56278e731444f1313eaef84349c3fdf405",
+        "assets/js/suivi.js": "81f2e75ded3d93fffd77e3fdbf40f122745c224f18bf416de4dc302fa8bb9829",
+        "assets/js/fusion.js": "6c6fbbfa5db8e4bf5f4ceb622275c143b6ef14eb0d0e3f7fdbba880e53a78346",
+        "assets/js/export_ics.js": "1339504ea725d3db2bf979c703b9137f8205c26f96932e0fa801253bba3207ca",
+        "assets/js/semaine.js": "c631e8eee5275028820036e07d99c8a4c462931bc79bc15cd98032b37e356a71",
+        "assets/js/app.js": "d8094338c1c87ea8da6797a25200fd64cf9f3c1ebce03d515cddce1ece6bda1b"
+      }
+    },
+    "app.css": {
+      "fichier": "app.91fddb99aa.css",
+      "octets": 114586,
+      "sources": {
+        "assets/css/app.css": "e921446d89a228462f8a533e8158d9b0dea833752649e337308182c3002137a6"
+      }
+    },
+    "favicon.js": {
+      "fichier": "favicon.d76b1f573d.js",
+      "octets": 3455,
+      "sources": {
+        "assets/js/favicon.js": "eb4fb1b6d5b31a954731d93d5721ba56278e731444f1313eaef84349c3fdf405"
+      }
+    },
+    "legal.js": {
+      "fichier": "legal.7449ee64cf.js",
+      "octets": 980,
+      "sources": {
+        "assets/js/legal.js": "6212a5b249e7a161e9280fe8dd97dac10e1a761470d82020be862306d6e5bb5a"
+      }
+    },
+    "legal.css": {
+      "fichier": "legal.a85eb1e650.css",
+      "octets": 13255,
+      "sources": {
+        "assets/css/legal.css": "1a4d15c47e3f868f6ff5aa53081c74bdb50e1492f8fe0a8d0c0d22fac6e8e985"
+      }
+    },
+    "dashboard.js": {
+      "fichier": "dashboard.9b42499994.js",
+      "octets": 29993,
+      "sources": {
+        "assets/js/dashboard.js": "0452ad245621289c9f646fe1a586617f567dfdd7427b5462d62997cf026c1a7c"
+      }
+    },
+    "motdepasse.js": {
+      "fichier": "motdepasse.bab74185e6.js",
+      "octets": 6164,
+      "sources": {
+        "assets/js/motdepasse.js": "86e955e685179fd7ac0ad63e17f9c6a8c359cda7a192a4e88e2f32192bac6c64"
+      }
+    }
+  }
+}

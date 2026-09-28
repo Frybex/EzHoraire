@@ -35,6 +35,8 @@ POST /api/importer  {"ecole":"ulb","liste":"…"}     liste de cours collée -> 
 GET /api/pdf?ecole=heh&formation=..&groupe=..&semaine=..   PDF officiel
 """
 import glob
+import gzip
+import io
 import os
 import queue
 import re
@@ -111,13 +113,30 @@ ENTETES_SECURITE = {
 CACHE_HTML = "public, max-age=0, stale-while-revalidate=86400"
 CACHE_SCRIPT = "public, max-age=300, stale-while-revalidate=86400"
 CACHE_IMAGE = "public, max-age=86400, stale-while-revalidate=604800"
+# Logos d'écoles : illustratifs, quasi figés (un logo change une fois par
+# an au plus) et référencés par toutes les pages. Un mois de cache puis
+# rafraîchissement en arrière-plan : Lighthouse comptait 9 Ko renvoyés à
+# chaque visite pour rien. Même valeur dans vercel.json (garder les deux
+# synchronisés).
+CACHE_LONG = "public, max-age=2592000, stale-while-revalidate=31536000"
+# Assets versionnés par empreinte (assets/dist/) : le nom change à chaque
+# modification, la copie locale peut donc être gardée un an sans risque.
+CACHE_IMMUABLE = "public, max-age=31536000, immutable"
 EXTENSIONS_IMAGE = ("png", "svg", "ico", "webmanifest")
+# Types de texte compressés à la volée (comme Vercel en ligne, en gzip ici).
+EXTENSIONS_COMPRESSIBLES = ("html", "css", "js", "mjs", "json", "svg", "txt",
+                            "xml", "webmanifest", "map", "ics")
+TAILLE_MIN_COMPRESSION = 1024
 
 
 def cache_fichier(chemin):
     """En-tête de cache d'un fichier servi, d'après son extension."""
     chemin = chemin.split("?")[0]
     extension = chemin.rsplit(".", 1)[-1].lower() if "." in chemin.split("/")[-1] else ""
+    if chemin.startswith("/assets/dist/"):
+        return CACHE_IMMUABLE
+    if chemin.startswith("/logos/ecoles/"):
+        return CACHE_LONG
     if extension in ("js", "css"):
         return CACHE_SCRIPT
     if extension in EXTENSIONS_IMAGE:
@@ -174,6 +193,45 @@ class Handler(SimpleHTTPRequestHandler):
         self.send_header("Content-Length", "0")
         self.end_headers()
         return True
+
+    def send_head(self):
+        """Statique : sert une version gzip quand le client l'accepte,
+        comme Vercel le fait en ligne (en brotli). Sans ça, la mesure
+        Lighthouse locale compterait 110 Ko de CSS là où la production en
+        envoie 17 : on ne saurait pas ce qu'on optimise."""
+        if not getattr(self, "statique", False):
+            return super().send_head()
+        chemin = self.translate_path(self.path)
+        if os.path.isdir(chemin):
+            if not self.path.split("?")[0].endswith("/"):
+                return super().send_head()  # la base redirige vers « / »
+            for nom in ("index.html", "index.htm"):
+                candidat = os.path.join(chemin, nom)
+                if os.path.isfile(candidat):
+                    chemin = candidat
+                    break
+            else:
+                return super().send_head()
+        if not os.path.isfile(chemin):
+            return super().send_head()
+        base = os.path.basename(chemin)
+        extension = base.rsplit(".", 1)[-1].lower() if "." in base else ""
+        encode = self.headers.get("Accept-Encoding", "")
+        if extension not in EXTENSIONS_COMPRESSIBLES or "gzip" not in encode:
+            return super().send_head()
+        with open(chemin, "rb") as f:
+            brut = f.read()
+        if len(brut) < TAILLE_MIN_COMPRESSION:
+            return super().send_head()
+        corps = gzip.compress(brut, 5)
+        self.send_response(200)
+        self.send_header("Content-Type", self.guess_type(chemin))
+        self.send_header("Content-Length", str(len(corps)))
+        self.send_header("Content-Encoding", "gzip")
+        self.send_header("Vary", "Accept-Encoding")
+        self.send_header("Last-Modified", self.date_time_string(os.stat(chemin).st_mtime))
+        self.end_headers()
+        return io.BytesIO(b"" if self.command == "HEAD" else corps)
 
     def do_GET(self):
         self.statique = False
@@ -425,6 +483,23 @@ def retirer_liens(liens):
         pass
 
 
+def maj_assets():
+    """Reconstruit assets/dist/ si une source a changé depuis le dernier
+    build : la preview sert toujours l'arbre de travail, jamais un bundle
+    périmé. Silencieux quand tout est à jour (le cas courant)."""
+    try:
+        import build_assets
+    except ImportError:
+        return
+    if build_assets.verifier(parler=False) == 0:
+        return
+    print("Assets périmés : reconstruction (tools/build_assets.py)…", flush=True)
+    try:
+        build_assets.construire()
+    except SystemExit as e:
+        print(f"Reconstruction impossible : {e}", flush=True)
+
+
 def main(argv):
     lan = "--lan" in argv or os.environ.get("EZH_LAN") == "1"
     tunnel = "--tunnel" in argv or os.environ.get("EZH_TUNNEL") == "1"
@@ -446,6 +521,7 @@ def main(argv):
         signal.signal(num, lambda *_: sys.exit(0))
     os.chdir(RACINE)
     charger_env_local()
+    maj_assets()
     try:
         srv = Serveur(("::", port), Handler)
     except OSError:

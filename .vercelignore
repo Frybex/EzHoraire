@@ -46,3 +46,9 @@ tests/
 # Rapports et surveillance SEO (captures, logs, script Node local) : générés
 # hors ligne, aucune page ni l'app ne les référence. 31 Mo en moins à déployer.
 seo/
+
+# Sources CSS/JS : seuls les fichiers minifiés et versionnés d'assets/dist/
+# sont référencés par les pages. Les envoyer ferait voyager deux copies
+# (dont une non minifiée) pour rien.
+assets/js/
+assets/css/

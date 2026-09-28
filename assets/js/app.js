@@ -8,22 +8,26 @@
   var MOIS = ["janv.", "févr.", "mars", "avr.", "mai", "juin",
               "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 
-  /* Écoles prises en charge (même identifiant que ECOLES dans api/_ecoles/). */
+  /* Écoles prises en charge (même identifiant que ECOLES dans api/_ecoles/).
+     `lw`/`lh` : le viewBox du logo, copié dans les attributs width/height
+     du <img>. Sans ces attributs le navigateur ignore le ratio tant que le
+     SVG n'est pas décodé — le badge se comble sans forme stable (audit
+     « unsized-images », décalage de mise en page au premier rendu). */
   var ECOLES = [
-    { id: "heh", nom: "HEH", detail: "Haute École en Hainaut · Mons, Tournai", logo: "logos/ecoles/heh.svg" },
-    { id: "umons", nom: "UMONS", detail: "Université de Mons · Mons, Charleroi", logo: "logos/ecoles/umons.svg", beta: true },
+    { id: "heh", nom: "HEH", detail: "Haute École en Hainaut · Mons, Tournai", logo: "/logos/ecoles/heh.svg", lw: 350, lh: 140 },
+    { id: "umons", nom: "UMONS", detail: "Université de Mons · Mons, Charleroi", logo: "/logos/ecoles/umons.svg", lw: 151, lh: 52, beta: true },
     { id: "condorcet", nom: "Condorcet", detail: "Haute École de la Province de Hainaut · Mons, Charleroi, Tournai…",
-      logo: "logos/ecoles/condorcet.svg", beta: true },
+      logo: "/logos/ecoles/condorcet.svg", lw: 250, lh: 71, beta: true },
     { id: "helb", nom: "HELB", detail: "Haute École libre de Bruxelles Ilya Prigogine · Bruxelles",
-      logo: "logos/ecoles/helb.svg", beta: true },
-    { id: "ulb", nom: "ULB", detail: "Université libre de Bruxelles · Bruxelles, Charleroi", logo: "logos/ecoles/ulb.svg", recherche: true, beta: true },
+      logo: "/logos/ecoles/helb.svg", lw: 250, lh: 167, beta: true },
+    { id: "ulb", nom: "ULB", detail: "Université libre de Bruxelles · Bruxelles, Charleroi", logo: "/logos/ecoles/ulb.svg", lw: 75, lh: 75, recherche: true, beta: true },
     { id: "ucl", nom: "UCLouvain", detail: "Université catholique de Louvain · Louvain-la-Neuve, Bruxelles, Mons…",
-      logo: "logos/ecoles/ucl.svg", recherche: true, pdf: false, beta: true },
+      logo: "/logos/ecoles/ucl.svg", lw: 460, lh: 90, recherche: true, pdf: false, beta: true },
     /* École de test (horaires fictifs, voir api/_ecoles/sim.py) : proposée
        seulement si le serveur la liste (/api/config), donc jamais en ligne —
        serve.py la pose pour la simulation locale (lab/simulation.html). */
     { id: "sim", nom: "Simulation", detail: "École de test · horaires fictifs (développement local)",
-      logo: "logos/ecoles/sim.svg", sim: true }
+      logo: "/logos/ecoles/sim.svg", lw: 120, lh: 48, sim: true }
   ];
   function ecoleDe(id) {
     for (var i = 0; i < ECOLES.length; i++) if (ECOLES[i].id === id) return ECOLES[i];
@@ -188,11 +192,36 @@
   }
   /* Première connexion du compte sur mobile uniquement : à appeler après
      une connexion (retour OAuth, session restaurée, identité complétée).
-     Jamais sur ordinateur, jamais si déjà installée, jamais deux fois. */
+     Jamais sur ordinateur, jamais si déjà installée, jamais deux fois.
+
+     Et jamais pendant le premier rendu. Une fenêtre modale ouverte à
+     700 ms devient le plus grand painting de la page : elle prend le
+     relais du contenu comme LCP (elle ajoutait ~1,2 s à ce chiffre,
+     mesuré) et elle bouche l'écran au moment précis où l'étudiant
+     ouvre son horaire. On attend donc la fin du chargement, du repos
+     du thread et au moins cinq secondes d'écoulement. */
+  var DEBUT_PAGE = Date.now();
+  var pwaTentative = null;
   function planifierPropositionPwa() {
     if (!estIOS() && !estAndroid()) return;
     if (appDejaInstallee()) return;
-    setTimeout(proposerEcranAccueil, 700);
+    if (pwaTentative) return; // déjà en attente : un seul compte à rebours
+    var essayer = function () {
+      pwaTentative = null;
+      if (document.hidden || confirmationOuverte()) {
+        pwaTentative = setTimeout(essayer, 4000); // onglet caché ou fenêtre déjà ouverte
+        return;
+      }
+      var reste = 5000 - (Date.now() - DEBUT_PAGE);
+      if (reste > 0) { pwaTentative = setTimeout(essayer, reste); return; }
+      proposerEcranAccueil();
+    };
+    var auRepos = function () {
+      if (window.requestIdleCallback) requestIdleCallback(essayer, { timeout: 3000 });
+      else pwaTentative = setTimeout(essayer, 0);
+    };
+    if (document.readyState === "complete") auRepos();
+    else window.addEventListener("load", auRepos, { once: true });
   }
   var THEMES = [
     { id: 2, nom: "Bleu", couleur: "#1d4fd7" },
@@ -669,7 +698,7 @@
     }
     // Servie depuis le cache du navigateur quand elle est encore fraîche :
     // l'app n'attend pas un aller-retour serveur pour se lancer.
-    return fetchDelai("api/config", 8000, undefined, "default").then(function (r) { return r.json(); }).then(function (rep) {
+    return fetchDelai("/api/config", 8000, undefined, "default").then(function (r) { return r.json(); }).then(function (rep) {
       var s = (rep && rep.supabase) || {};
       SUPABASE_CONFIG = { URL: s.url || "", CLE_ANON: s.anonKey || "" };
       // Le serveur dit quelles écoles il expose (UCLouvain en test :
@@ -682,21 +711,45 @@
     }, function () { return false; });
   }
 
-  /* Le SDK Supabase arrive en « defer » (voir la balise) : il ne bloque
-     plus l'affichage. initSupabase et les boutons de connexion l'attendent
-     ici, une seule fois. */
+  /* SDK Supabase : jamais chargé pour un simple visiteur. index.html ne
+     pose plus la balise ; elle est ajoutée ici au premier besoin réel
+     (clic de connexion, session déjà enregistrée, retour OAuth). Les
+     pages qui en ont besoin d'emblée (dashboard) gardent la leur. */
+  var SDK_SUPABASE = {
+    src: "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0",
+    integrite: "sha384-JBR+x8blGwjDRO63aHCGiZMD4VNiTR4ZUGA+N6ZKLf3zNt1fK8IBpcgPaMrxqWBp"
+  };
   var sdkSupabase = null;
   function chargerSdkSupabase() {
     if (window.supabase && window.supabase.createClient) return Promise.resolve(true);
     if (sdkSupabase) return sdkSupabase;
     sdkSupabase = new Promise(function (ok) {
       var s = document.querySelector("script[data-supabase]");
-      if (!s) { ok(false); return; }
+      if (!s) {
+        s = document.createElement("script");
+        s.src = SDK_SUPABASE.src;
+        s.integrity = SDK_SUPABASE.integrite;
+        s.crossOrigin = "anonymous";
+        s.setAttribute("data-supabase", "");
+        document.head.appendChild(s);
+      }
       s.addEventListener("load", function () { ok(!!(window.supabase && window.supabase.createClient)); });
       s.addEventListener("error", function () { ok(false); });
       setTimeout(function () { ok(!!(window.supabase && window.supabase.createClient)); }, 8000);
     });
     return sdkSupabase;
+  }
+  /* Une session cloud est-elle déjà dans le stockage local ? Le SDK ne
+     se télécharge que dans ce cas (ou au clic de connexion, ou au retour
+     OAuth) : un visiteur neuf n'en paie ni le téléchargement ni le parse. */
+  function sessionCloudEnLocal() {
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var cle = localStorage.key(i);
+        if (/^sb-.*-auth-token(\.\d+)?$/.test(cle)) return true;
+      }
+    } catch (e) { /* stockage refusé : connexion manuelle seulement */ }
+    return false;
   }
   /* Prêt à parler au cloud : config chargée, SDK chargé, client branché.
      Les boutons de connexion l'attendent, sans bloquer l'affichage. */
@@ -1060,7 +1113,7 @@
     if (adminVerifie) return;
     try {
       if (!SUPABASE_OK || !sb || !sessionSupabase || !sessionSupabase.access_token) return;
-      fetch("api/stats?check=1", {
+      fetch("/api/stats?check=1", {
         headers: { "Authorization": "Bearer " + sessionSupabase.access_token },
         cache: "no-store"
       }).then(function (r) { return r.json(); }).then(function (rep) {
@@ -1412,7 +1465,8 @@
 
   var joursOuverts = {}; // jours dépliés {index: true}, interrupteurs indépendants
   var coursOuverts = {}; // cours dépliés {"jour:index": true}, interrupteurs indépendants
-  function resetDepliage() { joursOuverts = {}; coursOuverts = {}; }
+  var suppOuverts = {};  // sections supplément dépliées {jour: true}
+  function resetDepliage() { joursOuverts = {}; coursOuverts = {}; suppOuverts = {}; }
 
   /* Visionneuse PDF intégrée : le PDF s'affiche sous le bouton, sans
      nouvel onglet. Pendant le téléchargement, un reflet balaie le texte
@@ -1804,8 +1858,8 @@
      d'abonnement » (ULB) lit son flux iCal à la place. */
   function chargerHoraire(ecole, formation, ical) {
     var url = ical
-      ? "api/ical?lien=" + encodeURIComponent(ical)
-      : "api/horaires?ecole=" + encodeURIComponent(ecole) +
+      ? "/api/ical?lien=" + encodeURIComponent(ical)
+      : "/api/horaires?ecole=" + encodeURIComponent(ecole) +
         "&formation=" + encodeURIComponent(formation);
     return api(url, 95000)
       .then(function (rep) {
@@ -2038,10 +2092,10 @@
     document.body.removeAttribute("data-theme");
     montrer("compte");
     preparerApercu();
-    // Pour le développeur seulement : l'utilisateur n'a rien à en faire.
-    // L'écran s'affiche avant le cloud : on ne prévient qu'une fois la
-    // connexion vraiment tentée (sinon le message serait un faux positif).
-    if (window.console) {
+    // Pour le développeur seulement (localhost) : l'utilisateur n'a rien
+    // à en faire, et prévenir en ligne ferait télécharger le SDK Supabase
+    // à chaque visiteur pour un simple message de console.
+    if (EN_LOCAL && window.console) {
       pretCloud().then(function () {
         if (!SUPABASE_OK) {
           console.warn("EzHoraire : Supabase non branché (clés absentes de /api/config ou SDK non chargé). " +
@@ -2342,7 +2396,8 @@
       // Le sigle/logo est dans le carré : le titre donne le nom complet.
       var parts = String(e.detail).split(" · ");
       var badge = e.logo
-        ? '<span class="sigle sigle-logo" aria-hidden="true"><img src="' + txt(e.logo) + '" alt="" loading="lazy" onerror="this.parentElement.classList.remove(\'sigle-logo\'); this.remove();"><span class="sigle-txt">' + txt(e.nom) + '</span></span>'
+        ? '<span class="sigle sigle-logo" aria-hidden="true"><img src="' + txt(e.logo) + '" alt="" width="' + (e.lw || 100) +
+          '" height="' + (e.lh || 100) + '" loading="lazy" onerror="this.parentElement.classList.remove(\'sigle-logo\'); this.remove();"><span class="sigle-txt">' + txt(e.nom) + '</span></span>'
         : '<span class="sigle" aria-hidden="true">' + txt(e.nom) + '</span>';
       // « Bêta » : école branchée récemment, pas encore éprouvée par une
       // année entière. Dit à l'étudiant, pas caché dans le code.
@@ -2436,7 +2491,7 @@
       if (sessionSupabase && sessionSupabase.access_token) {
         entetes.Authorization = "Bearer " + sessionSupabase.access_token;
       }
-      fetch("api/bugs", { method: "POST", cache: "no-store", headers: entetes, body: JSON.stringify(corps) })
+      fetch("/api/bugs", { method: "POST", cache: "no-store", headers: entetes, body: JSON.stringify(corps) })
         .then(function (r) {
           return r.json().catch(function () { throw new Error("réponse illisible (" + r.status + ")."); });
         })
@@ -2489,7 +2544,7 @@
     document.getElementById("liste-formations").innerHTML = "";
     attente(status, "Chargement des formations…");
     var demande = choix.ecole;
-    api("api/formations?ecole=" + encodeURIComponent(demande), 30000).then(function (rep) {
+    api("/api/formations?ecole=" + encodeURIComponent(demande), 30000).then(function (rep) {
       formations = { ecole: demande, liste: rep.formations };
       if (vue !== "formation" || choix.ecole !== demande) return;
       effacer(status); listerFormations();
@@ -2599,7 +2654,7 @@
     var seq = ++rech.requete;
     if (texte.length < 2) { effacer(status); return; }
     attente(status, "Recherche…");
-    api("api/recherche?ecole=" + encodeURIComponent(choix.ecole) +
+    api("/api/recherche?ecole=" + encodeURIComponent(choix.ecole) +
          "&genre=" + genre + "&q=" + encodeURIComponent(texte), 20000)
       .then(function (rep) {
         if (seq !== rech.requete || vue !== "formation") return;
@@ -2698,7 +2753,7 @@
     if (!lien) { erreur(statut, "Colle d'abord le lien d'abonnement (« S'abonner » dans Mon horaire)."); return; }
     btn.disabled = true;
     attente(statut, "Lecture de ton calendrier…");
-    api("api/ical?lien=" + encodeURIComponent(lien), 40000).then(function (rep) {
+    api("/api/ical?lien=" + encodeURIComponent(lien), 40000).then(function (rep) {
       btn.disabled = false;
       effacer(statut);
       choix.formation = LIEN_FORMATION;
@@ -2854,7 +2909,7 @@
     attente(statut, "Vérification des cours…");
     // En POST : la liste de cours d'un étudiant n'a rien à faire dans une
     // adresse (journaux, historique, Referer).
-    api("api/importer", 60000, { ecole: choix.ecole, liste: texte })
+    api("/api/importer", 60000, { ecole: choix.ecole, liste: texte })
       .then(function (rep) {
         if (btn) btn.disabled = false;
         var d = rep.data || {};
@@ -4376,7 +4431,15 @@
   function echeancesSous(cle) {
     if (!profil || !cle) return [];
     var parProfil = lireEcheancesTout()[profil.id];
-    var liste = parProfil && parProfil[cle];
+    if (!parProfil) return [];
+    var liste = parProfil[cle];
+    if (!liste && cle.indexOf("|") >= 0) {
+      var p = cle.split("|");
+      if (p.length >= 3 && p[1]) {
+        var altH = p[1].charAt(0) === "0" ? p[1].slice(1) : (p[1].charAt(1) === "h" ? "0" + p[1] : "");
+        if (altH) liste = parProfil[p[0] + "|" + altH + "|" + p[2]];
+      }
+    }
     return Array.isArray(liste) ? liste : [];
   }
   function ecrireEcheancesSous(cle, liste) {
@@ -4386,6 +4449,13 @@
     if (liste && liste.length) tous[profil.id][cle] = liste;
     else {
       delete tous[profil.id][cle];
+      if (cle.indexOf("|") >= 0) {
+        var p = cle.split("|");
+        if (p.length >= 3 && p[1]) {
+          var altH = p[1].charAt(0) === "0" ? p[1].slice(1) : (p[1].charAt(1) === "h" ? "0" + p[1] : "");
+          if (altH) delete tous[profil.id][p[0] + "|" + altH + "|" + p[2]];
+        }
+      }
       if (!Object.keys(tous[profil.id]).length) delete tous[profil.id];
     }
     ecrire(CLE_ECHEANCES, tous);
@@ -4732,38 +4802,43 @@
     'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg>';
   var ICONE_CORBEILLE_ECH = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
     'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 4h4M7 7l1 13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-13"/></svg>';
+  function itemEcheanceHTML(e, cleCours, dateJour, styleExtra, clsExtra) {
+    var examen = e.type === "examen";
+    var quand = (dateJour && memeJour(jourEch(e.date), dateJour)) ? heureEch(e.heure) : quandEch(e);
+    var quoi = examen ? "l'examen" : "le devoir";
+    var cls = "ech-item" + (echPassee(e) ? " passe" : "") + (clsExtra ? " " + clsExtra : "");
+    var st = styleExtra ? ' style="' + styleExtra + '"' : "";
+    return '<li class="' + cls + '" data-ech-id="' + txt(e.id) + '" data-ech-cle="' + txt(cleCours) + '"' + st + '>' +
+      '<div class="ech-fond-modifier">' +
+        '<button type="button" class="ech-action-btn btn-action-edit" data-ech-edit="' + txt(e.id) + '" aria-label="Modifier ' + quoi + ' : ' + txt(e.titre) + '" title="Modifier">' +
+          ICONE_CRAYON_ECH +
+          '<span class="btn-libelle-normal">Modifier</span>' +
+          '<span class="btn-libelle-auto">Relâcher</span>' +
+        '</button>' +
+      '</div>' +
+      '<div class="ech-fond-suppr">' +
+        '<button type="button" class="ech-action-btn btn-action-del" data-ech-suppr="' + txt(e.id) + '" aria-label="Supprimer ' + quoi + ' : ' + txt(e.titre) + '" title="Supprimer">' +
+          ICONE_CORBEILLE_ECH +
+          '<span class="btn-libelle-normal">Suppr</span>' +
+          '<span class="btn-libelle-auto">Relâcher</span>' +
+        '</button>' +
+      '</div>' +
+      '<div class="ech' + (echNeuf === e.id ? " neuf" : "") + '" data-ech-cle="' + txt(cleCours) + '" data-ech-id="' + txt(e.id) + '" title="1 clic pour afficher les options">' +
+        '<span class="ech-type ' + (examen ? "examen" : "devoir") + '">' + (examen ? "Examen" : "Devoir") + "</span>" +
+        '<span class="ech-corps"><span class="ech-titre' + (e.fait ? " fait" : "") + '">' + txt(e.titre) + "</span>" +
+        (quand ? '<span class="ech-quand">' + txt(quand) + "</span>" : "") + "</span>" +
+        '<button type="button" class="ech-valide' + (e.fait ? " fait" : "") + '" data-ech-valide="' + txt(e.id) +
+        '" role="checkbox" aria-checked="' + (e.fait ? "true" : "false") + '" aria-label="' +
+        (e.fait ? "Ne plus valider " : "Valider ") + quoi + " : " + txt(e.titre) + '" title="' +
+        (e.fait ? "Annuler" : "C’est fait") + '">' + ICONE_CASE + "</button>" +
+      "</div></li>";
+  }
   function listeEcheancesHTML(liste, cleCours, dateJour) {
     var items = trierEcheances(liste).filter(function (e) { return !echApresDate(e, dateJour); });
     if (!items.length) return "";
     var html = '<ul class="ech-liste">';
     for (var i = 0; i < items.length; i++) {
-      var e = items[i], examen = e.type === "examen";
-      var quand = (dateJour && memeJour(jourEch(e.date), dateJour)) ? heureEch(e.heure) : quandEch(e);
-      var quoi = examen ? "l'examen" : "le devoir";
-      html += '<li class="ech-item' + (echPassee(e) ? " passe" : "") + '" data-ech-id="' + txt(e.id) + '" data-ech-cle="' + txt(cleCours) + '">' +
-        '<div class="ech-fond-modifier">' +
-          '<button type="button" class="ech-action-btn btn-action-edit" data-ech-edit="' + txt(e.id) + '" aria-label="Modifier ' + quoi + ' : ' + txt(e.titre) + '" title="Modifier">' +
-            ICONE_CRAYON_ECH +
-            '<span class="btn-libelle-normal">Modifier</span>' +
-            '<span class="btn-libelle-auto">Relâcher</span>' +
-          '</button>' +
-        '</div>' +
-        '<div class="ech-fond-suppr">' +
-          '<button type="button" class="ech-action-btn btn-action-del" data-ech-suppr="' + txt(e.id) + '" aria-label="Supprimer ' + quoi + ' : ' + txt(e.titre) + '" title="Supprimer">' +
-            ICONE_CORBEILLE_ECH +
-            '<span class="btn-libelle-normal">Suppr</span>' +
-            '<span class="btn-libelle-auto">Relâcher</span>' +
-          '</button>' +
-        '</div>' +
-        '<div class="ech' + (echNeuf === e.id ? " neuf" : "") + '" data-ech-cle="' + txt(cleCours) + '" data-ech-id="' + txt(e.id) + '" title="1 clic pour afficher les options">' +
-          '<span class="ech-type ' + (examen ? "examen" : "devoir") + '">' + (examen ? "Examen" : "Devoir") + "</span>" +
-          '<span class="ech-corps"><span class="ech-titre' + (e.fait ? " fait" : "") + '">' + txt(e.titre) + "</span>" +
-          (quand ? '<span class="ech-quand">' + txt(quand) + "</span>" : "") + "</span>" +
-          '<button type="button" class="ech-valide' + (e.fait ? " fait" : "") + '" data-ech-valide="' + txt(e.id) +
-          '" role="checkbox" aria-checked="' + (e.fait ? "true" : "false") + '" aria-label="' +
-          (e.fait ? "Ne plus valider " : "Valider ") + quoi + " : " + txt(e.titre) + '" title="' +
-          (e.fait ? "Annuler" : "C’est fait") + '">' + ICONE_CASE + "</button>" +
-        '</div></li>';
+      html += itemEcheanceHTML(items[i], cleCours, dateJour);
     }
     return html + "</ul>";
   }
@@ -4822,13 +4897,12 @@
   /* Pastilles D / E d'un cours : une par type d'échéance en attente
      (devoir couleur du thème, examen complémentaire du thème), empilées. Elles remplacent la flèche :
      un cours ne s'ouvre que s'il a quelque chose à montrer. */
-  function marquesEcheances(c) {
-    var dateJour = dateSemJour(sem, c.jour);
-    var liste = echeancesDe(c).filter(function (e) {
+  function marquesHTML(liste, dateJour) {
+    var actives = (liste || []).filter(function (e) {
       return !echPassee(e) && !echApresDate(e, dateJour);
     });
     var devoir = false, examen = false;
-    liste.forEach(function (e) { if (e.type === "examen") examen = true; else devoir = true; });
+    actives.forEach(function (e) { if (e.type === "examen") examen = true; else devoir = true; });
     if (!devoir && !examen) return "";
     var dit = devoir && examen ? "Un devoir et un examen en attente"
             : examen ? "Un examen en attente" : "Un devoir en attente";
@@ -4836,6 +4910,12 @@
       (devoir ? '<span class="ebadge"><span>D</span></span>' : "") +
       (examen ? '<span class="ebadge" style="--c:var(--examen)"><span>E</span></span>' : "") +
       "</span>";
+  }
+  function marquesEcheances(c) {
+    return marquesHTML(echeancesDe(c), dateSemJour(sem, c.jour));
+  }
+  function marquesEcheancesJour(jour) {
+    return marquesHTML(echeancesJour(jour), dateSemJour(sem, jour));
   }
   /* Ligne de la salle : présente dès l'état replié (nom court de la salle)
      et reste stable à l'ouverture pendant que « Salle : » glisse à sa gauche. */
@@ -4900,14 +4980,27 @@
         if (p) html += '<li class="p">' + p + "</li>";
       }
     }
-    html += "</ol>";
-    // Une échéance posée sur la journée (devoir « à une autre heure ») se
-    // range sous les cours, sans titre : le bloc parle de lui-même.
+    html += "</ol></div>"; // fin de la boîte des cours
+
+    // Devoirs et examens en dehors des heures de cours : section « Supplément »
+    // déroulante à part.
     var echJour = listeEcheancesHTML(echeancesJour(jour), cleJourEch(jour), dateJour);
     if (echJour) {
-      html += '<div class="csub-in sans-ajout">' + echJour + "</div>";
+      var suppEstOuvert = !!suppOuverts[jour];
+      var marquesSupp = marquesEcheancesJour(jour);
+      html += '<div class="box box-supp' + (suppEstOuvert ? " open" : "") + '" data-supp-jour="' + jour + '">' +
+        '<button type="button" class="supp-btn" data-supp-jour="' + jour + '" aria-expanded="' + suppEstOuvert + '" ' +
+        'aria-label="Afficher les devoirs et examens hors cours">' +
+        '<span class="supp-ico" aria-hidden="true">' +
+        '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+        '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>' +
+        '<span class="supp-titre">Supplément</span>' +
+        marquesSupp +
+        '<span class="chev" aria-hidden="true"></span>' +
+        '</button>' +
+        '<div class="supp-sub"><div><div class="fiches">' + echJour + '</div></div></div>' +
+        '</div>';
     }
-    html += "</div>"; // fin de la boîte des cours
     // Bouton « Échéance » sous la boîte, à droite : il ouvre le choix du
     // cours (ou « à une autre heure ») pour poser un devoir ou un examen.
     html += '<div class="jour-ech">' +
@@ -4985,7 +5078,7 @@
       var liste = coursDe(sem, j);
       if (liste.length) vide = false;
       if (j < 5 && !estFerie(sem, j)) conge = false;
-      if (j >= 5 && !liste.length) continue; // samedi/dimanche : seulement s'il y a cours
+      if (j >= 5 && !liste.length && !echeancesJour(j).some(function (e) { return memeJour(jourEch(e.date), dateSemJour(sem, j)); })) continue; // samedi/dimanche : seulement s'il y a cours ou échéance
       if (surPC) continue; // liste masquée sur ordinateur : rien à construire
       var date = dateSemJour(sem, j);
       var estAuj = memeJour(date, auj);
@@ -5012,15 +5105,17 @@
       var nomsConge = [];
       if (conge) {
         for (var n2 = 0; n2 < 5; n2++) {
-          if (estFerie(sem, n2) && FERIES_NOMS[numJour(sem, n2)]) nomsConge.push(FERIES_NOMS[numJour(sem, n2)]);
+          var nomF = estFerie(sem, n2) && FERIES_NOMS[numJour(sem, n2)];
+          if (nomF && nomsConge.indexOf(nomF) < 0) nomsConge.push(nomF);
         }
       }
-      document.getElementById("jours").innerHTML = vide
-        ? '<div class="empty">' + (SEMAINES.indexOf(sem) < 0
+      var msgVide = vide
+        ? '<li class="empty semaine-vide">' + (SEMAINES.indexOf(sem) < 0
             ? "Semaine non publiée par l'école (congés ?)."
             : (conge ? "Semaine de congé" + (nomsConge.length ? " — " + txt(nomsConge.join(", ")) : "") + "."
-                     : "Aucun cours cette semaine.")) + "</div>"
-        : html;
+                     : "Aucun cours cette semaine.")) + "</li>"
+        : "";
+      document.getElementById("jours").innerHTML = msgVide + html;
     }
     // Chaque vue ne construit que ce qu'elle affiche : la grille sur
     // ordinateur, la liste de jours sur téléphone (voir le CSS).
@@ -5218,7 +5313,7 @@
     var PLAFOND = 20 * 60;
     for (var j = 0; j < 7; j++) {
       var l = coursDe(sem, j);
-      if (j >= 5 && !l.length) continue; // samedi/dimanche : seulement s'il y a cours
+      if (j >= 5 && !l.length && !echeancesJour(j).some(function (e) { return memeJour(jourEch(e.date), dateSemJour(sem, j)); })) continue; // samedi/dimanche : seulement s'il y a cours ou échéance
       jours.push({ j: j, cours: l });
       l.forEach(function (c) {
         debut = Math.min(debut, mins(c.debut));
@@ -5249,20 +5344,57 @@
         'aria-label="Ajouter une échéance pour ' + JOURS[d.j] + ' ' + fmtDate(date) + '">' +
         '<span class="cal-col-depot-cadre"></span>' +
         '</button>';
+      var echsDuJour = [];
+      var cleJ = cleJourEch(d.j);
+      echeancesJour(d.j).forEach(function (item) {
+        if (memeJour(jourEch(item.date), date)) echsDuJour.push({ e: item, cle: cleJ });
+      });
+      d.cours.forEach(function (c) {
+        var cleC = cleCoursEch(c);
+        echeancesDe(c).forEach(function (item) {
+          if (memeJour(jourEch(item.date), date)) echsDuJour.push({ e: item, cle: cleC });
+        });
+      });
+      var vusEch = {}, echsUniques = [];
+      echsDuJour.forEach(function (x) {
+        if (!vusEch[x.e.id]) {
+          vusEch[x.e.id] = true;
+          echsUniques.push(x);
+        }
+      });
       if (!d.cours.length) {
-        // Jour sans cours : mêmes échéances que sur téléphone (rangées
-        // sous la clé « jour|| »), avec le bouton pour en poser une.
-        var echJour = listeEcheancesHTML(echeancesJour(d.j), cleJourEch(d.j), date);
+        var aDesEchs = echsUniques.length > 0;
         corps += '<div class="cal-libre' + (estFerie(sem, d.j) ? " ferie" : "") + '"' +
           (estFerie(sem, d.j) ? ' title="' + txt(nomFerie(sem, d.j)) + '"' : "") + ">" +
           '<div class="libre-boite">' +
-          "<p><strong>" + (estFerie(sem, d.j) ? txt(nomFerie(sem, d.j)) : "Pas de cours") + "</strong></p>" +
-          echJour +
-          '<button type="button" class="ech-add libre-add" data-ech-cible="' + txt(cleJourEch(d.j)) + '" ' +
-          'aria-label="Ajouter un devoir ou un examen à ce jour" title="Ajouter un devoir ou un examen">' +
-          ICONE_PLUS + "<span>Échéance</span></button>" +
+          (aDesEchs ? "" : "<p><strong>" + (estFerie(sem, d.j) ? txt(nomFerie(sem, d.j)) : "Pas de cours") + "</strong></p>") +
           "</div></div>";
       }
+      var echsHeure = [], echsBas = [];
+      echsUniques.forEach(function (x) {
+        if (!x.e.heure) {
+          echsBas.push(x);
+        } else {
+          var hm = mins(x.e.heure);
+          if (hm >= fin || pc(hm) > 91) {
+            echsBas.push(x);
+          } else {
+            echsHeure.push(x);
+          }
+        }
+      });
+      echsHeure.sort(function (a, b) { return mins(a.e.heure) - mins(b.e.heure); });
+      echsHeure.forEach(function (x) {
+        var hm = mins(x.e.heure);
+        var topPct = Math.max(0, Math.min(91, pc(hm)));
+        var st = "position:absolute;top:calc(" + topPct + "% + 1px);left:1px;width:calc(100% - 3px);z-index:3;";
+        corps += itemEcheanceHTML(x.e, x.cle, date, st, "cal-ech-item");
+      });
+      echsBas.forEach(function (x, ib) {
+        var bottomPx = ib * 56 + 4;
+        var st = "position:absolute;bottom:" + bottomPx + "px;left:1px;width:calc(100% - 3px);z-index:3;";
+        corps += itemEcheanceHTML(x.e, x.cle, date, st, "cal-ech-item en-bas");
+      });
       couloirs(d.cours).forEach(function (x) {
         var c = x.c, a = mins(c.debut), b = Math.min(mins(c.fin), fin);
         var i = evCal.push(c) - 1;
@@ -5733,15 +5865,16 @@
     histOuvrir("echeance");
   }
   /* Ligne de contexte du formulaire : le cours visé sous forme de bouton. */
-  function contexteEch(c, heure) {
+  function contexteEch(c, heure, dExact) {
     if (c.debut) {
       return '<span class="cpoint" style="' + styleCours(c.matiere) + '" aria-hidden="true"></span>' +
         '<span class="ech-cours-nom">' + txt(nettoyerMatiere(c.matiere || "ce cours")) + '</span>';
     }
-    var jour = dateSemJour(sem, c.jour);
+    var jour = dExact || dateSemJour(sem, c.jour);
+    var libelle = estFerie(sem, c.jour) ? nomFerie(sem, c.jour) : (JOURS[c.jour] + " " + fmtDate(jour));
     return '<span class="ech-cours-nom">' +
-      txt(heure ? fmtDate(jour) + " · " + fmtH(String(heure).replace(":", "h"))
-                : fmtDate(jour)) + '</span>';
+      txt(heure ? libelle + " · " + fmtH(String(heure).replace(":", "h"))
+                : libelle) + '</span>';
   }
   /* Hauteur du formulaire (étape 2), mesurée hors écran : le temps d'un
      calcul, rien n'est peint (tout est remis en place dans le même bloc).
@@ -5798,10 +5931,31 @@
     if (card) card.classList.toggle("ouvert", ouvert);
     if (echChoixBtnValider) echChoixBtnValider.tabIndex = ouvert ? 0 : -1;
   }
+  /* Trouve le cours du jour pendant lequel tombe une heure donnée (en minutes).
+     1. Cours dont le créneau englobe cette heure (du début inclus à la fin exclue).
+     2. À défaut, cours qui se termine pile à cette heure. */
+  function coursDeLHeure(listeCours, hMin) {
+    if (!Array.isArray(listeCours) || isNaN(hMin)) return null;
+    for (var i = 0; i < listeCours.length; i++) {
+      var c = listeCours[i];
+      if (!c || !c.debut || !c.fin) continue;
+      var d = mins(c.debut), f = mins(c.fin);
+      if (d <= hMin && hMin < f) return c;
+    }
+    for (var j = 0; j < listeCours.length; j++) {
+      var c2 = listeCours[j];
+      if (!c2 || !c2.debut || !c2.fin) continue;
+      if (mins(c2.fin) === hMin) return c2;
+    }
+    return null;
+  }
   function validerHeureChoisie() {
     if (echRetourJour == null || !echChoixInpHeure) return;
     if (echChoixInpHeure.value) {
-      ouvrirEcheance(pseudoJour(echRetourJour), echChoixInpHeure.value);
+      var hMin = mins(echChoixInpHeure.value);
+      var cours = coursDe(sem, echRetourJour);
+      var cTrouve = coursDeLHeure(cours, hMin);
+      ouvrirEcheance(cTrouve || pseudoJour(echRetourJour), echChoixInpHeure.value);
     } else {
       try { echChoixInpHeure.focus(); } catch (e) {}
     }
@@ -5891,7 +6045,6 @@
     if (echRetourJour == null) document.getElementById("boite-echeance").style.minHeight = "";
     montrerEtapeEch(2);
     var ctxBtn = document.getElementById("echeance-cours");
-    ctxBtn.innerHTML = contexteEch(c, heure);
     if (echRetourJour != null) {
       ctxBtn.classList.add("cliquable");
       ctxBtn.setAttribute("title", "Changer de cours");
@@ -5906,14 +6059,15 @@
     echTitreBloc.classList.remove("erreur");
     // Date et heure fixées au créneau du cours : le début, la prochaine
     // fois qu'il tombe (le jour affiché, ou la semaine suivante s'il est
-    // déjà passé). Un jour sans cours n'a pas d'heure.
+    // déjà passé). Un jour sans cours reste sur sa date.
     var jour = dateSemJour(sem, c.jour);
     var d = new Date(jour.getTime()), auj = new Date();
-    if (d.getTime() < new Date(auj.getFullYear(), auj.getMonth(), auj.getDate()).getTime()) {
+    if (c.debut && d.getTime() < new Date(auj.getFullYear(), auj.getMonth(), auj.getDate()).getTime()) {
       d.setDate(d.getDate() + 7);
     }
     echDate = isoEch(d);
     echHeure = heure || (c.debut ? String(c.debut).replace("h", ":") : "");
+    ctxBtn.innerHTML = contexteEch(c, heure, d);
     document.getElementById("ech-quand").textContent =
       fmtDate(d) +
       (echHeure ? " · " + fmtH(String(echHeure).replace(":", "h")) : "");
@@ -5981,6 +6135,14 @@
     var coursMaj = echCours, depuisPop = pop.classList.contains("visible");
     fermerEcheance(true);
     echNeuf = id; // surbrillance à l'apparition dans le cours
+    if (coursMaj) {
+      if (coursMaj.debut) {
+        coursOuverts[cleRenduCours(coursMaj)] = true;
+      } else if (coursMaj.jour != null) {
+        joursOuverts[coursMaj.jour] = true;
+        suppOuverts[coursMaj.jour] = true;
+      }
+    }
     rendre(depuisPop);
     echNeuf = "";
     if (depuisPop) rafraichirPop(coursMaj);
@@ -6002,14 +6164,14 @@
     ctxModif.classList.remove("cliquable");
     ctxModif.removeAttribute("title");
     ctxModif.removeAttribute("aria-label");
-    ctxModif.innerHTML = contexteEch(c, cible.heure);
+    var dj = jourEch(cible.date);
+    ctxModif.innerHTML = contexteEch(c, cible.heure, dj && !isNaN(dj.getTime()) ? dj : null);
     document.getElementById("ech-titre").value = cible.titre || "";
     document.getElementById("echeance-titre").textContent = cible.type === "examen" ? "Modifier l'examen" : "Modifier le devoir";
     document.getElementById("echeance-ok").textContent = "Enregistrer";
     echTitreBloc.classList.remove("erreur");
     echDate = cible.date;
     echHeure = cible.heure || "";
-    var dj = jourEch(cible.date);
     document.getElementById("ech-quand").textContent =
       (dj && !isNaN(dj.getTime()) ? fmtDate(dj) : cible.date) +
       (echHeure ? " · " + fmtH(String(echHeure).replace(":", "h")) : "");
@@ -6294,6 +6456,7 @@
     if ((etat === "suppr" || etat === "edit") && e.target.closest(".ech-action-btn")) return;
 
     echItemEnCours = item;
+    brancherGesteEch();
     var c = getCoordEch(e);
     echStartX = c.clientX;
     echStartY = c.clientY;
@@ -6392,6 +6555,7 @@
 
   function echTouchFin(e) {
     if (!echItemEnCours) return;
+    debrancherGesteEch();
     echItemEnCours.classList.remove("glissant");
     var item = echItemEnCours;
     var etaitArme = item.classList.contains("arme-declenchement");
@@ -6441,13 +6605,28 @@
     }
   }
 
+  /* Le suivi du doigt n'est branché qu'au début d'un geste sur une
+     échéance : une écoute « touchmove » non passive posée sur window en
+     permanence empêcherait le navigateur de confier le défilement au
+     compositeur (le scroll attendrait JavaScript à chaque image). */
+  var gesteEchActif = false;
+  function brancherGesteEch() {
+    if (gesteEchActif) return;
+    gesteEchActif = true;
+    window.addEventListener("touchmove", echTouchBouge, { passive: false });
+    window.addEventListener("mousemove", echTouchBouge);
+  }
+  function debrancherGesteEch() {
+    if (!gesteEchActif) return;
+    gesteEchActif = false;
+    window.removeEventListener("touchmove", echTouchBouge);
+    window.removeEventListener("mousemove", echTouchBouge);
+  }
   document.addEventListener("touchstart", echTouchDebut, { passive: true });
-  window.addEventListener("touchmove", echTouchBouge, { passive: false });
   window.addEventListener("touchend", echTouchFin);
   window.addEventListener("touchcancel", echTouchFin);
 
   document.addEventListener("mousedown", echTouchDebut);
-  window.addEventListener("mousemove", echTouchBouge);
   window.addEventListener("mouseup", echTouchFin);
 
   document.addEventListener("contextmenu", function (e) {
@@ -6493,9 +6672,10 @@
     var suppr = e.target.closest("[data-ech-suppr]");
     if (suppr) {
       e.stopPropagation();
-      var ligneSuppr = suppr.closest(".ech-item") || suppr.closest(".ech");
+      var ligneSuppr = suppr.closest(".ech-item") || suppr.closest(".ech") || suppr.closest(".pop-ech-detail");
       var cibleSuppr = ligneSuppr && cibleDeCle(ligneSuppr.getAttribute("data-ech-cle"));
       if (cibleSuppr) {
+        fermerPop();
         if (ligneSuppr && ligneSuppr.classList.contains("ech-item")) fermerItemEch(ligneSuppr, true);
         supprimerEcheance(cibleSuppr.c, suppr.getAttribute("data-ech-suppr"));
       }
@@ -6504,9 +6684,10 @@
     var edit = e.target.closest("[data-ech-edit]");
     if (edit) {
       e.stopPropagation();
-      var ligneEdit = edit.closest(".ech-item") || edit.closest(".ech");
+      var ligneEdit = edit.closest(".ech-item") || edit.closest(".ech") || edit.closest(".pop-ech-detail");
       var cibleEdit = ligneEdit && cibleDeCle(ligneEdit.getAttribute("data-ech-cle"));
       if (cibleEdit) {
+        fermerPop();
         if (ligneEdit && ligneEdit.classList.contains("ech-item")) fermerItemEch(ligneEdit, true);
         ouvrirModifierEcheance(cibleEdit.c, edit.getAttribute("data-ech-edit"));
       }
@@ -6671,7 +6852,7 @@
       "nom=" + encodeURIComponent(nom || nomExport(p)),
       "uid=" + encodeURIComponent(p.id || "")
     ];
-    return "api/abonnement?" + q.join("&");
+    return "/api/abonnement?" + q.join("&");
   }
   function demanderLien(p, cours, couleur, nom) {
     return fetch(lienAbonnement(p, cours, couleur, nom), { cache: "no-store" })
@@ -7366,6 +7547,11 @@
       basculerCours(c.getAttribute("data-cle"));
       return;
     }
+    var sb = e.target.closest(".supp-btn");
+    if (sb) {
+      basculerSupp(+sb.getAttribute("data-supp-jour"));
+      return;
+    }
     var b = e.target.closest(".day > button");
     if (!b) return;
     basculerJour(+b.getAttribute("data-jour"));
@@ -7389,11 +7575,18 @@
     Object.keys(coursOuverts).forEach(function (cle) {
       if (cle.indexOf(prefixe) === 0) delete coursOuverts[cle];
     });
+    delete suppOuverts[j];
     var cours = li.querySelectorAll("li.c.open:not(.seul)");
     for (var i = 0; i < cours.length; i++) {
       cours[i].classList.remove("open");
       var b = cours[i].querySelector(".cbtn");
       if (b) b.setAttribute("aria-expanded", "false");
+    }
+    var boxSupp = li.querySelector(".box-supp.open");
+    if (boxSupp) {
+      boxSupp.classList.remove("open");
+      var sb = boxSupp.querySelector(".supp-btn");
+      if (sb) sb.setAttribute("aria-expanded", "false");
     }
     var echs = li.querySelectorAll(".ech-item");
     for (var k = 0; k < echs.length; k++) fermerItemEch(echs[k], false);
@@ -7421,6 +7614,16 @@
     li.classList.toggle("open", ouvrir);
     btn.setAttribute("aria-expanded", !!ouvrir);
     if (ouvrir) calerDansEcran(li, false);
+  }
+  function basculerSupp(j, ouvrir) {
+    var box = document.querySelector('#jours .box-supp[data-supp-jour="' + j + '"]');
+    var btn = box && box.querySelector(".supp-btn");
+    if (!box || !btn) return;
+    if (ouvrir == null) ouvrir = !suppOuverts[j];
+    if (ouvrir) suppOuverts[j] = true; else delete suppOuverts[j];
+    box.classList.toggle("open", ouvrir);
+    btn.setAttribute("aria-expanded", !!ouvrir);
+    if (ouvrir) calerDansEcran(box, false);
   }
 
   document.getElementById("sem-prec").addEventListener("click", function () {
@@ -7480,7 +7683,7 @@
     pdfSurveillerMain(); // un geste annule la correction finale
     var cible = ciblePdf();
     (cible && cible.semaine >= 1
-      ? fetch("api/pdf?ecole=" + encodeURIComponent(cible.ecole) +
+      ? fetch("/api/pdf?ecole=" + encodeURIComponent(cible.ecole) +
           "&formation=" + encodeURIComponent(cible.formation) +
           "&groupe=" + encodeURIComponent(cible.groupe) +
           "&semaine=" + encodeURIComponent(cible.semaine), { cache: "no-store" })
@@ -7601,7 +7804,7 @@
       if (cours.length) {
         ouvrirChoixCours(j);
       } else {
-        ouvrirEcheance({ jour: j });
+        ouvrirEcheance(pseudoJour(j));
       }
     });
   }
@@ -8201,7 +8404,7 @@
       if (sessionSupabase && sessionSupabase.access_token) {
         entetes.Authorization = "Bearer " + sessionSupabase.access_token;
       }
-      return fetch("api/bugs", {
+      return fetch("/api/bugs", {
         method: "POST", cache: "no-store",
         headers: entetes, body: JSON.stringify(corps)
       }).then(function (r) {
@@ -8282,7 +8485,7 @@
       var premier = !DATA;
       var change = premier || empreinte(data) !== empreinte(DATA);
       if (!change) { DATA = data; rendreInfos(); return false; }
-      if (!premier) { coursOuverts = {}; fermerPdf(); } // le PDF affiché serait périmé
+      if (!premier) { coursOuverts = {}; suppOuverts = {}; fermerPdf(); } // le PDF affiché serait périmé
       installer(data);
       if (premier) { if (semaineAuto) sem = semaineCourante(); deplierAujourdhui(); }
       if (vue === "horaire") afficherHoraire();
@@ -8441,7 +8644,10 @@
     router();
   }
   window.EZH_CONFIG_PROMESSE.then(function () {
-    return MODE_ESSAI ? null : initSupabase();
+    // Visiteur neuf : ni session en local, ni retour OAuth -> le SDK
+    // Supabase (218 Ko) reste hors du chargement. Les boutons de
+    // connexion le demandent eux-mêmes (voir AUTH.login / pretCloud).
+    return MODE_ESSAI || !(retourCloud || sessionCloudEnLocal()) ? null : initSupabase();
   }).then(function () {
     if (!MODE_ESSAI && sessionSupabase && sessionSupabase.user) {
       return pullProfils().then(function () { return pullEcheances(); }, function () { return pullEcheances(); })

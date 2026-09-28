@@ -1,10 +1,20 @@
 #!/bin/sh
-# Refuse un commit quand un <lastmod> de sitemap.xml ne reflète plus la
-# dernière modification de sa page. Activer une fois :
+# Deux vérifications avant chaque commit. Activer une fois :
 #   git config core.hooksPath .githooks
+#
+# 1. sitemap.xml : un <lastmod> doit refléter la dernière modification
+#    de sa page.
 sortie=$(python3 tools/maj_sitemap.py --check 2>&1)
 if [ $? -ne 0 ]; then
     printf '%s\n' "$sortie" >&2
     echo "Commit refusé : lancez « python3 tools/maj_sitemap.py », ajoutez sitemap.xml, puis relancez le commit." >&2
+    exit 1
+fi
+# 2. assets/dist/ : le bundle minifié doit être reconstruit dès qu'une
+#    source change (l'hébergeur sert l'arbre tel quel, sans build).
+sortie=$(python3 tools/build_assets.py --check 2>&1)
+if [ $? -ne 0 ]; then
+    printf '%s\n' "$sortie" >&2
+    echo "Commit refusé : lancez « python3 tools/build_assets.py », ajoutez assets/dist/ et les pages réécrites, puis relancez le commit." >&2
     exit 1
 fi

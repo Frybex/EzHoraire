@@ -14,6 +14,8 @@
 .vercel/
 
 # Python & Caches
+# (« /dist/ » et non « dist/ » : assets/dist/ est le build des assets du
+# site, il doit rester versionné.)
 __pycache__/
 *.py[cod]
 *$py.class
@@ -21,7 +23,7 @@ __pycache__/
 .Python
 build/
 develop-eggs/
-dist/
+/dist/
 downloads/
 eggs/
 .eggs/
