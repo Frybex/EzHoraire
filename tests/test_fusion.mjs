@@ -117,6 +117,53 @@ test("chevauchements : seulement entre sources, semaines communes", () => {
   assert.deepEqual(lisibles.sort(), ["Analyse TP/Anglais:2"]);
 });
 
+test("parcours PAR: deux cours distincts qui se chevauchent = conflit, même source", () => {
+  const d = horaire("2026-09-14", [
+    c("COMMB115", 0, "08h00", "10h00", [1], ["Groupe A"]),
+    c("COMMB115", 0, "08h00", "10h00", [1], ["Groupe B"]), // même cours : alternatives
+    c("DROIC2001", 0, "09h00", "11h00", [1]),
+  ]);
+  const par = { role: "principale", formation: "PAR:COMMB115,DROIC2001", groupes: [], sans: [] };
+  // Hors parcours, les superpositions d'une même source ne sont pas signalées.
+  assert.equal(F.chevauchements(d.cours).length, 0);
+  // En parcours : chaque séance du cours choisi fait face à l'autre cours.
+  const chocs = F.chevauchements(d.cours, [par]);
+  assert.equal(chocs.length, 2);
+  assert.ok(chocs.every((x) =>
+    [x.a.matiere, x.b.matiere].sort().join("/") === "COMMB115/DROIC2001"));
+  assert.deepEqual(chocs[0].semaines, [1]);
+  // Pas de conflit entre les semaines de l'un et de l'autre.
+  const ailleurs = d.cours.map((x) => ({ ...x, semaines: [2] }));
+  assert.equal(F.chevauchements(ailleurs, [par]).length, 2);
+  ailleurs[2].semaines = [3];
+  assert.equal(F.chevauchements(ailleurs, [par]).length, 0);
+});
+
+test("parcours PAR: séances d'un même cours reconnues sous des intitulés différents", () => {
+  const d = horaire("2026-09-14", [
+    c("LINFO1101 - Programmation", 0, "08h00", "10h00", [1], ["TP A"]),
+    c("LINFO1101 - Programmation (TP)", 0, "08h00", "10h00", [1], ["TP B"]),
+    c("LEPL1101 - Physique", 0, "09h00", "11h00", [1]),
+  ]);
+  const par = { role: "principale", formation: "PAR:LINFO1101,LEPL1101", groupes: [], sans: [] };
+  assert.equal(F.memesCours(d.cours[0], d.cours[1]), true);
+  assert.equal(F.memesCours(d.cours[0], d.cours[2]), false);
+  const chocs = F.chevauchements(d.cours, [par]);
+  assert.equal(chocs.length, 2); // les deux séances LINFO face à LEPL
+  assert.ok(chocs.every((x) => x.a.matiere.startsWith("LINFO") || x.b.matiere.startsWith("LINFO")));
+});
+
+test("profil par codes de cours : conflits détectés sans champ src", () => {
+  const d = horaire("2026-09-14", [
+    c("SIMU1101", 0, "08h15", "10h15"),
+    c("SIMU2101", 0, "09h00", "12h00"),
+  ]);
+  const profil = { ecole: "sim", formation: "PAR:SIMU1101,SIMU2101", groupes: [] };
+  assert.equal(F.chevauchements(d.cours, [profil]).length, 1);
+  // Intitulé ordinaire, même sans code : le cours reste lui-même.
+  assert.equal(F.memesCours({ matiere: "Droit civil" }, { matiere: "Droit civil - partie 2" }), false);
+});
+
 test("données cochées : l'écran des groupes ne voit que les groupes des cours gardés", () => {
   const d = horaire("2026-09-14", [
     c("Analyse", 0, "08h00", "10h00", [1], ["An - Gr 1"]),

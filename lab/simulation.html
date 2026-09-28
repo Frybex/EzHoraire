@@ -15,7 +15,7 @@
 <link rel="mask-icon" href="/assets/icons/safari-pinned-tab.svg?v=2" color="#2456e0">
 <style>
   /* Menu de la simulation (labo, jamais déployé : voir .vercelignore).
-     Deux choix, puis c'est la vraie app en mode essai : les horaires
+     Quelques choix, puis c'est la vraie app en mode essai : les horaires
      viennent de l'école de test (api/_ecoles/sim.py), servie par
      tools/serve.py (EZH_SIM=1). La sortie se fait depuis les Réglages
      de l'app (« Quitter la simulation »). */
@@ -88,6 +88,13 @@
           pour travailler le rendu (pastilles « Conflit », cours côte à côte).</small></span>
       <span class="chev" aria-hidden="true"></span>
     </button>
+    <button type="button" data-n="codes">
+      <span class="nombre">PAR</span>
+      <span class="textes"><strong>Codes de cours — conflits</strong>
+        <small>Info + Droit par codes (« PAR:… ») : trois conflits entre
+          deux cours choisis, gants de boxe dans les jours.</small></span>
+      <span class="chev" aria-hidden="true"></span>
+    </button>
   </div>
   <p class="erreur" id="sim-erreur" hidden></p>
 </main>
@@ -134,6 +141,18 @@
           { ecole: "sim", formation: "BA1 Comptabilité", ical: "", role: "ajout",
             groupes: [], avec: ["Comptabilité générale"], surnom: "Compta" }
         ] }
+    ],
+    /* Sélection par codes de cours (« PAR:… », comme l'ULB) : des cours
+       d'unités différentes, ici d'Informatique et de Droit. Deux cours
+       choisis qui tombent en même temps comptent comme un conflit, même
+       s'ils viennent d'une seule et même source : lundi 09h00 (SIMU1101
+       vs SIMU2101), mardi 08h15 (SIMU1103 vs SIMU2102) et mercredi
+       13h30 (SIMU1102 vs SIMU2103). Un même cours garde ses séances
+       (lundi et mercredi pour SIMU1101) sans se signaler lui-même. */
+    "codes": [
+      { id: "sim-codes", surnom: "Par codes", ecole: "sim",
+        formation: "PAR:SIMU1101,SIMU1102,SIMU1103,SIMU2101,SIMU2102,SIMU2103",
+        groupes: [], ical: "", theme: 3 }
     ]
   };
   /* Échéances : devoirs et examens fictifs, posés sur des cours précis de
@@ -228,9 +247,9 @@
     var b = e.target.closest("button[data-n]");
     if (b) lancer(b.getAttribute("data-n"));
   });
-  /* Raccourci de partage : « ?n=1 », « ?n=4 » ou « ?n=conflits » ouvre
-     directement le scénario, sans passer par le menu. */
-  var auto = (/[?&]n=(1|4|conflits)(?:&|$)/.exec(location.search) || [])[1];
+  /* Raccourci de partage : « ?n=1 », « ?n=4 », « ?n=conflits » ou
+     « ?n=codes » ouvre directement le scénario, sans passer par le menu. */
+  var auto = (/[?&]n=(1|4|conflits|codes)(?:&|$)/.exec(location.search) || [])[1];
   if (auto) lancer(auto);
 })();
 </script>

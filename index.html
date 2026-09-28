@@ -1100,7 +1100,7 @@ try {
     padding: 12px 10px 12px 10px; min-height: 62px; cursor: pointer; border-radius: 16px;
   }
   .day > button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-  .dname { flex: none; min-width: 100px; }
+  .dname { flex: none; }
   .dname strong { display: block; font-size: 1.02rem; font-weight: 600; letter-spacing: -.01em; }
   /* Date du jour : dans la sous-ligne, sous le nom du jour. */
   .ddate { font-size: .85rem; color: var(--muted); }
@@ -1173,6 +1173,30 @@ try {
     align-self: flex-start; margin-top: 6px;
     background: hsl(var(--h) calc(52% - var(--v) * 10%) calc(52% + var(--v) * 7%));
   }
+  /* Cours en conflit (horaire sur mesure) : le point devient un gant de
+     boxe teinté de la couleur du cours, pointé vers l'autre cours en
+     conflit (celui du haut vers le bas, celui du bas vers le haut).
+     Marges négatives : le gant (18 px) garde l'empreinte du point (8 px),
+     les titres restent alignés d'un cours à l'autre. */
+  .cpoint.choc-cours {
+    width: 18px; height: 18px; border-radius: 0; background: none;
+    margin-top: 1px; margin-left: -5px; margin-right: -5px;
+    color: hsl(var(--h) calc(52% - var(--v) * 10%) calc(52% + var(--v) * 7%));
+  }
+  .cpoint.choc-cours svg { display: block; width: 100%; height: 100%; }
+  /* Entrée des gants sur les cours : même durée et courbe que le dépliage
+     du jour (0,32 s), sans délai — tout bouge ensemble, à l'ouverture
+     comme à la fermeture. */
+  .day .cpoint.choc-cours svg {
+    opacity: 0; transform: scale(.4);
+    transition: opacity .32s cubic-bezier(.16,1,.3,1), transform .32s cubic-bezier(.16,1,.3,1);
+    will-change: opacity, transform;
+  }
+  .day .cpoint.choc-cours.vers-bas svg { transform: rotate(180deg) scale(.4); }
+  .day.open .cpoint.choc-cours svg {
+    opacity: 1; transform: scale(1);
+  }
+  .day.open .cpoint.choc-cours.vers-bas svg { transform: rotate(180deg) scale(1); }
   .cbtn .h {
     flex: none; min-width: 0;
     font-variant-numeric: tabular-nums; color: var(--muted); font-size: .82rem;
@@ -1277,8 +1301,31 @@ try {
     opacity: 0; pointer-events: none; visibility: hidden;
     transition: opacity .18s, visibility 0s .18s;
   }
-  /* Étiquette « Conflit » de l'en-tête du jour (horaire sur mesure). */
-  .day > button .choc-tag { margin-left: 0; }
+  /* Icône de conflit de l'en-tête du jour (horaire sur mesure) : deux
+     gants de boxe, centrés dans l'espace entre le jour et les heures. */
+  .day > button .choc-icone {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    color: var(--attention);
+  }
+  .day > button .choc-icone svg { display: block; }
+  /* Sortie des gants de l'en-tête : même durée et courbe que le dépliage
+     du jour (0,32 s) pour rester synchro — ils plongent pendant que le
+     jour s'ouvre, et reviennent pendant qu'il se referme. */
+  .day > button .choc-icone svg {
+    transition: opacity .32s cubic-bezier(.16,1,.3,1), transform .32s cubic-bezier(.16,1,.3,1);
+    will-change: opacity, transform;
+  }
+  .day.open > button .choc-icone svg {
+    opacity: 0; transform: translateY(8px) scale(.6);
+  }
+  /* Jour refermé : chaque gant prend la couleur d'un des deux premiers
+     cours en conflit (--c1 le gant de gauche, --c2 celui de droite, posées
+     par couleursChoc). Jour ouvert : les gants repassent à la teinte
+     d'avertissement, les cours portent déjà leurs propres gants. */
+  .day > button .choc-icone .g1 { fill: var(--c1, currentColor); }
+  .day > button .choc-icone .g2 { fill: var(--c2, currentColor); }
+  .day.open > button .choc-icone .g1,
+  .day.open > button .choc-icone .g2 { fill: currentColor; }
   /* Jour à un seul cours (téléphone) : déjà déroulé et non refermable. */
   li.c.seul .cbtn { cursor: default; }
   li.c.seul .cbtn:disabled { opacity: 1; color: inherit; }
@@ -1331,6 +1378,8 @@ try {
   .jour-ech-btn:hover svg, .jour-ech-btn:focus-visible svg { color: var(--accent); }
   .ech-add:active, .jour-ech-btn:active { transform: scale(.97); }
   .ech-add:focus-visible, .jour-ech-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  /* Bouton global d'échéance (bureau uniquement, caché sur téléphone). */
+  #ech-global-wrap { display: none; }
   /* Bouton « Échéance » sous la boîte des cours, à droite. */
   .jour-ech { display: flex; justify-content: flex-end; padding: 0 12px 12px; }
   /* Étape 1 de la fenêtre d'échéance : la liste des cours du jour, des
@@ -1340,7 +1389,7 @@ try {
      l'autre, et la liste prend la place restante. */
   #boite-echeance { display: flex; flex-direction: column; }
   #ech-etape-choix { display: flex; flex-direction: column; flex: 1 1 auto; }
-  #ech-choix-titre { margin: 0 0 8px; }
+  #ech-choix-titre { margin: 0 0 16px; }
   #ech-choix-liste {
     display: grid; gap: 8px; margin: 0 0 6px;
     flex: 1 1 auto; align-content: start;
@@ -1360,6 +1409,9 @@ try {
   .ech-choix-cours .h {
     flex: none; font-variant-numeric: tabular-nums; color: var(--muted);
     font-size: .8rem; white-space: nowrap;
+  }
+  .ech-choix-cours .cpoint {
+    align-self: center; margin: 0;
   }
   .ech-choix-cours .ctxt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
   .ech-choix-cours .m {
@@ -1461,14 +1513,50 @@ try {
   .ech-choix-valider:hover { color: var(--ink); }
   .ech-choix-valider:active { transform: scale(.97); }
   .ech-choix-valider:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  /* Retour à l'étape 1 depuis le formulaire (passé par le choix du cours). */
-  #ech-retour {
-    display: block; margin: -6px 0 10px; padding: 6px 0; border: none; background: none;
-    font: inherit; font-size: .85rem; font-weight: 600; color: var(--accent); cursor: pointer;
-    min-height: 32px; text-align: left;
+  /* Titre masqué visuellement (gardé pour l'accessibilité / aria-labelledby). */
+  #echeance-titre {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
   }
-  #ech-retour[hidden] { display: none; }
-  #ech-retour:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  /* Ligne « Pour [Nom du cours] » avec le cours en bouton cliquable. */
+  .ech-pour-ligne {
+    display: flex; align-items: center; gap: 9px; margin: 0 0 16px;
+    min-height: 38px;
+  }
+  .ech-pour-label {
+    flex: none; font-size: 1.02rem; font-weight: 600; color: var(--muted);
+  }
+  .ech-cours-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    height: 36px; padding: 0 14px 0 12px; border: none; border-radius: 999px;
+    font: inherit; font-size: .92rem; font-weight: 650; color: var(--ink);
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    cursor: default; transition: color .15s, transform .12s, box-shadow .15s, background .15s;
+    max-width: calc(100% - 50px);
+  }
+  .ech-cours-btn .cpoint {
+    flex: none; align-self: center; margin: 0;
+  }
+  .ech-cours-btn .ech-cours-nom {
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .ech-cours-btn.cliquable {
+    cursor: pointer;
+  }
+  .ech-cours-btn.cliquable:hover {
+    color: var(--ink);
+    background: color-mix(in srgb, var(--accent) 10%, var(--relief-haut));
+    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 60%, transparent),
+                inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    transform: translateY(-1px);
+  }
+  .ech-cours-btn.cliquable:active {
+    transform: scale(.97);
+  }
+  .ech-cours-btn.cliquable:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
   /* Échéances du cours : type à la verticale, intitulé, date, validation,
      suppression. Une échéance passée a exactement le même aspect qu'une
      échéance à venir (ni voile ni texte estompé). */
@@ -1695,8 +1783,9 @@ try {
   .detail li.p::before, .detail li.p::after {
     content: ""; flex: 1; height: 1px; background: var(--line);
   }
-  /* Conflits (horaire sur mesure) : seul le tag « Conflit » de l'en-tête
-     du jour les signale — aucun ruban ni anneau sur les cours. */
+  /* Conflits (horaire sur mesure) : l'icône de conflit de l'en-tête
+     du jour les signale, et chaque cours en conflit porte un gant de
+     boxe (couleur du cours) pointé vers l'autre. */
   .empty {
     text-align: center; color: var(--muted); padding: 34px 10px; font-size: 1rem;
   }
@@ -2663,20 +2752,61 @@ try {
     .week #sem-suiv { order: 2; }
     .week .cur strong { display: inline; font-size: 2.1rem; font-weight: 700; letter-spacing: -.045em; }
     .week .cur span { font-size: 1rem; white-space: nowrap; }
-    .week button.nav, .thisweek, .official {
+    .week button.nav, .thisweek, .official, .ech-global-btn {
       height: 40px; border-radius: 999px; border: none; color: var(--ink);
       background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
       box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
       transition: color .15s, opacity .15s, transform .12s;
     }
     .week button.nav { width: 40px; padding: 0; }
-    .week button.nav:not(:disabled):hover, .thisweek:hover, .official:hover { color: var(--ink); transform: translateY(-1px); }
+    .week button.nav:not(:disabled):hover, .thisweek:hover, .official:hover, .ech-global-btn:hover { color: var(--ink); transform: translateY(-1px); }
     .week button.nav:disabled { opacity: .3; transform: none; }
     .thisweek {
       order: 0; align-self: center;
       margin: 0 0 0 10px; padding: 0 18px; font-size: .9rem;
     }
     .thisweek.cache { opacity: 0; transform: scale(.96); pointer-events: none; }
+    /* Bouton global d'échéance : posé entre les flèches et le PDF officiel. */
+    #ech-global-wrap {
+      order: 3; position: relative; display: flex; align-items: center;
+    }
+    .ech-global-btn {
+      align-self: center; width: auto; margin: 0; padding: 0 18px;
+      display: inline-flex; align-items: center; justify-content: center; font-size: .9rem; font-weight: 550; cursor: pointer;
+    }
+    .ech-global-btn[aria-expanded="true"] {
+      color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 14%, var(--relief-haut));
+      box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 65%, transparent),
+                  inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    }
+    /* Mode Échéance (ordinateur) : filtre transparent dessinant chaque jour
+       de la semaine sur la grille, inspiré des zones de dépôt par glisser-déposer. */
+    .cal-col-depot { display: none; }
+    .cal.mode-ech-actif .cal-heures { opacity: .45; transition: opacity .2s; }
+    .cal.mode-ech-actif .cal-col-depot {
+      display: block; position: absolute; inset: 0; z-index: 25;
+      padding: 0; border: none; background: none; cursor: pointer;
+      border-radius: 14px;
+      animation: depot-apparait .16s ease-out; outline: none;
+    }
+    .cal-col-depot-cadre {
+      position: absolute; inset: 0; border-radius: 14px;
+      background: transparent;
+      border: 2px dashed color-mix(in srgb, var(--accent) 45%, transparent);
+      transition: background .15s, border-color .15s, box-shadow .15s;
+      pointer-events: none;
+    }
+    .cal-col-depot:hover .cal-col-depot-cadre,
+    .cal-col-depot:focus-visible .cal-col-depot-cadre {
+      background: color-mix(in srgb, var(--accent) 8%, transparent);
+      border-color: var(--accent); border-style: solid;
+      box-shadow: inset 0 0 0 1px var(--accent), 0 0 24px -4px color-mix(in srgb, var(--accent) 30%, transparent);
+    }
+    .cal-col-depot.today .cal-col-depot-cadre {
+      border-color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 4%, transparent);
+    }
     .official {
       grid-area: pdfbtn; align-self: center; width: auto; margin: 0; padding: 0 18px 0 15px;
       display: flex; gap: 8px; font-size: .9rem;
@@ -2818,7 +2948,7 @@ try {
     .libre-add { margin: 0; align-self: center; }
     /* Le « + » d'en-tête reprend le bouton « Échéance » du téléphone, en
        version icône seule (la colonne est trop étroite pour le libellé). */
-    .cal-jour-ech { align-self: center; margin: 0 0 0 2px; padding: 7px; }
+    .cal-jour-ech { display: none; }
     /* Cours : fond mat teinté (une couleur par
        intitulé, jamais deux intitulés avec la même — voir preparerCouleurs). */
     .ev {
@@ -3223,6 +3353,7 @@ try {
     .ap-ev { animation: none; }
     .pdf-pages canvas { animation: none; }
     .btn-entree, .champs, .halo::before, .halo::after, .ech-choix-valider-zone, .ech-choix-valider { transition: none; }
+    .day > button .choc-icone svg, .day .cpoint.choc-cours svg { transition: none; }
   }
   /* ---------- Horaire sur mesure (fusion.js) ---------- */
   :root { --attention: #b26a00; }
@@ -3374,14 +3505,6 @@ try {
   .choc.neuf svg { color: var(--accent); }
   .avis p { margin: 0; }
   .avis p + p { margin-top: 8px; }
-  .choc-tag {
-    flex: none; margin-left: 6px; font-size: .64rem; font-weight: 750; text-transform: uppercase;
-    letter-spacing: .02em; border-radius: 6px; padding: 2.5px 6px 0; height: 18px; box-sizing: border-box;
-    display: inline-flex; align-items: center; justify-content: center; line-height: 1; text-align: center;
-    color: var(--attention);
-    background: color-mix(in srgb, var(--attention) 12%, var(--surface));
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--attention) 30%, transparent);
-  }
   /* Ligne de cours : devoir ou examen en attente (la teinte suit le type). */
   .ech-tag {
     flex: none; margin-left: 6px; font-size: .64rem; font-weight: 750; text-transform: uppercase;
@@ -3926,6 +4049,11 @@ try {
         <div class="cur"><strong id="sem-titre">Semaine 1</strong><span id="sem-dates"></span></div>
         <button class="nav halo" id="sem-suiv" aria-label="Semaine suivante" title="Semaine suivante (→)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.75 5.5 15.25 12l-6.5 6.5"/></svg></button>
         <button class="thisweek halo" id="btn-auj">Cette semaine</button>
+        <div id="ech-global-wrap">
+          <button type="button" class="ech-global-btn halo" id="btn-ech-global" aria-expanded="false" aria-label="Ajouter une échéance sur un jour">
+            Échéance
+          </button>
+        </div>
       </div>
 
       <ul class="days" id="jours"></ul>
@@ -4066,7 +4194,6 @@ try {
     <!-- Étape 1 : dans quel cours poser le devoir ou l'examen. -->
     <div id="ech-etape-choix" hidden>
       <h3 id="ech-choix-titre">Dans quel cours ?</h3>
-      <p class="ech-contexte" id="ech-choix-jour"></p>
       <div id="ech-choix-liste"></div>
       <!-- Devoir sans cours (ou hors des heures de cours) : on choisit
            l'heure dans la journée, l'échéance se range sous la journée. -->
@@ -4097,8 +4224,10 @@ try {
       <button type="button" role="tab" data-ech-type="examen" aria-selected="false">Examen</button>
     </div>
     <h3 id="echeance-titre">Ajouter un devoir</h3>
-    <button type="button" id="ech-retour" hidden>‹ Changer de cours</button>
-    <p class="ech-contexte" id="echeance-cours"></p>
+    <div class="ech-pour-ligne">
+      <span class="ech-pour-label">Pour</span>
+      <button type="button" class="ech-cours-btn halo" id="echeance-cours"></button>
+    </div>
     <label class="champ-titre" for="ech-titre">Intitulé</label>
     <div class="champs" id="ech-titre-bloc"><div class="champ-ligne">
       <input class="champ" id="ech-titre" type="text" maxlength="80" autocomplete="off" spellcheck="true"
@@ -4572,11 +4701,13 @@ try {
   /* Une sélection de cours « PAR:… » n'existe qu'à l'ULB et à l'UCLouvain.
      Rangée sous une autre école (HEH, UMONS), l'horaire devient
      introuvable : on la rend à la bonne école (sigles UCLouvain en
-     « L…1234 », sinon ULB). Renvoie vrai si le profil a été réparé. */
+     « L…1234 », sinon ULB). L'école de test, elle, accepte les codes :
+     ses scénarios se servent des vrais chemins de l'app. Renvoie vrai si
+     le profil a été réparé. */
   function reparerEcoleParcours(p) {
     if (!p || String(p.formation || "").indexOf("PAR:") !== 0) return false;
     var ec = ecoleDe(p.ecole);
-    if (ec && ec.recherche) return false;
+    if (ec && (ec.recherche || ec.sim)) return false;
     var codes = p.formation.slice(4).split(",").filter(Boolean);
     var ucl = codes.length && codes.every(function (c) { return /^L[A-Z]{2,6}\d{4}[A-Z]?$/.test(c.trim()); });
     p.ecole = ucl ? "ucl" : "ulb";
@@ -5419,7 +5550,7 @@ try {
   var DATA = null;       // horaire complet de la formation affichée
   var COURS = [];        // ses cours, filtrés selon les groupes de l'étudiant
   var COURS_PAR_JOUR = {}; // « sem|jour » -> cours triés (index d'affichage)
-  var CHOCS = [];        // horaire sur mesure : chevauchements entre sources
+  var CHOCS = [];        // sur mesure : entre sources ; codes de cours : entre cours
   var CHOCS_SEM = {};    // sem -> chevauchements de la semaine
   var COURS_EN_CHOC = {}; // sem -> Set des cours qui se chevauchent
   var NOUVELLES_SEMAINES = []; // semaines publiées depuis la dernière visite
@@ -7860,7 +7991,7 @@ try {
     var datas = perso.sources.map(function (s) { return memoHoraire(s.ecole, s.formation, s.ical); });
     if (datas.filter(Boolean).length < 2) { zone.hidden = true; return; }
     var fus = FUSION.fusionner(perso.sources.map(function (s, i) { return { source: s, data: datas[i] }; }));
-    var chocs = FUSION.chevauchements(fus.cours);
+    var chocs = FUSION.chevauchements(fus.cours, perso.sources);
     zone.hidden = false;
     zone.classList.toggle("ok", !chocs.length);
     if (!chocs.length) {
@@ -8312,7 +8443,7 @@ try {
     if (DATA.perso) {
       // Déjà filtré source par source (cours, groupes) par fusion.js.
       COURS = DATA.cours;
-      CHOCS = FUSION.chevauchements(COURS);
+      CHOCS = FUSION.chevauchements(COURS, profil.sources);
       indexerCours();
       if (semaineAuto || SEMAINES.indexOf(sem) < 0) sem = semaineCourante();
       return;
@@ -8333,6 +8464,11 @@ try {
       if (!sel.length || !c.groupes.length) return true; // séance de toute la formation
       return c.groupes.some(function (g) { return groupeDans(sel, g); });
     });
+    // Sélection par codes de cours (« PAR:… ») : les cours choisis viennent
+    // d'années différentes, souvent sans groupes à cocher. Un chevauchement
+    // entre deux d'entre eux est un vrai conflit, même dans la même source
+    // (voir chevauchements de fusion.js).
+    if (FUSION.estParcours(profil)) CHOCS = FUSION.chevauchements(COURS, [profil]);
     indexerCours();
     if (semaineAuto || SEMAINES.indexOf(sem) < 0) sem = semaineCourante();
   }
@@ -8515,13 +8651,42 @@ try {
     var n = (src.avec || []).length;
     return n + " cours ajouté" + (n > 1 ? "s" : "");
   }
-  // Séances en conflit la semaine `s` (horaire sur mesure).
+  // Séances en conflit la semaine `s` (sur mesure ou codes de cours).
   function chocsSemaine(s) {
     return CHOCS_SEM[s] || [];
   }
   function enConflit(c, s) {
     var set = COURS_EN_CHOC[s];
     return !!set && set.has(c);
+  }
+  /* Direction du gant d'un cours en conflit : vers le haut quand le cours
+     juste au-dessus est l'autre cours du conflit, vers le bas sinon — de
+     haut en bas, les deux gants se pointent l'un vers l'autre. */
+  function dirChoc(cours, i) {
+    var prec = i > 0 ? cours[i - 1] : null;
+    if (!prec) return " vers-bas";
+    var chocs = chocsSemaine(sem), c = cours[i], q;
+    for (q = 0; q < chocs.length; q++) {
+      if ((chocs[q].a === c && chocs[q].b === prec) ||
+          (chocs[q].a === prec && chocs[q].b === c)) return " vers-haut";
+    }
+    return " vers-bas";
+  }
+  /* Couleurs des deux premiers cours en conflit du jour `liste`, pour les
+     gants de l'en-tête quand le jour est refermé : la même teinte que leur
+     point (voir .cpoint). "" s'il y en a moins de deux. */
+  function couleursChoc(liste) {
+    var premiers = [], i;
+    for (i = 0; i < liste.length && premiers.length < 2; i++) {
+      if (enConflit(liste[i], sem)) premiers.push(liste[i]);
+    }
+    if (premiers.length < 2) return "";
+    function teinte(nom) {
+      var t = couleurCours(nom);
+      return "hsl(" + t.h + "," + (52 - t.v * 10) + "%," + (52 + t.v * 7) + "%)";
+    }
+    return ' style="--c1:' + teinte(premiers[0].matiere) +
+      ';--c2:' + teinte(premiers[1].matiere) + '"';
   }
   /* ---------- Devoirs et examens, rattachés à un cours ou à un jour ----------
      Chaque horaire a ses propres échéances, rangées sous une clé : un cours
@@ -9055,6 +9220,9 @@ try {
       var infos = infosCoursHTML(c);
       var ech = listeEcheancesHTML(echeancesDe(c), cle, dateJour);
       var marques = marquesEcheances(c);
+      // Cours en conflit : le point devient un gant de boxe (couleur du
+      // cours), pointé vers l'autre cours en conflit.
+      var choc = enConflit(c, sem);
       // Déroulable dès qu'il y a des infos détaillées (salle, prof...) ou des échéances
       var deroulable = !!salle || !!infos || !!ech;
       // Un seul cours dans le jour : déroulé d'office et non refermable.
@@ -9065,7 +9233,7 @@ try {
               (deroulable ? ' aria-expanded="' + estOuvert + '"' : ' aria-disabled="true"') +
               (seul ? " disabled" : "") + ">" +
               '<span class="hcol"><span class="h">' + txt(fmtH(c.debut)) + '</span><span class="h">' + txt(fmtH(c.fin)) + "</span></span>" +
-              '<span class="cpoint" style="' + styleCours(c.matiere) + '" aria-hidden="true"></span>' +
+              '<span class="cpoint' + (choc ? " choc-cours" + dirChoc(cours, i) : "") + '" style="' + styleCours(c.matiere) + '" aria-hidden="true">' + (choc ? ICONE_GANT : "") + "</span>" +
               '<span class="ctxt"><span class="m">' + txt(nettoyerMatiere(c.matiere || "Cours")) + "</span>" +
               salle +
               infos +
@@ -9176,14 +9344,14 @@ try {
         : (estFerie(sem, j)
             ? '<span class="dsum free ferie" title="' + txt(nomFerie(sem, j)) + '">' + txt(nomFerie(sem, j)) + "</span>"
             : '<span class="dsum free">Libre</span>');
-      var chocJour = !!DATA.perso && liste.some(function (c) { return enConflit(c, sem); });
+      var chocJour = liste.some(function (c) { return enConflit(c, sem); });
       var ech = slotsEcheancesJour(j, liste);
       html += '<li class="day' + (estAuj ? " today" : "") + (joursOuverts[j] ? " open" : "") + '">' +
         '<button data-jour="' + j + '" aria-expanded="' + (!!joursOuverts[j]) + '">' +
         ech.gauche +
         '<span class="dname"><strong>' + JOURS[j] + "</strong>" +
         '<span class="ddate">' + fmtDate(date) + "</span></span>" +
-        (chocJour ? '<span class="choc-tag">Conflit</span>' : "") +
+        (chocJour ? '<span class="choc-icone" role="img" aria-label="Conflit"' + couleursChoc(liste) + ">" + ICONE_CONFLIT + "</span>" : "") +
         resume + ech.droite + '</button>' +
         '<div class="detail">' +
         (liste.length ? detailJour(liste, j) : detailJourVide(j)) +
@@ -9390,6 +9558,7 @@ try {
   var evCal = [];
   function rendreCal(garderPop) {
     if (!garderPop) fermerPop();
+    fermerModeEch();
     var jours = [], debut = 8 * 60, fin = 18 * 60;
     // Une longue séance du soir (UMONS : « événement » jusqu'à 22h15)
     // étirerait la grille et écraserait toutes les cases de la semaine :
@@ -9423,15 +9592,12 @@ try {
             ? '<small class="libre ferie" title="' + txt(nomFerie(sem, d.j)) + '">' + txt(nomFerie(sem, d.j)) + "</small>"
             : '<small class="libre">Libre</small>');
       tete += '<div class="cal-jour' + (estAuj ? " today" : "") + '" title="' + JOURS[d.j] + " " + fmtDate(date) + '">' +
-              "<span>" + JOURS[d.j].slice(0, 3) + "</span><strong>" + date.getDate() + "</strong>" + resume +
-              // Même entrée que sur téléphone : le « + » ouvre le choix du
-              // cours du jour (ouvrirChoixCours), pas le formulaire direct.
-              (d.cours.length
-                ? '<button type="button" class="jour-ech-btn cal-jour-ech" data-ech-jour="' + d.j + '" ' +
-                  'aria-label="Ajouter un devoir ou un examen à un cours de ce jour" title="Ajouter un devoir ou un examen">' +
-                  ICONE_PLUS + "</button>"
-                : "") + "</div>";
-      corps += '<div class="cal-col' + (estAuj ? " today" : "") + '">';
+              "<span>" + JOURS[d.j].slice(0, 3) + "</span><strong>" + date.getDate() + "</strong>" + resume + "</div>";
+      corps += '<div class="cal-col' + (estAuj ? " today" : "") + '">' +
+        '<button type="button" class="cal-col-depot' + (estAuj ? " today" : "") + '" data-ech-col="' + d.j + '" ' +
+        'aria-label="Ajouter une échéance pour ' + JOURS[d.j] + ' ' + fmtDate(date) + '">' +
+        '<span class="cal-col-depot-cadre"></span>' +
+        '</button>';
       if (!d.cours.length) {
         // Jour sans cours : mêmes échéances que sur téléphone (rangées
         // sous la clé « jour|| »), avec le bouton pour en poser une.
@@ -9571,6 +9737,7 @@ try {
     if (confirmationOuverte() || editionOuverte() || bugOuvert() || exportOuvert() || echeanceOuverte()) return;
     if (popSource && !pop.contains(e.target) && !e.target.closest(".ev")) fermerPop();
     if (feuille.classList.contains("visible") && !feuille.contains(e.target) && !e.target.closest("#btn-moi")) fermerFeuille();
+    if (modeEchActif && !e.target.closest("#cal") && !e.target.closest("#btn-ech-global")) fermerModeEch();
   });
   window.addEventListener("resize", fermerPop);
   /* Raccourcis clavier (ordinateur) : ← → semaines, + − zoom du PDF. */
@@ -9725,11 +9892,12 @@ try {
       ma.hidden = true;
       document.getElementById("btn-apparence").setAttribute("aria-expanded", "false");
     }
+    fermerModeEch();
     if (carteOuverte !== null) { carteOuverte = null; rendreListeProfils(); }
   }
   function menusOuverts() {
     return carteOuverte !== null || !document.getElementById("menu-compte").hidden ||
-      !document.getElementById("menu-apparence").hidden;
+      !document.getElementById("menu-apparence").hidden || modeEchActif;
   }
 
   /* ---------- Fenêtre de modification ----------
@@ -9843,8 +10011,7 @@ try {
   function remplirChoixCours(j) {
     var cours = coursDe(sem, j);
     var date = dateSemJour(sem, j);
-    document.getElementById("ech-choix-jour").textContent =
-      JOURS[j] + " " + fmtDate(date) + " · " + cours.length + " cours";
+    document.getElementById("ech-choix-titre").textContent = JOURS[j] + " " + fmtDate(date);
     var h = "";
     for (var k = 0; k < cours.length; k++) {
       var cc = cours[k];
@@ -9858,9 +10025,39 @@ try {
     document.getElementById("ech-choix-liste").innerHTML = h;
     return cours.length;
   }
+  /* Mode choix du jour sur la grille (ordinateur) : filtre transparent dessinant
+     chaque jour de la semaine, inspiré des zones de glisser-déposer. */
+  var modeEchActif = false;
+  function fermerModeEch() {
+    if (!modeEchActif) return;
+    modeEchActif = false;
+    var cal = document.getElementById("cal");
+    if (cal) cal.classList.remove("mode-ech-actif");
+    var b = document.getElementById("btn-ech-global");
+    if (b) b.setAttribute("aria-expanded", "false");
+  }
+  function ouvrirModeEch() {
+    fermerMenus();
+    fermerPop();
+    modeEchActif = true;
+    var cal = document.getElementById("cal");
+    if (cal) {
+      cal.classList.add("mode-ech-actif");
+      var premier = cal.querySelector(".cal-col-depot.today") || cal.querySelector(".cal-col-depot");
+      if (premier) premier.focus();
+    }
+    var b = document.getElementById("btn-ech-global");
+    if (b) b.setAttribute("aria-expanded", "true");
+  }
+  function toggleModeEch() {
+    if (modeEchActif) fermerModeEch();
+    else ouvrirModeEch();
+  }
   function ouvrirChoixCours(j) {
     if (!remplirChoixCours(j)) return;
     fermerMenus();
+    cacheTexteEch = "";
+    cacheTypeEch = "devoir";
     echRetourJour = j;
     echDernierFocus = document.activeElement;
     document.getElementById("ech-choix-heure").value = ""; // choix d'heure neuf à chaque ouverture
@@ -9877,16 +10074,16 @@ try {
     document.body.classList.add("confirm-ouverte");
     histOuvrir("echeance");
   }
-  /* Ligne de contexte du formulaire : le cours visé et son créneau. */
+  /* Ligne de contexte du formulaire : le cours visé sous forme de bouton. */
   function contexteEch(c, heure) {
-    var jour = dateSemJour(sem, c.jour);
     if (c.debut) {
-      return "Pour <strong>" + txt(nettoyerMatiere(c.matiere || "ce cours")) + "</strong> · " +
-        txt(JOURS[c.jour] + " " + fmtH(c.debut) + " – " + fmtH(c.fin));
+      return '<span class="cpoint" style="' + styleCours(c.matiere) + '" aria-hidden="true"></span>' +
+        '<span class="ech-cours-nom">' + txt(nettoyerMatiere(c.matiere || "ce cours")) + '</span>';
     }
-    return "Pour <strong>" + txt(JOURS[c.jour] + " " + fmtDate(jour)) + "</strong> · " +
-      (heure ? txt(fmtH(String(heure).replace(":", "h")))
-             : txt(estFerie(sem, c.jour) ? nomFerie(sem, c.jour) : "pas de cours"));
+    var jour = dateSemJour(sem, c.jour);
+    return '<span class="ech-cours-nom">' +
+      txt(heure ? fmtDate(jour) + " · " + fmtH(String(heure).replace(":", "h"))
+                : fmtDate(jour)) + '</span>';
   }
   /* Hauteur du formulaire (étape 2), mesurée hors écran : le temps d'un
      calcul, rien n'est peint (tout est remis en place dans le même bloc).
@@ -9898,7 +10095,6 @@ try {
     var boite = document.getElementById("boite-echeance");
     var choix = document.getElementById("ech-etape-choix");
     var form = document.getElementById("ech-etape-form");
-    var retour = document.getElementById("ech-retour");
     var ctx = document.getElementById("echeance-cours");
     var cours = coursDe(sem, jour), plusLong = "", k;
     for (k = 0; k < cours.length; k++) {
@@ -9906,18 +10102,16 @@ try {
       if (t.length > plusLong.length) plusLong = t;
     }
     var voileCache = voile.hidden, choixCache = choix.hidden, formCache = form.hidden;
-    var retourCache = retour.hidden, ctxCache = ctx.innerHTML;
+    var ctxCache = ctx.innerHTML;
     voile.style.visibility = "hidden";
     voile.hidden = false;
     choix.hidden = true;
     form.hidden = false;
-    retour.hidden = false;
     if (plusLong) ctx.innerHTML = plusLong;
     var h = boite.offsetHeight;
     voile.hidden = voileCache;
     choix.hidden = choixCache;
     form.hidden = formCache;
-    retour.hidden = retourCache;
     ctx.innerHTML = ctxCache;
     voile.style.visibility = "";
     return h;
@@ -9983,14 +10177,27 @@ try {
     if (inp) { try { inp.focus(); } catch (err) {} }
   });
   document.getElementById("ech-choix-annuler").addEventListener("click", function () { fermerEcheance(); });
-  document.getElementById("ech-retour").addEventListener("click", function () {
+
+  var cacheTexteEch = "";
+  var cacheTypeEch = "devoir";
+
+  function memoriserEtRetourChoix() {
     if (echRetourJour == null) return;
-    document.getElementById("ech-choix-heure").value = ""; // le choix d'heure repart à neuf
+    var inp = document.getElementById("ech-titre");
+    if (inp) cacheTexteEch = inp.value;
+    cacheTypeEch = echType || "devoir";
+    document.getElementById("ech-choix-heure").value = "";
     if (echChoixZoneValider) echChoixZoneValider.classList.remove("ouvert");
     var cAutre = document.getElementById("ech-choix-autre");
     if (cAutre) cAutre.classList.remove("ouvert");
     remplirChoixCours(echRetourJour);
     montrerEtapeEch(1);
+  }
+
+  document.getElementById("echeance-cours").addEventListener("click", function () {
+    if (echRetourJour != null) {
+      memoriserEtRetourChoix();
+    }
   });
 
   function echeanceOuverte() {
@@ -10025,9 +10232,18 @@ try {
     // aucune hauteur d'étape 1 à tenir, on repart de la hauteur naturelle.
     if (echRetourJour == null) document.getElementById("boite-echeance").style.minHeight = "";
     montrerEtapeEch(2);
-    document.getElementById("ech-retour").hidden = echRetourJour == null;
-    document.getElementById("echeance-cours").innerHTML = contexteEch(c, heure);
-    document.getElementById("ech-titre").value = "";
+    var ctxBtn = document.getElementById("echeance-cours");
+    ctxBtn.innerHTML = contexteEch(c, heure);
+    if (echRetourJour != null) {
+      ctxBtn.classList.add("cliquable");
+      ctxBtn.setAttribute("title", "Changer de cours");
+      ctxBtn.setAttribute("aria-label", "Changer de cours");
+    } else {
+      ctxBtn.classList.remove("cliquable");
+      ctxBtn.removeAttribute("title");
+      ctxBtn.removeAttribute("aria-label");
+    }
+    document.getElementById("ech-titre").value = cacheTexteEch || "";
     document.getElementById("echeance-ok").textContent = "Ajouter";
     echTitreBloc.classList.remove("erreur");
     // Date et heure fixées au créneau du cours : le début, la prochaine
@@ -10041,9 +10257,9 @@ try {
     echDate = isoEch(d);
     echHeure = heure || (c.debut ? String(c.debut).replace("h", ":") : "");
     document.getElementById("ech-quand").textContent =
-      JOURS[(d.getDay() + 6) % 7] + " " + fmtDate(d) +
+      fmtDate(d) +
       (echHeure ? " · " + fmtH(String(echHeure).replace(":", "h")) : "");
-    definirEchType("devoir");
+    definirEchType(cacheTypeEch || "devoir");
     var voile = document.getElementById("voile-echeance");
     voile.classList.remove("sortie");
     voile.hidden = false;
@@ -10060,6 +10276,8 @@ try {
     echCours = null;
     echIdModif = null;
     echRetourJour = null;
+    cacheTexteEch = "";
+    cacheTypeEch = "devoir";
     fermerTousItemsEch(null);
     document.getElementById("echeance-ok").textContent = "Ajouter";
     document.getElementById("ech-choix-heure").value = "";
@@ -10121,8 +10339,12 @@ try {
     echDernierFocus = document.activeElement;
     document.getElementById("boite-echeance").style.minHeight = "";
     montrerEtapeEch(2);
-    document.getElementById("ech-retour").hidden = true;
-    document.getElementById("echeance-cours").innerHTML = contexteEch(c, cible.heure);
+    echRetourJour = null;
+    var ctxModif = document.getElementById("echeance-cours");
+    ctxModif.classList.remove("cliquable");
+    ctxModif.removeAttribute("title");
+    ctxModif.removeAttribute("aria-label");
+    ctxModif.innerHTML = contexteEch(c, cible.heure);
     document.getElementById("ech-titre").value = cible.titre || "";
     document.getElementById("echeance-titre").textContent = cible.type === "examen" ? "Modifier l'examen" : "Modifier le devoir";
     document.getElementById("echeance-ok").textContent = "Enregistrer";
@@ -10131,7 +10353,7 @@ try {
     echHeure = cible.heure || "";
     var dj = jourEch(cible.date);
     document.getElementById("ech-quand").textContent =
-      (dj && !isNaN(dj.getTime()) ? JOURS[(dj.getDay() + 6) % 7] + " " + fmtDate(dj) : cible.date) +
+      (dj && !isNaN(dj.getTime()) ? fmtDate(dj) : cible.date) +
       (echHeure ? " · " + fmtH(String(echHeure).replace(":", "h")) : "");
     definirEchType(cible.type || "devoir");
     var voile = document.getElementById("voile-echeance");
@@ -10932,6 +11154,22 @@ try {
     'stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg>';
   var ICONE_PLUS = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
     'stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+  /* Conflit d'un jour (horaire sur mesure) : paire de gants de boxe qui
+     se font face, penchés l'un vers l'autre comme avant un combat.
+     Pictogramme « boxing-glove » (graisse bold) de Phosphor Icons,
+     licence MIT (https://phosphoricons.com), doublé en miroir. La teinte
+     du conflit vient de currentColor (voir .choc-icone) ; les classes
+     g1 (gauche) et g2 (droite) permettent de teinter chaque gant
+     séparément (voir couleursChoc). */
+  var ICONE_CONFLIT_D = "M168,12H120A60.08,60.08,0,0,0,60.13,68H56a36,36,0,0,0-36,36v29.19a20.13,20.13,0,0,0,4.38,12.5,11.46,11.46,0,0,0,.94,1L60,181v35a20,20,0,0,0,20,20H192a20,20,0,0,0,20-20V177.68l15.23-53.3a20.07,20.07,0,0,0,.77-5.5V72A60.07,60.07,0,0,0,168,12Zm36,106.32L188.46,172.7A12.28,12.28,0,0,0,188,176v36H84V176a12,12,0,0,0-3.56-8.53L44,131.45V104A12,12,0,0,1,56,92h4v12a12,12,0,0,0,24,0V72a36,36,0,0,1,36-36h48a36,36,0,0,1,36,36ZM166.66,162l-9,6,9,6a12,12,0,1,1-13.32,20L136,182.42,118.66,194a12,12,0,0,1-13.32-20l9-6-9-6a12,12,0,0,1,13.32-20L136,153.58,153.34,142a12,12,0,1,1,13.32,20Z";
+  var ICONE_CONFLIT = '<svg width="48" height="28" viewBox="0 0 80 46" fill="currentColor" aria-hidden="true">' +
+    '<g class="g1" transform="translate(22 23) rotate(65) translate(-22 -23) translate(6.64 7.64) scale(0.12)"><path d="' + ICONE_CONFLIT_D + '"/></g>' +
+    '<g class="g2" transform="translate(58 23) rotate(-65) translate(-58 -23) translate(73.36 7.64) scale(-0.12 0.12)"><path d="' + ICONE_CONFLIT_D + '"/></g></svg>';
+  /* Gant seul des cours en conflit : même pictogramme que la paire de
+     l'en-tête. Non pivoté, il pointe vers le haut (cours du bas) ; la
+     classe « vers-bas » le retourne vers le bas (cours du haut). La
+     teinte vient de currentColor (voir .cpoint.choc-cours). */
+  var ICONE_GANT = '<svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="' + ICONE_CONFLIT_D + '"/></svg>';
   function statutExport(texte, genre) {
     var el = document.getElementById("export-status");
     el.className = "export-status" + (genre ? " " + genre : "");
@@ -11665,6 +11903,36 @@ try {
         recadrerPdfFinal();
       });
   });
+
+  /* Bouton « Échéance » global (ordinateur) : active le filtre transparent sur les jours. */
+  var btnEchGlobal = document.getElementById("btn-ech-global");
+  if (btnEchGlobal) {
+    btnEchGlobal.addEventListener("click", function (e) {
+      e.stopPropagation();
+      toggleModeEch();
+    });
+  }
+  var calEl = document.getElementById("cal");
+  if (calEl) {
+    calEl.addEventListener("click", function (e) {
+      if (!modeEchActif) return;
+      var b = e.target.closest(".cal-col-depot");
+      if (!b) {
+        fermerModeEch();
+        return;
+      }
+      e.stopPropagation();
+      var j = +b.getAttribute("data-ech-col");
+      fermerModeEch();
+      echDernierFocus = btnEchGlobal;
+      var cours = coursDe(sem, j);
+      if (cours.length) {
+        ouvrirChoixCours(j);
+      } else {
+        ouvrirEcheance({ jour: j });
+      }
+    });
+  }
 
   /* ---------- Apparence : Clair / Sombre / Système (mémorisé localement) ---------- */
   var CLE_APPARENCE = "ezh_apparence";

@@ -250,7 +250,9 @@ testées par `node --test test_fusion.mjs`) : cours puis groupes filtrés
 l'autre), semaines alignées sur le lundi le plus tôt (l'UCLouvain et les
 liens iCal ont un lundi par source ; une source à plus de 26 semaines de
 la principale est écartée), séances identiques dédoublonnées entre
-sources, chevauchements signalés **entre sources** seulement. À l'ULB, un
+sources, chevauchements signalés **entre sources**, et, dans une source
+« PAR:… » (codes de cours), **entre deux cours distincts** — les séances
+d'un même cours (groupes, divisions) restent des alternatives. À l'ULB, un
 cours est un code UE (une séance mutualisée « A, B, C » reste tant qu'un
 de ses codes est suivi). Rien ne change côté serveur : chaque source est
 un `api/horaires` (ou `api/ical`) ordinaire, chargé par lots de 3 et gardé
@@ -296,7 +298,10 @@ le dit lui-même, sous les pastilles.
 Spécificités ULB (TimeEdit) : deux façons de composer un horaire — par
 niveau d'études (« B-DROIB:2 · Bachelier en droit… », puis le groupe :
 groupe 01, PAD6, option…) et par cours (« PAR:DROIC2001,DROIC2007 », pour
-les cours isolés et les programmes à la carte). Le moteur lit la vue
+les cours isolés et les programmes à la carte) — dans ce mode, les cours
+choisis peuvent venir d'années différentes, et deux d'entre eux qui
+tombent en même temps sont signalés comme en conflit (gants de boxe de
+la semaine), même sans horaire sur mesure. Le moteur lit la vue
 publique de TimeEdit (`objects.json`, `ri.json`, `ri.pdf`), sans session ni
 identifiant ; les groupes d'un cours viennent de la colonne « Ensemble
 d'étudiants » des réservations. L'étudiant qui a un ULBID peut aussi coller
@@ -525,16 +530,19 @@ son URL change à chaque lancement.
 
 ### Simulation d'horaires (menu local)
 
-`lab/simulation.html` propose un menu — **1 horaire**, **4 horaires** ou
-**sur mesure (conflits)** — puis ouvre l'app en mode essai, exactement
-comme un utilisateur :
+`lab/simulation.html` propose un menu — **1 horaire**, **4 horaires**,
+**sur mesure (conflits)** ou **codes de cours (conflits)** — puis ouvre
+l'app en mode essai, exactement comme un utilisateur :
 les cours viennent de l'école de test `sim` (servie par `serve.py`,
 salle, prof et groupe selon les cours), pas d'un fichier statique. La
 sortie est dans l'app : **Réglages → Quitter la simulation**, qui rend le
 menu et remet les horaires de l'appareil (mis de côté à l'entrée). Le
 mode « sur mesure » fusionne trois sources et provoque des chevauchements
 volontaires (dont un triple le lundi matin) : de quoi régler le rendu des
-conflits (pastilles « Conflit », cours côte à côte dans la grille).
+conflits (gants de boxe, icône de conflit du jour). Le mode « codes de
+cours » est un simple profil `PAR:SIMU1101,…` (l'école de test range des
+cours d'Informatique et de Droit derrière ces codes) : trois conflits
+entre deux cours choisis, sans horaire sur mesure.
 
 L'école `sim` n'est exposée que si `EZH_SIM=1` (posé par `serve.py` ; en
 ligne, `/api/config` ne la liste pas et l'app ne la propose jamais), et

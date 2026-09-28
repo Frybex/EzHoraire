@@ -469,6 +469,13 @@ pour chaque semaine publiée, pour chaque jour :
   événements UMONS de 8h à 22h) : les signaler noierait le vrai conflit
   (un cours carré de BA1 contre un cours de BA2) dans des dizaines de
   fausses alertes.
+- **Exception : les parcours « PAR:… »** (codes de cours choisis, ULB et
+  UCLouvain, y compris hors horaire sur mesure). Le choix *est* la
+  sélection, souvent à cheval sur des années : deux cours distincts qui
+  se chevauchent sont un vrai conflit, même dans la même source. Les
+  séances d'un même cours (groupes, divisions, TP et théorie) restent
+  des alternatives et ne se signalent pas — `memesCours()` compare les
+  codes UE, le sigle en tête de l'intitulé UCLouvain, sinon l'intitulé.
 - Une séance dédoublonnée (règle 4) n'est pas un chevauchement.
 - Au **composeur** : dès qu'une source est ajoutée (son horaire est déjà
   téléchargé par l'écran des groupes), on calcule sur **toute l'année**
@@ -685,7 +692,7 @@ Tout tient dans `index.html` ; l'API ne bouge pas.
 | Nouveau cours chez l'école | Une année **principale** le prend automatiquement (elle ne stocke que les retraits) ; une année d'**ajout** l'ignore, c'est voulu. |
 | Source déjà ajoutée | Impossible à re-choisir (« Déjà ajouté »). |
 | Plus de 6 sources | Le bouton Ajouter est désactivé avec « Maximum atteint ». |
-| Chevauchements | Signalés, jamais bloquants ; uniquement entre sources différentes. |
+| Chevauchements | Signalés, jamais bloquants ; entre sources différentes, et entre deux cours distincts d'un parcours « PAR:… ». |
 | Formation sans aucun cours (Condorcet) | Refusée comme source : « Cette formation n'a encore aucun cours publié ». |
 | Source d'une autre année (repli UCLouvain, lien iCal ancien) | Écart > 26 semaines : écartée + « L'horaire de X n'est pas celui de cette année ». |
 | Source qui commence avant la principale (UCL, iCal) | Aucune perte : la référence est le lundi le plus tôt. |

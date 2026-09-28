@@ -19,6 +19,9 @@
   // Code d'unité d'enseignement (ULB, UCLouvain) : même motif que RX_UE
   // dans api/_moteurs/timeedit.py.
   var RX_UE = /^[A-Z]{2,6}[0-9]{3,4}[A-Z]?$/;
+  // Sigle en tête d'un intitulé UCLouvain (« LINFO1101 - Programmation ») :
+  // deux séances d'un même cours le partagent, même quand la fin diffère.
+  var RX_SIGLE = /^([A-Z]{2,6}[0-9]{3,4}[A-Z]?)(?=$|[\s,:;\-–—])/;
 
   function propre(s) { return String(s == null ? "" : s).replace(/\s+/g, " ").trim(); }
 
@@ -47,6 +50,23 @@
     var parts = brut.split(",").map(propre).filter(Boolean);
     if (parts.length && parts.every(function (p) { return RX_UE.test(p); })) return parts;
     return [brut || "Cours"];
+  }
+
+  /* Clés d'un cours pour comparer deux séances, et non ce que l'étudiant
+     coche : à l'ULB les codes UE (« COMMB115, COMMB230 »), à l'UCLouvain
+     le sigle qui commence l'intitulé (« LINFO1101 - Programmation »),
+     sinon l'intitulé exact. Deux séances d'un même cours se reconnaissent
+     ainsi même quand leurs intitulés diffèrent (théorie, TP). */
+  function clesCoursLarges(matiere) {
+    var brut = propre(matiere);
+    var parts = brut.split(",").map(propre).filter(Boolean);
+    if (parts.length > 1 && parts.every(function (p) { return RX_UE.test(p); })) return parts;
+    var m = RX_SIGLE.exec(brut);
+    return [m ? m[1] : (brut || "Cours")];
+  }
+  function memesCours(a, b) {
+    var ka = clesCoursLarges(a.matiere), kb = clesCoursLarges(b.matiere);
+    return ka.some(function (k) { return kb.indexOf(k) >= 0; });
   }
 
   /* Liste des cours d'une source, pour l'écran « quels cours ? » :
@@ -266,11 +286,28 @@
     return d.getUTCFullYear() + "-" + deux(d.getUTCMonth() + 1) + "-" + deux(d.getUTCDate());
   }
 
-  /* Chevauchements entre sources différentes (PLAN §4.3). À l'intérieur
-     d'une source, les superpositions sont celles d'un horaire normal
-     (groupes, séances communes) : on ne les signale pas.
+  /* Chevauchements signalés (PLAN §4.3). `sources` (facultatif) : les
+     sources de l'horaire sur mesure, pour la règle des parcours
+     « PAR:… » ci-dessous. Deux séances se signalent quand :
+       - elles viennent de sources différentes (horaire sur mesure) ;
+       - ou elles viennent d'un parcours « PAR:… » (codes de cours
+         choisis, parfois d'années différentes) et ce sont deux cours
+         distincts. Les séances d'un même cours (groupes, divisions)
+         restent des alternatives : on ne les signale pas. Dans une
+         source ordinaire, les superpositions sont celles d'un horaire
+         normal (groupes, séances communes) : rien à signaler.
      Renvoie [{ a, b, semaines }] (a et b : séances de `cours`). */
-  function chevauchements(cours) {
+  function chevauchements(cours, sources) {
+    function srcsDe(c) { return c.srcs || (c.src == null ? [0] : [c.src]); }
+    function signalent(a, b) {
+      var sa = srcsDe(a), sb = srcsDe(b);
+      var communes = sa.filter(function (s) { return sb.indexOf(s) >= 0; });
+      if (!communes.length) return true; // sources différentes
+      if (!sources) return false;
+      return communes.some(function (s) {
+        return estParcours(sources[s]) && !memesCours(a, b);
+      });
+    }
     var parJour = {};
     (cours || []).forEach(function (c) { (parJour[c.jour] || (parJour[c.jour] = [])).push(c); });
     var chocs = [];
@@ -281,8 +318,7 @@
         for (var k = i + 1; k < l.length; k++) {
           var b = l[k];
           if (mins(b.debut) >= finA) break; // triées par début : plus rien ne chevauche a
-          var srcsA = a.srcs || [a.src], srcsB = b.srcs || [b.src];
-          if (srcsA.some(function (s) { return srcsB.indexOf(s) >= 0; })) continue; // même source
+          if (!signalent(a, b)) continue;
           var communes = a.semaines.filter(function (w) { return b.semaines.indexOf(w) >= 0; });
           if (communes.length) chocs.push({ a: a, b: b, semaines: communes });
         }
@@ -347,6 +383,7 @@
     memeGroupe: memeGroupe,
     groupeDans: groupeDans,
     clesCours: clesCours,
+    memesCours: memesCours,
     coursDeSource: coursDeSource,
     estParcours: estParcours,
     garderCours: garderCours,

@@ -110,6 +110,20 @@ _SEMAINES = {
     ],
 }
 
+# Parcours « PAR:… » (sélection de codes de cours, comme l'ULB) : chaque
+# code porte un cours d'une formation, et l'app affiche le code (l'ULB ne
+# donne pas d'intitulé dans ce mode). Le mélange Informatique + Droit
+# produit trois conflits entre deux cours choisis (lundi, mardi,
+# mercredi) — la règle que l'app applique à ces sélections.
+PAR_CODES = {
+    "SIMU1101": ("BA1 Informatique", "Programmation orientée objet"),
+    "SIMU1102": ("BA1 Informatique", "Introduction au droit"),
+    "SIMU1103": ("BA1 Informatique", "Bases de données"),
+    "SIMU2101": ("BA1 Droit belge", "Droit civil"),
+    "SIMU2102": ("BA1 Droit belge", "Droit constitutionnel"),
+    "SIMU2103": ("BA1 Droit belge", "Histoire du droit"),
+}
+
 # Plages de jours fériés, comme les écoles (numéro de jour depuis le
 # premier lundi) : la semaine de congé (4e) et un jeudi de la 8e, libre
 # pour l'Informatique (le stage s'arrête) — de quoi voir la pastille
@@ -169,10 +183,31 @@ def _lundi_courant():
     return auj - datetime.timedelta(days=auj.weekday())
 
 
-def horaire(formation, budget=75):
+def _cours_de(formation):
+    """Les cours d'une formation, ou d'un parcours « PAR:… » (codes)."""
+    if formation.startswith("PAR:"):
+        codes = [c.strip().upper() for c in formation[4:].split(",") if c.strip()]
+        if not codes or len(codes) > 30:
+            raise ValueError("aucun cours dans cette sélection.")
+        cours = []
+        for code in sorted(set(codes)):
+            entree = PAR_CODES.get(code)
+            if entree is None:
+                raise ValueError(f"cours introuvable chez l'école : {code}")
+            nom, matiere = entree
+            for c in _SEMAINES[nom]:
+                if c["matiere"] == matiere:
+                    cours.append(dict(c, matiere=code))
+        if not cours:
+            raise ValueError("aucun cours dans cette sélection.")
+        return cours
     if formation not in _SEMAINES:
         raise ValueError(f"formation introuvable chez l'école : {formation}")
-    cours = [dict(c) for c in _SEMAINES[formation]]
+    return [dict(c) for c in _SEMAINES[formation]]
+
+
+def horaire(formation, budget=75):
+    cours = _cours_de(formation)
     groupes = sorted({g for c in cours for g in c["groupes"]})
     maintenant = datetime.datetime.now()
     return {
@@ -194,9 +229,7 @@ def pdf_semaine(formation, groupe, semaine, budget=40):
     """PDF minimal (une page, Helvetica) écrit à la main : assez pour que
     la visionneuse de l'app ait un vrai document à rendre — maison, sans
     dépendance. Les vraies écoles, elles, renvoient leur PDF officiel."""
-    cours = _SEMAINES.get(formation)
-    if cours is None:
-        raise ValueError(f"formation introuvable chez l'école : {formation}")
+    cours = _cours_de(formation)
     connus = {g for c in cours for g in c["groupes"]}
     if groupe and groupe not in connus:
         raise ValueError(f"groupe introuvable : {groupe}")
