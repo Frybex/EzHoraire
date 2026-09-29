@@ -4515,8 +4515,10 @@
   /* ---------- Devoirs et examens dans le cloud (table `echeances`) ----------
      Fusion par id : chaque échéance a son identifiant stable, deux
      appareils qui ajoutent chacun un devoir ne s'écrasent pas (le pull
-     unit les deux listes). Une échéance n'est jamais modifiée, seulement
-     ajoutée ou supprimée : la suppression d'un autre appareil ne
+     unit les deux listes). Seule la coche (`fait`) se modifie après
+     coup : elle voyage avec son instant (`fait_at`), le dernier geste
+     gagne. Une suppression n'est jamais rejouée par erreur : la
+     suppression d'un autre appareil ne
      s'applique ici que si la ligne n'y est plus (appareil neuf) — un
      appareil qui l'avait déjà garde sa copie locale, comme les horaires
      (voir pullProfils : pas de tombeau distant, une suppression peut
@@ -4551,9 +4553,15 @@
     if (heure && !/^([01]\d|2[0-3]):[0-5]\d$/.test(heure)) heure = "";
     var cree = +e.cree;
     if (!(cree >= 0)) cree = 0;
+    // Coche « c'est fait » : synchronisée entre les appareils, le
+    // dernier geste gagne (voir pullEcheancesMaintenant).
+    var fait = e.fait === true;
+    var faitAt = +e.fait_at;
+    if (!(faitAt >= 0)) faitAt = 0;
     return { id: id, type: e.type === "examen" ? "examen" : "devoir",
              titre: titre, date: date, heure: heure,
-             cree: Math.min(Math.floor(cree), 9999999999999) };
+             cree: Math.min(Math.floor(cree), 9999999999999),
+             fait: fait, fait_at: Math.min(Math.floor(faitAt), 9999999999999) };
   }
   function lireFileSupprEch() {
     var f = lire(CLE_ECH_SUPPR);
@@ -4631,7 +4639,8 @@
           var e = echeancePropre(liste[k]);
           if (!e) continue;
           lignes.push({ user_id: uid, profil_id: pid, cle: c, id: e.id, type: e.type,
-                        titre: e.titre, date: e.date, heure: e.heure, cree: e.cree });
+                        titre: e.titre, date: e.date, heure: e.heure, cree: e.cree,
+                        fait: e.fait, fait_at: e.fait_at });
           if (lignes.length >= ECH_MAX_DISTANTES) return lignes;
         }
       }
@@ -4707,7 +4716,7 @@
   function pullEcheancesMaintenant() {
     var uid = sessionSupabase.user.id;
     var generation = generationCompte;
-    return sb.from("echeances").select("profil_id,cle,id,type,titre,date,heure,cree").eq("user_id", uid).then(function (res) {
+    return sb.from("echeances").select("profil_id,cle,id,type,titre,date,heure,cree,fait,fait_at").eq("user_id", uid).then(function (res) {
       if (generation !== generationCompte || !sessionSupabase || !sessionSupabase.user || sessionSupabase.user.id !== uid || !compte || compte.supabase_id !== uid) return false;
       var msg = res.error ? String(res.error.message || "") : "";
       if (msg && /echeances/i.test(msg)) { baseSansEcheances = true; return false; }
@@ -4727,9 +4736,17 @@
         if (!tous[l.profil_id]) tous[l.profil_id] = {};
         var liste = tous[l.profil_id][cle];
         if (!Array.isArray(liste)) { liste = tous[l.profil_id][cle] = []; change = true; }
-        var a = false;
-        for (var k = 0; k < liste.length; k++) if (liste[k] && liste[k].id === e.id) { a = true; break; }
-        if (!a) { liste.push(e); change = true; }
+        var ancien = null;
+        for (var k = 0; k < liste.length; k++) if (liste[k] && liste[k].id === e.id) { ancien = liste[k]; break; }
+        if (!ancien) { liste.push(e); change = true; }
+        else {
+          // Coche venue d'un autre appareil : le dernier geste gagne.
+          // (Dé)cochée ici après l'envoi distant, la copie locale reste
+          // la bonne : on ne l'écrase que si le cloud est plus récent.
+          var fD = e.fait_at || 0, fL = +(ancien.fait_at || 0);
+          if (!(fL >= 0)) fL = 0;
+          if (fD > fL) { ancien.fait = e.fait; ancien.fait_at = fD; change = true; }
+        }
       });
       // Tirées du cloud : ces identifiants y existent, on les retient.
       marquerSyncEch(distIds);
@@ -6821,13 +6838,15 @@
     });
   }
   /* Valider une échéance : le titre se barre. La mise à jour se fait sur
-     place (pas de re-rendu) pour que la barre grandisse vraiment ; l'état
-     est rangé sur l'appareil, le cloud n'a pas encore de colonne pour lui. */
+     place (pas de re-rendu) pour que la barre grandisse vraiment ; la
+     coche part dans le cloud avec son instant (`fait_at`), le dernier
+     geste gagne entre les appareils. */
   function validerEcheance(c, id) {
     var liste = echeancesDe(c), cible = null;
     for (var i = 0; i < liste.length; i++) if (liste[i].id === id) cible = liste[i];
     if (!cible) return;
     cible.fait = !cible.fait;
+    cible.fait_at = Date.now();
     ecrireEcheances(c, liste);
     var cases = document.querySelectorAll('[data-ech-valide="' + id + '"]');
     for (var k = 0; k < cases.length; k++) {

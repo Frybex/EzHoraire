@@ -682,7 +682,9 @@ grant execute on function public.purger_pdf_exports(integer) to service_role;
 -- `ezh_echeances`) : un devoir ajouté sur le téléphone restait
 -- invisible ailleurs. Fusion par id : chaque échéance a son
 -- identifiant stable, deux appareils qui ajoutent chacun un devoir
--- ne s'écrasent pas. Les suppressions partent tout de suite, et sont
+-- ne s'écrasent pas. La coche « c'est fait » voyage aussi : `fait` +
+-- `fait_at` (instant du geste), le dernier geste gagne. Les suppressions
+-- partent tout de suite, et sont
 -- rejouées à la prochaine poussée si l'appareil était hors ligne.
 -- RLS : chacun ne voit / ne touche que SES lignes.
 -- Rejouable : table + contrainte recréées à chaque passage.
@@ -697,9 +699,16 @@ create table if not exists public.echeances (
   date       text        not null default '',
   heure      text        not null default '',
   cree       bigint      not null default 0,
+  fait       boolean     not null default false, -- coché « c'est fait », synchronisé
+  fait_at    bigint      not null default 0, -- instant du dernier (dé)cochage, dernier geste gagne
   updated_at timestamptz not null default now(),
   primary key (user_id, profil_id, cle, id)
 );
+
+-- Bases créées avant ces colonnes : les ajouter sans rien casser
+-- (`create table if not exists` ne touche pas une table déjà là).
+alter table public.echeances add column if not exists fait    boolean not null default false;
+alter table public.echeances add column if not exists fait_at bigint  not null default 0;
 
 -- Horodatage auto (même fonction que les profils).
 drop trigger if exists trg_echeances_updated_at on public.echeances;
@@ -746,6 +755,7 @@ begin
     and date ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
     and (heure = '' or heure ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$')
     and cree >= 0 and cree <= 9999999999999
+    and fait_at >= 0 and fait_at <= 9999999999999
   );
 end
 $$;
@@ -776,6 +786,12 @@ begin
   end if;
   if new.cree is null or new.cree < 0 then
     new.cree := 0;
+  end if;
+  if new.fait is null then
+    new.fait := false;
+  end if;
+  if new.fait_at is null or new.fait_at < 0 then
+    new.fait_at := 0;
   end if;
 
   -- Mise à jour d'une ligne déjà comptée : elle ne pèse pas double.
