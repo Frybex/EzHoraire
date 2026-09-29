@@ -184,6 +184,7 @@
     position: relative;
     border-radius: 12px;
     overflow: hidden;
+    isolation: isolate;
     background: transparent;
     touch-action: pan-y;
     user-select: none;
@@ -390,19 +391,34 @@
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--attention) 30%, transparent);
   }
 
-  .ech-corps { flex: 1; min-width: 0; }
+  .ech-corps { flex: 1; min-width: 0; overflow: hidden; }
   .ech-titre {
-    display: inline; font-weight: 550; overflow-wrap: anywhere;
-    -webkit-box-decoration-break: clone; box-decoration-break: clone;
+    display: block; font-weight: 550;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     background-image: linear-gradient(currentColor, currentColor);
     background-repeat: no-repeat; background-position: 0 .62em; background-size: 0% 1.5px;
     transition: background-size .34s cubic-bezier(.16,1,.3,1), opacity .2s;
+  }
+  .ech-titre:has(.ech-titre-txt) {
+    background-image: none;
+  }
+  .ech-titre-txt {
+    display: inline;
+    background-image: linear-gradient(currentColor, currentColor);
+    background-repeat: no-repeat; background-position: 0 .62em; background-size: 0% 1.5px;
+    transition: background-size .34s cubic-bezier(.16,1,.3,1);
   }
   .ech-titre.fait {
     background-size: 100% 1.5px;
     opacity: .45;
   }
-  .ech-quand { display: block; color: var(--muted); font-size: .76rem; margin-top: 1px; }
+  .ech-titre.fait .ech-titre-txt {
+    background-size: 100% 1.5px;
+  }
+  .ech-quand {
+    display: block; color: var(--muted); font-size: .76rem; margin-top: 1px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
 
   /* ==========================================================
      CASE À COCHER : PREND LA COULEUR DU THÈME DE L'HORAIRE !
@@ -923,7 +939,8 @@
     if (!item) return;
 
     var etat = item.getAttribute("data-ouvert");
-    if (etat && etat !== "0") {
+    var estOuvert = etat && etat !== "0" && !item._enFermeture;
+    if (estOuvert) {
       // Déjà ouvert -> on referme en douceur
       fermerItem(item, true);
     } else {
@@ -940,7 +957,7 @@
     if (!item) return;
     e.preventDefault();
 
-    var dejaOuvert = item.getAttribute("data-ouvert") === "split";
+    var dejaOuvert = item.getAttribute("data-ouvert") === "split" && !item._enFermeture;
     fermerTousSauf(null);
     if (!dejaOuvert) {
       ouvrirSplit(item);
@@ -1093,10 +1110,13 @@
     var etat = item.getAttribute("data-ouvert") || "0";
     if (etat === "0" && !item._timerFermeture) return;
 
+    if (item._enFermeture && anime) return;
+
     if (item._timerFermeture) {
       clearTimeout(item._timerFermeture);
       item._timerFermeture = null;
     }
+    item._enFermeture = false;
 
     var carte = item.querySelector(".ech");
     var fondSuppr = item.querySelector(".ech-fond-suppr");
@@ -1124,18 +1144,24 @@
       return;
     }
 
-    // Fermeture animée : on conserve data-ouvert (notamment split 50%/50% et boutons 26px sans libellé)
-    // pendant l'animation de 260ms afin que les fonds restent stables et que le texte n'apparaisse pas
-    carte.style.transition = "transform .26s cubic-bezier(.16,1,.3,1), margin .26s cubic-bezier(.16,1,.3,1), box-shadow .26s cubic-bezier(.16,1,.3,1)";
+    item._enFermeture = true;
+    carte.style.transition = "transform .22s cubic-bezier(.16,1,.3,1), margin .22s cubic-bezier(.16,1,.3,1), box-shadow .22s cubic-bezier(.16,1,.3,1)";
     carte.style.transform = "translateX(0px)";
     carte.style.margin = "0";
     carte.style.boxShadow = "inset 0 0 0 1px var(--line)";
 
-    if (fondSuppr) fondSuppr.style.pointerEvents = "none";
-    if (fondEdit) fondEdit.style.pointerEvents = "none";
+    if (fondSuppr) {
+      fondSuppr.style.opacity = "0";
+      fondSuppr.style.pointerEvents = "none";
+    }
+    if (fondEdit) {
+      fondEdit.style.opacity = "0";
+      fondEdit.style.pointerEvents = "none";
+    }
 
     item._timerFermeture = setTimeout(function() {
       item._timerFermeture = null;
+      item._enFermeture = false;
       item.setAttribute("data-ouvert", "0");
       carte.style.margin = "";
       carte.style.boxShadow = "";
@@ -1149,7 +1175,7 @@
         fondEdit.style.visibility = "";
         fondEdit.style.pointerEvents = "";
       }
-    }, 260);
+    }, 220);
   }
 
   function ouvrirGauche(item) {
@@ -1217,6 +1243,7 @@
       clearTimeout(item._timerFermeture);
       item._timerFermeture = null;
     }
+    item._enFermeture = false;
     // Révèle les 2 options de manière ultra compacte (SVG + qqs px = 26px)
     var carte = item.querySelector(".ech");
     var fondSuppr = item.querySelector(".ech-fond-suppr");

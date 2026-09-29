@@ -1528,9 +1528,19 @@
     }
     btn.hidden = false;
     var ouvert = pdfOuvert || pdfCharge;
-    // Sur ordinateur, seul le début du texte s'affiche (la semaine est déjà en titre).
-    btn.innerHTML = ICONE_PDF + "<span>" + (ouvert ? "Masquer le PDF" : "PDF officiel") +
-      '<span class="sm"> de la semaine ' + sem + "</span></span>";
+    // Sur ordinateur, juste le mot PDF (la semaine est déjà en titre).
+    if (bureau()) {
+      btn.textContent = "PDF";
+      var etiquette = (ouvert ? "Masquer le PDF officiel de la semaine " : "Afficher le PDF officiel de la semaine ") + sem;
+      btn.setAttribute("aria-label", etiquette);
+      btn.setAttribute("title", etiquette);
+    } else {
+      btn.removeAttribute("aria-label");
+      btn.removeAttribute("title");
+      // Sur téléphone, le texte complet s'affiche.
+      btn.innerHTML = ICONE_PDF + "<span>" + (ouvert ? "Masquer le PDF" : "PDF officiel") +
+        '<span class="sm"> de la semaine ' + sem + "</span></span>";
+    }
     btn.setAttribute("aria-expanded", ouvert ? "true" : "false");
     document.getElementById("horaire-contenu").classList.toggle("pdf-ouvert", ouvert);
     document.getElementById("pdf-sem").textContent = "Semaine " + sem;
@@ -4429,7 +4439,6 @@
   var JOURS_COURTS = ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."];
   var _echTout = null; // cache d'un rendu, invalidé à chaque écriture
   var echNeuf = "";    // échéance qui vient d'être ajoutée (surbrillance)
-  /* ICONE_PLUS est déclarée plus bas (section export) : une seule fois. */
 
   function lireEcheancesTout() {
     if (_echTout === null) {
@@ -5151,7 +5160,7 @@
     html += '<div class="jour-ech">' +
       '<button type="button" class="jour-ech-btn" data-ech-jour="' + jour + '" ' +
       'aria-label="Ajouter un devoir ou un examen à un cours de ce jour" title="Ajouter un devoir ou un examen">' +
-      ICONE_PLUS + "<span>Échéance</span></button></div>";
+      "<span>Échéance</span></button></div>";
     return html + "</div>";
   }
 
@@ -5171,7 +5180,7 @@
       '<div class="jour-ech">' +
       '<button type="button" class="ech-add" data-ech-cible="' + txt(cle) + '" ' +
       'aria-label="Ajouter un devoir ou un examen à ce jour" title="Ajouter un devoir ou un examen">' +
-      ICONE_PLUS + "<span>Échéance</span></button></div>" +
+      "<span>Échéance</span></button></div>" +
       "</div>";
   }
 
@@ -5440,7 +5449,6 @@
   var evCal = [];
   function rendreCal(garderPop) {
     if (!garderPop) fermerPop();
-    fermerModeEch();
     var jours = [], debut = 8 * 60, fin = 18 * 60;
     // Une longue séance du soir (UMONS : « événement » jusqu'à 22h15)
     // étirerait la grille et écraserait toutes les cases de la semaine :
@@ -5554,6 +5562,7 @@
     cal.style.setProperty("--cols", colsVal);
     cal.style.setProperty("--pause", pc(13 * 60) + "%");
     cal.innerHTML = '<div class="cal-tete">' + tete + '</div><div class="cal-corps">' + corps + "</div>";
+    if (modeEchActif) cal.classList.add("mode-ech-actif");
     // Bande SOIR : carte détachée SOUS la grille (pas dedans) — mêmes
     // colonnes, « Soir » dans la gouttière. Absente quand rien ne dépasse
     // des cours.
@@ -5618,15 +5627,16 @@
   }
 
   /* Bulle de détail d'un cours : à côté du bloc cliqué. */
-  var pop = document.getElementById("pop"), popSource = null;
+  var pop = document.getElementById("pop"), popSource = null, popCours = null;
   function fermerPop() {
     if (!popSource) return;
     popSource.classList.remove("actif");
     popSource = null;
+    popCours = null;
     pop.classList.remove("visible");
     histFermer("pop");
   }
-  /* Contenu de la bulle pour un cours (titre, détails, échéances). */
+  /* Contenu de la bulle pour un cours (titre, détails, échéances, ajout). */
   function contenuPop(c) {
     var date = dateSemJour(sem, c.jour);
     var d = "";
@@ -5640,27 +5650,34 @@
     if (codeMatiere(c.matiere)) d += "<dt>Code</dt><dd>" + txt(codeMatiere(c.matiere)) + "</dd>";
     // Échéances du cours : les siennes plus celles qu'il héberge (une
     // heure qui tombe pendant ce cours), comme dans la case — même liste
-    // que sur téléphone, en lecture seule. L'ajout passe par le bouton
-    // « Échéance » en haut du jour ; sans échéance, pas de section du tout.
+    // que sur téléphone, en lecture seule. Sans échéance, pas de section
+    // du tout. L'ajout direct passe par le bouton « Échéance » en dessous
+    // (le bouton en haut du jour reste pour les échéances hors cours).
     var listeEch = listeEcheancesCles(echeancesAfficheesCours(c, date), date);
     var blocEch = listeEch ? '<div class="pop-ech">' +
       '<p class="pop-ech-titre">Échéances</p>' + listeEch + "</div>" : "";
+    var btnAjout = '<div class="pop-ech-ajout">' +
+      '<button type="button" class="jour-ech-btn" data-pop-ech-ajout ' +
+      'aria-label="Ajouter un devoir ou un examen à ce cours" title="Ajouter un devoir ou un examen">' +
+      "<span>Échéance</span></button></div>";
     return '<p class="pt">' + txt(nettoyerMatiere(c.matiere || "Cours")) + "</p>" +
       '<p class="ph">' + JOURS[c.jour] + " " + fmtDate(date) + " · " + fmtH(c.debut) + " – " + fmtH(c.fin) + "</p>" +
-      "<dl>" + d + "</dl>" + blocEch;
+      "<dl>" + d + "</dl>" + blocEch + btnAjout;
   }
   /* Place la bulle à côté du bloc cliqué et l'allume. */
   function placerPop(btn) {
-    var r = btn.getBoundingClientRect(), w = pop.offsetWidth, hp = pop.offsetHeight;
-    var x = r.right + 12;
-    if (x + w > window.innerWidth - 16) x = r.left - w - 12;
-    if (x < 16) x = Math.max(16, Math.min(window.innerWidth - w - 16, r.left));
-    var y = Math.max(88, Math.min(window.innerHeight - hp - 16, r.top));
-    pop.style.left = x + "px";
-    pop.style.top = y + "px";
     if (popSource && popSource !== btn) popSource.classList.remove("actif");
     popSource = btn;
     btn.classList.add("actif");
+    var r = btn.getBoundingClientRect(), w = pop.offsetWidth;
+    var x = r.right + 12;
+    if (x + w > window.innerWidth - 16) x = r.left - w - 12;
+    if (x < 16) x = Math.max(16, Math.min(window.innerWidth - w - 16, r.left));
+    var y = Math.max(88, r.top);
+    var maxH = Math.max(140, window.innerHeight - y - 16);
+    pop.style.maxHeight = maxH + "px";
+    pop.style.left = x + "px";
+    pop.style.top = y + "px";
     pop.classList.add("visible");
   }
   function ouvrirPop(btn) {
@@ -5669,9 +5686,11 @@
     if (popSource) {
       popSource.classList.remove("actif");
       popSource = null;
+      popCours = null;
       pop.classList.remove("visible");
     }
     histOuvrir("pop");
+    popCours = c;
     var tc = couleurCours(c.matiere);
     pop.style.setProperty("--h", tc.h);
     pop.style.setProperty("--v", tc.v);
@@ -5694,8 +5713,12 @@
      le clic suivant quittait l'application. */
   function rafraichirPop(c) {
     if (!c || !pop.classList.contains("visible")) return;
+    popCours = c;
     var btn = blocCours(c);
     if (!btn) { fermerPop(); return; }
+    var tc = couleurCours(c.matiere);
+    pop.style.setProperty("--h", tc.h);
+    pop.style.setProperty("--v", tc.v);
     pop.innerHTML = contenuPop(c);
     placerPop(btn);
   }
@@ -5708,8 +5731,15 @@
     if (!b) return;
     if (popSource === b) fermerPop(); else ouvrirPop(b);
   });
-  // Dans la bulle : ajouter ou supprimer une échéance sans la refermer.
+  // Dans la bulle : ajouter directement une échéance à ce cours, ou
+  // modifier / supprimer une échéance sans refermer la bulle.
   pop.addEventListener("click", function (e) {
+    var ajout = e.target.closest("[data-pop-ech-ajout]");
+    if (ajout) {
+      e.stopPropagation();
+      if (popCours) { echRetourJour = null; ouvrirEcheance(popCours); }
+      return;
+    }
     e.stopPropagation();
     clicEcheance(e);
   });
@@ -5723,7 +5753,7 @@
     if (rechCoursOuverte()) return; // la recherche est au-dessus : rien derrière ne se ferme
     if (popSource && !pop.contains(e.target) && !e.target.closest(".ev")) fermerPop();
     if (feuille.classList.contains("visible") && !feuille.contains(e.target) && !e.target.closest("#btn-moi")) fermerFeuille();
-    if (modeEchActif && !e.target.closest("#cal") && !e.target.closest("#soir") && !e.target.closest("#btn-ech-global")) fermerModeEch();
+    if (modeEchActif && !e.target.closest("#cal") && !e.target.closest("#soir") && !e.target.closest("#btn-ech-global") && !e.target.closest(".week")) fermerModeEch();
   });
   window.addEventListener("resize", fermerPop);
   /* … et les fiches à heure près du bas sont recalées dans leur colonne
@@ -5753,6 +5783,7 @@
   var rcChamp = document.getElementById("rc-champ");
   var rcEffacer = document.getElementById("rc-effacer");
   var rcListe = document.getElementById("rc-liste");
+  var rcResume = document.getElementById("rc-resume");
   var rcDates = document.getElementById("rc-dates");
   var rcTitre = document.getElementById("rc-titre");
   var rcNb = document.getElementById("rc-nb");
@@ -5781,6 +5812,8 @@
         "<p>Essaie le début d'un autre mot du titre du cours.</p></li>";
     }
     rcListe.innerHTML = html;
+    rcResume.textContent = trouve.length + " cours";
+    rcResume.hidden = !trouve.length;
     rcMajEffacer();
     rc.scrollTop = 0;
   }
@@ -6054,7 +6087,7 @@
     if (devant) devant.removeAttribute("inert");
     if (dos) dos.setAttribute("inert", "");
   }
-  /* Ferme les menus ouverts (compte, apparence) et remet en place la
+  /* Ferme le menu ouvert (compte) et remet en place la
      carte retournée, s'il y en a une.
      Pas d'entrée history propre : sous-couche de la feuille (voir histPile). */
   function fermerMenus() {
@@ -6063,17 +6096,12 @@
       m.hidden = true;
       document.getElementById("btn-compte-menu").setAttribute("aria-expanded", "false");
     }
-    var ma = document.getElementById("menu-apparence");
-    if (ma && !ma.hidden) {
-      ma.hidden = true;
-      document.getElementById("btn-apparence").setAttribute("aria-expanded", "false");
-    }
     fermerModeEch();
     if (carteOuverte !== null) remettreCarte(carteOuverte);
   }
   function menusOuverts() {
     return carteOuverte !== null || !document.getElementById("menu-compte").hidden ||
-      !document.getElementById("menu-apparence").hidden || modeEchActif;
+      modeEchActif;
   }
 
   /* ---------- Fenêtre de modification ----------
@@ -6859,11 +6887,13 @@
     var aFond = !!((fondSuppr && fondSuppr.style.opacity && fondSuppr.style.opacity !== "0") ||
                    (fondEdit && fondEdit.style.opacity && fondEdit.style.opacity !== "0"));
     if (etat === "0" && !item._timerFermeture && !aTransform && !aFond) return;
+    if (item._enFermeture && anime) return;
 
     if (item._timerFermeture) {
       clearTimeout(item._timerFermeture);
       item._timerFermeture = null;
     }
+    item._enFermeture = false;
 
     item.classList.remove("arme-declenchement");
     item.classList.remove("glissant");
@@ -6888,18 +6918,24 @@
       return;
     }
 
-    // Fermeture animée : on conserve data-ouvert (notamment split 50%/50% et boutons 36px sans libellé)
-    // pendant l'animation de 260ms afin que les fonds restent stables et que le texte n'apparaisse pas
-    carte.style.transition = "transform .26s cubic-bezier(.16,1,.3,1), margin .26s cubic-bezier(.16,1,.3,1), box-shadow .26s cubic-bezier(.16,1,.3,1)";
+    item._enFermeture = true;
+    carte.style.transition = "transform .22s cubic-bezier(.16,1,.3,1), margin .22s cubic-bezier(.16,1,.3,1), box-shadow .22s cubic-bezier(.16,1,.3,1)";
     carte.style.transform = "translateX(0px)";
     carte.style.margin = "0";
     carte.style.boxShadow = "inset 0 0 0 1px var(--line)";
 
-    if (fondSuppr) fondSuppr.style.pointerEvents = "none";
-    if (fondEdit) fondEdit.style.pointerEvents = "none";
+    if (fondSuppr) {
+      fondSuppr.style.opacity = "0";
+      fondSuppr.style.pointerEvents = "none";
+    }
+    if (fondEdit) {
+      fondEdit.style.opacity = "0";
+      fondEdit.style.pointerEvents = "none";
+    }
 
     item._timerFermeture = setTimeout(function () {
       item._timerFermeture = null;
+      item._enFermeture = false;
       item.setAttribute("data-ouvert", "0");
       carte.style.transform = "";
       carte.style.transition = "";
@@ -6915,7 +6951,7 @@
         fondEdit.style.visibility = "";
         fondEdit.style.pointerEvents = "";
       }
-    }, 260);
+    }, 220);
   }
 
   function ouvrirGaucheEch(item) {
@@ -6923,6 +6959,7 @@
       clearTimeout(item._timerFermeture);
       item._timerFermeture = null;
     }
+    item._enFermeture = false;
     var carte = item.querySelector(".ech");
     var fondSuppr = item.querySelector(".ech-fond-suppr");
     var fondEdit = item.querySelector(".ech-fond-modifier");
@@ -6952,6 +6989,7 @@
       clearTimeout(item._timerFermeture);
       item._timerFermeture = null;
     }
+    item._enFermeture = false;
     var carte = item.querySelector(".ech");
     var fondSuppr = item.querySelector(".ech-fond-suppr");
     var fondEdit = item.querySelector(".ech-fond-modifier");
@@ -6981,6 +7019,7 @@
       clearTimeout(item._timerFermeture);
       item._timerFermeture = null;
     }
+    item._enFermeture = false;
     var carte = item.querySelector(".ech");
     var fondSuppr = item.querySelector(".ech-fond-suppr");
     var fondEdit = item.querySelector(".ech-fond-modifier");
@@ -7015,11 +7054,6 @@
     var item = e.target.closest(".ech-item");
     if (!item) return;
 
-    if (item._timerFermeture) {
-      clearTimeout(item._timerFermeture);
-      item._timerFermeture = null;
-    }
-
     var etat = item.getAttribute("data-ouvert") || "0";
     // Si un tiroir d'action complet (76px) est déjà ouvert, un clic sur son bouton est réservé à l'action
     if ((etat === "suppr" || etat === "edit") && e.target.closest(".ech-action-btn")) return;
@@ -7052,6 +7086,11 @@
       }
       if (Math.abs(dx) > 7) {
         enGlissementEch = true;
+        if (echItemEnCours._timerFermeture) {
+          clearTimeout(echItemEnCours._timerFermeture);
+          echItemEnCours._timerFermeture = null;
+        }
+        echItemEnCours._enFermeture = false;
         fermerTousItemsEch(echItemEnCours);
         echItemEnCours.classList.add("glissant");
         if (echItemEnCours.getAttribute("data-ouvert") === "split") {
@@ -7203,7 +7242,7 @@
     var item = e.target.closest(".ech-item");
     if (!item) return;
     e.preventDefault();
-    var dejaOuvert = item.getAttribute("data-ouvert") === "split";
+    var dejaOuvert = item.getAttribute("data-ouvert") === "split" && !item._enFermeture;
     fermerTousItemsEch(null);
     if (!dejaOuvert) ouvrirSplitEch(item);
   });
@@ -7273,9 +7312,9 @@
       var item = carte.closest(".ech-item");
       if (item) {
         e.stopPropagation();
-        if (item._timerFermeture) return true;
         var etat = item.getAttribute("data-ouvert");
-        if (etat && etat !== "0") {
+        var estOuvert = etat && etat !== "0" && !item._enFermeture;
+        if (estOuvert) {
           fermerItemEch(item, true);
         } else {
           fermerTousItemsEch(item);
@@ -7565,8 +7604,6 @@
   });
   var ICONE_CHECK = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
     'stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg>';
-  var ICONE_PLUS = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
-    'stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
   /* Conflit d'un jour (horaire sur mesure) : paire de gants de boxe qui
      se font face, penchés l'un vers l'autre comme avant un combat.
      Pictogramme « boxing-glove » (graisse bold) de Phosphor Icons,
@@ -8378,8 +8415,10 @@
     });
   }
 
-  /* ---------- Apparence : Clair / Sombre / Système (mémorisé localement) ---------- */
+  /* ---------- Apparence : un seul bouton, chaque clic passe au mode
+     suivant (Système -> Claire -> Sombre -> Système, mémorisé localement) ---------- */
   var CLE_APPARENCE = "ezh_apparence";
+  var APP_SUIVANTE = { systeme: "clair", clair: "sombre", sombre: "systeme" };
   var ICONE_SOLEIL = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
   var ICONE_LUNE = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13.5A8 8 0 0 1 10.5 4 8 8 0 1 0 20 13.5z"/></svg>';
   var ICONE_SYSTEME = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M9 20h6M12 16v4"/></svg>';
@@ -8415,14 +8454,13 @@
   function appliquerApparence() {
     var v = lireApparence();
     document.documentElement.setAttribute("data-apparence", v);
+    var libelle = v === "clair" ? "Claire" : v === "sombre" ? "Sombre" : "Système";
     var lib = document.getElementById("apparence-lib");
-    if (lib) lib.textContent = v === "clair" ? "Claire" : v === "sombre" ? "Sombre" : "Système";
+    if (lib) lib.textContent = libelle;
     var ic = document.getElementById("apparence-icone");
     if (ic) ic.innerHTML = v === "clair" ? ICONE_SOLEIL : v === "sombre" ? ICONE_LUNE : ICONE_SYSTEME;
-    var opts = document.querySelectorAll("#menu-apparence [data-apparence-opt]");
-    for (var i = 0; i < opts.length; i++) {
-      opts[i].setAttribute("aria-selected", opts[i].getAttribute("data-apparence-opt") === v ? "true" : "false");
-    }
+    var btn = document.getElementById("btn-apparence");
+    if (btn) btn.setAttribute("aria-label", "Apparence : " + libelle + ", activer pour changer");
     majMetaTheme();
   }
   function choisirApparence(v) {
@@ -8431,24 +8469,13 @@
     appliquerApparence();
   }
   document.getElementById("btn-apparence").addEventListener("click", function () {
-    var m = document.getElementById("menu-apparence");
     var mc = document.getElementById("menu-compte");
-    var ouvre = m.hidden;
     if (mc && !mc.hidden) {
       mc.hidden = true;
       document.getElementById("btn-compte-menu").setAttribute("aria-expanded", "false");
     }
     if (carteOuverte !== null) { carteOuverte = null; rendreListeProfils(); }
-    appliquerApparence(); // libellé à jour avant d'ouvrir
-    m.hidden = !ouvre;
-    this.setAttribute("aria-expanded", ouvre ? "true" : "false");
-  });
-  document.getElementById("menu-apparence").addEventListener("click", function (e) {
-    var b = e.target.closest("[data-apparence-opt]");
-    if (!b) return;
-    choisirApparence(b.getAttribute("data-apparence-opt"));
-    this.hidden = true;
-    document.getElementById("btn-apparence").setAttribute("aria-expanded", "false");
+    choisirApparence(APP_SUIVANTE[lireApparence()] || "systeme");
   });
   if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").addEventListener) {
     window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function () {
@@ -8526,8 +8553,6 @@
     carteOuverte = null;
     document.getElementById("menu-compte").hidden = true;
     document.getElementById("btn-compte-menu").setAttribute("aria-expanded", "false");
-    document.getElementById("menu-apparence").hidden = true;
-    document.getElementById("btn-apparence").setAttribute("aria-expanded", "false");
     appliquerApparence();
     rendreListeProfils();
     feuille.style.transform = "";
@@ -8672,7 +8697,7 @@
     location.href = "dashboard.html";
   });
   feuille.addEventListener("click", function (e) {
-    if (!e.target.closest(".ppop, .dots, .ra-menu, .ra-bouton")) fermerMenus();
+    if (!e.target.closest(".ppop, .dots")) fermerMenus();
   });
   document.getElementById("btn-logout").addEventListener("click", function () {
     fermerMenus();

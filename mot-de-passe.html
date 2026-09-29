@@ -202,8 +202,9 @@
     transition: box-shadow .25s;
   }
   .champs:focus-within {
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 30%, transparent),
-      inset 0 1px 3px var(--creux-ombre), 0 0 0 4px color-mix(in srgb, var(--ink) 6%, transparent);
+    /* Le champ actif ne double pas son contour : le filet de base prend
+       simplement la couleur du thème. */
+    box-shadow: inset 0 0 0 1.5px var(--accent), inset 0 1px 3px var(--creux-ombre);
   }
   .champ-ligne { position: relative; display: flex; align-items: center; height: 54px; padding-left: 16px; }
   .champ-ligne + .champ-ligne::before {
