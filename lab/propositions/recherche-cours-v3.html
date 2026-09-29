@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EzHoraire — recherche d'un cours : v3</title>
+<style>
+  :root { --encre: #17191d; --doux: #626977; --trait: #e4e7ec; --fond: #f4f5f7; --accent: #2456e0; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #eceef2; color: var(--encre);
+         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+  header { max-width: 900px; margin: 0 auto; padding: 34px 22px 6px; }
+  header h1 { margin: 0 0 6px; font-size: 1.5rem; letter-spacing: -.02em; }
+  header p { margin: 0; color: var(--doux); font-size: .95rem; }
+  main { max-width: 900px; margin: 0 auto; padding: 10px 22px 60px; }
+  section { margin-top: 34px; }
+  section > h2 { margin: 0 0 4px; font-size: 1.12rem; letter-spacing: -.01em; }
+  section > p { margin: 0 0 16px; color: var(--doux); font-size: .9rem; }
+  .grille { display: flex; flex-wrap: wrap; gap: 22px; }
+  figure { margin: 0; }
+  .cadre { width: 390px; height: 780px; border-radius: 30px; background: #fff; overflow: hidden;
+           box-shadow: 0 18px 50px -22px rgba(23, 32, 68, .45), 0 0 0 1px rgba(23, 32, 68, .09); }
+  .cadre iframe { width: 100%; height: 100%; border: 0; display: block; }
+  figcaption { max-width: 390px; margin: 10px 2px 0; font-size: .9rem; line-height: 1.35; }
+  figcaption b { display: block; margin-bottom: 2px; }
+  figcaption span { color: var(--doux); }
+  .badge { display: inline-block; margin-bottom: 6px; padding: 2px 9px; border-radius: 999px;
+           background: #dfe4ee; color: #3b4354; font-size: .74rem; font-weight: 700; letter-spacing: .05em; }
+  .note { max-width: 760px; margin: 40px 0 0; padding: 16px 18px; border-radius: 14px; background: #fff;
+          box-shadow: 0 0 0 1px rgba(23, 32, 68, .08); font-size: .92rem; }
+  .note b { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Rechercher un cours — version 3</h1>
+  <p>2A nettoyé : plus aucun texte gris d'explication. 3A : heures empilées comme sur la page des semaines, dates centrées en face de leur pastille, défilement continu (pas de fin de liste), titre unique déplacé et agrandi, flèche de retour ronde.</p>
+</header>
+
+<main>
+
+<section>
+  <h2>La liste des cours (2A)</h2>
+  <p>Pastille, titre, nombre de séances. Rien d'autre.</p>
+  <div class="grille">
+    <figure>
+      <div class="cadre"><iframe data-doc="f-2a" title="Liste des cours"></iframe></div>
+      <figcaption><span class="badge">2A</span>
+        <b>Épuré</b>
+        <span>La ligne entière ouvre les dates.</span>
+      </figcaption>
+    </figure>
+
+    <figure>
+      <div class="cadre"><iframe data-doc="f-3a" title="Dates du cours, infos ouvertes"></iframe></div>
+      <figcaption><span class="badge">3A</span>
+        <b>Les dates, et les infos au clic</b>
+        <span>Titre unique (plus de doublon en haut), descendu et agrandi ; flèche de retour ronde. La liste défile sans fin : toutes les séances de l'année, classées par semaine.</span>
+      </figcaption>
+    </figure>
+  </div>
+</section>
+
+<p class="note"><b>À toi :</b> c'est bon comme ça ? Une fois validé, on décide de l'endroit du bouton d'accès, puis je code la vraie fonctionnalité.</p>
+
+</main>
+
+<!-- ---------- 2A : liste des cours, épuré ---------- -->
+<template class="tel" id="f-2a">
+  <div style="position:fixed;inset:0;background:var(--bg);z-index:60;overflow:auto">
+    <div class="wrap">
+      <div class="topbar">
+        <button class="gauche" type="button" aria-label="Retour"
+                style="width:46px;height:46px;min-height:0;padding:0;border-radius:50%;display:grid;place-items:center">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.25 5.5 8.75 12l6.5 6.5"/></svg>
+        </button>
+        <h1 class="title" style="font-size:1rem">Chercher un cours</h1>
+      </div>
+      <div class="champs halo" style="margin-top:6px">
+        <div class="champ-ligne">
+          <svg class="champ-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.2 4.2"/></svg>
+          <input class="champ" type="search" value="an" aria-label="Chercher un cours">
+          <button type="button" aria-label="Effacer" style="border:0;background:none;color:var(--muted);padding:8px">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          </button>
+        </div>
+      </div>
+      <ul class="liste" style="margin-top:18px">
+        <li><button type="button">
+          <span class="cpoint" style="--h:221;--v:0"></span>
+          <span class="nom"><mark>An</mark>alyse<small>12 séances</small></span>
+        </button></li>
+        <li><button type="button">
+          <span class="cpoint" style="--h:152;--v:0"></span>
+          <span class="nom"><mark>An</mark>glais<small>10 séances</small></span>
+        </button></li>
+      </ul>
+    </div>
+  </div>
+</template>
+
+<!-- ---------- 3A : dates, heures empilées, infos au clic ---------- -->
+<template class="tel" id="f-3a">
+  <style>
+    .fiche-tete { display: flex; align-items: center; gap: 11px; margin: 2px 2px 2px; }
+    .fiche-tete .gros { width: 13px; height: 13px; border-radius: 50%; flex: none;
+      background: hsl(221 calc(52% - 0 * 10%) calc(52% + 0 * 7%)); }
+    .fiche-tete strong { font-size: 1.32rem; letter-spacing: -.02em; }
+    .fiche-sous { margin: 2px 2px 4px 24px; color: var(--muted); font-size: .88rem; }
+    .sep-semaine { margin: 18px 2px 6px; color: var(--muted); font-size: .8rem; font-weight: 650;
+      letter-spacing: .04em; text-transform: uppercase; }
+    .sep-semaine:first-of-type { margin-top: 14px; }
+    .dates-liste { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+    .dates-liste .c {
+      border-radius: 16px;
+      background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+      box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    }
+    .dates-liste .cbtn { padding: 11px 14px; align-items: center; }
+    .dates-liste .cbtn .cpoint { align-self: center; margin-top: 0; }
+    .dates-liste .c.open .cbtn .cpoint { align-self: flex-start; margin-top: 6px; }
+    .dates-liste .m { font-weight: 600; }
+  </style>
+  <div class="wrap">
+    <div class="topbar" style="margin-bottom:2px">
+      <button class="gauche" type="button" aria-label="Retour"
+              style="width:46px;height:46px;min-height:0;padding:0;border-radius:50%;display:grid;place-items:center">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.25 5.5 8.75 12l6.5 6.5"/></svg>
+      </button>
+    </div>
+    <div style="margin-top:12px;text-align:center"><strong style="font-size:1.6rem;letter-spacing:-.02em">Analyse</strong></div>
+    <p class="fiche-sous" style="margin:4px 0 0;text-align:center">12 séances</p>
+
+    <p class="sep-semaine">Semaine 1 · 28 sept. – 2 oct.</p>
+    <ul class="dates-liste">
+      <li class="c open">
+        <button class="cbtn" type="button" aria-expanded="true">
+          <span class="hcol"><span class="h">08h15</span><span class="h">10h15</span></span>
+          <span class="cpoint" style="--h:221;--v:0" aria-hidden="true"></span>
+          <span class="ctxt"><span class="m">Lundi 28 sept.</span>
+            <span class="cinfo-salle"><span class="k">Salle :</span><span class="s">Grand auditoire 1/14, bâtiment Z</span></span>
+            <span class="cinfos"><span>
+              <span class="cinfo-row"><span class="k">Prof : </span>Delcourt</span>
+              <span class="cinfo-row"><span class="k">Groupe : </span>1/14</span>
+            </span></span>
+          </span>
+        </button>
+      </li>
+      <li class="c">
+        <button class="cbtn" type="button" aria-expanded="false">
+          <span class="hcol"><span class="h">10h30</span><span class="h">12h30</span></span>
+          <span class="cpoint" style="--h:221;--v:0" aria-hidden="true"></span>
+          <span class="ctxt"><span class="m">Vendredi 2 oct.</span></span>
+        </button>
+      </li>
+    </ul>
+
+    <p class="sep-semaine">Semaine 2 · 5 – 9 oct.</p>
+    <ul class="dates-liste">
+      <li class="c">
+        <button class="cbtn" type="button" aria-expanded="false">
+          <span class="hcol"><span class="h">08h15</span><span class="h">10h15</span></span>
+          <span class="cpoint" style="--h:221;--v:0" aria-hidden="true"></span>
+          <span class="ctxt"><span class="m">Lundi 5 oct.</span></span>
+        </button>
+      </li>
+      <li class="c">
+        <button class="cbtn" type="button" aria-expanded="false">
+          <span class="hcol"><span class="h">10h30</span><span class="h">12h30</span></span>
+          <span class="cpoint" style="--h:221;--v:0" aria-hidden="true"></span>
+          <span class="ctxt"><span class="m">Vendredi 9 oct.</span></span>
+        </button>
+      </li>
+    </ul>
+
+    <p class="sep-semaine">Semaine 3 · 12 – 16 oct.</p>
+    <ul class="dates-liste">
+      <li class="c">
+        <button class="cbtn" type="button" aria-expanded="false">
+          <span class="hcol"><span class="h">08h15</span><span class="h">10h15</span></span>
+          <span class="cpoint" style="--h:221;--v:0" aria-hidden="true"></span>
+          <span class="ctxt"><span class="m">Lundi 12 oct.</span></span>
+        </button>
+      </li>
+      <li class="c">
+        <button class="cbtn" type="button" aria-expanded="false">
+          <span class="hcol"><span class="h">10h30</span><span class="h">12h30</span></span>
+          <span class="cpoint" style="--h:221;--v:0" aria-hidden="true"></span>
+          <span class="ctxt"><span class="m">Vendredi 16 oct.</span></span>
+        </button>
+      </li>
+    </ul>
+
+    <p class="sep-semaine">Semaine 4 · 19 – 23 oct.</p>
+    <ul class="dates-liste">
+      <li class="c">
+        <button class="cbtn" type="button" aria-expanded="false">
+          <span class="hcol"><span class="h">08h15</span><span class="h">10h15</span></span>
+          <span class="cpoint" style="--h:221;--v:0" aria-hidden="true"></span>
+          <span class="ctxt"><span class="m">Lundi 19 oct.</span></span>
+        </button>
+      </li>
+      <li class="c">
+        <button class="cbtn" type="button" aria-expanded="false">
+          <span class="hcol"><span class="h">10h30</span><span class="h">12h30</span></span>
+          <span class="cpoint" style="--h:221;--v:0" aria-hidden="true"></span>
+          <span class="ctxt"><span class="m">Vendredi 23 oct.</span></span>
+        </button>
+      </li>
+    </ul>
+
+    <p class="sep-semaine">Semaine 5 · 26 – 30 oct.</p>
+    <ul class="dates-liste">
+      <li class="c">
+        <button class="cbtn" type="button" aria-expanded="false">
+          <span class="hcol"><span class="h">08h15</span><span class="h">10h15</span></span>
+          <span class="cpoint" style="--h:221;--v:0" aria-hidden="true"></span>
+          <span class="ctxt"><span class="m">Lundi 26 oct.</span></span>
+        </button>
+      </li>
+      <li class="c">
+        <button class="cbtn" type="button" aria-expanded="false">
+          <span class="hcol"><span class="h">10h30</span><span class="h">12h30</span></span>
+          <span class="cpoint" style="--h:221;--v:0" aria-hidden="true"></span>
+          <span class="ctxt"><span class="m">Vendredi 30 oct.</span></span>
+        </button>
+      </li>
+    </ul>
+  </div>
+</template>
+
+<script>
+  Array.prototype.forEach.call(document.querySelectorAll("iframe[data-doc]"), function (f) {
+    var t = document.getElementById(f.getAttribute("data-doc"));
+    f.setAttribute("srcdoc",
+      "<!doctype html><html lang='fr' data-apparence='clair'><head><meta charset='utf-8'>" +
+      "<link rel='stylesheet' href='/assets/css/app.css'>" +
+      "<style>body{min-height:100%}</style></head><body>" +
+      t.innerHTML + "</body></html>");
+  });
+</script>
+</body>
+</html>

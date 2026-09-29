@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>EzHoraire — Maquette : devoirs hors cours (5 pistes)</title>
+<style>
+  /* Maquette statique (aucun JS d'app) : même scène partout — mercredi
+     avec 3 cours + 2 échéances hors cours (examen 17h00, devoir sans
+     heure), jeudi férié + 1 devoir de journée. Seul le traitement des
+     échéances hors cours change d'une piste à l'autre. */
+  :root {
+    --bg: #eceff5;
+    --surface: #ffffff;
+    --relief: #f6f8fc;
+    --ink: #23272e;
+    --muted: #6b7280;
+    --line: #e2e6ee;
+    --accent: #1d4fd7;
+    --devoir: #1d4fd7;
+    --examen: #b26a00;
+    --ferie-rayure: rgba(29, 79, 215, .10);
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: var(--font); font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page { max-width: 1280px; margin: 0 auto; padding: 26px 28px 60px; }
+  body.solo .page { padding-top: 18px; }
+  .page-titre { font-size: 1.3rem; letter-spacing: -.02em; margin: 0 0 4px; }
+  .page-titre span { color: var(--accent); }
+  .page-sous { color: var(--muted); font-size: .88rem; margin: 0 0 26px; }
+  body.solo .page-titre, body.solo .page-sous { display: none; }
+
+  .piste { margin: 0 0 44px; }
+  body.solo .piste { margin: 0; }
+  .piste-head { display: flex; align-items: baseline; gap: 12px; margin: 0 2px 10px; }
+  .piste-num {
+    flex: none; width: 30px; height: 30px; border-radius: 999px;
+    display: grid; place-items: center; align-self: center;
+    background: var(--accent); color: #fff; font-weight: 750; font-size: .9rem;
+  }
+  .piste-head h2 { font-size: 1.12rem; letter-spacing: -.01em; margin: 0; }
+  .piste-head p { margin: 0; color: var(--muted); font-size: .85rem; }
+
+  /* Mini-grille : 2 jours, 8h-18h, hauteur fixe comme dans l'app. */
+  .cal {
+    background: linear-gradient(180deg, #fbfcff, var(--relief));
+    border-radius: 22px; box-shadow: inset 0 0 0 1px var(--line);
+    padding: 14px 18px 18px 0;
+  }
+  .cal-tete, .cal-corps, .cal-soiree { display: grid; grid-template-columns: 58px 1fr 1fr; column-gap: 8px; }
+  .cal-tete { padding-bottom: 12px; }
+  .cal-jour { display: flex; align-items: center; gap: 10px; padding: 0 8px; min-width: 0; }
+  .cal-jour .jj { color: var(--muted); font-size: .76rem; font-weight: 650; }
+  .cal-jour strong { font-size: 1.3rem; font-weight: 600; }
+  .cal-jour small { margin-left: auto; color: var(--muted); font-size: .76rem; white-space: nowrap; }
+  .cal-jour small.ferie { color: var(--accent); font-weight: 600; }
+  .cal-corps { position: relative; height: 430px; }
+  .cal-heures { position: relative; }
+  .cal-heures span {
+    position: absolute; right: 12px; transform: translateY(-50%);
+    color: var(--muted); font-size: .72rem;
+  }
+  .cal-col { position: relative; border-radius: 12px; }
+  .cal-libre {
+    position: absolute; inset: 0; border-radius: 12px; overflow: hidden;
+    display: grid; place-items: center;
+    background: repeating-linear-gradient(45deg, transparent 0 22px, var(--ferie-rayure) 22px 23.5px);
+  }
+  .cal-libre p {
+    margin: 0; padding: 8px 18px; border-radius: 14px; background: var(--relief);
+    font-size: 1.05rem; font-weight: 650; color: var(--accent);
+  }
+
+  /* Cours : pastels par matière, comme dans l'app. */
+  .ev {
+    position: absolute; left: 2px; right: 2px;
+    top: calc(var(--t) * 1%); height: calc(var(--d) * 1% - 3px);
+    display: flex; flex-direction: column; gap: 2px;
+    padding: 7px 10px; border-radius: 11px; overflow: hidden;
+    background: hsl(var(--h) 45% 92%); color: hsl(var(--h) 35% 28%);
+  }
+  .ev .et { font-size: .82rem; font-weight: 650; line-height: 1.25; }
+  .ev .es { font-size: .78rem; font-weight: 600; opacity: .85; flex-grow: 1; display: grid; align-content: center; overflow: hidden; }
+  .ev .eb { display: flex; align-items: baseline; margin-top: auto; }
+  .ev .eh { font-size: .72rem; opacity: .8; }
+  .ev .ev-ech {
+    margin-left: auto; padding: 2px 6px; border-radius: 6px;
+    font-size: .61rem; font-weight: 750; letter-spacing: .03em;
+    background: rgba(127, 127, 127, .16); white-space: nowrap;
+  }
+
+  /* Fiche d'échéance, langage actuel (témoin : colonne fériée). */
+  .fiche {
+    background: var(--surface); border-radius: 11px;
+    box-shadow: 0 2px 10px -2px rgba(0, 0, 0, .12);
+    border-left: 3px solid var(--devoir);
+    padding: 8px 10px 8px 12px; display: flex; gap: 8px; align-items: center;
+  }
+  .fiche.examen { border-left-color: var(--examen); }
+  .fiche .ft { font-size: .8rem; font-weight: 650; line-height: 1.3; }
+  .fiche .fh { font-size: .74rem; color: var(--muted); margin-top: 1px; }
+  .fiche .ck {
+    flex: none; margin-left: auto; width: 22px; height: 22px; border-radius: 7px;
+    border: 1.5px solid var(--line); background: var(--surface);
+  }
+
+  /* Piste 1 — tiroir du soir : un seul meuble ancré en bas de colonne. */
+  .tiroir {
+    position: absolute; left: 1px; right: 2px; bottom: 0;
+    background: #eef1f8; border-top: 1px solid var(--line);
+    border-radius: 0 0 10px 10px; padding: 5px 8px 6px;
+  }
+  .tiroir .tr {
+    display: flex; align-items: center; gap: 8px; padding: 5px 2px;
+  }
+  .tiroir .tr + .tr { border-top: 1px dotted var(--line); }
+  .tiroir .past {
+    flex: none; font-size: .6rem; font-weight: 800; letter-spacing: .04em;
+    padding: 2px 5px; border-radius: 5px; color: #fff; background: var(--devoir);
+  }
+  .tiroir .past.ex { background: var(--examen); }
+  .tiroir .th { font-size: .72rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .tiroir .tt { font-size: .78rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tiroir .ck { flex: none; margin-left: auto; width: 18px; height: 18px; border-radius: 6px; border: 1.5px solid #c6cdd9; background: #fff; }
+
+  /* Piste 2 — fantômes : même place qu'aujourd'hui, matière du vide. */
+  .fiche.fantome {
+    background: rgba(29, 79, 215, .04); box-shadow: none;
+    border: 1.5px dashed rgba(29, 79, 215, .45); border-left-width: 3px;
+  }
+  .fiche.fantome.examen { border-color: rgba(178, 106, 0, .5); background: rgba(178, 106, 0, .05); }
+  .fiche.fantome .ck { background: transparent; }
+  /* Fantômes compacts (une ligne) : à 17h il ne reste que 10 % de colonne,
+     deux fiches hautes s'y télescoperaient — comme dans l'app d'ailleurs. */
+  .fiche.fantome.compact { padding: 6px 10px 6px 12px; }
+  .fiche.fantome.compact .ft { display: inline; }
+  .fiche.fantome.compact .fh { display: inline; margin-left: 6px; }
+
+  /* Piste 3 — pastilles sur l'axe + pilule dans l'en-tête. */
+  .axdot {
+    position: absolute; left: 50%; width: 13px; height: 13px; border-radius: 50%;
+    transform: translate(-50%, -50%); background: var(--examen);
+    box-shadow: 0 0 0 3px rgba(178, 106, 0, .18);
+  }
+  .pilule {
+    margin-left: 8px; padding: 3px 8px; border-radius: 999px;
+    font-size: .62rem; font-weight: 800; letter-spacing: .04em;
+    color: var(--accent); background: rgba(29, 79, 215, .10);
+    white-space: nowrap;
+  }
+
+  /* Piste 4 — à emporter : sous-section dans le dernier cours. */
+  .ev .ae { border-top: 1px dotted currentColor; opacity: 1; margin-top: 2px; padding-top: 3px; }
+  .ev .ae .ar { display: flex; align-items: center; gap: 6px; font-size: .7rem; font-weight: 600; line-height: 1.3; padding: 1px 0; }
+  .ev .ae .ar .past {
+    flex: none; font-size: .56rem; font-weight: 800; padding: 1px 4px; border-radius: 4px;
+    color: #fff; background: var(--devoir);
+  }
+  .ev .ae .ar .past.ex { background: var(--examen); }
+  .ev .ae .ar .ck { flex: none; margin-left: auto; width: 14px; height: 14px; border-radius: 4px; border: 1.5px solid currentColor; opacity: .5; }
+
+  /* Piste 5 — rangée soirée commune sous la grille. */
+  .cal-soiree { margin-top: 10px; padding: 10px 0 0 18px; border-top: 1px solid var(--line); align-items: start; }
+  .cal-soiree .sl { font-size: .68rem; font-weight: 750; letter-spacing: .06em; color: var(--muted); padding-top: 8px; }
+  .cellule-soir { display: flex; flex-direction: column; gap: 6px; }
+  .chip {
+    display: flex; align-items: center; gap: 7px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 9px;
+    padding: 6px 8px; font-size: .76rem; font-weight: 600;
+  }
+  .chip .past {
+    flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--devoir);
+  }
+  .chip .past.ex { background: var(--examen); }
+  .chip .th { color: var(--muted); font-weight: 500; font-size: .72rem; margin-left: auto; white-space: nowrap; }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1 class="page-titre">Devoirs hors cours — <span>5 pistes</span></h1>
+  <p class="page-sous">Même scène partout : mercredi 3 cours + un examen en fin de journée et un devoir sans heure ; jeudi férié + un devoir de journée. Seul le traitement des échéances hors cours change.</p>
+
+  <!-- Piste 1 : tiroir du soir -->
+  <section class="piste" id="v1">
+    <div class="piste-head"><span class="piste-num">1</span><h2>Le tiroir du soir</h2><p>Un seul meuble ancré en bas de colonne, lignes compactes heure + titre.</p></div>
+    <div class="cal">
+      <div class="cal-tete"><div></div>
+        <div class="cal-jour"><span class="jj">Mer</span><strong>18</strong><small>08h15 – 15h30</small></div>
+        <div class="cal-jour"><span class="jj">Jeu</span><strong>19</strong><small class="ferie">Férié</small></div>
+      </div>
+      <div class="cal-corps">
+        <div class="cal-heures"><span style="top:0%">8h</span><span style="top:10%">9h</span><span style="top:20%">10h</span><span style="top:30%">11h</span><span style="top:40%">12h</span><span style="top:50%">13h</span><span style="top:60%">14h</span><span style="top:70%">15h</span><span style="top:80%">16h</span><span style="top:90%">17h</span><span style="top:100%">18h</span></div>
+        <div class="cal-col">
+          <div class="ev" style="--t:2.5;--d:20;--h:172"><span class="et">Programmation orientée objet</span><span class="es"><span>1/36A</span></span><span class="eb"><span class="eh">08h15 – 10h15</span></span></div>
+          <div class="ev" style="--t:25;--d:20;--h:32"><span class="et">Projet</span><span class="es"><span>2/17A</span></span><span class="eb"><span class="eh">10h30 – 12h30</span></span></div>
+          <div class="ev" style="--t:55;--d:20;--h:255"><span class="et">Introduction au droit</span><span class="eb"><span class="eh">13h30 – 15h30</span></span></div>
+          <div class="tiroir">
+            <div class="tr"><span class="past ex">EXAMEN</span><span class="th">17h00</span><span class="tt">Examen blanc de droit</span><span class="ck"></span></div>
+            <div class="tr"><span class="past">DEVOIR</span><span class="tt">Relire le chapitre 5</span><span class="ck"></span></div>
+          </div>
+        </div>
+        <div class="cal-col">
+          <div class="cal-libre"><p>Férié</p></div>
+          <div class="fiche" style="position:absolute;left:1px;right:2px;bottom:4px"><div><div class="ft">Préparer les TP</div></div><span class="ck"></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Piste 2 : fantômes -->
+  <section class="piste" id="v2">
+    <div class="piste-head"><span class="piste-num">2</span><h2>Les fantômes</h2><p>Même principe de placement, mais matière du vide : pointillés, sans ombre (examen à 16h pour tenir sur une ligne).</p></div>
+    <div class="cal">
+      <div class="cal-tete"><div></div>
+        <div class="cal-jour"><span class="jj">Mer</span><strong>18</strong><small>08h15 – 15h30</small></div>
+        <div class="cal-jour"><span class="jj">Jeu</span><strong>19</strong><small class="ferie">Férié</small></div>
+      </div>
+      <div class="cal-corps">
+        <div class="cal-heures"><span style="top:0%">8h</span><span style="top:10%">9h</span><span style="top:20%">10h</span><span style="top:30%">11h</span><span style="top:40%">12h</span><span style="top:50%">13h</span><span style="top:60%">14h</span><span style="top:70%">15h</span><span style="top:80%">16h</span><span style="top:90%">17h</span><span style="top:100%">18h</span></div>
+        <div class="cal-col">
+          <div class="ev" style="--t:2.5;--d:20;--h:172"><span class="et">Programmation orientée objet</span><span class="es"><span>1/36A</span></span><span class="eb"><span class="eh">08h15 – 10h15</span></span></div>
+          <div class="ev" style="--t:25;--d:20;--h:32"><span class="et">Projet</span><span class="es"><span>2/17A</span></span><span class="eb"><span class="eh">10h30 – 12h30</span></span></div>
+          <div class="ev" style="--t:55;--d:20;--h:255"><span class="et">Introduction au droit</span><span class="eb"><span class="eh">13h30 – 15h30</span></span></div>
+          <div class="fiche fantome compact examen" style="position:absolute;left:1px;right:2px;top:calc(80% + 1px)"><div><span class="ft">Examen blanc de droit</span><span class="fh">16h00</span></div><span class="ck"></span></div>
+          <div class="fiche fantome compact" style="position:absolute;left:1px;right:2px;bottom:4px"><div><span class="ft">Relire le chapitre 5</span></div><span class="ck"></span></div>
+        </div>
+        <div class="cal-col">
+          <div class="cal-libre"><p>Férié</p></div>
+          <div class="fiche" style="position:absolute;left:1px;right:2px;bottom:4px"><div><div class="ft">Préparer les TP</div></div><span class="ck"></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Piste 3 : pastilles sur l'axe -->
+  <section class="piste" id="v3">
+    <div class="piste-head"><span class="piste-num">3</span><h2>Pastilles sur l'axe</h2><p>Plus aucune carte : un point sur l'axe à 17h, une pilule dans l'en-tête qui ouvre le détail.</p></div>
+    <div class="cal">
+      <div class="cal-tete"><div></div>
+        <div class="cal-jour"><span class="jj">Mer</span><strong>18</strong><small>08h15 – 15h30</small><span class="pilule">EXAMEN +1</span></div>
+        <div class="cal-jour"><span class="jj">Jeu</span><strong>19</strong><small class="ferie">Férié</small><span class="pilule">DEVOIR</span></div>
+      </div>
+      <div class="cal-corps">
+        <div class="cal-heures"><span style="top:0%">8h</span><span style="top:10%">9h</span><span style="top:20%">10h</span><span style="top:30%">11h</span><span style="top:40%">12h</span><span style="top:50%">13h</span><span style="top:60%">14h</span><span style="top:70%">15h</span><span style="top:80%">16h</span><span style="top:90%">17h</span><span style="top:100%">18h</span><span class="axdot" style="top:90%" title="Examen blanc de droit — 17h00"></span></div>
+        <div class="cal-col">
+          <div class="ev" style="--t:2.5;--d:20;--h:172"><span class="et">Programmation orientée objet</span><span class="es"><span>1/36A</span></span><span class="eb"><span class="eh">08h15 – 10h15</span></span></div>
+          <div class="ev" style="--t:25;--d:20;--h:32"><span class="et">Projet</span><span class="es"><span>2/17A</span></span><span class="eb"><span class="eh">10h30 – 12h30</span></span></div>
+          <div class="ev" style="--t:55;--d:20;--h:255"><span class="et">Introduction au droit</span><span class="eb"><span class="eh">13h30 – 15h30</span></span></div>
+        </div>
+        <div class="cal-col">
+          <div class="cal-libre"><p>Férié</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Piste 4 : à emporter avec le dernier cours -->
+  <section class="piste" id="v4">
+    <div class="piste-head"><span class="piste-num">4</span><h2>À emporter</h2><p>Les hors-cours rejoignent le dernier cours du jour, sous un filet pointillé.</p></div>
+    <div class="cal">
+      <div class="cal-tete"><div></div>
+        <div class="cal-jour"><span class="jj">Mer</span><strong>18</strong><small>08h15 – 15h30</small></div>
+        <div class="cal-jour"><span class="jj">Jeu</span><strong>19</strong><small class="ferie">Férié</small></div>
+      </div>
+      <div class="cal-corps">
+        <div class="cal-heures"><span style="top:0%">8h</span><span style="top:10%">9h</span><span style="top:20%">10h</span><span style="top:30%">11h</span><span style="top:40%">12h</span><span style="top:50%">13h</span><span style="top:60%">14h</span><span style="top:70%">15h</span><span style="top:80%">16h</span><span style="top:90%">17h</span><span style="top:100%">18h</span></div>
+        <div class="cal-col">
+          <div class="ev" style="--t:2.5;--d:20;--h:172"><span class="et">Programmation orientée objet</span><span class="es"><span>1/36A</span></span><span class="eb"><span class="eh">08h15 – 10h15</span></span></div>
+          <div class="ev" style="--t:25;--d:20;--h:32"><span class="et">Projet</span><span class="es"><span>2/17A</span></span><span class="eb"><span class="eh">10h30 – 12h30</span></span></div>
+          <div class="ev" style="--t:55;--d:20;--h:255"><span class="et">Introduction au droit</span><span class="eb"><span class="eh">13h30 – 15h30</span></span>
+            <span class="ae">
+              <span class="ar"><span class="past ex">EXAMEN</span><span>Examen blanc · 17h00</span><span class="ck"></span></span>
+              <span class="ar"><span class="past">DEVOIR</span><span>Relire le chapitre 5</span><span class="ck"></span></span>
+            </span>
+          </div>
+        </div>
+        <div class="cal-col">
+          <div class="cal-libre"><p>Férié</p></div>
+          <div class="fiche" style="position:absolute;left:1px;right:2px;bottom:4px"><div><div class="ft">Préparer les TP</div></div><span class="ck"></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Piste 5 : rangée soirée -->
+  <section class="piste" id="v5">
+    <div class="piste-head"><span class="piste-num">5</span><h2>La rangée soirée</h2><p>Une bande commune sous la grille : tous les hors-cours y vivent, rangés par jour.</p></div>
+    <div class="cal">
+      <div class="cal-tete"><div></div>
+        <div class="cal-jour"><span class="jj">Mer</span><strong>18</strong><small>08h15 – 15h30</small></div>
+        <div class="cal-jour"><span class="jj">Jeu</span><strong>19</strong><small class="ferie">Férié</small></div>
+      </div>
+      <div class="cal-corps">
+        <div class="cal-heures"><span style="top:0%">8h</span><span style="top:10%">9h</span><span style="top:20%">10h</span><span style="top:30%">11h</span><span style="top:40%">12h</span><span style="top:50%">13h</span><span style="top:60%">14h</span><span style="top:70%">15h</span><span style="top:80%">16h</span><span style="top:90%">17h</span><span style="top:100%">18h</span></div>
+        <div class="cal-col">
+          <div class="ev" style="--t:2.5;--d:20;--h:172"><span class="et">Programmation orientée objet</span><span class="es"><span>1/36A</span></span><span class="eb"><span class="eh">08h15 – 10h15</span></span></div>
+          <div class="ev" style="--t:25;--d:20;--h:32"><span class="et">Projet</span><span class="es"><span>2/17A</span></span><span class="eb"><span class="eh">10h30 – 12h30</span></span></div>
+          <div class="ev" style="--t:55;--d:20;--h:255"><span class="et">Introduction au droit</span><span class="eb"><span class="eh">13h30 – 15h30</span></span></div>
+        </div>
+        <div class="cal-col">
+          <div class="cal-libre"><p>Férié</p></div>
+        </div>
+      </div>
+      <div class="cal-soiree"><div class="sl">SOIR</div>
+        <div class="cellule-soir">
+          <div class="chip"><span class="past ex"></span><span>Examen blanc de droit</span><span class="th">17h00</span></div>
+          <div class="chip"><span class="past"></span><span>Relire le chapitre 5</span></div>
+        </div>
+        <div class="cellule-soir">
+          <div class="chip"><span class="past"></span><span>Préparer les TP</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+<script>
+/* ?v=1..5 : une seule piste (captures cadrées). Sans paramètre : tout. */
+(function () {
+  var m = (/[?&]v=([1-5])(?:&|$)/.exec(location.search) || [])[1];
+  if (!m) return;
+  document.body.classList.add("solo");
+  Array.prototype.forEach.call(document.querySelectorAll(".piste"), function (s) {
+    if (s.id !== "v" + m) s.hidden = true;
+  });
+})();
+</script>
+</body>
+</html>

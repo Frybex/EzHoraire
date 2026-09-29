@@ -602,18 +602,29 @@
     box-shadow: 0 0 0 2.5px var(--relief-haut), 0 0 0 4px color-mix(in srgb, var(--ink) 50%, transparent);
   }
 
-  /* Réglages : cartes d'horaires en relief, menus ⋮ en popover ancré. */
+  /* Réglages : cartes d'horaires en relief, qui se retournent au clic
+     pour révéler leurs options au dos. */
   #liste-profils { display: flex; flex-direction: column; gap: 8px; margin: 10px 0; }
-  .pcard {
-    position: relative; border-radius: 16px;
+  .pcard { position: relative; border-radius: 16px; perspective: 1000px; }
+  .pcard.retournee { z-index: 20; }
+  .pcard-flip {
+    display: grid; transform-style: preserve-3d;
+    transition: transform .38s cubic-bezier(.32, .72, .35, 1);
+  }
+  .pcard.retournee .pcard-flip { transform: rotateX(180deg); }
+  /* Le relief vit sur les faces (pas sur la carte) : c'est toute la
+     surface qui pivote, pas seulement son contenu. */
+  .pcard-face {
+    grid-area: 1 / 1; min-width: 0; border-radius: 16px;
     background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
     box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    backface-visibility: hidden; -webkit-backface-visibility: hidden;
   }
-  .pcard.actif {
+  .pcard.actif .pcard-face {
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 40%, transparent), inset 0 1px 0 var(--reflet), var(--ombre-btn);
   }
-  .pcard.menu-ouvert { z-index: 20; }
-  .pcard-ligne { display: flex; align-items: center; gap: 4px; padding: 4px 6px 4px 16px; }
+  .pcard-dos { transform: rotateX(180deg); }
+  .pcard-ligne { display: flex; align-items: center; gap: 4px; padding: 4px 16px 4px 16px; }
   .pcard-main {
     flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; text-align: left;
     border: none; background: none; color: var(--ink); font: inherit; padding: 12px 0; cursor: pointer;
@@ -622,19 +633,25 @@
   .pt-textes { min-width: 0; flex: 1; }
   .pt-nom { display: block; font-weight: 650; letter-spacing: -.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .pt-detail { display: block; margin-top: 1px; color: var(--muted); font-size: .84rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .dots {
-    flex: none; display: grid; place-items: center; width: 40px; height: 40px;
-    border: none; border-radius: 12px; background: none; color: var(--muted); cursor: pointer;
-    transition: background .15s, color .15s;
+  .pcard-actions { display: flex; align-items: stretch; gap: 6px; padding: 10px 12px; }
+  .dos-act {
+    flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    padding: 10px 2px; border: none; border-radius: 12px; background: none; color: var(--ink);
+    font: inherit; font-size: .78rem; font-weight: 600; cursor: pointer; transition: background .12s;
   }
-  .dots:hover, .dots[aria-expanded="true"] { color: var(--ink); background: color-mix(in srgb, var(--ink) 8%, transparent); }
-  .dots:focus-visible { outline: 2px solid var(--accent); outline-offset: 0; }
-  /* Déplacer un horaire : on attrape la carte n'importe où (sauf le ⋮) et
-     on la fait glisser. Sur téléphone, il faut un appui long pour que le
-     geste démarre : un simple défilement ne bouge rien. */
+  .dos-act svg { flex: none; color: var(--muted); }
+  .dos-act span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dos-act:hover { background: color-mix(in srgb, var(--ink) 7%, transparent); }
+  .dos-act:focus-visible { background: color-mix(in srgb, var(--ink) 7%, transparent); outline: 2px solid var(--accent); outline-offset: -2px; }
+  .dos-act.danger-txt, .dos-act.danger-txt svg { color: var(--danger); }
+  .dos-act.danger-txt:hover, .dos-act.danger-txt:focus-visible { background: color-mix(in srgb, var(--danger) 12%, transparent); }
+  /* Déplacer un horaire : on attrape la carte n'importe où (sauf les
+     boutons du dos) et on la fait glisser. Sur téléphone, il faut un
+     appui long pour que le geste démarre : un simple défilement ne
+     bouge rien. */
   #liste-profils.plusieurs .pcard { cursor: grab; }
-  .pcard.drag {
-    z-index: 25; cursor: grabbing; transition: none !important;
+  .pcard.drag { z-index: 25; cursor: grabbing; transition: none !important; }
+  .pcard.drag .pcard-face {
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 22%, transparent),
       0 18px 36px -14px rgba(0, 0, 0, .45), var(--ombre-btn);
   }
@@ -1400,6 +1417,14 @@
   #boite-echeance { display: flex; flex-direction: column; }
   #ech-etape-choix { display: flex; flex-direction: column; flex: 1 1 auto; }
   #ech-choix-titre { margin: 0 0 16px; }
+  /* Jour sans cours : pas de lignes à lister — la liste se masque et la
+     rangée d'heure se centre dans le vide, au lieu de coller en bas. */
+  #ech-etape-choix.sans-cours #ech-choix-liste { display: none; }
+  /* Jour sans cours : la rangée d'heure ET sa zone Valider restent
+     collées (filet commun) et se centrent en bloc ; Annuler reste en bas.
+     Sans ça, la marge auto de la rangée repoussait Valider au loin. */
+  #ech-etape-choix.sans-cours #ech-choix-autre { margin-top: auto; margin-bottom: 0; }
+  #ech-etape-choix.sans-cours .boite-actions { margin-top: auto; }
   #ech-choix-liste {
     display: grid; gap: 8px; margin: 0 0 6px;
     flex: 1 1 auto; align-content: start;
@@ -1446,18 +1471,27 @@
     font-size: .8rem; color: var(--muted);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  .ech-choix-autre input[type="time"] {
+  .ech-choix-autre #ech-choix-heure {
     flex: none; width: 96px; height: 42px; padding: 0 10px; border: none; border-radius: 11px;
     font: inherit; font-size: .95rem; font-weight: 600; color: var(--ink);
     background: var(--creux); box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre);
     text-align: center;
   }
-  .ech-choix-autre input[type="time"]::-webkit-calendar-picker-indicator,
-  .ech-choix-autre input[type="time"]::-webkit-inner-spin-button,
-  .ech-choix-autre input[type="time"]::-webkit-clear-button {
-    display: none; -webkit-appearance: none;
+  /* Heure au repos : « 00:00 » gris, comme un texte d'exemple. */
+  .ech-choix-autre.heure-vierge #ech-choix-heure { color: var(--muted); }
+  /* Heure refusée au Valider (incomplète ou > 23) : case secouée en rouge. */
+  .ech-choix-autre.erreur #ech-choix-heure {
+    color: var(--danger);
+    box-shadow: inset 0 0 0 2px var(--danger), inset 0 1px 3px var(--creux-ombre);
+    animation: ech-heure-ratee .32s ease;
   }
-  .ech-choix-autre input[type="time"]:focus-visible {
+  @keyframes ech-heure-ratee {
+    20% { transform: translateX(-5px); }
+    45% { transform: translateX(4px); }
+    70% { transform: translateX(-3px); }
+    90% { transform: translateX(2px); }
+  }
+  .ech-choix-autre #ech-choix-heure:focus-visible {
     outline: 2px solid var(--accent); outline-offset: 2px;
   }
   /* Bouton « Valider » déroulé sous l'heure personnalisée : aligné pile
@@ -2368,7 +2402,7 @@
   }
 
   /* Éléments propres à l'ordinateur : absents sur téléphone. */
-  .cal, .pdf-tete, .moi-txt, #pop, .official svg { display: none; }
+  .cal, #soir, .pdf-tete, .moi-txt, #pop, .official svg { display: none; }
   .avatar { display: grid; place-items: center; }
 
   /* Contenu SEO et présentation sur la vue d'accueil (v-compte) */
@@ -2738,8 +2772,8 @@
     #horaire-contenu {
       display: grid; column-gap: 10px; row-gap: 18px;
       grid-template-columns: minmax(0, 1fr) auto;
-      grid-template-rows: auto minmax(0, 1fr) auto;
-      grid-template-areas: "week pdfbtn" "cal cal" "foot foot";
+      grid-template-rows: auto minmax(0, 1fr) auto auto;
+      grid-template-areas: "week pdfbtn" "cal cal" "soir soir" "foot foot";
       /* 170px = barre du haut (72) + sélecteur d'horaire (~54 + 16 de marge)
          + marge basse de page (~24) : sans ça le bas de la grille dépasse
          de la fenêtre et le pied de page (« Mis à jour… ») est coupé. */
@@ -2749,7 +2783,7 @@
     }
     #horaire-contenu.pdf-ouvert {
       grid-template-columns: minmax(0, 1fr) auto minmax(400px, 46%);
-      grid-template-areas: "week pdfbtn pdf" "cal cal pdf" "foot foot pdf";
+      grid-template-areas: "week pdfbtn pdf" "cal cal pdf" "soir soir pdf" "foot foot pdf";
     }
     .pdf-ouvert .cal-jour small { display: none; }
     .pdf-ouvert .week .cur span { display: none; }
@@ -2967,6 +3001,57 @@
       box-sizing: border-box;
       box-shadow: 0 2px 10px -2px rgba(0, 0, 0, .1);
     }
+    /* Bande SOIR : carte détachée SOUS la grille (un vrai vide entre les
+       deux), même DA en plus fin — mêmes colonnes, « Soir » dans la
+       gouttière à la place des heures. Les fiches sont le composant
+       habituel (.ech-item), en version compacte une ligne : validation,
+       modification et suppression marchent comme dans la grille. */
+    #soir {
+      display: block; grid-area: soir;
+      margin: 0; padding: 10px 18px 12px 0; border-radius: 18px;
+      background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+      box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    }
+    .soir-grille {
+      display: grid; grid-template-columns: 58px var(--cols, repeat(var(--n), minmax(0, 1fr)));
+      column-gap: 8px; align-items: start;
+    }
+    .soir-nom {
+      font-size: .68rem; font-weight: 750; letter-spacing: .06em; color: var(--muted);
+      padding: 9px 0 0 22px;
+    }
+    .soir-jour { min-width: 0; }
+    /* Jour férié : mêmes rayures que sa colonne (même vide, la cellule
+       garde une hauteur pour les montrer). Le cadre intérieur laisse les
+       rayures visibles autour des fiches, qui les recouvriraient sinon ;
+       étirée à toute la hauteur de la rangée. */
+    .soir-jour.ferie {
+      --rayure: color-mix(in srgb, var(--accent) 18%, transparent);
+      background: repeating-linear-gradient(45deg, transparent 0 22px, var(--rayure) 22px 23.5px);
+      border-radius: 10px;
+      min-height: 42px;
+      padding: 6px;
+      align-self: stretch;
+    }
+    .soir-liste { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+    .soir-liste .ech { padding: 6px 8px; }
+    /* Titre sur une ligne : le badge vertical (comme les fiches férié)
+       laisse toute la place au texte. */
+    .soir-liste .ech-titre {
+      display: block; font-size: .8rem; white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis; background: none;
+    }
+    /* Titre validé : la barre suit le texte (comme ailleurs), pas la boîte
+       — le span interne épouse le texte, même tronqué par « … ». */
+    .soir-liste .ech-titre-txt {
+      display: inline; overflow-wrap: anywhere;
+      background-image: linear-gradient(currentColor, currentColor);
+      background-repeat: no-repeat; background-position: 0 .62em; background-size: 0% 1.5px;
+      transition: background-size .34s cubic-bezier(.16,1,.3,1);
+    }
+    .soir-liste .ech-titre.fait .ech-titre-txt { background-size: 100% 1.5px; }
+    .soir-liste .ech-quand { margin: 1px 0 0; }
+    .soir-liste .ech-valide { width: 24px; height: 24px; border-radius: 8px; }
     /* Cours : fond mat teinté (une couleur par
        intitulé, jamais deux intitulés avec la même — voir preparerCouleurs). */
     .ev {
@@ -3364,6 +3449,7 @@
     .voile:not([hidden]), .voile:not([hidden]) .boite, .voile.sortie, .voile.sortie .boite { animation: none; }
     .bug-depot { animation: none; }
     .ppop:not([hidden]), .ppop.haut:not([hidden]) { animation: none; }
+    .pcard-flip { transition: none; }
     #feuille, #feuille.visible, body::after { transition: none; }
     body.arrivee .week, body.arrivee .days > li, body.arrivee #barre-recharge { animation: none; }
     .pdf-reflet { display: none; }
@@ -3531,3 +3617,85 @@
     background: color-mix(in srgb, var(--c, var(--accent)) 12%, var(--surface));
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c, var(--accent)) 30%, transparent);
   }
+
+  /* ---------- Rechercher un cours ----------
+     Panneau plein écran : la liste des cours se réduit à la frappe, un
+     cours ouvert montre ses séances classées par semaine. Les lignes des
+     séances reprennent le gabarit des cours de la semaine (heures
+     empilées, pastille, salle/prof/groupe au dépliage) — d'où les
+     quelques règles qui ne font que recentrer ou cadrer ce gabarit. */
+  #rc {
+    position: fixed; inset: 0; z-index: 90;
+    background: var(--bg); color: var(--ink);
+    overflow-y: auto; overscroll-behavior: contain;
+    visibility: hidden; opacity: 0; transform: translateY(10px);
+    transition: opacity .18s ease, transform .22s cubic-bezier(.16,1,.3,1),
+                visibility 0s linear .22s;
+  }
+  #rc.visible {
+    visibility: visible; opacity: 1; transform: none;
+    transition: opacity .18s ease, transform .22s cubic-bezier(.16,1,.3,1);
+  }
+  body.rech-ouverte { overflow: hidden; }
+  /* Même sur grand écran, la recherche garde sa colonne : c'est une
+     liste qui se lit de haut en bas, pas la grille à deux colonnes des
+     formations, et le titre reste centré (la barre du haut de l'app
+     passe collante et alignée à gauche au-delà de 1024 px). */
+  #rc .wrap { max-width: 680px; padding-top: 14px; }
+  #rc .topbar {
+    position: relative; justify-content: center;
+    min-height: 46px; margin: 0; padding: 0;
+  }
+  #rc .liste { display: flex; flex-direction: column; gap: 8px; }
+  #rc .liste li { grid-column: auto; }
+  /* Le retour est un rond posé à gauche, comme dans les autres écrans :
+     le titre reste centré sur la page. */
+  #rc .topbar .rc-retour {
+    position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+    width: 46px; height: 46px; padding: 0; border: none; border-radius: 50%;
+    display: grid; place-items: center; color: var(--ink); cursor: pointer;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+    transition: transform .12s;
+  }
+  #rc .topbar .rc-retour:active { transform: translateY(-50%) scale(.94); }
+  #rc .topbar .rc-retour svg { display: block; }
+  #rc .champ { flex: 1; }
+  #rc .champ::-webkit-search-cancel-button,
+  #rc .champ::-webkit-search-decoration { -webkit-appearance: none; display: none; }
+  .rc-effacer {
+    flex: none; border: none; background: none; padding: 8px 10px 8px 4px;
+    color: var(--muted); cursor: pointer;
+  }
+  .rc-effacer:active { color: var(--ink); }
+  #rc-liste { margin-top: 18px; }
+  #rc-liste li.empty { text-align: center; }
+  #rc-liste li.empty p { margin: 0 0 6px; }
+  #rc-liste li.empty p:first-of-type { color: var(--ink); font-weight: 600; }
+  #rc-liste li.empty p + p { color: var(--muted); font-size: .88rem; }
+  /* En-tête des dates : titre et nombre de séances centrés, sans pastille
+     (chaque séance garde la sienne, en face de sa date). */
+  .rc-tete { margin: 12px 0 2px; text-align: center; }
+  .rc-tete strong { display: block; font-size: 1.6rem; font-weight: 750; letter-spacing: -.03em; line-height: 1.15; }
+  .rc-tete span { display: block; margin-top: 3px; color: var(--muted); font-size: .9rem; }
+  .rc-semaine {
+    margin: 19px 2px 7px; color: var(--muted); font-size: .8rem; font-weight: 650;
+    letter-spacing: .04em; text-transform: uppercase;
+  }
+  #rc-dates .rc-semaine:first-child { margin-top: 8px; }
+  .rc-dates { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .rc-dates .r-date {
+    border-radius: 16px;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  /* La date et sa pastille au milieu de la hauteur, entre l'heure de
+     début et celle de fin ; au dépliage, la pastille remonte sur le titre. */
+  .rc-dates .r-date .cbtn { padding: 11px 14px; align-items: center; }
+  .rc-dates .r-date .cbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .rc-dates .r-date .cpoint { align-self: center; margin-top: 0; }
+  .rc-dates .r-date.open .cpoint { align-self: flex-start; margin-top: 6px; }
+  .rc-dates .r-date .m { font-weight: 600; }
+  /* Repliée, la salle n'est pas montrée : elle arrive au dépliage, avec
+     Prof / Groupe / Code et le même glissement que dans la semaine. */
+  .rc-dates .r-date:not(.open) .cinfo-salle { display: none; }

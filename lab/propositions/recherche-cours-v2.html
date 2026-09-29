@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EzHoraire — recherche d'un cours : v2</title>
+<style>
+  :root { --encre: #17191d; --doux: #626977; --trait: #e4e7ec; --fond: #f4f5f7; --accent: #2456e0; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #eceef2; color: var(--encre);
+         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+  header { max-width: 900px; margin: 0 auto; padding: 34px 22px 6px; }
+  header h1 { margin: 0 0 6px; font-size: 1.5rem; letter-spacing: -.02em; }
+  header p { margin: 0; color: var(--doux); font-size: .95rem; }
+  main { max-width: 900px; margin: 0 auto; padding: 10px 22px 60px; }
+  section { margin-top: 34px; }
+  section > h2 { margin: 0 0 4px; font-size: 1.12rem; letter-spacing: -.01em; }
+  section > p { margin: 0 0 16px; color: var(--doux); font-size: .9rem; }
+  .grille { display: flex; flex-wrap: wrap; gap: 22px; }
+  figure { margin: 0; }
+  .cadre { width: 390px; height: 780px; border-radius: 30px; background: #fff; overflow: hidden;
+           box-shadow: 0 18px 50px -22px rgba(23, 32, 68, .45), 0 0 0 1px rgba(23, 32, 68, .09); }
+  .cadre iframe { width: 100%; height: 100%; border: 0; display: block; }
+  figcaption { max-width: 390px; margin: 10px 2px 0; font-size: .9rem; line-height: 1.35; }
+  figcaption b { display: block; margin-bottom: 2px; }
+  figcaption span { color: var(--doux); }
+  .badge { display: inline-block; margin-bottom: 6px; padding: 2px 9px; border-radius: 999px;
+           background: #dfe4ee; color: #3b4354; font-size: .74rem; font-weight: 700; letter-spacing: .05em; }
+  .note { max-width: 760px; margin: 40px 0 0; padding: 16px 18px; border-radius: 14px; background: #fff;
+          box-shadow: 0 0 0 1px rgba(23, 32, 68, .08); font-size: .92rem; }
+  .note b { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Rechercher un cours — version 2</h1>
+  <p>2A : panneau plein écran. 3A : les dates du cours. Titre à côté de la pastille, nombre de séances en dessous, semaines groupées. Sans salle au milieu, sans chevron à droite. Une question reste : où mettre la salle dans les dates ?</p>
+</header>
+
+<main>
+
+<section>
+  <h2>La liste des cours (2A)</h2>
+  <p>Le mot tapé reste surligné. Chaque cours : sa pastille, son titre, puis « 12 séances ». Rien d'autre, et la ligne entière est cliquable.</p>
+  <div class="grille">
+    <figure>
+      <div class="cadre"><iframe data-doc="f-2a" title="Liste des cours"></iframe></div>
+      <figcaption><span class="badge">2A</span>
+        <b>Les cours, réduits à l'essentiel</b>
+        <span>Un appui sur la ligne ouvre les dates.</span>
+      </figcaption>
+    </figure>
+  </div>
+</section>
+
+<section>
+  <h2>Les dates du cours (3A)</h2>
+  <p>Deux finitions au choix pour la salle. Dans les deux cas : pas de salle au milieu, pas de chevron, et le classement par semaine reste.</p>
+  <div class="grille">
+
+    <figure>
+      <div class="cadre"><iframe data-doc="f-3a-sans" title="Dates sans salle"></iframe></div>
+      <figcaption><span class="badge">3A · sans salle</span>
+        <b>Jour et heures, c'est tout</b>
+        <span>La salle n'apparaît pas dans les dates (elle reste dans la semaine et la fiche du cours).</span>
+      </figcaption>
+    </figure>
+
+    <figure>
+      <div class="cadre"><iframe data-doc="f-3a-sous" title="Dates avec salle sous le jour"></iframe></div>
+      <figcaption><span class="badge">3A · salle sous le jour</span>
+        <b>La salle se range sous le jour</b>
+        <span>Une petite ligne discrète sous « Lundi 28 sept. », pour retrouver le bon local d'un coup d'œil.</span>
+      </figcaption>
+    </figure>
+
+  </div>
+</section>
+
+<p class="note"><b>À toi :</b> dis-moi « sans salle » ou « salle sous le jour » (et si tu veux un autre rangement). On garde 2A + 3A, et on décidera du bouton d'accès après.</p>
+
+</main>
+
+<!-- ---------- 2A : liste des cours ---------- -->
+<template class="tel" id="f-2a">
+  <div style="position:fixed;inset:0;background:var(--bg);z-index:60;overflow:auto">
+    <div class="wrap">
+      <div class="topbar">
+        <button class="gauche" type="button">‹ Retour</button>
+        <h1 class="title" style="font-size:1rem">Chercher un cours</h1>
+      </div>
+      <div class="champs halo" style="margin-top:6px">
+        <div class="champ-ligne">
+          <svg class="champ-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.2 4.2"/></svg>
+          <input class="champ" type="search" value="an" aria-label="Chercher un cours">
+          <button type="button" aria-label="Effacer" style="border:0;background:none;color:var(--muted);padding:8px">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          </button>
+        </div>
+      </div>
+      <p class="surnom-aide" style="margin:12px 2px 14px">2 résultats sur 7 cours · le début de n'importe quel mot suffit</p>
+      <ul class="liste">
+        <li><button type="button">
+          <span class="cpoint" style="--h:221;--v:0"></span>
+          <span class="nom"><mark>An</mark>alyse<small>12 séances</small></span>
+        </button></li>
+        <li><button type="button">
+          <span class="cpoint" style="--h:152;--v:0"></span>
+          <span class="nom"><mark>An</mark>glais<small>10 séances</small></span>
+        </button></li>
+      </ul>
+      <p class="aide" style="margin:18px 2px 0;font-size:.86rem">5 autres cours masqués — efface « an » pour tout revoir.</p>
+    </div>
+  </div>
+</template>
+
+<!-- ---------- 3A · sans salle ---------- -->
+<template class="tel" id="f-3a-sans">
+  <style>
+    .fiche-tete { display: flex; align-items: center; gap: 11px; margin: 2px 2px 2px; }
+    .fiche-tete .gros { width: 13px; height: 13px; border-radius: 50%; flex: none;
+      background: hsl(221 calc(52% - 0 * 10%) calc(52% + 0 * 7%)); }
+    .fiche-tete strong { font-size: 1.32rem; letter-spacing: -.02em; }
+    .fiche-sous { margin: 2px 2px 4px 24px; color: var(--muted); font-size: .88rem; }
+    .sep-semaine { margin: 18px 2px 6px; color: var(--muted); font-size: .8rem; font-weight: 650;
+      letter-spacing: .04em; text-transform: uppercase; }
+    .sep-semaine:first-of-type { margin-top: 14px; }
+  </style>
+  <div class="wrap">
+    <div class="topbar">
+      <button class="gauche" type="button">‹ Retour</button>
+      <h1 class="title" style="font-size:1rem">Analyse</h1>
+    </div>
+    <div class="fiche-tete"><span class="gros" aria-hidden="true"></span><strong>Analyse</strong></div>
+    <p class="fiche-sous">12 séances</p>
+    <p class="sep-semaine">Semaine 1 · 28 sept. – 2 oct.</p>
+    <ul class="days" style="margin-top:0">
+      <li class="day"><button type="button">
+        <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+        <span class="dsum busy">08h15 → 10h15</span></button></li>
+      <li class="day"><button type="button">
+        <span class="dname"><strong>Vendredi</strong><span class="ddate">2 oct.</span></span>
+        <span class="dsum busy">10h30 → 12h30</span></button></li>
+    </ul>
+    <p class="sep-semaine">Semaine 2 · 5 – 9 oct.</p>
+    <ul class="days" style="margin-top:0">
+      <li class="day"><button type="button">
+        <span class="dname"><strong>Lundi</strong><span class="ddate">5 oct.</span></span>
+        <span class="dsum busy">08h15 → 10h15</span></button></li>
+      <li class="day"><button type="button">
+        <span class="dname"><strong>Vendredi</strong><span class="ddate">9 oct.</span></span>
+        <span class="dsum busy">10h30 → 12h30</span></button></li>
+    </ul>
+    <p class="sep-semaine">Semaine 3 · 12 – 16 oct.</p>
+    <ul class="days" style="margin-top:0">
+      <li class="day"><button type="button">
+        <span class="dname"><strong>Lundi</strong><span class="ddate">12 oct.</span></span>
+        <span class="dsum busy">08h15 → 10h15</span></button></li>
+    </ul>
+    <p class="aide" style="text-align:center;margin:22px 0 0;font-size:.85rem">4 autres séances plus loin dans l'année…</p>
+  </div>
+</template>
+
+<!-- ---------- 3A · salle sous le jour ---------- -->
+<template class="tel" id="f-3a-sous">
+  <style>
+    .fiche-tete { display: flex; align-items: center; gap: 11px; margin: 2px 2px 2px; }
+    .fiche-tete .gros { width: 13px; height: 13px; border-radius: 50%; flex: none;
+      background: hsl(221 calc(52% - 0 * 10%) calc(52% + 0 * 7%)); }
+    .fiche-tete strong { font-size: 1.32rem; letter-spacing: -.02em; }
+    .fiche-sous { margin: 2px 2px 4px 24px; color: var(--muted); font-size: .88rem; }
+    .sep-semaine { margin: 18px 2px 6px; color: var(--muted); font-size: .8rem; font-weight: 650;
+      letter-spacing: .04em; text-transform: uppercase; }
+    .sep-semaine:first-of-type { margin-top: 14px; }
+    .salle-jour { display: block; margin-top: 3px; color: var(--muted); font-size: .8rem;
+      max-width: 150px; line-height: 1.25; }
+  </style>
+  <div class="wrap">
+    <div class="topbar">
+      <button class="gauche" type="button">‹ Retour</button>
+      <h1 class="title" style="font-size:1rem">Analyse</h1>
+    </div>
+    <div class="fiche-tete"><span class="gros" aria-hidden="true"></span><strong>Analyse</strong></div>
+    <p class="fiche-sous">12 séances</p>
+    <p class="sep-semaine">Semaine 1 · 28 sept. – 2 oct.</p>
+    <ul class="days" style="margin-top:0">
+      <li class="day"><button type="button">
+        <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span><span class="salle-jour">Grand auditoire 1/14, bâtiment Z</span></span>
+        <span class="dsum busy">08h15 → 10h15</span></button></li>
+      <li class="day"><button type="button">
+        <span class="dname"><strong>Vendredi</strong><span class="ddate">2 oct.</span><span class="salle-jour">1/14</span></span>
+        <span class="dsum busy">10h30 → 12h30</span></button></li>
+    </ul>
+    <p class="sep-semaine">Semaine 2 · 5 – 9 oct.</p>
+    <ul class="days" style="margin-top:0">
+      <li class="day"><button type="button">
+        <span class="dname"><strong>Lundi</strong><span class="ddate">5 oct.</span><span class="salle-jour">Grand auditoire 1/14, bâtiment Z</span></span>
+        <span class="dsum busy">08h15 → 10h15</span></button></li>
+      <li class="day"><button type="button">
+        <span class="dname"><strong>Vendredi</strong><span class="ddate">9 oct.</span><span class="salle-jour">1/14</span></span>
+        <span class="dsum busy">10h30 → 12h30</span></button></li>
+    </ul>
+    <p class="aide" style="text-align:center;margin:22px 0 0;font-size:.85rem">8 autres séances plus loin dans l'année…</p>
+  </div>
+</template>
+
+<script>
+  Array.prototype.forEach.call(document.querySelectorAll("iframe[data-doc]"), function (f) {
+    var t = document.getElementById(f.getAttribute("data-doc"));
+    f.setAttribute("srcdoc",
+      "<!doctype html><html lang='fr' data-apparence='clair'><head><meta charset='utf-8'>" +
+      "<link rel='stylesheet' href='/assets/css/app.css'>" +
+      "<style>body{min-height:100%}</style></head><body>" +
+      t.innerHTML + "</body></html>");
+  });
+</script>
+</body>
+</html>

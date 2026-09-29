@@ -434,6 +434,11 @@ les sources. `logos/ecoles/` est déployé, `logos/da/` et `logos/ez/`
 - `assets/js/export_ics.js` — export d'un horaire vers une application
   d'agenda (fichier iCalendar fabriqué sur l'appareil, sans serveur ;
   fonctions pures) ; tests : `node --test test_export_ics.mjs`.
+- `assets/js/recherche.js` — recherche d'un cours dans l'horaire affiché :
+  filtrage par le début de n'importe quel mot de l'intitulé, séances
+  classées par semaine (fonctions pures) ; tests :
+  `node --test test_recherche.mjs`. L'écran s'ouvre par
+  `EZH_RECHERCHER_COURS()` en attendant le bouton d'accès définitif.
 - `assets/js/suivi.js` — mesure anonyme du parcours (arrivée → clic →
   compte → horaire) et des frictions ; voir le dashboard admin.
 - `assets/js/dashboard.js`, `assets/js/motdepasse.js` — les scripts des

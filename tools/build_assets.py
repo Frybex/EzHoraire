@@ -51,6 +51,7 @@ JS = {
         "assets/js/fusion.js",
         "assets/js/export_ics.js",
         "assets/js/semaine.js",
+        "assets/js/recherche.js",
         "assets/js/app.js",
     ],
     "favicon.js": ["assets/js/favicon.js"],

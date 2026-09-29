@@ -44,13 +44,13 @@
 <link rel="manifest" href="/assets/icons/site.webmanifest">
 <!-- Feuille de style au-dessus des scripts : elle démarre avant tout
      texte exécuté, le premier rendu n'attend que elle. -->
-<link rel="stylesheet" href="/assets/dist/app.91fddb99aa.css">
+<link rel="stylesheet" href="/assets/dist/app.905d71c34b.css">
 <!-- Un seul bundle, découvert tôt et exécuté après le parse : le premier
      rendu ne dépend que de la feuille de style. Le SDK Supabase, lui,
      n'est plus téléchargé d'office : l'app le demande au premier besoin
      (clic de connexion, retour OAuth ou session déjà enregistrée). -->
-<link rel="preload" href="/assets/dist/app.8d4433b118.js" as="script">
-<script defer src="/assets/dist/app.8d4433b118.js"></script>
+<link rel="preload" href="/assets/dist/app.757557af5e.js" as="script">
+<script defer src="/assets/dist/app.757557af5e.js"></script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
 {"@type":"Organization","@id":"https://www.ezhoraire.be/#org","name":"EzHoraire","alternateName":["Ez Horaire","ezhoraire","Easy Horaire","EzHoraire Belgique"],"url":"https://www.ezhoraire.be/","logo":{"@type":"ImageObject","url":"https://www.ezhoraire.be/icon-512.png","width":512,"height":512},"email":"contact@ezhoraire.be","areaServed":{"@type":"Country","name":"Belgique"},"description":"Application et plateforme gratuite de consultation des horaires d'étudiants en Belgique (HEH, UMONS, Condorcet, HELB, ULB, UCLouvain)."},
@@ -666,6 +666,41 @@ try {
 
 <div id="pop" role="dialog" aria-label="Détail du cours"></div>
 
+<!-- Rechercher un cours : panneau plein écran. On tape le début de
+     n'importe quel mot de l'intitulé, la liste se réduit ; un cours ouvert
+     montre ses séances classées par semaine, au format des jours de la
+     semaine (heures empilées, pastille, infos au clic). -->
+<div id="rc" role="dialog" aria-modal="true" aria-label="Chercher un cours" hidden>
+  <div class="wrap" id="rc-vue-liste">
+    <div class="topbar">
+      <button class="rc-retour" id="rc-retour" type="button" aria-label="Fermer la recherche">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.25 5.5 8.75 12l6.5 6.5"/></svg>
+      </button>
+      <h1 class="title">Chercher un cours</h1>
+    </div>
+    <div class="champs halo">
+      <div class="champ-ligne">
+        <svg class="champ-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.2 4.2"/></svg>
+        <input class="champ" id="rc-champ" type="search" maxlength="80" autocomplete="off" autocorrect="off"
+               autocapitalize="off" spellcheck="false" placeholder="Nom du cours" aria-label="Chercher un cours">
+        <button type="button" class="rc-effacer" id="rc-effacer" aria-label="Effacer la recherche" hidden>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </div>
+    </div>
+    <ul class="liste" id="rc-liste"></ul>
+  </div>
+  <div class="wrap" id="rc-vue-dates" hidden>
+    <div class="topbar">
+      <button class="rc-retour" id="rc-dates-retour" type="button" aria-label="Retour à la liste des cours">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.25 5.5 8.75 12l6.5 6.5"/></svg>
+      </button>
+    </div>
+    <div class="rc-tete"><strong id="rc-titre"></strong><span id="rc-nb"></span></div>
+    <div id="rc-dates"></div>
+  </div>
+</div>
+
 <div id="feuille" role="dialog" aria-label="Mon compte et mes horaires">
   <div class="grabber-zone" aria-hidden="true"><span class="grabber"></span></div>
   <div class="reg-compte" id="reg-compte">
@@ -767,13 +802,15 @@ try {
       <div id="ech-choix-liste"></div>
       <!-- Devoir sans cours (ou hors des heures de cours) : on choisit
            l'heure dans la journée, l'échéance se range sous la journée. -->
-      <div class="ech-choix-autre" id="ech-choix-autre">
+      <div class="ech-choix-autre heure-vierge" id="ech-choix-autre">
         <span class="ico" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="9"/><path d="M12 7.5v5l3 2"/></svg></span>
         <span class="ctxt"><span class="m">À une autre heure</span>
         <span class="s">Dans la journée</span></span>
-        <input type="time" id="ech-choix-heure" aria-label="Heure du devoir ou de l'examen dans la journée">
+        <input type="text" id="ech-choix-heure" inputmode="numeric" autocomplete="off" autocorrect="off"
+          autocapitalize="off" spellcheck="false" value="00:00"
+          aria-label="Heure du devoir ou de l'examen dans la journée">
       </div>
       <div class="ech-choix-valider-zone" id="ech-choix-valider-zone">
         <svg class="ech-valider-conge" viewBox="0 0 14 14" aria-hidden="true">

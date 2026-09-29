@@ -1,0 +1,608 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EzHoraire — recherche d'un cours : propositions</title>
+<style>
+  :root { --encre: #17191d; --doux: #626977; --trait: #e4e7ec; --fond: #f4f5f7; --accent: #2456e0; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #eceef2; color: var(--encre);
+         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+  header { max-width: 1320px; margin: 0 auto; padding: 34px 22px 6px; }
+  header h1 { margin: 0 0 6px; font-size: 1.5rem; letter-spacing: -.02em; }
+  header p { margin: 0; color: var(--doux); font-size: .95rem; }
+  main { max-width: 1320px; margin: 0 auto; padding: 10px 22px 60px; }
+  section { margin-top: 34px; }
+  section > h2 { margin: 0 0 4px; font-size: 1.12rem; letter-spacing: -.01em; }
+  section > p { margin: 0 0 16px; color: var(--doux); font-size: .9rem; }
+  .grille { display: flex; flex-wrap: wrap; gap: 22px; }
+  figure { margin: 0; }
+  .cadre { width: 390px; height: 780px; border-radius: 30px; background: #fff; overflow: hidden;
+           box-shadow: 0 18px 50px -22px rgba(23, 32, 68, .45), 0 0 0 1px rgba(23, 32, 68, .09); }
+  .cadre iframe { width: 100%; height: 100%; border: 0; display: block; }
+  figcaption { max-width: 390px; margin: 10px 2px 0; font-size: .9rem; line-height: 1.35; }
+  figcaption b { display: block; margin-bottom: 2px; }
+  figcaption span { color: var(--doux); }
+  .badge { display: inline-block; margin-bottom: 6px; padding: 2px 9px; border-radius: 999px;
+           background: #dfe4ee; color: #3b4354; font-size: .74rem; font-weight: 700; letter-spacing: .05em; }
+  .note { max-width: 760px; margin: 40px 0 0; padding: 16px 18px; border-radius: 14px; background: #fff;
+          box-shadow: 0 0 0 1px rgba(23, 32, 68, .08); font-size: .92rem; }
+  .note b { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Rechercher un cours</h1>
+  <p>Trois choix à faire. Les écrans reprennent le vrai style de l'app (mêmes cartes, mêmes couchants). Dis-moi les lettres qui te plaisent : par exemple « 1B, 2A ».</p>
+</header>
+
+<main>
+
+<!-- ================= 1. ACCÈS ================= -->
+<section>
+  <h2>1 · Où ouvrir la recherche ?</h2>
+  <p>Les horaires de test affichés viennent de la simulation : Analyse, Anglais, Bases de données…</p>
+  <div class="grille">
+
+    <figure>
+      <div class="cadre"><iframe data-doc="f-acces-barre" title="Loupe dans la barre de semaine"></iframe></div>
+      <figcaption><span class="badge">1A</span>
+        <b>Une loupe dans la barre de semaine</b>
+        <span>Un bouton rond, à droite des flèches — au même endroit que « Échéance » sur ordinateur. Toujours sous les yeux, un appui l'ouvre.</span>
+      </figcaption>
+    </figure>
+
+    <figure>
+      <div class="cadre"><iframe data-doc="f-acces-feuille" title="Entrée dans la feuille Mon compte"></iframe></div>
+      <figcaption><span class="badge">1B</span>
+        <b>Une entrée dans la feuille « Mon compte »</b>
+        <span>« Chercher un cours » se range avec « Ajouter un horaire », dans le menu qui monte du bas. Rien de nouveau sur l'écran de l'horaire.</span>
+      </figcaption>
+    </figure>
+
+    <figure>
+      <div class="cadre"><iframe data-doc="f-acces-deux" title="Les deux"></iframe></div>
+      <figcaption><span class="badge">1C</span>
+        <b>Les deux</b>
+        <span>La loupe reste dans la barre, et l'entrée existe aussi dans la feuille. Ici, la loupe prend la forme d'une pastille « Rechercher » à côté de « Cette semaine ».</span>
+      </figcaption>
+    </figure>
+
+  </div>
+</section>
+
+<!-- ================= 2. LISTE ================= -->
+<section>
+  <h2>2 · Comment afficher la liste des cours ?</h2>
+  <p>Dans les trois cas : on tape « an », la liste se réduit à <b>Analyse</b> et <b>Anglais</b>. Taper « obj » trouverait « Programmation orientée <b>obj</b>et » : le début de n'importe quel mot suffit.</p>
+  <div class="grille">
+
+    <figure>
+      <div class="cadre"><iframe data-doc="f-liste-plein" title="Panneau plein écran"></iframe></div>
+      <figcaption><span class="badge">2A</span>
+        <b>Panneau plein écran</b>
+        <span>La recherche ouvre son propre écran, avec le champ en haut et tous les cours dessous. Rien d'autre ne bouge tant qu'on n'a pas choisi.</span>
+      </figcaption>
+    </figure>
+
+    <figure>
+      <div class="cadre"><iframe data-doc="f-liste-deroulant" title="Menu déroulant sous le champ"></iframe></div>
+      <figcaption><span class="badge">2B</span>
+        <b>Menu déroulant sous le champ</b>
+        <span>Le champ s'ajoute sous la barre de semaine, la liste se déplie par-dessus les jours. On garde l'horaire derrière, un appui à côté referme.</span>
+      </figcaption>
+    </figure>
+
+    <figure>
+      <div class="cadre"><iframe data-doc="f-liste-feuille" title="Feuille qui monte du bas"></iframe></div>
+      <figcaption><span class="badge">2C</span>
+        <b>Feuille qui monte du bas</b>
+        <span>Même geste que « Mes horaires » : elle se tire vers le bas pour fermer. La liste défile sous les résultats.</span>
+      </figcaption>
+    </figure>
+
+  </div>
+</section>
+
+<!-- ================= 3. LES DATES ================= -->
+<section>
+  <h2>3 · Un cours choisi : ses dates</h2>
+  <p>Le clic ouvre les séances du cours, au même format que les jours de la semaine. Chaque ligne ramène à la semaine, jour déroulé.</p>
+  <div class="grille">
+
+    <figure>
+      <div class="cadre"><iframe data-doc="f-dates" title="Les dates d'un cours"></iframe></div>
+      <figcaption><span class="badge">3A</span>
+        <b>Les dates du cours</b>
+        <span>Une ligne par séance : jour, date, heures, salle. Les semaines séparent les groupes, et la pastille reprend la couleur du cours.</span>
+      </figcaption>
+    </figure>
+
+    <figure>
+      <div class="cadre"><iframe data-doc="f-saut" title="Retour dans la semaine"></iframe></div>
+      <figcaption><span class="badge">3B</span>
+        <b>Le saut dans l'horaire</b>
+        <span>Un appui sur une date affiche la semaine et déroule le jour, le cours mis en avant. « ‹ Analyse » ramène aux dates.</span>
+      </figcaption>
+    </figure>
+
+    <figure>
+      <div class="cadre"><iframe data-doc="f-dates-vide" title="Recherche sans résultat"></iframe></div>
+      <figcaption><span class="badge">3C</span>
+        <b>Quand rien ne correspond</b>
+        <span>Un mot simple : « Aucun cours ne correspond », et la suggestion de réessayer avec un autre mot du titre.</span>
+      </figcaption>
+    </figure>
+
+  </div>
+</section>
+
+<p class="note"><b>À toi :</b> les lettres choisies (ex. « 1B, 2A, 3A »), et si tu veux voir autre chose (une variante de la pastille, une place différente, une autre forme de liste). Je code ensuite la version choisie.</p>
+
+</main>
+
+<!-- =========================================================
+     Documents des cadres
+     ========================================================= -->
+
+<!-- ---------- 1A : loupe dans la barre ---------- -->
+<template class="tel" id="f-acces-barre">
+  <div class="wrap">
+    <div class="topbar">
+      <button class="gauche" type="button">Réglages</button>
+      <h1 class="title"><button type="button">Ez<span>Horaire</span></button></h1>
+      <button class="droite" type="button">LE</button>
+    </div>
+    <h2 class="sr-seul">Ton horaire</h2>
+    <div class="week">
+      <button class="nav halo" type="button" aria-label="Semaine précédente" disabled>
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.25 5.5 8.75 12l6.5 6.5"/></svg>
+      </button>
+      <div class="cur"><strong>Semaine 1</strong><span>28 sept. – 2 oct. 2026</span></div>
+      <button class="nav halo" type="button" aria-label="Semaine suivante">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.75 5.5 15.25 12l-6.5 6.5"/></svg>
+      </button>
+      <button class="nav halo" type="button" aria-label="Chercher un cours" title="Chercher un cours" style="color:var(--accent)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.2 4.2"/></svg>
+      </button>
+    </div>
+    <button class="thisweek halo" type="button">Cette semaine</button>
+    <ul class="days">
+      <li class="day">
+        <button type="button"><span class="day-ech-slot" aria-hidden="true"></span>
+          <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+          <span class="dsum busy">08h15 → 12h30</span><span class="day-ech-slot" aria-hidden="true"></span></button>
+      </li>
+      <li class="day">
+        <button type="button"><span class="day-ech-slot" aria-hidden="true"></span>
+          <span class="dname"><strong>Mardi</strong><span class="ddate">29 sept.</span></span>
+          <span class="dsum busy">08h15 → 15h30</span><span class="day-ech-slot" aria-hidden="true"></span></button>
+      </li>
+      <li class="day">
+        <button type="button"><span class="day-ech-slot" aria-hidden="true"></span>
+          <span class="dname"><strong>Mercredi</strong><span class="ddate">30 sept.</span></span>
+          <span class="dsum busy">08h15 → 15h30</span><span class="day-ech-slot" aria-hidden="true"></span></button>
+      </li>
+      <li class="day">
+        <button type="button"><span class="day-ech-slot" aria-hidden="true"></span>
+          <span class="dname"><strong>Jeudi</strong><span class="ddate">1 oct.</span></span>
+          <span class="dsum busy">09h00 → 12h00</span><span class="day-ech-slot" aria-hidden="true"></span></button>
+      </li>
+      <li class="day">
+        <button type="button"><span class="day-ech-slot" aria-hidden="true"></span>
+          <span class="dname"><strong>Vendredi</strong><span class="ddate">2 oct.</span></span>
+          <span class="dsum busy">08h15 → 12h30</span><span class="day-ech-slot" aria-hidden="true"></span></button>
+      </li>
+    </ul>
+  </div>
+</template>
+
+<!-- ---------- 1B : entrée dans la feuille ---------- -->
+<template class="tel" id="f-acces-feuille" data-body="sheet-ouverte">
+  <div class="wrap">
+    <div class="topbar">
+      <button class="gauche" type="button">Réglages</button>
+      <h1 class="title"><button type="button">Ez<span>Horaire</span></button></h1>
+      <button class="droite" type="button">LE</button>
+    </div>
+    <div class="week">
+      <button class="nav halo" type="button" aria-label="Semaine précédente" disabled>
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.25 5.5 8.75 12l6.5 6.5"/></svg>
+      </button>
+      <div class="cur"><strong>Semaine 1</strong><span>28 sept. – 2 oct. 2026</span></div>
+      <button class="nav halo" type="button" aria-label="Semaine suivante">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.75 5.5 15.25 12l-6.5 6.5"/></svg>
+      </button>
+    </div>
+    <button class="thisweek halo" type="button">Cette semaine</button>
+    <ul class="days">
+      <li class="day"><button type="button"><span class="day-ech-slot" aria-hidden="true"></span>
+        <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+        <span class="dsum busy">08h15 → 12h30</span><span class="day-ech-slot" aria-hidden="true"></span></button></li>
+    </ul>
+  </div>
+  <div id="feuille" class="visible" style="visibility:visible">
+    <div class="grabber-zone" aria-hidden="true"><span class="grabber"></span></div>
+    <div class="reg-compte">
+      <span class="avatar grand">LE</span>
+      <div class="reg-qui"><strong>Léa Exemple</strong><span>Compte Google</span></div>
+      <button class="dots" type="button" aria-label="Options du compte">⋮</button>
+    </div>
+    <button class="btn-ajout halo" type="button" style="margin:12px 0 2px;color:var(--accent)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" aria-hidden="true" style="color:inherit"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.2 4.2"/></svg>
+      Chercher un cours
+    </button>
+    <p class="surnom-aide" style="text-align:center">Retrouver un cours et toutes ses dates</p>
+    <h2 class="reg-section">Mes horaires</h2>
+    <button class="btn-ajout halo" type="button" style="margin-bottom:10px">
+      <span class="sigle" style="width:34px;height:34px;border-radius:9px;font-size:.68rem">HEH</span>
+      Bac 2 informatique
+    </button>
+    <button class="btn-ajout halo" type="button">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      Ajouter un horaire
+    </button>
+  </div>
+</template>
+
+<!-- ---------- 1C : les deux ---------- -->
+<template class="tel" id="f-acces-deux" data-body="sheet-ouverte">
+  <div class="wrap">
+    <div class="topbar">
+      <button class="gauche" type="button">Réglages</button>
+      <h1 class="title"><button type="button">Ez<span>Horaire</span></button></h1>
+      <button class="droite" type="button">LE</button>
+    </div>
+    <div class="week">
+      <button class="nav halo" type="button" aria-label="Semaine précédente" disabled>
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.25 5.5 8.75 12l6.5 6.5"/></svg>
+      </button>
+      <div class="cur"><strong>Semaine 1</strong><span>28 sept. – 2 oct. 2026</span></div>
+      <button class="nav halo" type="button" aria-label="Semaine suivante">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.75 5.5 15.25 12l-6.5 6.5"/></svg>
+      </button>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:center;margin:0 0 12px">
+      <button class="thisweek halo" type="button" style="margin:0">Cette semaine</button>
+      <button class="thisweek halo" type="button" style="margin:0;color:var(--accent)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true" style="vertical-align:-2px;margin-right:5px"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.2 4.2"/></svg>Rechercher
+      </button>
+    </div>
+  </div>
+  <div id="feuille" class="visible" style="visibility:visible">
+    <div class="grabber-zone" aria-hidden="true"><span class="grabber"></span></div>
+    <div class="reg-compte">
+      <span class="avatar grand">LE</span>
+      <div class="reg-qui"><strong>Léa Exemple</strong><span>Compte Google</span></div>
+      <button class="dots" type="button" aria-label="Options du compte">⋮</button>
+    </div>
+    <button class="btn-ajout halo" type="button" style="margin:12px 0 2px;color:var(--accent)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" aria-hidden="true" style="color:inherit"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.2 4.2"/></svg>
+      Chercher un cours
+    </button>
+    <p class="surnom-aide" style="text-align:center">Retrouver un cours et toutes ses dates</p>
+    <h2 class="reg-section">Mes horaires</h2>
+    <button class="btn-ajout halo" type="button" style="margin-bottom:10px">
+      <span class="sigle" style="width:34px;height:34px;border-radius:9px;font-size:.68rem">HEH</span>
+      Bac 2 informatique
+    </button>
+  </div>
+</template>
+
+<!-- ---------- 2A : panneau plein écran ---------- -->
+<template class="tel" id="f-liste-plein">
+  <div style="position:fixed;inset:0;background:var(--bg);z-index:60;overflow:auto">
+    <div class="wrap">
+      <div class="topbar">
+        <button class="gauche" type="button">‹ Retour</button>
+        <h1 class="title" style="font-size:1rem">Chercher un cours</h1>
+      </div>
+      <div class="champs halo" style="margin-top:6px">
+        <div class="champ-ligne">
+          <svg class="champ-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.2 4.2"/></svg>
+          <input class="champ" type="search" value="an" aria-label="Chercher un cours">
+          <button type="button" aria-label="Effacer" style="border:0;background:none;color:var(--muted);padding:8px">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          </button>
+        </div>
+      </div>
+      <p class="surnom-aide" style="margin:12px 2px 14px">2 résultats sur 7 cours · le début de n'importe quel mot suffit</p>
+      <ul class="liste">
+        <li><button type="button">
+          <span class="cpoint" style="--h:221;--v:0"></span>
+          <span class="nom"><mark>An</mark>alyse<small>Lundi 28 sept. · 12 séances</small></span>
+          <span class="chev"></span>
+        </button></li>
+        <li><button type="button">
+          <span class="cpoint" style="--h:152;--v:0"></span>
+          <span class="nom"><mark>An</mark>glais<small>Mardi 29 sept. · 10 séances</small></span>
+          <span class="chev"></span>
+        </button></li>
+      </ul>
+      <p class="aide" style="margin:18px 2px 0;font-size:.86rem">5 autres cours masqués — efface « an » pour tout revoir.</p>
+    </div>
+  </div>
+</template>
+
+<!-- ---------- 2B : menu déroulant ---------- -->
+<template class="tel" id="f-liste-deroulant">
+  <div class="wrap">
+    <div class="topbar">
+      <button class="gauche" type="button">Réglages</button>
+      <h1 class="title"><button type="button">Ez<span>Horaire</span></button></h1>
+      <button class="droite" type="button">LE</button>
+    </div>
+    <div class="week">
+      <button class="nav halo" type="button" aria-label="Semaine précédente" disabled>
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.25 5.5 8.75 12l6.5 6.5"/></svg>
+      </button>
+      <div class="cur"><strong>Semaine 1</strong><span>28 sept. – 2 oct. 2026</span></div>
+      <button class="nav halo" type="button" aria-label="Semaine suivante">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.75 5.5 15.25 12l-6.5 6.5"/></svg>
+      </button>
+    </div>
+    <button class="thisweek halo" type="button">Cette semaine</button>
+    <div style="position:relative;z-index:5">
+      <div class="champs halo">
+        <div class="champ-ligne">
+          <svg class="champ-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.2 4.2"/></svg>
+          <input class="champ" type="search" value="an" aria-label="Chercher un cours">
+          <button type="button" aria-label="Effacer" style="border:0;background:none;color:var(--muted);padding:8px">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="ppop" style="left:0;right:0;top:calc(100% + 6px);min-width:0;transform-origin:top center;z-index:4;padding:8px">
+        <button class="pop-act" type="button">
+          <span class="cpoint" style="--h:221;--v:0;margin-top:0"></span>
+          <span style="flex:1;min-width:0"><mark>An</mark>alyse<small style="display:block;color:var(--muted);font-weight:400;font-size:.82rem">Lundi 28 sept. · 12 séances</small></span>
+          <span class="chev" style="transform:rotate(-45deg);opacity:.5"></span>
+        </button>
+        <button class="pop-act" type="button">
+          <span class="cpoint" style="--h:152;--v:0;margin-top:0"></span>
+          <span style="flex:1;min-width:0"><mark>An</mark>glais<small style="display:block;color:var(--muted);font-weight:400;font-size:.82rem">Mardi 29 sept. · 10 séances</small></span>
+          <span class="chev" style="transform:rotate(-45deg);opacity:.5"></span>
+        </button>
+      </div>
+    </div>
+    <ul class="days">
+      <li class="day"><button type="button"><span class="day-ech-slot" aria-hidden="true"></span>
+        <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+        <span class="dsum busy">08h15 → 12h30</span><span class="day-ech-slot" aria-hidden="true"></span></button></li>
+      <li class="day"><button type="button"><span class="day-ech-slot" aria-hidden="true"></span>
+        <span class="dname"><strong>Mardi</strong><span class="ddate">29 sept.</span></span>
+        <span class="dsum busy">08h15 → 15h30</span><span class="day-ech-slot" aria-hidden="true"></span></button></li>
+      <li class="day"><button type="button"><span class="day-ech-slot" aria-hidden="true"></span>
+        <span class="dname"><strong>Mercredi</strong><span class="ddate">30 sept.</span></span>
+        <span class="dsum busy">08h15 → 15h30</span><span class="day-ech-slot" aria-hidden="true"></span></button></li>
+      <li class="day"><button type="button"><span class="day-ech-slot" aria-hidden="true"></span>
+        <span class="dname"><strong>Jeudi</strong><span class="ddate">1 oct.</span></span>
+        <span class="dsum busy">09h00 → 12h00</span><span class="day-ech-slot" aria-hidden="true"></span></button></li>
+    </ul>
+  </div>
+</template>
+
+<!-- ---------- 2C : feuille ---------- -->
+<template class="tel" id="f-liste-feuille" data-body="sheet-ouverte">
+  <div class="wrap">
+    <div class="topbar">
+      <button class="gauche" type="button">Réglages</button>
+      <h1 class="title"><button type="button">Ez<span>Horaire</span></button></h1>
+      <button class="droite" type="button">LE</button>
+    </div>
+    <div class="week">
+      <button class="nav halo" type="button" aria-label="Semaine précédente" disabled>
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.25 5.5 8.75 12l6.5 6.5"/></svg>
+      </button>
+      <div class="cur"><strong>Semaine 1</strong><span>28 sept. – 2 oct. 2026</span></div>
+      <button class="nav halo" type="button" aria-label="Semaine suivante">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.75 5.5 15.25 12l-6.5 6.5"/></svg>
+      </button>
+    </div>
+    <button class="thisweek halo" type="button">Cette semaine</button>
+    <ul class="days">
+      <li class="day"><button type="button"><span class="day-ech-slot" aria-hidden="true"></span>
+        <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+        <span class="dsum busy">08h15 → 12h30</span><span class="day-ech-slot" aria-hidden="true"></span></button></li>
+    </ul>
+  </div>
+  <div id="feuille" class="visible" style="visibility:visible;height:78%">
+    <div class="grabber-zone" aria-hidden="true"><span class="grabber"></span></div>
+    <h2 style="margin:2px 0 10px 2px">Chercher un cours</h2>
+    <div class="champs halo">
+      <div class="champ-ligne">
+        <svg class="champ-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.2 4.2"/></svg>
+        <input class="champ" type="search" value="an" aria-label="Chercher un cours">
+        <button type="button" aria-label="Effacer" style="border:0;background:none;color:var(--muted);padding:8px">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </div>
+    </div>
+    <ul class="liste" style="margin-top:14px">
+      <li><button type="button">
+        <span class="cpoint" style="--h:221;--v:0"></span>
+        <span class="nom"><mark>An</mark>alyse<small>Lundi 28 sept. · 12 séances</small></span>
+        <span class="chev"></span>
+      </button></li>
+      <li><button type="button">
+        <span class="cpoint" style="--h:152;--v:0"></span>
+        <span class="nom"><mark>An</mark>glais<small>Mardi 29 sept. · 10 séances</small></span>
+        <span class="chev"></span>
+      </button></li>
+    </ul>
+  </div>
+</template>
+
+<!-- ---------- 3A : les dates ---------- -->
+<template class="tel" id="f-dates">
+  <style>
+    .fiche-tete { display: flex; align-items: center; gap: 12px; margin: 2px 2px 4px; }
+    .fiche-tete .gros { width: 13px; height: 13px; border-radius: 50%;
+      background: hsl(221 calc(52% - 0 * 10%) calc(52% + 0 * 7%)); }
+    .fiche-tete strong { font-size: 1.35rem; letter-spacing: -.02em; }
+    .fiche-tete small { display: block; color: var(--muted); font-weight: 400; font-size: .86rem; }
+    .sep-semaine { margin: 16px 2px 6px; color: var(--muted); font-size: .8rem; font-weight: 650;
+      letter-spacing: .04em; text-transform: uppercase; }
+    .sep-semaine:first-child { margin-top: 4px; }
+    .dmid { flex: 1; min-width: 0; color: var(--muted); font-size: .85rem;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  </style>
+  <div class="wrap">
+    <div class="topbar">
+      <button class="gauche" type="button">‹ Retour</button>
+      <h1 class="title" style="font-size:1rem">Analyse</h1>
+    </div>
+    <div class="fiche-tete">
+      <span class="gros" aria-hidden="true"></span>
+      <div><strong>Analyse</strong><small>12 séances · 2 par semaine</small></div>
+    </div>
+    <p class="sep-semaine">Semaine 1 · 28 sept. – 2 oct.</p>
+    <ul class="days" style="margin-top:0">
+      <li class="day"><button type="button"><span class="day-ech-slot" aria-hidden="true"></span>
+        <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+        <span class="dmid">Grand auditoire 1/14, bâtiment Z</span>
+        <span class="dsum busy">08h15 → 10h15</span>
+        <span class="chev"></span></button></li>
+      <li class="day"><button type="button"><span class="day-ech-slot" aria-hidden="true"></span>
+        <span class="dname"><strong>Vendredi</strong><span class="ddate">2 oct.</span></span>
+        <span class="dmid">1/14</span>
+        <span class="dsum busy">10h30 → 12h30</span>
+        <span class="chev"></span></button></li>
+    </ul>
+    <p class="sep-semaine">Semaine 2 · 5 – 9 oct.</p>
+    <ul class="days" style="margin-top:0">
+      <li class="day"><button type="button"><span class="day-ech-slot" aria-hidden="true"></span>
+        <span class="dname"><strong>Lundi</strong><span class="ddate">5 oct.</span></span>
+        <span class="dmid">Grand auditoire 1/14, bâtiment Z</span>
+        <span class="dsum busy">08h15 → 10h15</span>
+        <span class="chev"></span></button></li>
+      <li class="day"><button type="button"><span class="day-ech-slot" aria-hidden="true"></span>
+        <span class="dname"><strong>Vendredi</strong><span class="ddate">9 oct.</span></span>
+        <span class="dmid">1/14</span>
+        <span class="dsum busy">10h30 → 12h30</span>
+        <span class="chev"></span></button></li>
+    </ul>
+    <p class="sep-semaine">Semaine 3 · 12 – 16 oct.</p>
+    <ul class="days" style="margin-top:0">
+      <li class="day"><button type="button"><span class="day-ech-slot" aria-hidden="true"></span>
+        <span class="dname"><strong>Lundi</strong><span class="ddate">12 oct.</span></span>
+        <span class="dmid">Grand auditoire 1/14, bâtiment Z</span>
+        <span class="dsum busy">08h15 → 10h15</span>
+        <span class="chev"></span></button></li>
+    </ul>
+    <p class="aide" style="text-align:center;margin:22px 0 0;font-size:.85rem">4 autres séances plus loin dans l'année…</p>
+  </div>
+</template>
+
+<!-- ---------- 3B : le saut dans l'horaire ---------- -->
+<template class="tel" id="f-saut">
+  <style>
+    .retour-rech { display: inline-flex; align-items: center; gap: 6px; margin: 0 2px 10px;
+      padding: 5px 12px; border-radius: 999px; background: var(--accent-soft); color: var(--accent);
+      font-size: .84rem; font-weight: 600; }
+    .toast { position: fixed; left: 16px; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom));
+      z-index: 40; display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 14px;
+      background: var(--relief-haut); box-shadow: inset 0 0 0 1px var(--line), 0 16px 40px -18px rgba(0,0,0,.5);
+      font-size: .88rem; }
+  </style>
+  <div class="wrap">
+    <div class="topbar">
+      <button class="gauche" type="button">Réglages</button>
+      <h1 class="title"><button type="button">Ez<span>Horaire</span></button></h1>
+      <button class="droite" type="button">LE</button>
+    </div>
+    <span class="retour-rech">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.25 5.5 8.75 12l6.5 6.5"/></svg>
+      Analyse · 12 séances
+    </span>
+    <div class="week">
+      <button class="nav halo" type="button" aria-label="Semaine précédente">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.25 5.5 8.75 12l6.5 6.5"/></svg>
+      </button>
+      <div class="cur"><strong>Semaine 2</strong><span>5 – 9 oct. 2026</span></div>
+      <button class="nav halo" type="button" aria-label="Semaine suivante">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.75 5.5 15.25 12l-6.5 6.5"/></svg>
+      </button>
+    </div>
+    <ul class="days">
+      <li class="day open">
+        <button type="button" aria-expanded="true"><span class="day-ech-slot" aria-hidden="true"></span>
+          <span class="dname"><strong>Lundi</strong><span class="ddate">5 oct.</span></span>
+          <span class="dsum busy">08h15 → 12h30</span><span class="day-ech-slot" aria-hidden="true"></span></button>
+        <div class="detail"><div><div class="box"><ol>
+          <li class="c open seul">
+            <button class="cbtn" type="button" disabled>
+              <span class="hcol"><span class="h">08h15</span><span class="h">10h15</span></span>
+              <span class="cpoint" style="--h:221;--v:0" aria-hidden="true"></span>
+              <span class="ctxt"><span class="m">Analyse</span>
+                <span class="cinfo-salle"><span class="k">Salle :</span><span class="s">Grand auditoire 1/14, bâtiment Z, deuxième étage</span></span>
+              </span>
+            </button>
+          </li>
+          <li class="p">Pause · 10h15 – 10h30</li>
+          <li class="c">
+            <button class="cbtn" type="button">
+              <span class="hcol"><span class="h">10h30</span><span class="h">12h30</span></span>
+              <span class="cpoint" style="--h:262;--v:0" aria-hidden="true"></span>
+              <span class="ctxt"><span class="m">Programmation orientée objet</span>
+                <span class="cinfo-salle"><span class="k">Salle :</span><span class="s">1/36A</span></span>
+              </span>
+            </button>
+          </li>
+        </ol></div></div></div>
+      </li>
+      <li class="day"><button type="button"><span class="day-ech-slot" aria-hidden="true"></span>
+        <span class="dname"><strong>Mardi</strong><span class="ddate">6 oct.</span></span>
+        <span class="dsum busy">08h15 → 15h30</span><span class="day-ech-slot" aria-hidden="true"></span></button></li>
+      <li class="day"><button type="button"><span class="day-ech-slot" aria-hidden="true"></span>
+        <span class="dname"><strong>Mercredi</strong><span class="ddate">7 oct.</span></span>
+        <span class="dsum busy">08h15 → 15h30</span><span class="day-ech-slot" aria-hidden="true"></span></button></li>
+    </ul>
+  </div>
+  <div class="toast">
+    <span class="cpoint" style="--h:221;--v:0;margin-top:0"></span>
+    <span style="flex:1">Analyse — lundi 5 oct. · 08h15 – 10h15</span>
+  </div>
+</template>
+
+<!-- ---------- 3C : aucun résultat ---------- -->
+<template class="tel" id="f-dates-vide">
+  <div class="wrap">
+    <div class="topbar">
+      <button class="gauche" type="button">‹ Retour</button>
+      <h1 class="title" style="font-size:1rem">Chercher un cours</h1>
+    </div>
+    <div class="champs halo" style="margin-top:6px">
+      <div class="champ-ligne">
+        <svg class="champ-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.2 4.2"/></svg>
+        <input class="champ" type="search" value="chimie" aria-label="Chercher un cours">
+        <button type="button" aria-label="Effacer" style="border:0;background:none;color:var(--muted);padding:8px">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </div>
+    </div>
+    <ul class="liste" style="margin-top:16px">
+      <li class="empty" style="text-align:center">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true" style="color:var(--muted)"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.2 4.2"/></svg>
+        <p style="margin:10px 0 4px;font-weight:600;color:var(--ink)">Aucun cours ne correspond</p>
+        <p style="margin:0;color:var(--muted);font-size:.88rem">Essaie le début d'un autre mot du titre : « prog », « droit », « stage »…</p>
+      </li>
+    </ul>
+  </div>
+</template>
+
+<script>
+  Array.prototype.forEach.call(document.querySelectorAll("iframe[data-doc]"), function (f) {
+    var t = document.getElementById(f.getAttribute("data-doc"));
+    var corps = t.getAttribute("data-body") || "";
+    f.setAttribute("srcdoc",
+      "<!doctype html><html lang='fr' data-apparence='clair'><head><meta charset='utf-8'>" +
+      "<link rel='stylesheet' href='/assets/css/app.css'>" +
+      "<style>body{min-height:100%}</style></head><body class='" + corps + "'>" +
+      t.innerHTML + "</body></html>");
+  });
+</script>
+</body>
+</html>

@@ -312,6 +312,7 @@
   var FUSION = window.EZH_FUSION;
   var EXPORT_ICS = window.EZH_EXPORT_ICS;
   var SEMAINE = window.EZH_SEMAINE;
+  var RECHERCHE_COURS = window.EZH_RECHERCHE;
   /* Règles de groupes : une seule implémentation (fusion.js), pour que
      l'app et la fusion voient exactement les mêmes correspondances. */
   var propre = FUSION.propre;
@@ -1281,6 +1282,19 @@
   }
   function fmtDate(d) { return d.getDate() + " " + MOIS[d.getMonth()]; }
   function fmtH(h) { h = String(h); return h.charAt(1) === "h" ? "0" + h : h; } // "8h15" -> "08h15"
+  /* Dates d'une semaine au format du bandeau (« 28 sept. – 2 oct. 2026 ») :
+     du lundi au dernier jour où il y a cours — dimanche quand l'école en
+     donne un, sinon samedi (ULB), sinon vendredi. Sert au bandeau de la
+     semaine et aux dates d'un cours (voir la recherche). */
+  function datesSemaine(s) {
+    var lun = dateSemJour(s, 0);
+    var fin = coursDe(s, 6).length ? dateSemJour(s, 6)
+            : coursDe(s, 5).length ? dateSemJour(s, 5)
+            : dateSemJour(s, 4);
+    return (lun.getMonth() === fin.getMonth()
+      ? lun.getDate() + " – " + fmtDate(fin)
+      : fmtDate(lun) + " – " + fmtDate(fin)) + " " + fin.getFullYear();
+  }
   // n° de jour de l'école : 1 = premier lundi (voir HP.feries côté API).
   function numJour(s, jour) { return (s - 1) * 7 + jour + 1; }
   function estFerie(s, jour) { return !!FERIES[numJour(s, jour)]; }
@@ -1340,7 +1354,7 @@
 
   /* Bouton retour Android : chaque fenêtre / feuille empile une entrée
      history ; le retour ferme la couche du dessus au lieu de quitter
-     l'app. Les menus ⋮ sont une sous-couche de la feuille (pas d'entrée
+     l'app. Les menus et la carte retournée sont une sous-couche de la feuille (pas d'entrée
      propre) : un retour les ferme d'abord, la feuille reste. */
   var histPile = [];
   var histIgnore = 0; // popstate dus à un history.back() programmatique
@@ -1366,6 +1380,7 @@
     else if (id === "menus") fermerMenus();
     else if (id === "feuille") fermerFeuille();
     else if (id === "pop") fermerPop();
+    else if (id === "rc") rcFermer();
   }
   window.addEventListener("popstate", function () {
     if (histIgnore > 0) { histIgnore--; return; }
@@ -1374,6 +1389,13 @@
     if (menusOuverts() && histPile.length) {
       fermerMenus();
       try { history.pushState({ ezh: histPile[histPile.length - 1] }, ""); } catch (e) { /* jetable */ }
+      return;
+    }
+    // Recherche ouverte sur les dates d'un cours : même principe, le
+    // retour ramène d'abord à la liste des cours, puis rejoue l'entrée.
+    if (rcGroupe && histPile.indexOf("rc") !== -1) {
+      rcRetourListe();
+      try { history.pushState({ ezh: "rc" }, ""); } catch (e) { /* jetable */ }
       return;
     }
     if (!histPile.length) return;
@@ -4825,7 +4847,7 @@
       '</div>' +
       '<div class="ech' + (echNeuf === e.id ? " neuf" : "") + '" data-ech-cle="' + txt(cleCours) + '" data-ech-id="' + txt(e.id) + '" title="1 clic pour afficher les options">' +
         '<span class="ech-type ' + (examen ? "examen" : "devoir") + '">' + (examen ? "Examen" : "Devoir") + "</span>" +
-        '<span class="ech-corps"><span class="ech-titre' + (e.fait ? " fait" : "") + '">' + txt(e.titre) + "</span>" +
+        '<span class="ech-corps"><span class="ech-titre' + (e.fait ? " fait" : "") + '"><span class="ech-titre-txt">' + txt(e.titre) + "</span></span>" +
         (quand ? '<span class="ech-quand">' + txt(quand) + "</span>" : "") + "</span>" +
         '<button type="button" class="ech-valide' + (e.fait ? " fait" : "") + '" data-ech-valide="' + txt(e.id) +
         '" role="checkbox" aria-checked="' + (e.fait ? "true" : "false") + '" aria-label="' +
@@ -4861,6 +4883,129 @@
     if (!r) return "";
     return '<span class="ech-tag" style="--c:' + (r.examen ? "var(--examen)" : "var(--accent)") + '">' +
       txt(r.texte) + "</span>";
+  }
+  /* Grille du grand écran : une échéance qui tombe pendant un cours vit à
+     l'intérieur de ce cours — pastille dans la case, détail dans la bulle —
+     au lieu d'une fiche flottante qui recouvrirait la case. Trois cas :
+     1. avec heure pendant un cours : ce cours (la même règle qu'à la
+        création, voir coursDeLHeure) ;
+     2. avec heure dans une pause : le cours le plus proche (le plus tôt
+        en cas d'égalité), dans la limite ci-dessous — une fiche étant bien
+        plus haute qu'une pause, elle recouvrirait sinon un cours voisin ;
+     3. sans heure mais rattachée à un cours affiché ce jour-là : son
+        propre cours (elle n'a pas d'autre moment où exister).
+     Le reste (jour sans cours, heure en dehors des cours et loin d'eux)
+     garde ses fiches, qui ne recouvrent alors rien. */
+  var ECART_MAX_PAUSE = 30; // minutes : au-delà, la fiche flotte dans le vide
+  function hoteHeure(e, coursJour, date) {
+    if (!e || !e.id || !e.heure || !memeJour(jourEch(e.date), date)) return null;
+    var h = mins(e.heure);
+    if (isNaN(h) || !Array.isArray(coursJour) || !coursJour.length) return null;
+    var pendant = coursDeLHeure(coursJour, h);
+    if (pendant) return pendant;
+    var meilleur = null, ecartMin = ECART_MAX_PAUSE + 1;
+    for (var i = 0; i < coursJour.length; i++) {
+      var c = coursJour[i];
+      if (!c || !c.debut || !c.fin) continue;
+      var ecart = Math.min(Math.abs(h - mins(c.debut)), Math.abs(h - mins(c.fin)));
+      if (ecart < ecartMin) { ecartMin = ecart; meilleur = c; }
+    }
+    return ecartMin <= ECART_MAX_PAUSE ? meilleur : null;
+  }
+  /* Tout ce que la grille montre pour un cours : ses propres échéances,
+     plus celles qu'il héberge (voir ci-dessus). Chacune garde sa clé
+     d'origine : modifier / supprimer / valider doit retrouver le bon
+     rangement (voir cibleDeCle). */
+  function echeancesAfficheesCours(c, date) {
+    var jour = c.jour, coursJour = coursDe(sem, jour);
+    var dateJ = date || dateSemJour(sem, jour);
+    var toutes = [], vus = {};
+    function ajouter(e, cle) {
+      if (!e || !e.id || vus[e.id]) return;
+      vus[e.id] = true;
+      toutes.push({ e: e, cle: cle });
+    }
+    var cleC = cleRenduCours(c);
+    echeancesDe(c).forEach(function (e) { ajouter(e, cleC); });
+    echeancesJour(jour).forEach(function (e) {
+      if (hoteHeure(e, coursJour, dateJ) === c) ajouter(e, cleJourEch(jour));
+    });
+    coursJour.forEach(function (o) {
+      if (o === c) return;
+      var cleO = cleRenduCours(o);
+      echeancesDe(o).forEach(function (e) {
+        if (hoteHeure(e, coursJour, dateJ) === c) ajouter(e, cleO);
+      });
+    });
+    return toutes;
+  }
+  /* Pastille d'un cours dans la grille : ses échéances plus celles qu'il
+     héberge (même présentation que resumeEcheances). */
+  function etiquetteEcheances(liste) {
+    if (!liste.length) return null;
+    var examen = liste[0].type === "examen";
+    var texte = examen ? "Examen" : "Devoir";
+    if (liste.length > 1) texte += " +" + (liste.length - 1);
+    return { texte: texte, examen: examen, nombre: liste.length };
+  }
+  function resumeEcheancesDedans(c, date) {
+    var dateJ = date || dateSemJour(sem, c.jour);
+    var liste = trierEcheances(echeancesAfficheesCours(c, dateJ).map(function (x) { return x.e; }).filter(function (e) {
+      return !echPassee(e) && !echApresDate(e, dateJ);
+    }));
+    return etiquetteEcheances(liste);
+  }
+  /* Même liste que listeEcheancesHTML, mais chaque échéance garde sa
+     propre clé (indispensable quand la bulle d'un cours montre aussi des
+     échéances posées sur la journée ou sur un autre cours). */
+  function listeEcheancesCles(lignes, dateJour) {
+    var items = lignes.filter(function (x) { return x && x.e && !echApresDate(x.e, dateJour); });
+    items.sort(function (a, b) {
+      var ka = a.e.date + (a.e.heure || ""), kb = b.e.date + (b.e.heure || "");
+      return ka < kb ? -1 : ka > kb ? 1 : 0;
+    });
+    if (!items.length) return "";
+    var html = '<ul class="ech-liste">';
+    for (var i = 0; i < items.length; i++) {
+      html += itemEcheanceHTML(items[i].e, items[i].cle, dateJour);
+    }
+    return html + "</ul>";
+  }
+  /* Maquettes ?maquette=1..5 (temporaire) : les échéances « flottantes »
+     du jour — jour ET cours affichés, à la date du jour, moins celles
+     qu'un cours héberge. Avec, pour les cours, le cours d'origine. */
+  function flottantesJour(d, date) {
+    var flottantes = [], vus = {};
+    echeancesJour(d.j).forEach(function (e) {
+      if (e && e.id && !vus[e.id] && memeJour(jourEch(e.date), date)) {
+        vus[e.id] = true;
+        flottantes.push({ e: e, cle: cleJourEch(d.j), chez: null });
+      }
+    });
+    d.cours.forEach(function (c) {
+      var cleC = cleRenduCours(c);
+      echeancesDe(c).forEach(function (e) {
+        if (e && e.id && !vus[e.id] && memeJour(jourEch(e.date), date)) {
+          vus[e.id] = true;
+          flottantes.push({ e: e, cle: cleC, chez: c });
+        }
+      });
+    });
+    return flottantes.filter(function (x) {
+      if (x.e.heure) return !hoteHeure(x.e, d.cours, date);
+      return !x.chez;
+    });
+  }
+  /* Tri d'affichage des flottantes : à heure d'abord (par heure), puis
+     sans heure. */
+  function trierFlottantes(liste) {
+    return liste.slice().sort(function (a, b) {
+      var ha = a.e.heure || "", hb = b.e.heure || "";
+      if (!ha && hb) return 1;
+      if (ha && !hb) return -1;
+      if (ha !== hb) return ha < hb ? -1 : 1;
+      return 0;
+    });
   }
   /* Résumé des échéances d'un jour replié : celles posées sur la journée
      (« à une autre heure », clé « jour|| ») ET celles de chaque cours du
@@ -5055,16 +5200,7 @@
 
     var i = SEMAINES.indexOf(sem);
     document.getElementById("sem-titre").textContent = "Semaine " + sem;
-    var lun = dateSemJour(sem, 0);
-    // La semaine s'arrête au dernier jour où il y a cours : dimanche quand
-    // l'école en donne un, sinon samedi (ULB), sinon vendredi.
-    var fin = coursDe(sem, 6).length ? dateSemJour(sem, 6)
-            : coursDe(sem, 5).length ? dateSemJour(sem, 5)
-            : dateSemJour(sem, 4);
-    document.getElementById("sem-dates").textContent =
-      (lun.getMonth() === fin.getMonth()
-        ? lun.getDate() + " – " + fmtDate(fin)
-        : fmtDate(lun) + " – " + fmtDate(fin)) + " " + fin.getFullYear();
+    document.getElementById("sem-dates").textContent = datesSemaine(sem);
     // La visionneuse PDF sous le bouton est conservée telle quelle
     // (un dépliage de jour ne doit pas la refermer).
     majBoutonPdf();
@@ -5326,11 +5462,27 @@
     function pc(m) { return (m - debut) / duree * 100; }
     var auj = new Date();
     evCal = [];
+    var soir = []; // bande du soir : flottantes par jour, dans l'ordre des colonnes
     var tete = "<div></div>", corps = '<div class="cal-heures" aria-hidden="true">';
     for (var h = debut / 60; h <= fin / 60; h++) corps += '<span style="top:' + pc(h * 60) + '%">' + h + "h</span>";
     corps += "</div>";
     jours.forEach(function (d) {
       var date = dateSemJour(sem, d.j), estAuj = memeJour(date, auj);
+      var echsUniques = flottantesJour(d, date);
+      // Bande SOIR (voir plus bas) : les flottantes qui dépassent la fin
+      // des cours — à heure après le dernier cours du jour (ou après la
+      // fin de grille sans cours), ou sans heure un jour de cours. Le
+      // reste garde ses fiches classiques.
+      var finJour = d.cours.length ? 0 : fin;
+      d.cours.forEach(function (c) { finJour = Math.max(finJour, mins(c.fin)); });
+      var auSoir = [], enColonne = [];
+      echsUniques.forEach(function (x) {
+        var h = x.e.heure ? mins(x.e.heure) : NaN;
+        if ((!x.e.heure && d.cours.length) || (x.e.heure && !(h <= finJour))) auSoir.push(x);
+        else enColonne.push(x);
+      });
+      echsUniques = enColonne;
+      soir.push({ jour: d.j, lignes: trierFlottantes(auSoir) });
       var resume = d.cours.length
         ? "<small>" + fmtH(d.cours[0].debut) + " – " +
           fmtH(d.cours.reduce(function (m, c) { return c.fin > m ? c.fin : m; }, d.cours[0].fin)) + "</small>"
@@ -5344,24 +5496,6 @@
         'aria-label="Ajouter une échéance pour ' + JOURS[d.j] + ' ' + fmtDate(date) + '">' +
         '<span class="cal-col-depot-cadre"></span>' +
         '</button>';
-      var echsDuJour = [];
-      var cleJ = cleJourEch(d.j);
-      echeancesJour(d.j).forEach(function (item) {
-        if (memeJour(jourEch(item.date), date)) echsDuJour.push({ e: item, cle: cleJ });
-      });
-      d.cours.forEach(function (c) {
-        var cleC = cleCoursEch(c);
-        echeancesDe(c).forEach(function (item) {
-          if (memeJour(jourEch(item.date), date)) echsDuJour.push({ e: item, cle: cleC });
-        });
-      });
-      var vusEch = {}, echsUniques = [];
-      echsDuJour.forEach(function (x) {
-        if (!vusEch[x.e.id]) {
-          vusEch[x.e.id] = true;
-          echsUniques.push(x);
-        }
-      });
       if (!d.cours.length) {
         var aDesEchs = echsUniques.length > 0;
         corps += '<div class="cal-libre' + (estFerie(sem, d.j) ? " ferie" : "") + '"' +
@@ -5398,7 +5532,7 @@
       couloirs(d.cours).forEach(function (x) {
         var c = x.c, a = mins(c.debut), b = Math.min(mins(c.fin), fin);
         var i = evCal.push(c) - 1;
-        var rEch = resumeEcheances(c);
+        var rEch = resumeEcheancesDedans(c, date);
         corps += '<button type="button" class="ev' + (b - a < 75 ? " court" : "") +
           (mins(c.fin) > fin ? " coupe" : "") + '" data-ev="' + i + '"' +
           ' style="' + styleCours(c.matiere) + ";--t:" + pc(a) + ";--d:" + (pc(b) - pc(a)) +
@@ -5414,11 +5548,73 @@
     });
     var cal = document.getElementById("cal");
     cal.style.setProperty("--n", jours.length);
-    cal.style.setProperty("--cols", jours.map(function (d) {
+    var colsVal = jours.map(function (d) {
       return memeJour(dateSemJour(sem, d.j), auj) ? "minmax(0, 1.12fr)" : "minmax(0, 1fr)";
-    }).join(" "));
+    }).join(" ");
+    cal.style.setProperty("--cols", colsVal);
     cal.style.setProperty("--pause", pc(13 * 60) + "%");
     cal.innerHTML = '<div class="cal-tete">' + tete + '</div><div class="cal-corps">' + corps + "</div>";
+    // Bande SOIR : carte détachée SOUS la grille (pas dedans) — mêmes
+    // colonnes, « Soir » dans la gouttière. Absente quand rien ne dépasse
+    // des cours.
+    var bandeau = "";
+    if (soir.some(function (cell) { return cell.lignes.length; })) {
+      bandeau = '<div class="soir-grille"><div class="soir-nom">Soir</div>';
+      soir.forEach(function (cell) {
+        bandeau += '<div class="soir-jour' + (estFerie(sem, cell.jour) ? " ferie" : "") + '"><ul class="ech-liste soir-liste">';
+        cell.lignes.forEach(function (x) {
+          // Comme les fiches des jours fériés : heure seule (le jour va
+          // de soi dans la colonne), badge vertical, case à cocher.
+          bandeau += itemEcheanceHTML(x.e, x.cle, jourEch(x.e.date), "", "");
+        });
+        bandeau += "</ul></div>";
+      });
+      bandeau += "</div>";
+    }
+    var soirEl = document.getElementById("soir");
+    if (bandeau) {
+      if (!soirEl) {
+        soirEl = document.createElement("div");
+        soirEl.id = "soir";
+        cal.parentNode.insertBefore(soirEl, cal.nextSibling);
+      }
+      soirEl.style.setProperty("--n", jours.length);
+      soirEl.style.setProperty("--cols", colsVal);
+      soirEl.innerHTML = bandeau;
+    } else if (soirEl) {
+      soirEl.remove();
+    }
+    ajusterFichesCal();
+  }
+
+  /* Grille : une fiche à heure placée près du bas (ex. 17h00 quand la
+     grille finit à 18h) dépasserait sous le calendrier — la fiche étant
+     plus haute que la place restante. On la remonte juste assez pour
+     qu'elle tienne dans la colonne (l'heure écrite dessus reste la bonne).
+     Les fiches « en bas » sont déjà ancrées au bas : rien à y faire. La
+     mesure se fait après le rendu, dans la même tâche : pas de
+     scintillement. */
+  function ajusterFichesCal() {
+    var cal = document.getElementById("cal");
+    if (!cal || !cal.isConnected) return;
+    var cols = cal.querySelectorAll(".cal-col");
+    for (var i = 0; i < cols.length; i++) {
+      var col = cols[i], colH = col.clientHeight;
+      if (!colH) continue;
+      var fiches = col.querySelectorAll(".cal-ech-item");
+      for (var k = 0; k < fiches.length; k++) {
+        var f = fiches[k];
+        if (!f.style.top && f.dataset.topOrig === undefined) continue; // « en bas » : déjà calée
+        var topOrig = f.dataset.topOrig !== undefined ? f.dataset.topOrig : f.style.top;
+        f.style.top = topOrig; // repose à son heure, puis mesure
+        if (f.offsetTop + f.offsetHeight > colH + 1) {
+          if (f.dataset.topOrig === undefined) f.dataset.topOrig = topOrig;
+          f.style.top = Math.max(0, colH - f.offsetHeight - 2) + "px";
+        } else if (f.dataset.topOrig !== undefined) {
+          delete f.dataset.topOrig; // tient à nouveau : retour à son heure
+        }
+      }
+    }
   }
 
   /* Bulle de détail d'un cours : à côté du bloc cliqué. */
@@ -5442,10 +5638,11 @@
       if (nomsSrc.length) d += "<dt>Source</dt><dd>" + txt(nomsSrc.join(" et ")) + "</dd>";
     }
     if (codeMatiere(c.matiere)) d += "<dt>Code</dt><dd>" + txt(codeMatiere(c.matiere)) + "</dd>";
-    // Échéances du cours : la même liste que sur téléphone, en lecture
-    // seule. L'ajout passe par le bouton « Échéance » en haut du jour ;
-    // sans échéance, pas de section du tout.
-    var listeEch = listeEcheancesHTML(echeancesDe(c), cleRenduCours(c), date);
+    // Échéances du cours : les siennes plus celles qu'il héberge (une
+    // heure qui tombe pendant ce cours), comme dans la case — même liste
+    // que sur téléphone, en lecture seule. L'ajout passe par le bouton
+    // « Échéance » en haut du jour ; sans échéance, pas de section du tout.
+    var listeEch = listeEcheancesCles(echeancesAfficheesCours(c, date), date);
     var blocEch = listeEch ? '<div class="pop-ech">' +
       '<p class="pop-ech-titre">Échéances</p>' + listeEch + "</div>" : "";
     return '<p class="pt">' + txt(nettoyerMatiere(c.matiere || "Cours")) + "</p>" +
@@ -5516,23 +5713,188 @@
     e.stopPropagation();
     clicEcheance(e);
   });
+  // Bande SOIR : mêmes gestes sur les échéances que dans la grille
+  // (l'écouteur de #cal ne les voit plus, la bande est en dehors).
+  document.addEventListener("click", function (e) {
+    if (e.target.closest && e.target.closest("#soir")) clicEcheance(e);
+  });
   document.addEventListener("click", function (e) {
     if (confirmationOuverte() || editionOuverte() || bugOuvert() || exportOuvert() || echeanceOuverte()) return;
+    if (rechCoursOuverte()) return; // la recherche est au-dessus : rien derrière ne se ferme
     if (popSource && !pop.contains(e.target) && !e.target.closest(".ev")) fermerPop();
     if (feuille.classList.contains("visible") && !feuille.contains(e.target) && !e.target.closest("#btn-moi")) fermerFeuille();
-    if (modeEchActif && !e.target.closest("#cal") && !e.target.closest("#btn-ech-global")) fermerModeEch();
+    if (modeEchActif && !e.target.closest("#cal") && !e.target.closest("#soir") && !e.target.closest("#btn-ech-global")) fermerModeEch();
   });
   window.addEventListener("resize", fermerPop);
+  /* … et les fiches à heure près du bas sont recalées dans leur colonne
+     (leur hauteur dépend de la largeur : le rétrécissement peut les faire
+     grandir et déborder à nouveau). */
+  window.addEventListener("resize", ajusterFichesCal);
   /* Fenêtre redimensionnée pendant qu'un cours est déroulé : la borne de
      hauteur de sa salle est recalculée (sinon un texte élargi ou rétréci
      serait rogné ou entouré de vide). */
   window.addEventListener("resize", function () {
     var ouverts = document.querySelectorAll("#jours li.c.open");
     for (var i = 0; i < ouverts.length; i++) bornerSalle(ouverts[i]);
+    var rcOuv = document.querySelectorAll("#rc-dates li.c.open");
+    for (var j = 0; j < rcOuv.length; j++) bornerSalle(rcOuv[j]);
   });
+
+  /* ---------- Rechercher un cours ----------
+     Panneau plein écran : on tape le début de n'importe quel mot de
+     l'intitulé, la liste se réduit ; un cours ouvert montre ses séances,
+     classées par semaine, au format des jours de la semaine (heures
+     empilées, pastille, salle / prof / groupe au dépliage). Les cours sont
+     ceux de l'horaire affiché, déjà filtrés selon les groupes choisis :
+     la recherche ne montre que ce que l'étudiant suit vraiment. */
+  var rc = document.getElementById("rc");
+  var rcVueListe = document.getElementById("rc-vue-liste");
+  var rcVueDates = document.getElementById("rc-vue-dates");
+  var rcChamp = document.getElementById("rc-champ");
+  var rcEffacer = document.getElementById("rc-effacer");
+  var rcListe = document.getElementById("rc-liste");
+  var rcDates = document.getElementById("rc-dates");
+  var rcTitre = document.getElementById("rc-titre");
+  var rcNb = document.getElementById("rc-nb");
+  var rcGroupes = [];     // les cours, groupés par intitulé (voir EZH_RECHERCHE)
+  var rcGroupe = null;    // le cours dont on montre les dates, sinon null
+  var rcOuvertes = {};    // séances dépliées, par clé (« 2|0|08h15|Analyse »)
+  function rechCoursOuverte() { return !!rc && !rc.hidden; }
+  function rcNombre(n) { return n + (n > 1 ? " séances" : " séance"); }
+  function rcVue(v) {
+    rcVueListe.hidden = v !== "liste";
+    rcVueDates.hidden = v !== "dates";
+  }
+  function rcMajEffacer() { rcEffacer.hidden = !rcChamp.value.length; }
+  function rcRendreListe() {
+    var trouve = RECHERCHE_COURS.filtrer(rcGroupes, rcChamp.value);
+    var html = "";
+    trouve.forEach(function (g) {
+      html += '<li><button type="button" data-rc-cours="' + txt(g.matiere) + '">' +
+        '<span class="cpoint" style="' + styleCours(g.matiere) + '" aria-hidden="true"></span>' +
+        '<span class="nom">' + RECHERCHE_COURS.surligner(g.nom, rcChamp.value) +
+        "<small>" + rcNombre(g.seances.length) + "</small></span>" +
+        "</button></li>";
+    });
+    if (!html) {
+      html = '<li class="empty"><p>Aucun cours ne correspond</p>' +
+        "<p>Essaie le début d'un autre mot du titre du cours.</p></li>";
+    }
+    rcListe.innerHTML = html;
+    rcMajEffacer();
+    rc.scrollTop = 0;
+  }
+  /* Une séance au format d'un cours de la semaine : heures empilées,
+     pastille, date en titre (centrée sur la pastille), et le dépliage
+     « Salle / Prof / Groupe / Code » de la page des semaines. */
+  function rcLigneSeance(semaine, seance) {
+    var c = seance.cours;
+    var cle = semaine + "|" + c.jour + "|" + c.debut + "|" + (c.matiere || "");
+    var ouvert = !!rcOuvertes[cle];
+    return '<li class="c r-date' + (ouvert ? " open" : "") + '">' +
+      '<button class="cbtn" type="button" data-rc-seance="' + txt(cle) + '" aria-expanded="' + ouvert + '">' +
+      '<span class="hcol"><span class="h">' + txt(fmtH(c.debut)) + '</span>' +
+      '<span class="h">' + txt(fmtH(c.fin)) + "</span></span>" +
+      '<span class="cpoint" style="' + styleCours(c.matiere) + '" aria-hidden="true"></span>' +
+      '<span class="ctxt"><span class="m">' +
+      txt(JOURS[c.jour] + " " + fmtDate(dateSemJour(semaine, c.jour))) + "</span>" +
+      salleCoursHTML(c) + infosCoursHTML(c) +
+      "</span></button></li>";
+  }
+  function rcRendreDates() {
+    var g = rcGroupe;
+    rcTitre.textContent = g.nom;
+    rcNb.textContent = rcNombre(g.seances.length);
+    var html = "", semaine = null;
+    g.seances.forEach(function (seance) {
+      if (seance.semaine !== semaine) {
+        if (semaine !== null) html += "</ul>";
+        semaine = seance.semaine;
+        html += '<p class="rc-semaine">Semaine ' + semaine + " · " +
+          txt(datesSemaine(semaine)) + '</p><ul class="rc-dates">';
+      }
+      html += rcLigneSeance(semaine, seance);
+    });
+    if (semaine !== null) html += "</ul>";
+    rcDates.innerHTML = html;
+    rc.scrollTop = 0;
+  }
+  function rcOuvrirCours(matiere) {
+    var g = null;
+    for (var i = 0; i < rcGroupes.length; i++) {
+      if (rcGroupes[i].matiere === matiere) { g = rcGroupes[i]; break; }
+    }
+    if (!g) return;
+    rcGroupe = g;
+    rcOuvertes = {};
+    rcRendreDates();
+    rcVue("dates");
+  }
+  function rcRetourListe() {
+    if (!rcGroupe) { rcFermer(); return; }
+    rcGroupe = null;
+    rcOuvertes = {};
+    rcVue("liste");
+    rcRendreListe();
+    try { rcChamp.focus(); } catch (e) { /* jetable */ }
+  }
+  function rcOuvrir() {
+    if (!RECHERCHE_COURS || !profil || !COURS.length || rechCoursOuverte()) return;
+    rcGroupes = RECHERCHE_COURS.grouper(COURS, nettoyerMatiere);
+    rcGroupe = null;
+    rcOuvertes = {};
+    rcChamp.value = "";
+    rcVue("liste");
+    rcRendreListe();
+    rc.hidden = false;
+    try { void rc.offsetWidth; } catch (e) { /* jetable */ } // rejoue l'entrée
+    rc.classList.add("visible");
+    document.body.classList.add("rech-ouverte");
+    histOuvrir("rc");
+    try { rcChamp.focus(); } catch (e) { /* jetable */ }
+  }
+  function rcFermer() {
+    if (!rechCoursOuverte()) return;
+    rc.classList.remove("visible");
+    rc.hidden = true;
+    document.body.classList.remove("rech-ouverte");
+    rcGroupe = null;
+    try { rcChamp.blur(); } catch (e) { /* jetable */ }
+    histFermer("rc");
+  }
+  rcChamp.addEventListener("input", rcRendreListe);
+  rcChamp.addEventListener("search", rcRendreListe);
+  rcEffacer.addEventListener("click", function () {
+    rcChamp.value = "";
+    rcRendreListe();
+    try { rcChamp.focus(); } catch (e) { /* jetable */ }
+  });
+  rcListe.addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-rc-cours]");
+    if (b) rcOuvrirCours(b.getAttribute("data-rc-cours"));
+  });
+  rcDates.addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-rc-seance]");
+    if (!b) return;
+    var li = b.closest("li.c");
+    if (!li) return;
+    var cle = b.getAttribute("data-rc-seance");
+    var ouvert = !li.classList.contains("open");
+    if (ouvert) rcOuvertes[cle] = true; else delete rcOuvertes[cle];
+    li.classList.toggle("open", ouvert);
+    b.setAttribute("aria-expanded", ouvert);
+    if (ouvert) bornerSalle(li);
+  });
+  document.getElementById("rc-retour").addEventListener("click", rcFermer);
+  document.getElementById("rc-dates-retour").addEventListener("click", rcRetourListe);
+  /* Le bouton d'accès (barre de semaine, feuille…) n'est pas encore choisi :
+     l'app expose l'ouverture pour la tester en attendant (voir README). */
+  window.EZH_RECHERCHER_COURS = rcOuvrir;
+
   /* Raccourcis clavier (ordinateur) : ← → semaines, + − zoom du PDF. */
   document.addEventListener("keydown", function (e) {
     if (confirmationOuverte() || editionOuverte() || bugOuvert() || exportOuvert()) return;
+    if (rechCoursOuverte()) return;
     if (vue !== "horaire" || e.metaKey || e.ctrlKey || e.altKey) return;
     if (e.target.closest && e.target.closest("input, textarea, select")) return;
     if (feuille.classList.contains("visible")) return;
@@ -5579,9 +5941,7 @@
     if (p.groupes.length === 1) return nomGroupe(p.groupes[0]);
     return p.groupes.length + " groupes";
   }
-  var carteOuverte = null; // id de l'horaire dont le menu ⋮ est ouvert
-  var ICONE_DOTS = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' +
-    '<circle cx="12" cy="5.5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="18.5" r="1.7"/></svg>';
+  var carteOuverte = null; // id de l'horaire dont la carte est retournée
   var ICONE_CRAYON = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ' +
     'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg>';
   var ICONE_CORBEILLE = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ' +
@@ -5589,12 +5949,16 @@
   var ICONE_CALENDRIER = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ' +
     'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/>' +
     '<path d="M8 3v4M16 3v4M3 10h18M12 13v5M9.5 15.5 12 18l2.5-2.5"/></svg>';
-  /* Cartes des horaires. Le ⋮ n'ouvre qu'un menu (Modifier / Exporter /
-     Supprimer) ; la modification elle-même se fait dans une fenêtre
-     (ouvrirEdition).
-     Avec plusieurs horaires, on attrape la carte pour la faire glisser
-     (sauf le ⋮) : l'ordre est celui du tableau `profils`, donc aussi celui
-     du sélecteur de la semaine. */
+  var ICONE_ANNULER = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ' +
+    'stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+  /* Cartes des horaires. Un clic retourne la carte de haut en bas
+     (animation 3D) et révèle au dos les actions Modifier / Exporter /
+     Supprimer / Annuler ; un second clic (ou Échap, ou un clic ailleurs)
+     la remet en place.
+     La modification elle-même se fait dans une fenêtre (ouvrirEdition).
+     Avec plusieurs horaires, on attrape la carte pour la faire glisser :
+     l'ordre est celui du tableau `profils`, donc aussi celui du
+     sélecteur de la semaine. */
   function rendreListeProfils() {
     var zone = document.getElementById("liste-profils");
     if (!zone) return;
@@ -5621,25 +5985,27 @@
       var grp = texteGroupe(p);
       if (grp === nom) grp = ecoleDe(p.ecole).nom; // jamais deux fois la même ligne
       var ouvert = carteOuverte === p.id;
-      return '<div class="pcard halo' + (profil && p.id === profil.id ? " actif" : "") + (ouvert ? " menu-ouvert" : "") +
+      return '<div class="pcard halo' + (profil && p.id === profil.id ? " actif" : "") + (ouvert ? " retournee" : "") +
         '" data-carte="' + txt(p.id) + '">' +
-        '<div class="pcard-ligne">' +
-        '<button type="button" class="pcard-main" data-liste="' + txt(p.id) + '">' +
+        '<div class="pcard-flip">' +
+        '<div class="pcard-face pcard-devant"' + (ouvert ? " inert" : "") + '><div class="pcard-ligne">' +
+        '<button type="button" class="pcard-main" data-flip="' + txt(p.id) + '" aria-expanded="' + ouvert + '"' +
+        ' aria-label="' + txt(nom) + ' : afficher les options">' +
         '<span class="pt-point" style="background:' + couleurTheme(p.theme) + '"></span>' +
         '<span class="pt-textes"><span class="pt-nom">' + txt(nom) + "</span>" +
         '<span class="pt-detail">' + txt(grp) + "</span></span></button>" +
-        '<button type="button" class="dots" data-dots="' + txt(p.id) + '" aria-label="Options de ' + txt(nom) +
-        '" aria-haspopup="menu" aria-expanded="' + ouvert + '">' + ICONE_DOTS + "</button></div>" +
-        (ouvert
-          ? '<div class="ppop" role="menu">' +
-            '<button type="button" class="pop-act" role="menuitem" data-act="modifier" data-id="' + txt(p.id) + '">' +
-            ICONE_CRAYON + "Modifier</button>" +
-            '<button type="button" class="pop-act" role="menuitem" data-act="exporter" data-id="' + txt(p.id) + '">' +
-            ICONE_CALENDRIER + "Exporter</button>" +
-            '<button type="button" class="pop-act danger-txt" role="menuitem" data-act="supprimer" data-id="' + txt(p.id) + '">' +
-            ICONE_CORBEILLE + "Supprimer</button></div>"
-          : "") +
-        "</div>";
+        "</div></div>" +
+        '<div class="pcard-face pcard-dos"' + (ouvert ? "" : " inert") + '><div class="pcard-actions" role="group" aria-label="Options de ' + txt(nom) + '">' +
+        '<button type="button" class="dos-act" data-act="modifier" data-id="' + txt(p.id) + '">' +
+        ICONE_CRAYON + "<span>Modifier</span></button>" +
+        '<button type="button" class="dos-act" data-act="exporter" data-id="' + txt(p.id) + '">' +
+        ICONE_CALENDRIER + "<span>Exporter</span></button>" +
+        '<button type="button" class="dos-act danger-txt" data-act="supprimer" data-id="' + txt(p.id) + '">' +
+        ICONE_CORBEILLE + "<span>Supprimer</span></button>" +
+        '<button type="button" class="dos-act" data-act="annuler" data-id="' + txt(p.id) + '">' +
+        ICONE_ANNULER + "<span>Annuler</span></button>" +
+        "</div></div>" +
+        "</div></div>";
     }).join("");
   }
   /* Place un horaire à une position précise (fin d'un glisser) : la carte
@@ -5658,19 +6024,39 @@
     for (var i = 0; i < profils.length; i++) if (profils[i].id === id) return profils[i];
     return null;
   }
-  /* Oriente le popup vers le bas, sauf s'il dépasserait de l'écran
-     (carte en bas de feuille) : il s'ouvre alors vers le haut. */
-  function orienterPopup(id) {
-    var btn = document.querySelector('[data-dots="' + id + '"]');
-    var card = btn && btn.closest ? btn.closest(".pcard") : null;
-    var pop = card ? card.querySelector(".ppop") : null;
-    if (!pop) return;
-    pop.classList.remove("haut");
-    var r = pop.getBoundingClientRect();
-    if (r.bottom > window.innerHeight - 8) pop.classList.add("haut");
+  /* Retourne une carte vers son dos (sans reconstruire la liste : la
+     reconstruction casserait l'animation). Une seule carte retournée
+     à la fois. */
+  function carteParId(id) {
+    return document.querySelector('#liste-profils .pcard[data-carte="' + id + '"]');
   }
-  /* Ferme les menus ⋮ ouverts (compte, apparence et horaires).
-      Pas d'entrée history propre : sous-couche de la feuille (voir histPile). */
+  function retournerCarte(id) {
+    if (carteOuverte && carteOuverte !== id) remettreCarte(carteOuverte);
+    var card = carteParId(id);
+    if (!card) return;
+    carteOuverte = id;
+    card.classList.add("retournee");
+    var btn = card.querySelector("[data-flip]");
+    if (btn) btn.setAttribute("aria-expanded", "true");
+    // La face cachée sort du clavier et des lecteurs d'écran.
+    var devant = card.querySelector(".pcard-devant"), dos = card.querySelector(".pcard-dos");
+    if (devant) devant.setAttribute("inert", "");
+    if (dos) dos.removeAttribute("inert");
+  }
+  function remettreCarte(id) {
+    var card = carteParId(id || carteOuverte);
+    if (id || carteOuverte) carteOuverte = null;
+    if (!card) return;
+    card.classList.remove("retournee");
+    var btn = card.querySelector("[data-flip]");
+    if (btn) btn.setAttribute("aria-expanded", "false");
+    var devant = card.querySelector(".pcard-devant"), dos = card.querySelector(".pcard-dos");
+    if (devant) devant.removeAttribute("inert");
+    if (dos) dos.setAttribute("inert", "");
+  }
+  /* Ferme les menus ouverts (compte, apparence) et remet en place la
+     carte retournée, s'il y en a une.
+     Pas d'entrée history propre : sous-couche de la feuille (voir histPile). */
   function fermerMenus() {
     var m = document.getElementById("menu-compte");
     if (m && !m.hidden) {
@@ -5683,7 +6069,7 @@
       document.getElementById("btn-apparence").setAttribute("aria-expanded", "false");
     }
     fermerModeEch();
-    if (carteOuverte !== null) { carteOuverte = null; rendreListeProfils(); }
+    if (carteOuverte !== null) remettreCarte(carteOuverte);
   }
   function menusOuverts() {
     return carteOuverte !== null || !document.getElementById("menu-compte").hidden ||
@@ -5797,11 +6183,23 @@
     document.getElementById("ech-etape-form").hidden = n !== 2;
   }
   /* Étape 1 : la fenêtre s'ouvre sur les cours du jour `j`, des lignes
-     bien hautes pour viser juste du pouce. */
+     bien hautes pour viser juste du pouce. Jour sans cours : pas de
+     lignes, on choisit l'heure (obligatoire : un devoir se crée
+     toujours avec une heure). */
   function remplirChoixCours(j) {
     var cours = coursDe(sem, j);
     var date = dateSemJour(sem, j);
     document.getElementById("ech-choix-titre").textContent = JOURS[j] + " " + fmtDate(date);
+    document.getElementById("ech-etape-choix").classList.toggle("sans-cours", !cours.length);
+    var mAutre = document.querySelector("#ech-choix-autre .m");
+    var sAutre = document.querySelector("#ech-choix-autre .s");
+    if (!cours.length) {
+      if (mAutre) mAutre.textContent = "À quelle heure ?";
+      if (sAutre) sAutre.textContent = "Obligatoire";
+    } else {
+      if (mAutre) mAutre.textContent = "À une autre heure";
+      if (sAutre) sAutre.textContent = "Dans la journée";
+    }
     var h = "";
     for (var k = 0; k < cours.length; k++) {
       var cc = cours[k];
@@ -5844,13 +6242,14 @@
     else ouvrirModeEch();
   }
   function ouvrirChoixCours(j) {
-    if (!remplirChoixCours(j)) return;
+    remplirChoixCours(j);
     fermerMenus();
     cacheTexteEch = "";
     cacheTypeEch = "devoir";
     echRetourJour = j;
     echDernierFocus = document.activeElement;
-    document.getElementById("ech-choix-heure").value = ""; // choix d'heure neuf à chaque ouverture
+    rendreHeureVierge(); // heure neuve à chaque ouverture
+    ajusterValiderHeure();
     if (echChoixZoneValider) echChoixZoneValider.classList.remove("ouvert");
     var cAutre = document.getElementById("ech-choix-autre");
     if (cAutre) cAutre.classList.remove("ouvert");
@@ -5920,12 +6319,144 @@
   var echChoixZoneValider = document.getElementById("ech-choix-valider-zone");
   var echChoixBtnValider = document.getElementById("ech-choix-valider");
   var echChoixInpHeure = document.getElementById("ech-choix-heure");
+  /* Saisie intelligente de l'heure : on tape juste les chiffres (clavier
+     numérique), la mise en forme suit toute seule.
+       « 3 »    → « 03: » (3-9 : heure à un chiffre, pas d'ambiguïté)
+       « 1 »    → attend (1 et 2 peuvent commencer 10-23 : 13, 20…)
+       « 13 »   → « 13: » (Entrée/Valider : 13:00)
+       « 340 »  → « 03:40 » (« 34 » > 23 : 3 = l'heure, 40 = les minutes)
+       « 130 »  → « 13:0 » (13 ≤ 23 : 13:00 ; pour 01:20, taper « 0120 »)
+       « 131 »  → « 13:1 » (0-5 : dizaine des minutes → 13:10)
+       « 137 »  → « 13:7 » (6-9 : pas une dizaine → 13:07, « 7 » → « 07 »,
+      comme les heures : même sécurité, adaptée aux minutes)
+       « 1340 » → « 13:40 », « 2030 » → « 20:30 »
+       « 1367 » → « 13:07 », « 367 » → « 03:07 » (minutes impossibles :
+      on garde le dernier chiffre tapé)
+     Les minutes invalides sont donc corrigées dès la frappe : on ne peut
+     plus afficher « 13:67 ». Reste invalide : une heure > 23 à 4 chiffres
+     (« 27:30 ») ou un champ incomplet — Valider le signale (secousse).
+     Au repos, le champ contient un vrai « 00:00 » (gris, comme un texte
+     d'exemple) plutôt qu'un placeholder : le curseur peut se poser tout à
+     gauche, et la première frappe remplace tout au lieu de s'insérer dans
+     les zéros. `echHeureVierge` dit si l'heure affichée est ce repos (à ne
+     jamais valider tel quel : pas de devoir à minuit par accident) ou une
+     heure vraiment tapée. */
+  var echHeureVierge = true;
+  function analyserHeure(d) {
+    d = String(d || "").replace(/\D/g, "").slice(0, 4);
+    var vide = { texte: "", valeur: "" };
+    if (!d) return vide;
+    if (d.length === 1) {
+      if (+d >= 3) return { texte: "0" + d + ":", valeur: "" };
+      return { texte: d, valeur: "" }; // 0, 1, 2 : 00-09 ou début de 10-23
+    }
+    if (d.length === 2) {
+      if (+d <= 23) return { texte: d + ":", valeur: d + ":00" };
+      return { texte: "0" + d.charAt(0) + ":" + d.charAt(1),
+               valeur: "0" + d.charAt(0) + ":0" + d.charAt(1) };
+    }
+    if (d.length === 3) {
+      if (+(d.slice(0, 2)) <= 23) {
+        // Un seul chiffre de minutes : 0-5 = dizaine (« 131 » → 13:10),
+        // 6-9 = unité (« 137 » → 13:07), comme les heures (« 7 » → « 07: »).
+        var m3 = d.charAt(2);
+        if (+m3 <= 5)
+          return { texte: d.slice(0, 2) + ":" + m3,
+                   valeur: d.slice(0, 2) + ":" + m3 + "0" };
+        return { texte: d.slice(0, 2) + ":" + m3,
+                 valeur: d.slice(0, 2) + ":0" + m3 };
+      }
+      // Heure à deux chiffres trop grande (« 34 » > 23) : le premier est
+      // l'heure, les deux suivants les minutes (« 340 » → 03:40). Si la
+      // dizaine des minutes dépasse 5 (« 367 »), on garde le dernier
+      // chiffre tapé (« 7 » → « 07 »).
+      if (+(d.charAt(1)) > 5) {
+        var u3 = d.charAt(2);
+        return { texte: "0" + d.charAt(0) + ":0" + u3,
+                 valeur: "0" + d.charAt(0) + ":0" + u3 };
+      }
+      return { texte: "0" + d.charAt(0) + ":" + d.slice(1),
+               valeur: "0" + d.charAt(0) + ":" + d.slice(1) };
+    }
+    var t4 = d.slice(0, 2) + ":" + d.slice(2);
+    if (+(d.slice(0, 2)) <= 23) {
+      if (+(d.slice(2)) <= 59) return { texte: t4, valeur: t4 };
+      // Minutes impossibles (« 13:67 ») : on garde le dernier chiffre tapé
+      // (« 7 » → « 07 »), comme les heures (« 34 » → « 03:04 »).
+      var u4 = d.charAt(3);
+      var corr = d.slice(0, 2) + ":0" + u4;
+      return { texte: corr, valeur: corr };
+    }
+    return { texte: t4, valeur: "" };
+  }
+  function chiffresHeure() {
+    return echChoixInpHeure.value.replace(/\D/g, "").slice(0, 4);
+  }
+  /* État de repos : « 00:00 » gris, curseur tout à gauche du premier zéro
+     quand le champ a le focus. */
+  var echCarteHeure = document.getElementById("ech-choix-autre");
+  function rendreHeureVierge() {
+    echHeureVierge = true;
+    echChoixInpHeure.value = "00:00";
+    if (echCarteHeure) echCarteHeure.classList.add("heure-vierge");
+    placerCurseurHeure();
+  }
+  function placerCurseurHeure() {
+    if (echHeureVierge && document.activeElement === echChoixInpHeure) {
+      try { echChoixInpHeure.setSelectionRange(0, 0); } catch (e) {}
+    }
+  }
+  /* Applique une suite de chiffres tapés (0 à 4) : met en forme, sort du
+     repos, place le curseur (fin de frappe ; position du navigateur en
+     effacement). */
+  function appliquerChiffres(d, suppression, pos) {
+    var r = analyserHeure(d);
+    if (!r.texte) { rendreHeureVierge(); return; }
+    echHeureVierge = false;
+    if (echCarteHeure) echCarteHeure.classList.remove("heure-vierge", "erreur");
+    echChoixInpHeure.value = r.texte;
+    var cible = suppression
+      ? (pos == null ? r.texte.length : Math.min(pos, r.texte.length))
+      : r.texte.length;
+    try { echChoixInpHeure.setSelectionRange(cible, cible); } catch (err) {}
+  }
+  // Frappe : reformate au fil des chiffres (« 340 » → « 03:40 »).
+  // Au repos, la première frappe remplace le « 00:00 » affiché (le chiffre
+  // tapé repart de zéro). En effacement, chaque appui recule d'un chiffre,
+  // le « : » auto-réinséré se laisse traverser, jusqu'au retour au repos.
+  // En frappe, le curseur suit à la fin.
+  var heureToucheSuppr = false;
+  function formaterHeureTapee(e) {
+    var suppression = heureToucheSuppr || (e && /^delete/i.test(e.inputType || ""));
+    heureToucheSuppr = false;
+    if (echHeureVierge) {
+      if (suppression || !e || e.data == null) { rendreHeureVierge(); return; }
+      appliquerChiffres(String(e.data).replace(/\D/g, ""), false);
+      return;
+    }
+    var pos = null;
+    try { pos = echChoixInpHeure.selectionStart; } catch (err) {}
+    appliquerChiffres(chiffresHeure(), suppression, pos);
+  }
+  // Sortie du champ (blur, Entrée, Valider) : complète (« 13: » → « 13:00 »,
+  // « 07: » → « 07:00 »). Rend « HH:MM » si l'heure est valable, « » sinon
+  // (heure incomplète ou > 23 : montrée telle quelle, refusée avec une
+  // secousse). À 3-4 chiffres la valeur est déjà complète (pas de « 0 »
+  // à ajouter : « 13:7 » vaut 13:07, « 13:1 » vaut 13:10).
+  function finaliserHeure() {
+    if (echHeureVierge) return "";
+    var r = analyserHeure(chiffresHeure());
+    if (!r.texte) { rendreHeureVierge(); return ""; }
+    var valeur = r.valeur;
+    if (!valeur && /^\d{2}:$/.test(r.texte)) valeur = r.texte + "00";
+    echChoixInpHeure.value = valeur || r.texte;
+    return valeur;
+  }
   function ajusterValiderHeure() {
     if (!echChoixZoneValider || !echChoixInpHeure) return;
     var estFocus = document.activeElement === echChoixInpHeure ||
                    (echChoixBtnValider && document.activeElement === echChoixBtnValider);
-    var aValeur = !!echChoixInpHeure.value;
-    var ouvert = estFocus || aValeur;
+    var ouvert = estFocus || !echHeureVierge;
     echChoixZoneValider.classList.toggle("ouvert", ouvert);
     var card = document.getElementById("ech-choix-autre");
     if (card) card.classList.toggle("ouvert", ouvert);
@@ -5951,19 +6482,47 @@
   }
   function validerHeureChoisie() {
     if (echRetourJour == null || !echChoixInpHeure) return;
-    if (echChoixInpHeure.value) {
-      var hMin = mins(echChoixInpHeure.value);
+    var heure = finaliserHeure();
+    if (heure) {
+      var hMin = mins(heure);
       var cours = coursDe(sem, echRetourJour);
       var cTrouve = coursDeLHeure(cours, hMin);
-      ouvrirEcheance(cTrouve || pseudoJour(echRetourJour), echChoixInpHeure.value);
+      ouvrirEcheance(cTrouve || pseudoJour(echRetourJour), heure);
     } else {
+      // Heure invalide (incomplète ou > 23) : on ne part pas en silence,
+      // on secoue la case en rouge puis on y repose le curseur.
+      if (echCarteHeure) {
+        echCarteHeure.classList.remove("erreur");
+        try { void echCarteHeure.offsetWidth; } catch (e) {}
+        echCarteHeure.classList.add("erreur");
+        setTimeout(function () {
+          if (echCarteHeure) echCarteHeure.classList.remove("erreur");
+        }, 700);
+      }
       try { echChoixInpHeure.focus(); } catch (e) {}
     }
   }
-  echChoixInpHeure.addEventListener("focus", ajusterValiderHeure);
-  echChoixInpHeure.addEventListener("input", ajusterValiderHeure);
-  echChoixInpHeure.addEventListener("change", ajusterValiderHeure);
+  // Au repos, le curseur se pose tout à gauche du premier zéro :
+  // à la prise de focus, au clic, et juste après (le navigateur replace
+  // le curseur au point tapé après le focus).
+  echChoixInpHeure.addEventListener("focus", function () {
+    ajusterValiderHeure();
+    placerCurseurHeure();
+    setTimeout(placerCurseurHeure, 0);
+  });
+  echChoixInpHeure.addEventListener("click", function () {
+    placerCurseurHeure();
+  });
+  echChoixInpHeure.addEventListener("input", function (e) {
+    formaterHeureTapee(e);
+    ajusterValiderHeure();
+  });
+  echChoixInpHeure.addEventListener("change", function () {
+    finaliserHeure();
+    ajusterValiderHeure();
+  });
   echChoixInpHeure.addEventListener("keydown", function (e) {
+    heureToucheSuppr = e.key === "Backspace" || e.key === "Delete";
     if (e.key === "Enter") {
       e.preventDefault();
       validerHeureChoisie();
@@ -5972,7 +6531,7 @@
     if (echChoixZoneValider) echChoixZoneValider.classList.add("ouvert");
   });
   echChoixInpHeure.addEventListener("blur", function () {
-    setTimeout(ajusterValiderHeure, 150);
+    setTimeout(function () { finaliserHeure(); ajusterValiderHeure(); }, 150);
   });
   if (echChoixBtnValider) {
     echChoixBtnValider.addEventListener("pointerdown", function (e) {
@@ -5998,7 +6557,8 @@
     var inp = document.getElementById("ech-titre");
     if (inp) cacheTexteEch = inp.value;
     cacheTypeEch = echType || "devoir";
-    document.getElementById("ech-choix-heure").value = "";
+    rendreHeureVierge();
+    ajusterValiderHeure();
     if (echChoixZoneValider) echChoixZoneValider.classList.remove("ouvert");
     var cAutre = document.getElementById("ech-choix-autre");
     if (cAutre) cAutre.classList.remove("ouvert");
@@ -6092,7 +6652,7 @@
     cacheTypeEch = "devoir";
     fermerTousItemsEch(null);
     document.getElementById("echeance-ok").textContent = "Ajouter";
-    document.getElementById("ech-choix-heure").value = "";
+    rendreHeureVierge();
     if (echChoixZoneValider) echChoixZoneValider.classList.remove("ouvert");
     var cAutre = document.getElementById("ech-choix-autre");
     if (cAutre) cAutre.classList.remove("ouvert");
@@ -6113,6 +6673,15 @@
     var titre = document.getElementById("ech-titre").value.replace(/\s+/g, " ").trim();
     echTitreBloc.classList.toggle("erreur", !titre);
     if (!titre) { try { document.getElementById("ech-titre").focus(); } catch (err) { /* jetable */ } return; }
+    // Un devoir se crée toujours avec une heure : tous les chemins la
+    // fournissent déjà (début du cours, ou heure choisie), mais si jamais
+    // on arrive ici sans (chemin oublié ?), on retourne au choix de
+    // l'heure plutôt que d'enregistrer sans. La modification d'une
+    // échéance ancienne sans heure reste possible (on garde l'existant).
+    if (!echIdModif && !/^([01]\d|2[0-3]):[0-5]\d$/.test(echHeure || "")) {
+      memoriserEtRetourChoix();
+      return;
+    }
     var liste = echeancesDe(echCours);
     var id;
     if (echIdModif) {
@@ -6658,7 +7227,12 @@
     if (ajout) {
       e.stopPropagation();
       var cible = cibleDeCle(ajout.getAttribute("data-ech-cible"));
-      if (cible) { echRetourJour = null; ouvrirEcheance(cible.c); }
+      if (cible) {
+        // Jour sans cours : on passe par le choix de l'heure (obligatoire),
+        // jamais directement au formulaire sans heure.
+        if (cible.c.debut) { echRetourJour = null; ouvrirEcheance(cible.c); }
+        else ouvrirChoixCours(cible.c.jour);
+      }
       return true;
     }
     var valide = e.target.closest("[data-ech-valide]");
@@ -7391,7 +7965,7 @@
     if (dragCarte || profils.length < 2) return;
     if (e.button && e.button !== 0) return; // bouton droit : menu natif
     var carte = e.target.closest(".pcard");
-    if (!carte || e.target.closest(".dots, .ppop")) return;
+    if (!carte || e.target.closest("[data-act]")) return;
     // Sans ce stop, la feuille prendrait ce doigt pour un glissé de fermeture.
     e.stopPropagation();
     var i0 = -1, cartes = cartesProfils();
@@ -7421,20 +7995,18 @@
       if (act === "modifier") modifierProfil(id);
       else if (act === "exporter") exporterProfil(id);
       else if (act === "supprimer") { fermerMenus(); supprimerProfil(id); }
+      else if (act === "annuler") fermerMenus();
       return;
     }
-    var d = e.target.closest("[data-dots]");
+    var d = e.target.closest("button[data-flip]");
     if (d) {
-      var did = d.getAttribute("data-dots");
-      var ouvre = carteOuverte !== did;
-      fermerMenus();
-      if (ouvre) { carteOuverte = did; rendreListeProfils(); orienterPopup(did); }
+      var did = d.getAttribute("data-flip");
+      if (carteOuverte === did) remettreCarte(did);
+      else { fermerMenus(); retournerCarte(did); }
       return;
     }
-    var b = e.target.closest("button[data-liste]");
-    if (!b) { fermerMenus(); return; }
-    fermerFeuille();
-    choisirProfil(b.getAttribute("data-liste"));
+    // Clic sur le fond du dos : on remet la carte en place.
+    fermerMenus();
   });
   // Dépliages : un seul écouteur, qui survit aux nouveaux rendus.
   // À l'ouverture, la carte (jour) ou le cours est recalé dans la zone
@@ -7800,12 +8372,9 @@
       var j = +b.getAttribute("data-ech-col");
       fermerModeEch();
       echDernierFocus = btnEchGlobal;
-      var cours = coursDe(sem, j);
-      if (cours.length) {
-        ouvrirChoixCours(j);
-      } else {
-        ouvrirEcheance(pseudoJour(j));
-      }
+      // Avec ou sans cours : le choix passe par l'étape 1, qui impose
+      // l'heure quand il n'y a pas de cours (voir ouvrirChoixCours).
+      ouvrirChoixCours(j);
     });
   }
 
@@ -7969,7 +8538,7 @@
   }
   function fermerFeuille() {
     if (!feuille.classList.contains("visible")) return;
-    fermerMenus(); // les ⋮ sont sous la feuille : les fermer d'abord
+    fermerMenus(); // la carte retournée est sous la feuille : la remettre d'abord
     feuille.classList.remove("dragging");
     feuille.style.transform = "";
     feuille.classList.remove("visible");
@@ -7981,6 +8550,7 @@
   });
   document.addEventListener("keydown", function (e) {
     if (e.key !== "Escape") return;
+    if (rechCoursOuverte()) { rcRetourListe(); return; }
     if (exportOuvert()) { fermerExport(); return; }
     if (bugOuvert()) { fermerBug(); return; }
     if (echeanceOuverte()) { fermerEcheance(); return; }
