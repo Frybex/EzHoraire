@@ -73,8 +73,9 @@ CLAUDE.md
 ehthumbs.db
 Thumbs.db
 
-# Journal du serveur local
-serve.log
+# Vérification de domaine Discord (token public, pas de secret, mais
+# propre au compte : ne pas versionner)
+.well-known/discord
 
 # État local du CLI Supabase (ref projet liée, pas de secrets)
 supabase/.temp/

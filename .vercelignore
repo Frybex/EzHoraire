@@ -40,8 +40,8 @@ qr/
 # La démo pose des horaires de test puis ouvre ?essai=1 (localhost only).
 lab/
 
-# Tests Python et Node : pas à servir en ligne.
-tests/
+# Vérification de domaine Discord : pose manuelle, pas déployée
+.well-known/discord
 
 # Rapports et surveillance SEO (captures, logs, script Node local) : générés
 # hors ligne, aucune page ni l'app ne les référence. 31 Mo en moins à déployer.
