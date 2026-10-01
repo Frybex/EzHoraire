@@ -48,6 +48,12 @@
      défilement tactile mais coupe le pincement et le double-toucher. */
   html, body { touch-action: pan-x pan-y; /* pas de tirette « recharger » en haut (Chrome Android) */
     overscroll-behavior-y: none; }
+  /* Gouttière de scroll réservée d'office, des deux côtés : quand un
+     cours déplié fait dépasser la page de la hauteur de l'écran, la
+     barre de scroll apparaît sans rétrécir le contenu centré (.wrap) —
+     plus rien ne se décale, et l'espace reste le même à gauche qu'à
+     droite (both-edges miroite la gouttière de droite). */
+  html { scrollbar-gutter: stable both-edges; }
   button, a { touch-action: manipulation; }
   body {
     /* Relief premium : dégradé vertical + reflet d'1 px en haut ; creux =
@@ -2069,7 +2075,7 @@
      se ferme en glissant vers le bas (attrapable de n'importe où, le fond
      ne défile pas pendant le geste). */
   #feuille {
-    position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 95;
     background: var(--feuille); color: var(--ink);
     border-radius: 26px 26px 0 0; padding: 4px 18px calc(18px + env(safe-area-inset-bottom));
     box-shadow: inset 0 1px 0 var(--reflet), 0 0 0 1px var(--line), 0 -24px 60px -24px rgba(0, 0, 0, .5);
@@ -2083,7 +2089,7 @@
   #feuille button { user-select: none; -webkit-user-select: none; }
   body.sheet-ouverte { overflow: hidden; }
   body::after {
-    content: ""; position: fixed; inset: 0; z-index: 45; pointer-events: none;
+    content: ""; position: fixed; inset: 0; z-index: 94; pointer-events: none;
     background: rgba(6, 8, 12, .42); opacity: 0; transition: opacity .3s;
   }
   body.sheet-ouverte::after { opacity: 1; }
@@ -3863,39 +3869,62 @@
        la liste, la barre de scroll apparaît sans rétrécir le contenu —
        plus rien ne bouge latéralement. */
     scrollbar-gutter: stable;
-    visibility: hidden; opacity: 0; transform: translateY(10px);
-    transition: opacity .18s ease, transform .22s cubic-bezier(.16,1,.3,1),
-                visibility 0s linear .22s;
+    /* Pas d'animation d'ouverture : un appui affiche la page, point. */
+    visibility: hidden;
   }
   #rc.visible {
-    visibility: visible; opacity: 1; transform: none;
-    transition: opacity .18s ease, transform .22s cubic-bezier(.16,1,.3,1);
+    visibility: visible;
   }
   body.rech-ouverte { overflow: hidden; }
+  html.rech-ouverte { overflow: hidden; }
   /* Même sur grand écran, la recherche garde sa colonne : c'est une
      liste qui se lit de haut en bas, pas la grille à deux colonnes des
      formations, et le titre reste centré (la barre du haut de l'app
      passe collante et alignée à gauche au-delà de 1024 px). */
-  #rc .wrap { max-width: 680px; padding-top: 14px; }
+  #rc .wrap { max-width: 620px; padding-top: 14px; }
   #rc .title { font-size: 1.45rem; letter-spacing: -.02em; }
-  #rc .topbar {
-    position: relative; justify-content: center;
-    min-height: 46px; margin: 0 0 46px; padding: 0;
+  /* En-tête en deux lignes : le profil seul en haut à droite (même rond
+     que sur la page principale), puis retour + titre alignés à gauche
+     en dessous. */
+  .rc-haut { display: flex; justify-content: flex-end; align-items: center; min-height: 44px; }
+  .rc-haut .droite {
+    position: static; width: 40px; height: 40px; min-height: 0; padding: 0;
+    border: none; border-radius: 50%; cursor: pointer;
+    display: grid; place-items: center; color: var(--ink);
+    font: inherit; font-weight: 700; font-size: .95rem;
+    background: var(--creux);
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre);
   }
+  .rc-haut .droite:active { transform: scale(.96); }
+  .rc-haut .droite .avatar { display: grid; place-items: center; }
+  .rc-avatar-init { font-weight: 700; font-size: .95rem; }
+  .rc-ligne { display: flex; align-items: center; gap: 14px; margin: 0 0 42px; }
+  .rc-ligne .title { flex: 1; min-width: 0; text-align: left; }
+  .rc-ligne .rc-tete { flex: 1; min-width: 0; margin: 0; text-align: left; }
+  /* Historique d'un cours : même gabarit que la ligne de semaine de la
+     page principale (titre centré, discret en dessous). Retour identique
+     à la flèche de changement de semaine (42 px) et calage à droite
+     pour un vrai centrage du titre. */
+  #rc-vue-dates .rc-ligne { display: grid; grid-template-columns: 42px 1fr 42px; gap: 10px; }
+  #rc #rc-vue-dates .rc-retour { width: 42px; height: 42px; }
+  #rc #rc-vue-dates .rc-retour svg { width: 17px; height: 17px; }
+  #rc-vue-dates .rc-tete { text-align: center; }
+  #rc-vue-dates .rc-tete strong { font-size: 1.05rem; font-weight: 700; letter-spacing: -.02em; }
+  #rc-vue-dates .rc-tete span { font-size: .86rem; }
+  .rc-equilibre { width: 42px; height: 42px; }
   #rc .liste { display: flex; flex-direction: column; gap: 8px; }
   #rc .liste li { grid-column: auto; }
-  /* Le retour est un rond posé à gauche, comme dans les autres écrans :
-     le titre reste centré sur la page. */
-  #rc .topbar .rc-retour {
-    position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+  /* Le retour est un rond, comme dans les autres écrans. */
+  #rc .rc-retour {
+    flex: none;
     width: 46px; height: 46px; padding: 0; border: none; border-radius: 50%;
     display: grid; place-items: center; color: var(--ink); cursor: pointer;
     background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
     box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
     transition: transform .12s;
   }
-  #rc .topbar .rc-retour:active { transform: translateY(-50%) scale(.94); }
-  #rc .topbar .rc-retour svg { display: block; }
+  #rc .rc-retour:active { transform: scale(.94); }
+  #rc .rc-retour svg { display: block; }
   #rc .champ { flex: 1; }
   #rc .champ::-webkit-search-cancel-button,
   #rc .champ::-webkit-search-decoration { -webkit-appearance: none; display: none; }

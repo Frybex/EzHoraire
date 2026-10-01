@@ -1236,6 +1236,10 @@
   }
   function rendreAvatar() {
     var ini = initiales();
+    function poser(t, ic) {
+      if (ini) { t.textContent = ini; t.hidden = false; t.style.display = ""; ic.style.display = "none"; }
+      else { t.textContent = ""; t.hidden = true; t.style.display = "none"; ic.style.display = ""; }
+    }
     var t = document.getElementById("avatar-init"), ic = document.getElementById("avatar-icone");
     if (t && ic) {
       // Note : `hidden = true` ne cache PAS un SVG (pas de reflet vers
@@ -1244,9 +1248,13 @@
       // règle `[hidden] { display: none !important }`, que style.display
       // seul ne peut pas surcharger. Il faut donc basculer `hidden` aussi,
       // sinon les initiales restent invisibles et le rond paraît vide.
-      if (ini) { t.textContent = ini; t.hidden = false; t.style.display = ""; ic.style.display = "none"; }
-      else { t.textContent = ""; t.hidden = true; t.style.display = "none"; ic.style.display = ""; }
+      poser(t, ic);
     }
+    // Copies du bouton profil sur la page de recherche : mêmes initiales.
+    Array.prototype.forEach.call(document.querySelectorAll("#rc .avatar"), function (av) {
+      var tc = av.querySelector(".rc-avatar-init"), icc = av.querySelector(".rc-avatar-icone");
+      if (tc && icc) poser(tc, icc);
+    });
     var ra = document.getElementById("reg-avatar");
     if (ra) ra.textContent = ini || "?";
   }
@@ -1962,6 +1970,10 @@
     document.getElementById("btn-retour").hidden = !pile.length;
     var moi = document.getElementById("btn-moi");
     moi.hidden = v !== "horaire" || !profil;
+    // Copies du bouton profil sur la page de recherche : même visibilité.
+    Array.prototype.forEach.call(document.querySelectorAll(".rc-moi"), function (b) {
+      b.hidden = moi.hidden;
+    });
     window.scrollTo(0, 0);
     // L'écran affiché fait foi : création en cours = brouillon gardé,
     // retour à l'horaire (ou connexion) = brouillon abandonné.
@@ -5965,16 +5977,16 @@
     }
     if (!cible) cible = repli;
     rc.scrollTop = 0;
-    if (cible && cible.scrollIntoView) {
-      /* Après la peinture, pour traverser la transition d'ouverture. */
+    if (cible) {
+      /* Après la peinture. Affectation directe (jamais scrollIntoView :
+         lui fait aussi défiler le document derrière le panneau, et iOS
+         ne repeint alors plus le calque fixe — la page principale reste
+         visible en bas de l'écran). */
       requestAnimationFrame(function () {
-        requestAnimationFrame(function () {
-          try { cible.scrollIntoView({ block: "center" }); }
-          catch (e) {
-            try { rc.scrollTop = cible.offsetTop - rc.clientHeight / 2; }
-            catch (e2) { /* jetable */ }
-          }
-        });
+        try {
+          var hr = rc.getBoundingClientRect(), cr = cible.getBoundingClientRect();
+          rc.scrollTop = Math.max(0, rc.scrollTop + (cr.top - hr.top) - rc.clientHeight / 2 + cr.height / 2);
+        } catch (e) { /* jetable */ }
       });
     }
   }
@@ -6017,6 +6029,9 @@
     try { void rc.offsetWidth; } catch (e) { /* jetable */ } // rejoue l'entrée
     rc.classList.add("visible");
     document.body.classList.add("rech-ouverte");
+    // <html> aussi : sur iOS, overflow:hidden sur <body> seul ne verrouille
+    // pas le défilement du document derrière le panneau.
+    document.documentElement.classList.add("rech-ouverte");
     histOuvrir("rc");
     // Course ouverte : le champ est hors écran, pas de clavier qui monte.
     if (!matiere) { try { rcChamp.focus(); } catch (e) { /* jetable */ } }
@@ -6026,6 +6041,7 @@
     rc.classList.remove("visible");
     rc.hidden = true;
     document.body.classList.remove("rech-ouverte");
+    document.documentElement.classList.remove("rech-ouverte");
     rcGroupe = null;
     rcDirect = false;
     try { rcChamp.blur(); } catch (e) { /* jetable */ }
@@ -8744,6 +8760,13 @@
   document.getElementById("btn-moi").addEventListener("click", function () {
     if (feuille.classList.contains("visible")) fermerFeuille(); else ouvrirFeuille();
   });
+  // Copies du bouton profil sur la page de recherche : la feuille s'ouvre
+  // par-dessus (voir z-index), la recherche reste telle quelle dessous.
+  Array.prototype.forEach.call(document.querySelectorAll(".rc-moi"), function (b) {
+    b.addEventListener("click", function () {
+      if (feuille.classList.contains("visible")) fermerFeuille(); else ouvrirFeuille();
+    });
+  });
   document.addEventListener("keydown", function (e) {
     if (e.key !== "Escape") return;
     if (echeanceOuverte()) { fermerEcheance(); return; } // au-dessus de la recherche
@@ -8886,6 +8909,7 @@
       if (!ok) return;
       fermerFeuille();
       fermerPdf();
+      rcFermer(); // la feuille est aussi ouvrable depuis la recherche
       AUTH.logout().then(function () {
         pile = [];
         ouvrirCompte();

@@ -44,13 +44,13 @@
 <link rel="manifest" href="/assets/icons/site.webmanifest">
 <!-- Feuille de style au-dessus des scripts : elle démarre avant tout
      texte exécuté, le premier rendu n'attend que elle. -->
-<link rel="stylesheet" href="/assets/dist/app.ced831fffb.css">
+<link rel="stylesheet" href="/assets/dist/app.005fd8867e.css">
 <!-- Un seul bundle, découvert tôt et exécuté après le parse : le premier
      rendu ne dépend que de la feuille de style. Le SDK Supabase, lui,
      n'est plus téléchargé d'office : l'app le demande au premier besoin
      (clic de connexion, retour OAuth ou session déjà enregistrée). -->
-<link rel="preload" href="/assets/dist/app.1dfcb4f166.js" as="script">
-<script defer src="/assets/dist/app.1dfcb4f166.js"></script>
+<link rel="preload" href="/assets/dist/app.3890cfaac1.js" as="script">
+<script defer src="/assets/dist/app.3890cfaac1.js"></script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
 {"@type":"Organization","@id":"https://www.ezhoraire.be/#org","name":"EzHoraire","alternateName":["Ez Horaire","ezhoraire","Easy Horaire","EzHoraire Belgique"],"url":"https://www.ezhoraire.be/","logo":{"@type":"ImageObject","url":"https://www.ezhoraire.be/icon-512.png","width":512,"height":512},"email":"contact@ezhoraire.be","areaServed":{"@type":"Country","name":"Belgique"},"description":"Application et plateforme gratuite de consultation des horaires d'étudiants en Belgique (HEH, UMONS, Condorcet, HELB, ULB, UCLouvain)."},
@@ -676,7 +676,13 @@ try {
      semaine (heures empilées, pastille, infos au clic). -->
 <div id="rc" role="dialog" aria-modal="true" aria-label="Chercher un cours" hidden>
   <div class="wrap" id="rc-vue-liste">
-    <div class="topbar">
+    <div class="rc-haut">
+      <button class="droite rc-moi" id="rc-moi" type="button" aria-label="Réglages" hidden>
+        <span class="moi-txt rc-moi-txt"></span>
+        <span class="avatar"><span class="rc-avatar-init" hidden></span><svg class="rc-avatar-icone" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></span>
+      </button>
+    </div>
+    <div class="rc-ligne">
       <button class="rc-retour" id="rc-retour" type="button" aria-label="Fermer la recherche">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.25 5.5 8.75 12l6.5 6.5"/></svg>
       </button>
@@ -696,12 +702,19 @@ try {
     <ul class="liste" id="rc-liste"></ul>
   </div>
   <div class="wrap" id="rc-vue-dates" hidden>
-    <div class="topbar">
+    <div class="rc-haut">
+      <button class="droite rc-moi" id="rc-dates-moi" type="button" aria-label="Réglages" hidden>
+        <span class="moi-txt rc-moi-txt"></span>
+        <span class="avatar"><span class="rc-avatar-init" hidden></span><svg class="rc-avatar-icone" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></span>
+      </button>
+    </div>
+    <div class="rc-ligne">
       <button class="rc-retour" id="rc-dates-retour" type="button" aria-label="Retour à la liste des cours">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.25 5.5 8.75 12l6.5 6.5"/></svg>
       </button>
+      <div class="rc-tete"><strong id="rc-titre"></strong><span id="rc-nb"></span></div>
+      <span class="rc-equilibre" aria-hidden="true"></span>
     </div>
-    <div class="rc-tete"><strong id="rc-titre"></strong><span id="rc-nb"></span></div>
     <div id="rc-dates"></div>
   </div>
 </div>
