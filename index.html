@@ -44,13 +44,13 @@
 <link rel="manifest" href="/assets/icons/site.webmanifest">
 <!-- Feuille de style au-dessus des scripts : elle démarre avant tout
      texte exécuté, le premier rendu n'attend que elle. -->
-<link rel="stylesheet" href="/assets/dist/app.5a317d1bce.css">
+<link rel="stylesheet" href="/assets/dist/app.6db8e5196e.css">
 <!-- Un seul bundle, découvert tôt et exécuté après le parse : le premier
      rendu ne dépend que de la feuille de style. Le SDK Supabase, lui,
      n'est plus téléchargé d'office : l'app le demande au premier besoin
      (clic de connexion, retour OAuth ou session déjà enregistrée). -->
-<link rel="preload" href="/assets/dist/app.64e05735be.js" as="script">
-<script defer src="/assets/dist/app.64e05735be.js"></script>
+<link rel="preload" href="/assets/dist/app.b968d7c4e0.js" as="script">
+<script defer src="/assets/dist/app.b968d7c4e0.js"></script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
 {"@type":"Organization","@id":"https://www.ezhoraire.be/#org","name":"EzHoraire","alternateName":["Ez Horaire","ezhoraire","Easy Horaire","EzHoraire Belgique"],"url":"https://www.ezhoraire.be/","logo":{"@type":"ImageObject","url":"https://www.ezhoraire.be/icon-512.png","width":512,"height":512},"email":"contact@ezhoraire.be","areaServed":{"@type":"Country","name":"Belgique"},"description":"Application et plateforme gratuite de consultation des horaires d'étudiants en Belgique (HEH, UMONS, Condorcet, HELB, ULB, UCLouvain)."},
@@ -617,6 +617,7 @@ try {
         <button class="nav halo" id="sem-prec" aria-label="Semaine précédente" title="Semaine précédente (←)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.25 5.5 8.75 12l6.5 6.5"/></svg></button>
         <div class="cur"><strong id="sem-titre">Semaine 1</strong><span id="sem-dates"></span></div>
         <button class="nav halo" id="sem-suiv" aria-label="Semaine suivante" title="Semaine suivante (→)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.75 5.5 15.25 12l-6.5 6.5"/></svg></button>
+        <button class="rech-semaine halo" id="btn-recherche-semaine" type="button" aria-label="Chercher un cours" title="Chercher un cours"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.2 4.2"/></svg></button>
         <button class="thisweek halo" id="btn-auj">Cette semaine</button>
         <div id="ech-global-wrap">
           <button type="button" class="ech-global-btn halo" id="btn-ech-global" aria-expanded="false" aria-label="Ajouter une échéance sur un jour">
@@ -628,9 +629,12 @@ try {
       <ul class="days" id="jours"></ul>
       <div class="cal" id="cal"></div>
 
-      <button class="official halo" id="btn-pdf" type="button" aria-expanded="false">
-        PDF officiel de la semaine 1
-      </button>
+      <div class="pdf-rangee">
+        <button class="official halo" id="btn-pdf" type="button" aria-expanded="false">
+          PDF officiel de la semaine 1
+        </button>
+        <button class="rech-bas halo" id="btn-recherche" type="button" aria-label="Chercher un cours" title="Chercher un cours"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.2 4.2"/></svg></button>
+      </div>
       <div id="pdf-zone" hidden>
         <div class="pdf-tete">
           <div class="pdf-titre"><strong>PDF officiel</strong><span id="pdf-sem"></span></div>

@@ -1393,7 +1393,11 @@
     }
     // Recherche ouverte sur les dates d'un cours : même principe, le
     // retour ramène d'abord à la liste des cours, puis rejoue l'entrée.
-    if (rcGroupe && histPile.indexOf("rc") !== -1) {
+    // Seulement quand « rc » est la couche du dessus : le formulaire
+    // d'échéance ouvert par-dessus part avec un Retour, pas la recherche.
+    // Ouverte directement sur un cours (pastille), le retour ferme tout :
+    // pas d'étape « liste des cours » dans ce parcours.
+    if (rcGroupe && !rcDirect && histPile[histPile.length - 1] === "rc") {
       rcRetourListe();
       try { history.pushState({ ezh: "rc" }, ""); } catch (e) { /* jetable */ }
       return;
@@ -5036,9 +5040,10 @@
   /* Résumé des échéances d'un jour replié : celles posées sur la journée
      (« à une autre heure », clé « jour|| ») ET celles de chaque cours du
      jour. Avant, seul pseudoJour(j) était regardé : un devoir posé sur un
-     cours n'apparaissait qu'une fois le jour déroulé. */
-  function resumeEcheancesJour(jour, listeCours) {
-    var dateJour = dateSemJour(sem, jour);
+     cours n'apparaissait qu'une fois le jour déroulé. `dateJour` permet de
+     viser une occurrence précise hors de la semaine affichée (recherche). */
+  function resumeEcheancesJour(jour, listeCours, dateJour) {
+    dateJour = dateJour || dateSemJour(sem, jour);
     var toutes = echeancesJour(jour).slice();
     (listeCours || []).forEach(function (c) {
       var l = echeancesDe(c);
@@ -5054,8 +5059,8 @@
     });
     return { devoir: devoir, examen: examen, total: liste.length };
   }
-  function slotsEcheancesJour(jour, listeCours) {
-    var r = resumeEcheancesJour(jour, listeCours);
+  function slotsEcheancesJour(jour, listeCours, dateJour) {
+    var r = resumeEcheancesJour(jour, listeCours, dateJour);
     var g = (r && r.examen)
       ? '<span class="day-ech-slot"><span class="day-ech examen">Examen</span></span>'
       : '<span class="day-ech-slot" aria-hidden="true"></span>';
@@ -5127,15 +5132,23 @@
       var choc = enConflit(c, sem);
       // Déroulable dès qu'il y a des infos détaillées (salle, prof...) ou des échéances
       var deroulable = !!salle || !!infos || !!ech;
-      // Un seul cours dans le jour : déroulé d'office et non refermable.
+      // Un seul cours dans le jour : déroulé d'office et non refermable
+      // (le clic ne rebascule pas — voir le gestionnaire des jours). Pas de
+      // `disabled` : il couperait aussi les clics sur la pastille-loupe.
       var seul = cours.length === 1 && deroulable;
       var estOuvert = seul || !!coursOuverts[cle];
       html += '<li class="c' + (estOuvert ? " open" : "") + (seul ? " seul" : "") + '">';
       html += '<button class="cbtn' + (deroulable ? "" : " inactif") + '" data-cle="' + cle + '"' +
               (deroulable ? ' aria-expanded="' + estOuvert + '"' : ' aria-disabled="true"') +
-              (seul ? " disabled" : "") + ">" +
+              ">" +
               '<span class="hcol"><span class="h">' + txt(fmtH(c.debut)) + '</span><span class="h">' + txt(fmtH(c.fin)) + "</span></span>" +
-              '<span class="cpoint' + (choc ? " choc-cours" + dirChoc(cours, i) : "") + '" style="' + styleCours(c.matiere) + '" aria-hidden="true">' + (choc ? ICONE_GANT : "") + "</span>" +
+              /* `data-rech` : la pastille-bouton — le point, ou le gant en
+                 cas de conflit — ouvre l'horaire du cours (toutes ses
+                 séances, voir le clic des jours) ; le reste de la ligne
+                 ouvre le détail. */
+              '<span class="cpoint' + (choc ? " choc-cours" + dirChoc(cours, i) : "") + '"' +
+              ' data-rech="' + txt(c.matiere) + '"' +
+              ' style="' + styleCours(c.matiere) + '" aria-hidden="true">' + (choc ? ICONE_GANT : "") + "</span>" +
               '<span class="ctxt"><span class="m">' + txt(nettoyerMatiere(c.matiere || "Cours")) + "</span>" +
               salle +
               infos +
@@ -5690,12 +5703,31 @@
     var x = r.right + 12;
     if (x + w > window.innerWidth - 16) x = r.left - w - 12;
     if (x < 16) x = Math.max(16, Math.min(window.innerWidth - w - 16, r.left));
+    var limiteBas = window.innerHeight - 16;
     var y = Math.max(88, r.top);
-    var maxH = Math.max(140, window.innerHeight - y - 16);
-    pop.style.maxHeight = maxH + "px";
+    // Mesure à hauteur naturelle (bride large) : la bride finale dépend de y.
+    pop.style.maxHeight = Math.max(140, limiteBas - 88) + "px";
     pop.style.left = x + "px";
     pop.style.top = y + "px";
     pop.classList.add("visible");
+    var h = pop.offsetHeight;
+    if (y + h > limiteBas) {
+      // Pas la place vers le bas : aligne les bords extérieurs du bas
+      // (la bulle remonte, son bas au niveau du bas du cours).
+      y = r.bottom - h;
+      y = Math.min(y, limiteBas - h);
+      if (y < 88) y = 88;
+      pop.style.top = y + "px";
+    }
+    pop.style.maxHeight = Math.max(140, limiteBas - y) + "px";
+    // La bride peut avoir réduit la hauteur : recale une dernière fois
+    // pour ne jamais dépasser sous l'écran.
+    var h2 = pop.offsetHeight;
+    if (y + h2 > limiteBas) {
+      y = Math.max(16, limiteBas - h2);
+      pop.style.top = y + "px";
+      pop.style.maxHeight = Math.max(140, limiteBas - y) + "px";
+    }
   }
   function ouvrirPop(btn) {
     var c = evCal[+btn.getAttribute("data-ev")];
@@ -5783,7 +5815,7 @@
   window.addEventListener("resize", function () {
     var ouverts = document.querySelectorAll("#jours li.c.open");
     for (var i = 0; i < ouverts.length; i++) bornerSalle(ouverts[i]);
-    var rcOuv = document.querySelectorAll("#rc-dates li.c.open");
+    var rcOuv = document.querySelectorAll("#rc-dates .day.open li.c.open");
     for (var j = 0; j < rcOuv.length; j++) bornerSalle(rcOuv[j]);
   });
 
@@ -5806,6 +5838,8 @@
   var rcNb = document.getElementById("rc-nb");
   var rcGroupes = [];     // les cours, groupés par intitulé (voir EZH_RECHERCHE)
   var rcGroupe = null;    // le cours dont on montre les dates, sinon null
+  var rcDirect = false;   // ouverte directement sur un cours (pastille) : le
+                          // retour ferme la recherche, sans passer par la liste
   var rcOuvertes = {};    // séances dépliées, par clé (« 2|0|08h15|Analyse »)
   function rechCoursOuverte() { return !!rc && !rc.hidden; }
   function rcNombre(n) { return n + (n > 1 ? " séances" : " séance"); }
@@ -5834,39 +5868,58 @@
     rcMajEffacer();
     rc.scrollTop = 0;
   }
-  /* Une séance au format d'un cours de la semaine : heures empilées,
-     pastille, date en titre (centrée sur la pastille), et le dépliage
-     « Salle / Prof / Groupe / Code » de la page des semaines. */
+  /* Une séance au format d'un jour de la semaine (téléphone) : le jour et
+     sa date à gauche, les heures à droite. Au clic, le cours se déroule
+     comme s'il était le seul de la journée — heures empilées, pastille,
+     puis Salle / Prof / Groupe / Code, le gabarit de la semaine. */
+  function rcCleSeance(semaine, seance) {
+    var c = seance.cours;
+    return semaine + "|" + c.jour + "|" + c.debut + "|" + (c.matiere || "");
+  }
   function rcLigneSeance(semaine, seance) {
     var c = seance.cours;
-    var cle = semaine + "|" + c.jour + "|" + c.debut + "|" + (c.matiere || "");
+    var cle = rcCleSeance(semaine, seance);
     var ouvert = !!rcOuvertes[cle];
-    return '<li class="c r-date' + (ouvert ? " open" : "") + '">' +
-      '<button class="cbtn" type="button" data-rc-seance="' + txt(cle) + '" aria-expanded="' + ouvert + '">' +
+    var date = dateSemJour(semaine, c.jour);
+    /* Pastilles Examen (gauche) / Devoir (droite) de cette occurrence :
+       même espace réservé et mêmes échéances que la liste des jours. */
+    var ech = slotsEcheancesJour(c.jour, [c], date);
+    return '<li class="day rc-jour' + (ouvert ? " open" : "") +
+      (memeJour(date, new Date()) ? " today" : "") + '">' +
+      '<button type="button" data-rc-seance="' + txt(cle) + '" aria-expanded="' + ouvert + '">' +
+      ech.gauche +
+      '<span class="dname"><strong>' + txt(fmtDate(date)) + '</strong>' +
+      '<span class="ddate">' + txt(JOURS[c.jour]) + "</span></span>" +
+      '<span class="dsum busy">' + txt(fmtH(c.debut)) + " → " + txt(fmtH(c.fin)) + "</span>" +
+      ech.droite +
+      "</button>" +
+      '<div class="detail"><div><div class="box"><ol>' +
+      '<li class="c seul open">' +
+      '<button class="cbtn" type="button" disabled>' +
       '<span class="hcol"><span class="h">' + txt(fmtH(c.debut)) + '</span>' +
       '<span class="h">' + txt(fmtH(c.fin)) + "</span></span>" +
       '<span class="cpoint" style="' + styleCours(c.matiere) + '" aria-hidden="true"></span>' +
-      '<span class="ctxt"><span class="m">' +
-      txt(JOURS[c.jour] + " " + fmtDate(dateSemJour(semaine, c.jour))) + "</span>" +
+      '<span class="ctxt"><span class="m">' + txt(nettoyerMatiere(c.matiere || "Cours")) + "</span>" +
       salleCoursHTML(c) + infosCoursHTML(c) +
-      "</span></button></li>";
+      "</span></button></li>" +
+      "</ol></div>" +
+      /* Ajouter une échéance à ce cours : le formulaire s'ouvre
+         directement sur lui (date de la séance ouverte), sans l'écran de
+         choix du cours ni de l'heure. */
+      '<div class="jour-ech">' +
+      '<button type="button" class="jour-ech-btn" data-rc-ech="' + txt(cle) + '" ' +
+      'aria-label="Ajouter un devoir ou un examen à ce cours" title="Ajouter un devoir ou un examen">' +
+      "<span>Échéance</span></button></div>" +
+      "</div></div></li>";
   }
+  /* Liste plate : une carte par séance, sans découpage par semaine. */
   function rcRendreDates() {
     var g = rcGroupe;
     rcTitre.textContent = g.nom;
     rcNb.textContent = rcNombre(g.seances.length);
-    var html = "", semaine = null;
-    g.seances.forEach(function (seance) {
-      if (seance.semaine !== semaine) {
-        if (semaine !== null) html += "</ul>";
-        semaine = seance.semaine;
-        html += '<p class="rc-semaine">Semaine ' + semaine + " · " +
-          txt(datesSemaine(semaine)) + '</p><ul class="rc-dates">';
-      }
-      html += rcLigneSeance(semaine, seance);
-    });
-    if (semaine !== null) html += "</ul>";
-    rcDates.innerHTML = html;
+    var html = '<ul class="rc-dates">';
+    g.seances.forEach(function (seance) { html += rcLigneSeance(seance.semaine, seance); });
+    rcDates.innerHTML = html + "</ul>";
     rc.scrollTop = 0;
   }
   function rcOuvrirCours(matiere) {
@@ -5883,25 +5936,34 @@
   function rcRetourListe() {
     if (!rcGroupe) { rcFermer(); return; }
     rcGroupe = null;
+    rcDirect = false;
     rcOuvertes = {};
     rcVue("liste");
     rcRendreListe();
     try { rcChamp.focus(); } catch (e) { /* jetable */ }
   }
-  function rcOuvrir() {
+  /* `matiere` (facultatif) : ouvre directement les dates de ce cours —
+     l'accès par la pastille d'un cours, sans passer par la liste. Dans ce
+     cas le retour (bouton, geste, Échap) ferme la recherche d'un coup. */
+  function rcOuvrir(matiere) {
     if (!RECHERCHE_COURS || !profil || !COURS.length || rechCoursOuverte()) return;
     rcGroupes = RECHERCHE_COURS.grouper(COURS, nettoyerMatiere);
     rcGroupe = null;
+    rcDirect = !!matiere;
     rcOuvertes = {};
     rcChamp.value = "";
     rcVue("liste");
     rcRendreListe();
+    if (matiere) rcOuvrirCours(matiere);
+    document.getElementById("rc-dates-retour").setAttribute("aria-label",
+      rcDirect ? "Fermer la recherche" : "Retour à la liste des cours");
     rc.hidden = false;
     try { void rc.offsetWidth; } catch (e) { /* jetable */ } // rejoue l'entrée
     rc.classList.add("visible");
     document.body.classList.add("rech-ouverte");
     histOuvrir("rc");
-    try { rcChamp.focus(); } catch (e) { /* jetable */ }
+    // Course ouverte : le champ est hors écran, pas de clavier qui monte.
+    if (!matiere) { try { rcChamp.focus(); } catch (e) { /* jetable */ } }
   }
   function rcFermer() {
     if (!rechCoursOuverte()) return;
@@ -5909,6 +5971,7 @@
     rc.hidden = true;
     document.body.classList.remove("rech-ouverte");
     rcGroupe = null;
+    rcDirect = false;
     try { rcChamp.blur(); } catch (e) { /* jetable */ }
     histFermer("rc");
   }
@@ -5924,21 +5987,42 @@
     if (b) rcOuvrirCours(b.getAttribute("data-rc-cours"));
   });
   rcDates.addEventListener("click", function (e) {
+    /* Échéance directement sur ce cours, à la date de la séance ouverte. */
+    var be = e.target.closest("button[data-rc-ech]");
+    if (be && rcGroupe) {
+      var cleE = be.getAttribute("data-rc-ech");
+      for (var i = 0; i < rcGroupe.seances.length; i++) {
+        var s = rcGroupe.seances[i];
+        if (rcCleSeance(s.semaine, s) === cleE) {
+          echRetourJour = null; // pas d'écran de choix : ce cours, et lui seul
+          ouvrirEcheance(s.cours, null, dateSemJour(s.semaine, s.cours.jour));
+          return;
+        }
+      }
+      return;
+    }
     var b = e.target.closest("button[data-rc-seance]");
     if (!b) return;
-    var li = b.closest("li.c");
+    var li = b.closest("li.rc-jour");
     if (!li) return;
     var cle = b.getAttribute("data-rc-seance");
     var ouvert = !li.classList.contains("open");
     if (ouvert) rcOuvertes[cle] = true; else delete rcOuvertes[cle];
     li.classList.toggle("open", ouvert);
     b.setAttribute("aria-expanded", ouvert);
-    if (ouvert) bornerSalle(li);
+    if (ouvert) bornerSalle(li.querySelector("li.c"));
   });
   document.getElementById("rc-retour").addEventListener("click", rcFermer);
-  document.getElementById("rc-dates-retour").addEventListener("click", rcRetourListe);
-  /* Le bouton d'accès (barre de semaine, feuille…) n'est pas encore choisi :
-     l'app expose l'ouverture pour la tester en attendant (voir README). */
+  document.getElementById("rc-dates-retour").addEventListener("click", function () {
+    // Ouverte depuis la pastille d'un cours : le retour ramène d'un coup à
+    // la page principale ; sinon, il ramène à la liste des cours.
+    if (rcDirect) rcFermer(); else rcRetourListe();
+  });
+  /* Accès global à la recherche : loupe en bas de la semaine (téléphone),
+     loupe de la barre de la semaine (ordinateur). L'app expose aussi
+     l'ouverture programmée (voir README). */
+  document.getElementById("btn-recherche").addEventListener("click", function () { rcOuvrir(); });
+  document.getElementById("btn-recherche-semaine").addEventListener("click", function () { rcOuvrir(); });
   window.EZH_RECHERCHER_COURS = rcOuvrir;
 
   /* Raccourcis clavier (ordinateur) : ← → semaines, + − zoom du PDF. */
@@ -6638,8 +6722,10 @@
       : "ex. Exercices 1 à 8 du chapitre 3";
   }
   /* `heure` (facultatif) : heure choisie dans la journée pour un devoir
-     sans cours (« à une autre heure ») ; sinon c'est le début du cours. */
-  function ouvrirEcheance(c, heure) {
+     sans cours (« à une autre heure ») ; sinon c'est le début du cours.
+     `dateExacte` (facultatif) : date de l'occurrence visée (recherche),
+     sinon celle de la semaine affichée. */
+  function ouvrirEcheance(c, heure, dateExacte) {
     fermerTousItemsEch(null);
     fermerMenus();
     echCours = c;
@@ -6665,7 +6751,7 @@
     // Date et heure fixées au créneau du cours : le début, la prochaine
     // fois qu'il tombe (le jour affiché, ou la semaine suivante s'il est
     // déjà passé). Un jour sans cours reste sur sa date.
-    var jour = dateSemJour(sem, c.jour);
+    var jour = dateExacte || dateSemJour(sem, c.jour);
     var d = new Date(jour.getTime()), auj = new Date();
     if (c.debut && d.getTime() < new Date(auj.getFullYear(), auj.getMonth(), auj.getDate()).getTime()) {
       d.setDate(d.getDate() + 7);
@@ -6760,6 +6846,8 @@
     rendre(depuisPop);
     echNeuf = "";
     if (depuisPop) rafraichirPop(coursMaj);
+    // Recherche ouverte : les pastilles Examen/Devoir de la séance suivent.
+    if (rechCoursOuverte() && rcGroupe) rcRendreDates();
   });
 
   function ouvrirModifierEcheance(c, id) {
@@ -8163,6 +8251,14 @@
     } catch (e) { /* jetable */ }
   }
   document.getElementById("jours").addEventListener("click", function (e) {
+    /* Pastille d'un cours — loupe, ou gant en cas de conflit : la recherche
+       s'ouvre sur ses dates. Interceptée avant le reste de la ligne (le
+       reste ouvre le détail). */
+    var pr = e.target.closest(".cpoint[data-rech]");
+    if (pr) {
+      var mat = pr.getAttribute("data-rech");
+      if (mat) { rcOuvrir(mat); return; }
+    }
     if (clicEcheance(e)) return;
     var je = e.target.closest(".jour-ech-btn");
     if (je) { ouvrirChoixCours(+je.getAttribute("data-ech-jour")); return; }
@@ -8594,10 +8690,14 @@
   });
   document.addEventListener("keydown", function (e) {
     if (e.key !== "Escape") return;
-    if (rechCoursOuverte()) { rcRetourListe(); return; }
+    if (echeanceOuverte()) { fermerEcheance(); return; } // au-dessus de la recherche
+    if (rechCoursOuverte()) {
+      // Pastille d'un cours : Échap ferme directement (pas de liste).
+      if (rcDirect) rcFermer(); else rcRetourListe();
+      return;
+    }
     if (exportOuvert()) { fermerExport(); return; }
     if (bugOuvert()) { fermerBug(); return; }
-    if (echeanceOuverte()) { fermerEcheance(); return; }
     if (confirmationOuverte() || editionOuverte()) return;
     if (dragCarte) { dragTermine(false); return; } // Échap repose la carte
     if (menusOuverts()) { fermerMenus(); return; } // Échap ferme d'abord le menu, puis les réglages

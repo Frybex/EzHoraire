@@ -437,8 +437,11 @@ les sources. `logos/ecoles/` est déployé, `logos/da/` et `logos/ez/`
 - `assets/js/recherche.js` — recherche d'un cours dans l'horaire affiché :
   filtrage par le début de n'importe quel mot de l'intitulé, séances
   classées par semaine (fonctions pures) ; tests :
-  `node --test test_recherche.mjs`. L'écran s'ouvre par
-  `EZH_RECHERCHER_COURS()` en attendant le bouton d'accès définitif.
+  `node --test test_recherche.mjs`. L'écran s'ouvre par la loupe en bas de
+  la semaine (téléphone), par la loupe de la barre de la semaine
+  (ordinateur), ou directement sur un cours par la pastille de sa ligne
+  (le point du cours, ou le gant de conflit) ; `EZH_RECHERCHER_COURS()`
+  reste l'ouverture programmée (tests, liens).
 - `assets/js/suivi.js` — mesure anonyme du parcours (arrivée → clic →
   compte → horaire) et des frictions ; voir le dashboard admin.
 - `assets/js/dashboard.js`, `assets/js/motdepasse.js` — les scripts des

@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="fr" data-apparence="clair">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>EzHoraire — recherche : 10 accès (v4)</title>
+<link rel="stylesheet" href="../../assets/css/app.css">
+<style>
+  :root { --encre:#17191d; --doux:#626977; --accent:#2456e0; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:#eceef2; color:var(--encre);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif; }
+  header.cat { max-width:900px; margin:0 auto; padding:30px 22px 4px; }
+  header.cat h1 { margin:0 0 6px; font-size:1.4rem; letter-spacing:-.02em; }
+  header.cat p { margin:0; color:var(--doux); font-size:.93rem; }
+  main { max-width:900px; margin:0 auto; padding:6px 22px 60px; }
+  section.prop { margin-top:36px; }
+  section.prop > h2 { margin:0 0 4px; font-size:1.1rem; }
+  section.prop > h2 .n { display:inline-grid; place-items:center; width:26px; height:26px;
+    margin-right:8px; border-radius:50%; background:var(--accent); color:#fff;
+    font-size:.85rem; vertical-align:2px; }
+  section.prop > p { margin:0 0 14px; color:var(--doux); font-size:.9rem; max-width:640px; }
+  .tels { display:flex; flex-wrap:wrap; gap:20px; }
+  figure { margin:0; }
+  .tel { width:390px; height:780px; overflow:auto; border-radius:30px; background:var(--bg);
+    box-shadow:0 18px 50px -22px rgba(23,32,68,.45),0 0 0 1px rgba(23,32,68,.09); }
+  .tel .wrap { padding-top:14px; }
+  figcaption { max-width:390px; margin:10px 2px 0; font-size:.88rem; line-height:1.4; color:var(--doux); }
+  figcaption b { display:block; color:var(--encre); }
+  /* Le nouveau : contour bleu + pastille */
+  .nouveau { outline:2.5px solid var(--accent) !important; outline-offset:2px; border-radius:12px; }
+  .tag { display:inline-block; margin:0 0 8px 2px; padding:2px 10px; border-radius:999px;
+    background:var(--accent-soft); color:var(--accent); font-size:.76rem; font-weight:700; }
+  .ligne-dates { display:flex; align-items:center; justify-content:space-between; width:100%;
+    margin:8px 0 2px; padding:10px 12px; border:0; border-radius:12px; font:inherit; font-size:.88rem;
+    font-weight:650; background:var(--accent-soft); color:var(--accent); cursor:pointer; }
+  .faux-champ { display:flex; align-items:center; gap:8px; margin:0 0 10px; padding:11px 14px;
+    border-radius:14px; color:var(--muted);
+    background:linear-gradient(180deg,var(--relief-haut),var(--relief-bas));
+    box-shadow:inset 0 0 0 1px var(--line),inset 0 1px 0 var(--reflet),var(--ombre-btn); font-size:.9rem; }
+  .fab { position:sticky; bottom:14px; float:right; margin:10px 14px 6px 0; width:56px; height:56px; border-radius:50%;
+    border:0; background:var(--accent); color:#fff; display:grid; place-items:center; cursor:pointer;
+    box-shadow:0 10px 24px -8px rgba(36,86,224,.7); }
+  .puce-retour { display:inline-flex; align-items:center; gap:6px; margin:0 2px 10px; padding:5px 12px;
+    border-radius:999px; background:var(--accent-soft); color:var(--accent);
+    font-size:.84rem; font-weight:600; }
+  .bulle { margin:10px 2px 0; padding:12px 14px; border-radius:14px;
+    background:linear-gradient(180deg,var(--relief-haut),var(--relief-bas));
+    box-shadow:inset 0 0 0 1px var(--line),var(--ombre-btn); font-size:.88rem; }
+  .bulle .ligne-dates { margin-bottom:0; }
+  /* Mode capture (?p=N) : une seule proposition, compacte */
+  body.single header.cat, body.single main { max-width:none; padding-left:12px; padding-right:12px; }
+  body.single header.cat p, body.single section.prop > p { display:none; }
+  body.single section.prop { margin-top:8px; }
+  body.single section.prop > h2 { font-size:1rem; margin-bottom:8px; }
+  body.single .tel { height:740px; }
+  body.single figcaption { font-size:.8rem; }
+</style>
+</head>
+<body>
+<header class="cat">
+  <h1>Recherche d'un cours — 10 accès (v4)</h1>
+  <p>À gauche : le bouton global. À droite : le raccourci depuis un cours. Ajoute <code>?p=1</code> (…8, 10) pour une vue seule.</p>
+</header>
+<main>
+
+<!-- ============ 1 · discrète ============ -->
+<section class="prop" id="prop-1">
+  <h2><span class="n">1</span>La discrète — loupe dans la barre + « Toutes ses dates »</h2>
+  <p>Bouton global : loupe ronde à droite de ›. Depuis un cours : ligne bleue sous les infos.</p>
+  <div class="tels">
+    <figure><div class="tel"><div class="wrap">
+      <div class="topbar"><button class="gauche" type="button">Réglages</button>
+        <h1 class="title"><button type="button">Ez<span>Horaire</span></button></h1>
+        <button class="droite" type="button">LE</button></div>
+      <div class="week">
+        <button class="nav halo" type="button" aria-label="Semaine précédente">‹</button>
+        <div class="cur"><strong>Semaine 1</strong><span>28 sept. – 2 oct. 2026</span></div>
+        <button class="nav halo" type="button" aria-label="Semaine suivante">›</button>
+        <button class="nav halo nouveau" type="button" aria-label="Chercher un cours" style="color:var(--accent)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.2 4.2"/></svg></button>
+      </div>
+      <button class="thisweek halo" type="button">Cette semaine</button>
+      <ul class="days"><li class="day"><button type="button">
+        <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+        <span class="dsum busy">08h15 → 12h30</span></button></li>
+        <li class="day"><button type="button">
+        <span class="dname"><strong>Mardi</strong><span class="ddate">29 sept.</span></span>
+        <span class="dsum busy">08h15 → 15h30</span></button></li></ul>
+    </div></div><figcaption><b>Global : la loupe</b>Un 4e rond dans la barre, toujours sous les yeux.</figcaption></figure>
+    <figure><div class="tel"><div class="wrap">
+      <div class="topbar"><button class="gauche" type="button">Réglages</button>
+        <h1 class="title"><button type="button">Ez<span>Horaire</span></button></h1>
+        <button class="droite" type="button">LE</button></div>
+      <ul class="days"><li class="day open"><button type="button">
+        <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+        <span class="dsum busy">08h15 → 12h30</span></button>
+        <div class="detail"><div><div class="box"><ol>
+          <li class="c open"><button class="cbtn" type="button">
+            <span class="hcol"><span class="h">08h15</span><span class="h">10h15</span></span>
+            <span class="cpoint" style="--h:221;--v:0" aria-hidden="true"></span>
+            <span class="ctxt"><span class="m">Analyse</span>
+              <span class="cinfo-salle"><span class="k">Salle : </span><span class="s">Grand auditoire 1/14</span></span>
+              <span class="cinfos"><span><span class="cinfo-row"><span class="k">Prof : </span>Delcourt</span></span></span>
+            </span></button>
+            <button class="ligne-dates nouveau" type="button"><span>Toutes ses dates · 12 séances</span><span>→</span></button>
+          </li>
+        </ol></div></div></div></li></ul>
+    </div></div><figcaption><b>Depuis le cours : la ligne bleue</b>Sous Prof / Groupe, elle ouvre les 12 séances.</figcaption></figure>
+  </div>
+</section>
+
+<!-- ============ 2 · double pastille ============ -->
+<section class="prop" id="prop-2">
+  <h2><span class="n">2</span>La double pastille — « Rechercher » + titre souligné</h2>
+  <p>Bouton global : pastille « Rechercher » à côté de « Cette semaine ». Depuis un cours : le titre est un lien.</p>
+  <div class="tels">
+    <figure><div class="tel"><div class="wrap">
+      <div class="topbar"><button class="gauche" type="button">Réglages</button>
+        <h1 class="title"><button type="button">Ez<span>Horaire</span></button></h1>
+        <button class="droite" type="button">LE</button></div>
+      <div class="week">
+        <button class="nav halo" type="button">‹</button>
+        <div class="cur"><strong>Semaine 1</strong><span>28 sept. – 2 oct. 2026</span></div>
+        <button class="nav halo" type="button">›</button>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:center;margin:0 0 12px">
+        <button class="thisweek halo" type="button" style="margin:0">Cette semaine</button>
+        <button class="thisweek halo nouveau" type="button" style="margin:0;color:var(--accent)">⌕ Rechercher</button>
+      </div>
+      <ul class="days"><li class="day"><button type="button">
+        <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+        <span class="dsum busy">08h15 → 12h30</span></button></li></ul>
+    </div></div><figcaption><b>Global : la pastille</b>Libellé en clair, à côté de « Cette semaine ».</figcaption></figure>
+    <figure><div class="tel"><div class="wrap">
+      <div class="topbar"><button class="gauche" type="button">Réglages</button>
+        <h1 class="title"><button type="button">Ez<span>Horaire</span></button></h1>
+        <button class="droite" type="button">LE</button></div>
+      <ul class="days"><li class="day open"><button type="button">
+        <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+        <span class="dsum busy">08h15 → 12h30</span></button>
+        <div class="detail"><div><div class="box"><ol>
+          <li class="c open"><button class="cbtn" type="button">
+            <span class="hcol"><span class="h">08h15</span><span class="h">10h15</span></span>
+            <span class="cpoint" style="--h:221;--v:0" aria-hidden="true"></span>
+            <span class="ctxt"><span class="m nouveau" style="color:var(--accent)"><u>Analyse</u></span>
+              <span class="cinfo-salle"><span class="k">Salle : </span><span class="s">Grand auditoire 1/14</span></span>
+            </span></button></li>
+        </ol></div></div></div></li></ul>
+    </div></div><figcaption><b>Depuis le cours : le titre</b>« Analyse » souligné = toutes ses dates.</figcaption></figure>
+  </div>
+</section>
+
+<!-- ============ 3 · champ permanent ============ -->
+<section class="prop" id="prop-3">
+  <h2><span class="n">3</span>Sans bouton — champ permanent + pastille tactile</h2>
+  <p>Bouton global : un champ « Nom du cours… » fixe sous la semaine. Depuis un cours : la pastille couleur se touche.</p>
+  <div class="tels">
+    <figure><div class="tel"><div class="wrap">
+      <div class="topbar"><button class="gauche" type="button">Réglages</button>
+        <h1 class="title"><button type="button">Ez<span>Horaire</span></button></h1>
+        <button class="droite" type="button">LE</button></div>
+      <div class="week">
+        <button class="nav halo" type="button">‹</button>
+        <div class="cur"><strong>Semaine 1</strong><span>28 sept. – 2 oct. 2026</span></div>
+        <button class="nav halo" type="button">›</button>
+      </div>
+      <div class="faux-champ nouveau"><span>⌕</span><span>Nom du cours…</span></div>
+      <ul class="days"><li class="day"><button type="button">
+        <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+        <span class="dsum busy">08h15 → 12h30</span></button></li>
+        <li class="day"><button type="button">
+        <span class="dname"><strong>Mardi</strong><span class="ddate">29 sept.</span></span>
+        <span class="dsum busy">08h15 → 15h30</span></button></li></ul>
+    </div></div><figcaption><b>Global : le champ</b>Toujours visible, un toucher = recherche.</figcaption></figure>
+    <figure><div class="tel"><div class="wrap">
+      <div class="topbar"><button class="gauche" type="button">Réglages</button>
+        <h1 class="title"><button type="button">Ez<span>Horaire</span></button></h1>
+        <button class="droite" type="button">LE</button></div>
+      <ul class="days"><li class="day open"><button type="button">
+        <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+        <span class="dsum busy">08h15 → 12h30</span></button>
+        <div class="detail"><div><div class="box"><ol>
+          <li class="c open"><button class="cbtn" type="button">
+            <span class="hcol"><span class="h">08h15</span><span class="h">10h15</span></span>
+            <span class="cpoint nouveau" style="--h:221;--v:0;width:22px;height:22px" aria-hidden="true"></span>
+            <span class="ctxt"><span class="m">Analyse</span>
+              <span class="cinfo-salle"><span class="k">Salle : </span><span class="s">Grand auditoire 1/14</span></span>
+            </span></button></li>
+        </ol></div></div></div></li></ul>
+    </div></div><figcaption><b>Depuis le cours : la pastille</b>La couleur du cours, en grand, ouvre ses dates.</figcaption></figure>
+  </div>
+</section>
+
+<!-- ============ 4 · feuille ============ -->
+<section class="prop" id="prop-4">
+  <h2><span class="n">4</span>Rangée — feuille « Mon compte » + bouton « Dates »</h2>
+  <p>Bouton global : entrée dans la feuille, avec « Ajouter un horaire ». Depuis un cours : bouton « Dates » à côté d'« Échéance ».</p>
+  <div class="tels">
+    <figure><div class="tel"><div class="wrap">
+      <div class="topbar"><button class="gauche" type="button">Réglages</button>
+        <h1 class="title"><button type="button">Ez<span>Horaire</span></button></h1>
+        <button class="droite" type="button">LE</button></div>
+      <ul class="days"><li class="day"><button type="button">
+        <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+        <span class="dsum busy">08h15 → 12h30</span></button></li></ul>
+      <div class="bulle"><span class="tag">Feuille « Mon compte »</span>
+        <button class="ligne-dates nouveau" type="button"><span>⌕&nbsp;&nbsp;Chercher un cours</span><span>→</span></button>
+        <p style="margin:8px 2px 0;color:var(--muted);font-size:.82rem">Retrouver un cours et toutes ses dates</p>
+        <p style="margin:10px 2px 0;font-weight:650">Mes horaires</p>
+      </div>
+    </div></div><figcaption><b>Global : la feuille</b>L'écran semaine reste intact.</figcaption></figure>
+    <figure><div class="tel"><div class="wrap">
+      <div class="topbar"><button class="gauche" type="button">Réglages</button>
+        <h1 class="title"><button type="button">Ez<span>Horaire</span></button></h1>
+        <button class="droite" type="button">LE</button></div>
+      <ul class="days"><li class="day open"><button type="button">
+        <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+        <span class="dsum busy">08h15 → 12h30</span></button>
+        <div class="detail"><div><div class="box"><ol>
+          <li class="c open"><button class="cbtn" type="button">
+            <span class="hcol"><span class="h">08h15</span><span class="h">10h15</span></span>
+            <span class="cpoint" style="--h:221;--v:0" aria-hidden="true"></span>
+            <span class="ctxt"><span class="m">Analyse</span>
+              <span class="cinfo-salle"><span class="k">Salle : </span><span class="s">Grand auditoire 1/14</span></span>
+            </span></button></li>
+        </ol></div>
+        <div class="jour-ech" style="display:flex;gap:8px;justify-content:flex-end">
+          <button type="button" class="jour-ech-btn nouveau"><span>Dates du cours</span></button>
+          <button type="button" class="jour-ech-btn"><span>Échéance</span></button>
+        </div></div></div></li></ul>
+    </div></div><figcaption><b>Depuis le cours : « Dates »</b>À côté d'« Échéance », même geste.</figcaption></figure>
+  </div>
+</section>
+
+<!-- ============ 5 · flottant ============ -->
+<section class="prop" id="prop-5">
+  <h2><span class="n">5</span>Le flottant — loupe en bas à droite + puce séances</h2>
+  <p>Bouton global : rond bleu flottant. Depuis un cours : puce « 12 séances → » posée sur la fiche.</p>
+  <div class="tels">
+    <figure><div class="tel"><div class="wrap">
+      <div class="topbar"><button class="gauche" type="button">Réglages</button>
+        <h1 class="title"><button type="button">Ez<span>Horaire</span></button></h1>
+        <button class="droite" type="button">LE</button></div>
+      <div class="week">
+        <button class="nav halo" type="button">‹</button>
+        <div class="cur"><strong>Semaine 1</strong><span>28 sept. – 2 oct. 2026</span></div>
+        <button class="nav halo" type="button">›</button>
+      </div>
+      <button class="thisweek halo" type="button">Cette semaine</button>
+      <ul class="days"><li class="day"><button type="button">
+        <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+        <span class="dsum busy">08h15 → 12h30</span></button></li>
+        <li class="day"><button type="button">
+        <span class="dname"><strong>Mardi</strong><span class="ddate">29 sept.</span></span>
+        <span class="dsum busy">08h15 → 15h30</span></button></li></ul>
+      <button class="fab nouveau" type="button" aria-label="Chercher un cours"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.2 4.2"/></svg></button>
+    </div></div><figcaption><b>Global : le rond bleu</b>Grosse cible pouce, rien à pousser.</figcaption></figure>
+    <figure><div class="tel"><div class="wrap">
+      <div class="topbar"><button class="gauche" type="button">Réglages</button>
+        <h1 class="title"><button type="button">Ez<span>Horaire</span></button></h1>
+        <button class="droite" type="button">LE</button></div>
+      <ul class="days"><li class="day open"><button type="button">
+        <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+        <span class="dsum busy">08h15 → 12h30</span></button>
+        <div class="detail"><div><div class="box"><ol>
+          <li class="c open"><button class="cbtn" type="button">
+            <span class="hcol"><span class="h">08h15</span><span class="h">10h15</span></span>
+            <span class="cpoint" style="--h:221;--v:0" aria-hidden="true"></span>
+            <span class="ctxt"><span class="m">Analyse</span>
+              <span class="cinfo-salle"><span class="k">Salle : </span><span class="s">Grand auditoire 1/14</span></span>
+            </span></button>
+            <button class="ligne-dates nouveau" type="button"><span>12 séances</span><span>→</span></button>
+          </li>
+        </ol></div></div></div></li></ul>
+    </div></div><figcaption><b>Depuis le cours : la puce</b>Le compteur ouvre le calendrier du cours.</figcaption></figure>
+  </div>
+</section>
+
+<!-- ============ 6 · contextuelle ============ -->
+<section class="prop" id="prop-6">
+  <h2><span class="n">6</span>La contextuelle — aucun bouton, tout part du cours</h2>
+  <p>Bouton global : aucun, on entre par un cours. Navigation : fil « ‹ Analyse » pour revenir aux dates.</p>
+  <div class="tels">
+    <figure><div class="tel"><div class="wrap">
+      <div class="topbar"><button class="gauche" type="button">Réglages</button>
+        <h1 class="title"><button type="button">Ez<span>Horaire</span></button></h1>
+        <button class="droite" type="button">LE</button></div>
+      <div class="week">
+        <button class="nav halo" type="button">‹</button>
+        <div class="cur"><strong>Semaine 1</strong><span>28 sept. – 2 oct. 2026</span></div>
+        <button class="nav halo" type="button">›</button>
+      </div>
+      <button class="thisweek halo" type="button">Cette semaine</button>
+      <ul class="days"><li class="day open"><button type="button">
+        <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+        <span class="dsum busy">08h15 → 12h30</span></button>
+        <div class="detail"><div><div class="box"><ol>
+          <li class="c open"><button class="cbtn" type="button">
+            <span class="hcol"><span class="h">08h15</span><span class="h">10h15</span></span>
+            <span class="cpoint" style="--h:221;--v:0" aria-hidden="true"></span>
+            <span class="ctxt"><span class="m">Analyse</span>
+              <span class="cinfo-salle"><span class="k">Salle : </span><span class="s">Grand auditoire 1/14</span></span>
+            </span></button>
+            <button class="ligne-dates nouveau" type="button"><span>Toutes les dates de ce cours</span><span>→</span></button>
+          </li>
+        </ol></div></div></div></li></ul>
+    </div></div><figcaption><b>Entrée unique : le cours</b>Zéro bouton global, zéro encombrement.</figcaption></figure>
+    <figure><div class="tel"><div class="wrap">
+      <div class="topbar"><button class="gauche" type="button">Réglages</button>
+        <h1 class="title"><button type="button">Ez<span>Horaire</span></button></h1>
+        <button class="droite" type="button">LE</button></div>
+      <span class="puce-retour nouveau">‹ Analyse · 12 séances</span>
+      <div class="week">
+        <button class="nav halo" type="button">‹</button>
+        <div class="cur"><strong>Semaine 2</strong><span>5 – 9 oct. 2026</span></div>
+        <button class="nav halo" type="button">›</button>
+      </div>
+      <ul class="days"><li class="day open"><button type="button">
+        <span class="dname"><strong>Lundi</strong><span class="ddate">5 oct.</span></span>
+        <span class="dsum busy">08h15 → 10h15</span></button>
+        <div class="detail"><div><div class="box"><ol>
+          <li class="c open seul"><button class="cbtn" type="button" disabled>
+            <span class="hcol"><span class="h">08h15</span><span class="h">10h15</span></span>
+            <span class="cpoint" style="--h:221;--v:0" aria-hidden="true"></span>
+            <span class="ctxt"><span class="m">Analyse</span>
+              <span class="cinfo-salle"><span class="k">Salle : </span><span class="s">Grand auditoire 1/14</span></span>
+            </span></button></li>
+        </ol></div></div></div></li></ul>
+    </div></div><figcaption><b>Le retour : la puce</b>Chaque date saute à sa semaine, la puce ramène.</figcaption></figure>
+  </div>
+</section>
+
+<!-- ============ 7 · économe ============ -->
+<section class="prop" id="prop-7">
+  <h2><span class="n">7</span>L'économe — la loupe remplace « Cette semaine »</h2>
+  <p>Bouton global : quand « Cette semaine » se cache (déjà dessus), la loupe prend sa place. Depuis un cours : mini-loupe à droite.</p>
+  <div class="tels">
+    <figure><div class="tel"><div class="wrap">
+      <div class="topbar"><button class="gauche" type="button">Réglages</button>
+        <h1 class="title"><button type="button">Ez<span>Horaire</span></button></h1>
+        <button class="droite" type="button">LE</button></div>
+      <div class="week">
+        <button class="nav halo" type="button">‹</button>
+        <div class="cur"><strong>Semaine 1</strong><span>28 sept. – 2 oct. 2026</span></div>
+        <button class="nav halo" type="button">›</button>
+      </div>
+      <button class="thisweek halo nouveau" type="button" style="color:var(--accent)">⌕ Chercher un cours</button>
+      <p style="margin:6px 4px 0;color:var(--muted);font-size:.8rem">Ici on est déjà « cette semaine » : la pastille habituelle est remplacée, aucun pixel ajouté.</p>
+      <ul class="days"><li class="day"><button type="button">
+        <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+        <span class="dsum busy">08h15 → 12h30</span></button></li></ul>
+    </div></div><figcaption><b>Global : la place reuse</b>Jamais deux pastilles ensemble.</figcaption></figure>
+    <figure><div class="tel"><div class="wrap">
+      <div class="topbar"><button class="gauche" type="button">Réglages</button>
+        <h1 class="title"><button type="button">Ez<span>Horaire</span></button></h1>
+        <button class="droite" type="button">LE</button></div>
+      <ul class="days"><li class="day open"><button type="button">
+        <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+        <span class="dsum busy">08h15 → 12h30</span></button>
+        <div class="detail"><div><div class="box"><ol>
+          <li class="c open"><button class="cbtn" type="button">
+            <span class="hcol"><span class="h">08h15</span><span class="h">10h15</span></span>
+            <span class="cpoint" style="--h:221;--v:0" aria-hidden="true"></span>
+            <span class="ctxt"><span class="m">Analyse</span>
+              <span class="cinfo-salle"><span class="k">Salle : </span><span class="s">Grand auditoire 1/14</span></span>
+            </span>
+            <span class="nouveau" style="align-self:center;padding:8px;color:var(--accent)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.2 4.2"/></svg></span></button></li>
+        </ol></div></div></div></li></ul>
+    </div></div><figcaption><b>Depuis le cours : la mini-loupe</b>À droite, visible seulement cours ouvert.</figcaption></figure>
+  </div>
+</section>
+
+<!-- ============ 8 · bureau ============ -->
+<section class="prop" id="prop-8">
+  <h2><span class="n">8</span>Pensée bureau — topbar + touche « / » + bulle</h2>
+  <p>Bouton global : loupe en haut près de l'avatar, touche « / » au clavier. Depuis un cours : bouton dans la bulle du calendrier.</p>
+  <div class="tels">
+    <figure><div class="tel"><div class="wrap">
+      <div class="topbar"><button class="gauche" type="button">Réglages</button>
+        <h1 class="title"><button type="button">Ez<span>Horaire</span></button></h1>
+        <span style="position:absolute;right:0;top:50%;transform:translateY(-50%);display:flex;gap:8px;align-items:center">
+          <button type="button" class="nouveau" aria-label="Chercher un cours" style="width:40px;height:40px;border-radius:50%;border:0;display:grid;place-items:center;color:var(--accent);background:linear-gradient(180deg,var(--relief-haut),var(--relief-bas));box-shadow:inset 0 0 0 1px var(--line),inset 0 1px 0 var(--reflet),var(--ombre-btn);cursor:pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.2 4.2"/></svg></button>
+          <button class="droite" type="button" style="position:static;transform:none">LE</button>
+        </span></div>
+      <div class="week">
+        <button class="nav halo" type="button">‹</button>
+        <div class="cur"><strong>Semaine 1</strong><span>28 sept. – 2 oct. 2026</span></div>
+        <button class="nav halo" type="button">›</button>
+      </div>
+      <button class="thisweek halo" type="button">Cette semaine</button>
+      <div class="bulle">Astuce ordinateur : touche <b>/</b> = chercher un cours.</div>
+      <ul class="days"><li class="day"><button type="button">
+        <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+        <span class="dsum busy">08h15 → 12h30</span></button></li></ul>
+    </div></div><figcaption><b>Global : la topbar</b>La seule qui soigne le grand écran.</figcaption></figure>
+    <figure><div class="tel"><div class="wrap">
+      <div class="topbar"><button class="gauche" type="button">Réglages</button>
+        <h1 class="title"><button type="button">Ez<span>Horaire</span></button></h1>
+        <button class="droite" type="button">LE</button></div>
+      <span class="tag">Bulle du calendrier (grand écran)</span>
+      <div class="bulle"><b>Analyse</b><br>
+        <span style="color:var(--muted)">Lundi 28 sept. · 08h15 – 10h15 · Grand auditoire 1/14</span>
+        <button class="ligne-dates nouveau" type="button"><span>Toutes ses dates · 12 séances</span><span>→</span></button>
+      </div>
+    </div></div><figcaption><b>Depuis le cours : la bulle</b>Même bouton dans le calendrier bureau.</figcaption></figure>
+  </div>
+</section>
+
+<!-- ============ 9 · pédagogique ============ -->
+<section class="prop" id="prop-9">
+  <h2><span class="n">9</span>La pédagogique — compteur + saut aller-retour</h2>
+  <p>Bouton global : pastille « Rechercher · 7 cours ». Depuis un cours : chaque date saute à sa semaine, mise en avant.</p>
+  <div class="tels">
+    <figure><div class="tel"><div class="wrap">
+      <div class="topbar"><button class="gauche" type="button">Réglages</button>
+        <h1 class="title"><button type="button">Ez<span>Horaire</span></button></h1>
+        <button class="droite" type="button">LE</button></div>
+      <div class="week">
+        <button class="nav halo" type="button">‹</button>
+        <div class="cur"><strong>Semaine 1</strong><span>28 sept. – 2 oct. 2026</span></div>
+        <button class="nav halo" type="button">›</button>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:center;margin:0 0 12px">
+        <button class="thisweek halo" type="button" style="margin:0">Cette semaine</button>
+        <button class="thisweek halo nouveau" type="button" style="margin:0;color:var(--accent)">⌕ Rechercher · 7 cours</button>
+      </div>
+      <ul class="days"><li class="day"><button type="button">
+        <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+        <span class="dsum busy">08h15 → 12h30</span></button></li></ul>
+    </div></div><figcaption><b>Global : le compteur</b>« 7 cours » annonce ce qu'on va trouver.</figcaption></figure>
+    <figure><div class="tel"><div class="wrap">
+      <div class="topbar"><button class="gauche" type="button">Réglages</button>
+        <h1 class="title"><button type="button">Ez<span>Horaire</span></button></h1>
+        <button class="droite" type="button">LE</button></div>
+      <span class="puce-retour nouveau">‹ Analyse · 12 séances</span>
+      <div class="week">
+        <button class="nav halo" type="button">‹</button>
+        <div class="cur"><strong>Semaine 2</strong><span>5 – 9 oct. 2026</span></div>
+        <button class="nav halo" type="button">›</button>
+      </div>
+      <ul class="days"><li class="day open"><button type="button">
+        <span class="dname"><strong>Lundi</strong><span class="ddate">5 oct.</span></span>
+        <span class="dsum busy">08h15 → 12h30</span></button>
+        <div class="detail"><div><div class="box"><ol>
+          <li class="c open seul"><button class="cbtn" type="button" disabled>
+            <span class="hcol"><span class="h">08h15</span><span class="h">10h15</span></span>
+            <span class="cpoint" style="--h:221;--v:0" aria-hidden="true"></span>
+            <span class="ctxt"><span class="m">Analyse</span>
+              <span class="cinfo-salle"><span class="k">Salle : </span><span class="s">Grand auditoire 1/14</span></span>
+            </span></button></li>
+        </ol></div></div></div></li></ul>
+    </div></div><figcaption><b>Le saut : la semaine</b>Date touchée = semaine ouverte, jour déroulé, puce retour.</figcaption></figure>
+  </div>
+</section>
+
+<!-- ============ 10 · préférée ============ -->
+<section class="prop" id="prop-10">
+  <h2><span class="n">10</span>Ma préférée — loupe + titre + ligne + bulle</h2>
+  <p>Bouton global : la loupe discrète (prop. 1). Depuis un cours : titre cliquable ET ligne bleue, + bulle sur bureau.</p>
+  <div class="tels">
+    <figure><div class="tel"><div class="wrap">
+      <div class="topbar"><button class="gauche" type="button">Réglages</button>
+        <h1 class="title"><button type="button">Ez<span>Horaire</span></button></h1>
+        <button class="droite" type="button">LE</button></div>
+      <div class="week">
+        <button class="nav halo" type="button">‹</button>
+        <div class="cur"><strong>Semaine 1</strong><span>28 sept. – 2 oct. 2026</span></div>
+        <button class="nav halo" type="button">›</button>
+        <button class="nav halo nouveau" type="button" aria-label="Chercher un cours" style="color:var(--accent)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.2 4.2"/></svg></button>
+      </div>
+      <button class="thisweek halo" type="button">Cette semaine</button>
+      <ul class="days"><li class="day"><button type="button">
+        <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+        <span class="dsum busy">08h15 → 12h30</span></button></li>
+        <li class="day"><button type="button">
+        <span class="dname"><strong>Mardi</strong><span class="ddate">29 sept.</span></span>
+        <span class="dsum busy">08h15 → 15h30</span></button></li></ul>
+    </div></div><figcaption><b>Global : la loupe</b>Un seul bouton discret, toujours là.</figcaption></figure>
+    <figure><div class="tel"><div class="wrap">
+      <div class="topbar"><button class="gauche" type="button">Réglages</button>
+        <h1 class="title"><button type="button">Ez<span>Horaire</span></button></h1>
+        <button class="droite" type="button">LE</button></div>
+      <ul class="days"><li class="day open"><button type="button">
+        <span class="dname"><strong>Lundi</strong><span class="ddate">28 sept.</span></span>
+        <span class="dsum busy">08h15 → 12h30</span></button>
+        <div class="detail"><div><div class="box"><ol>
+          <li class="c open"><button class="cbtn" type="button">
+            <span class="hcol"><span class="h">08h15</span><span class="h">10h15</span></span>
+            <span class="cpoint" style="--h:221;--v:0" aria-hidden="true"></span>
+            <span class="ctxt"><span class="m nouveau" style="color:var(--accent)"><u>Analyse</u></span>
+              <span class="cinfo-salle"><span class="k">Salle : </span><span class="s">Grand auditoire 1/14</span></span>
+              <span class="cinfos"><span><span class="cinfo-row"><span class="k">Prof : </span>Delcourt</span></span></span>
+            </span></button>
+            <button class="ligne-dates nouveau" type="button"><span>Toutes ses dates · 12 séances</span><span>→</span></button>
+          </li>
+        </ol></div></div></div></li></ul>
+    </div></div><figcaption><b>Depuis le cours : les deux</b>Titre + ligne bleue : on clique en haut ou en bas.</figcaption></figure>
+  </div>
+</section>
+
+</main>
+<script>
+(function () {
+  var m = /[?&]p=(\d+)/.exec(location.search);
+  if (m) {
+    document.body.classList.add("single");
+    var n = m[1], secs = document.querySelectorAll("section.prop");
+    secs.forEach(function (s) { if (s.id !== "prop-" + n) s.remove(); });
+    var h = document.querySelector("section.prop h2");
+    if (h) document.title = "EzHoraire — " + h.textContent.trim();
+  }
+})();
+</script>
+</body>
+</html>
