@@ -1457,10 +1457,13 @@
   .ech-add:focus-visible, .jour-ech-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   /* Bouton global d'échéance (bureau uniquement, caché sur téléphone). */
   #ech-global-wrap { display: none; }
-  /* Bouton « Échéance » sous la boîte des cours, à droite. L'air qui
-     l'entoure est réduit de moitié par rapport à la boîte : 5px au-dessus
-     (la marge basse de la boîte qui le précède), 6px en dessous. */
-  .jour-ech { display: flex; justify-content: flex-end; padding: 0 12px 6px; }
+  /* Boutons sous la boîte des cours : « Semaine » à gauche (retour
+     vers la semaine de la séance, depuis la recherche), « Échéance » à
+     droite. L'air qui les entoure est réduit de moitié par rapport à la
+     boîte : 5px au-dessus (la marge basse de la boîte qui le précède),
+     6px en dessous. Seul, le bouton reste à droite. */
+  .jour-ech { display: flex; justify-content: space-between; gap: 8px; padding: 0 12px 6px; }
+  .jour-ech .jour-ech-btn:last-child { margin-left: auto; }
   .detail .box:has(+ .jour-ech) { margin-bottom: 5px; }
   /* Étape 1 de la fenêtre d'échéance : la liste des cours du jour, des
      lignes bien hautes pour viser juste du pouce. Les deux étapes gardent

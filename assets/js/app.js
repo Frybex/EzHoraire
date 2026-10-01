@@ -5952,8 +5952,12 @@
       "</ol></div>" +
       /* Ajouter une échéance à ce cours : le formulaire s'ouvre
          directement sur lui (date de la séance ouverte), sans l'écran de
-         choix du cours ni de l'heure. */
+         choix du cours ni de l'heure. À gauche, un raccourci vers la
+         semaine de cette séance, avec son jour ouvert. */
       '<div class="jour-ech">' +
+      '<button type="button" class="jour-ech-btn" data-rc-sem="' + txt(cle) + '" ' +
+      'aria-label="Voir la semaine ' + semaine + ' avec ce jour ouvert" title="Voir la semaine ' + semaine + '">' +
+      "<span>Semaine " + semaine + "</span></button>" +
       '<button type="button" class="jour-ech-btn" data-rc-ech="' + txt(cle) + '" ' +
       'aria-label="Ajouter un devoir ou un examen à ce cours" title="Ajouter un devoir ou un examen">' +
       "<span>Échéance</span></button></div>" +
@@ -6058,7 +6062,34 @@
     var b = e.target.closest("button[data-rc-cours]");
     if (b) rcOuvrirCours(b.getAttribute("data-rc-cours"));
   });
+  /* Depuis une séance, bascule sur sa semaine avec son jour ouvert
+     (téléphone : la journée se déroule ; ordinateur : la grille montre
+     déjà toute la semaine). */
+  function rcVoirSemaine(semaine, jour) {
+    if (SEMAINES.indexOf(semaine) === -1) return;
+    sem = semaine;
+    semaineAuto = false;
+    resetDepliage();
+    joursOuverts[jour] = true;
+    fermerPdf();
+    rcFermer();
+    rendre();
+    var btn = document.querySelector('#jours .day > button[data-jour="' + jour + '"]');
+    if (btn && btn.closest(".day")) calerDansEcran(btn.closest(".day"), true);
+  }
   rcDates.addEventListener("click", function (e) {
+    var bs = e.target.closest("button[data-rc-sem]");
+    if (bs && rcGroupe) {
+      var cleS = bs.getAttribute("data-rc-sem");
+      for (var k = 0; k < rcGroupe.seances.length; k++) {
+        var ss = rcGroupe.seances[k];
+        if (rcCleSeance(ss.semaine, ss) === cleS) {
+          rcVoirSemaine(ss.semaine, ss.cours.jour);
+          return;
+        }
+      }
+      return;
+    }
     /* Échéance directement sur ce cours, à la date de la séance ouverte. */
     var be = e.target.closest("button[data-rc-ech]");
     if (be && rcGroupe) {
