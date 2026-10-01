@@ -5690,7 +5690,11 @@
       '<button type="button" class="jour-ech-btn" data-pop-ech-ajout ' +
       'aria-label="Ajouter un devoir ou un examen à ce cours" title="Ajouter un devoir ou un examen">' +
       "<span>Échéance</span></button></div>";
-    return '<p class="pt">' + txt(nettoyerMatiere(c.matiere || "Cours")) + "</p>" +
+    // Titre cliquable (ordinateur) : ouvre la recherche sur ce cours
+    // (toutes ses séances), comme la pastille sur téléphone.
+    return '<button type="button" class="pt" data-pop-rech="' + txt(c.matiere || "") + '"' +
+      ' title="Voir toutes ses séances" aria-label="Chercher ' + txt(nettoyerMatiere(c.matiere || "Cours")) + ' — voir toutes ses séances">' +
+      txt(nettoyerMatiere(c.matiere || "Cours")) + "</button>" +
       '<p class="ph">' + JOURS[c.jour] + " " + fmtDate(date) + " · " + fmtH(c.debut) + " – " + fmtH(c.fin) + "</p>" +
       "<dl>" + d + "</dl>" + blocEch + btnAjout;
   }
@@ -5787,6 +5791,15 @@
     if (ajout) {
       e.stopPropagation();
       if (popCours) { echRetourJour = null; ouvrirEcheance(popCours); }
+      return;
+    }
+    // Titre du cours : ouvre la recherche sur ses séances (comme la
+    // pastille sur téléphone). Intercepté avant le reste de la bulle.
+    var rech = e.target.closest("[data-pop-rech]");
+    if (rech) {
+      e.stopPropagation();
+      var mat = rech.getAttribute("data-pop-rech");
+      if (mat) rcOuvrir(mat);
       return;
     }
     e.stopPropagation();
