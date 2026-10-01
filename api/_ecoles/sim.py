@@ -73,6 +73,10 @@ _SEMAINES = {
         # Jeudi : stage (ni salle, ni prof, ni groupe), premier semestre.
         _cours(3, "09h00", "12h00", "Stage en entreprise",
                semaines=PREMIER_SEMESTRE),
+        # Jeudi après-midi : cours de test en 8 séances (semaines 1, 2,
+        # 3 puis 5 à 9, la 4e étant le congé), pour essayer la recherche.
+        _cours(3, "13h30", "15h30", "Cours test", "1/20", type_="Cours",
+               semaines=(1, 2, 3, 5, 6, 7, 8, 9)),
         # Vendredi : deux salles, un cours sans prof, un examen.
         _cours(4, "08h15", "10h15", "Bases de données", "1/36A, 1/36B",
                "Martin", ("Groupe 1 BA1 Informatique",)),
