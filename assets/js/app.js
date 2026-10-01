@@ -1985,6 +1985,7 @@
     ouvrir[v]();
   }
   document.getElementById("btn-retour").addEventListener("click", function () {
+    if (guideRetour()) return;
     var prec = pile.pop();
     if (prec) ouvrir[prec]();
   });
@@ -2070,6 +2071,11 @@
     };
     reprendrePerso(d, edite);
     if (!choix.perso && (vueVoulue === "perso" || vueVoulue === "cours")) vueVoulue = "formation";
+    // Guide sur mesure : reprise au récap ou aux options, jamais à mi-parcours.
+    if (choix.perso) {
+      if (!choix.perso.sources.length) vueVoulue = "formation";
+      else if (vueVoulue !== "formation") vueVoulue = "perso";
+    }
     if (vueVoulue === "cours" && !(choix.source && choix.source.formation)) vueVoulue = "perso";
     if (vueVoulue === "groupes") {
       // L'horaire déjà téléchargé ressort du cache : l'écran s'ouvre même hors ligne.
@@ -2572,6 +2578,7 @@
   }
   function ouvrirFormations() {
     montrer("formation");
+    if (guidePerso()) { ouvrirOptions(); return; }
     // Retour depuis le composeur sans source en cours : on quitte le sur mesure.
     if (choix.perso && !choix.source) choix.perso = null;
     majEnteteSource();
@@ -2587,6 +2594,7 @@
     document.getElementById("formation-recherche").hidden = false;
     document.getElementById("liste-formations").hidden = false;
     document.getElementById("formation-titre").textContent = "Ta formation";
+    document.getElementById("btn-options-suivant").hidden = true;
     if (formations.ecole === choix.ecole && formations.liste) {
       effacer(status); listerFormations(); return;
     }
@@ -2603,6 +2611,105 @@
     });
   }
 
+  /* ---------- 2-gu. Sur mesure, étape 1 : « Choisis tes options » ----------
+     Une page, une action : on coche tout ce qu'on suit (années, options),
+     puis « Suivant ». La 1re option garde tous ses cours sans le dire,
+     les suivantes partent tout décochées. */
+  function optionChoisie(formation, ical) {
+    var perso = choix.perso;
+    if (!perso) return false;
+    return perso.sources.some(function (s) {
+      return s.formation === formation && (s.ical || "") === (ical || "");
+    });
+  }
+  function ouvrirOptions() {
+    montrer("formation");
+    var perso = choix.perso;
+    if (!perso) { ouvrirEcoles(); return; }
+    perso.etape = "options";
+    majEnteteSource();
+    var ec = ecoleDe(choix.ecole);
+    document.getElementById("formation-titre").textContent = "Choisis tes options";
+    document.getElementById("formation-aide").textContent = "Coche tout ce que tu suis.";
+    var status = document.getElementById("formations-status");
+    var champ = document.getElementById("recherche");
+    var estUlb = !!(ec && ec.recherche);
+    // Écoles à recherche : le guide ne propose que les niveaux /
+    // programmes (une page par action, pas de codes ni de lien ici).
+    document.getElementById("rech-modes").hidden = true;
+    if (estUlb) {
+      if (rech.ecole !== choix.ecole) {
+        rech.ecole = choix.ecole; rech.cours = []; rech.resultats = [];
+        champ.value = "";
+        document.getElementById("rech-lien-champ").value = "";
+      }
+      rech.mode = "niveau";
+      rechAppliquerModeGuide();
+      majSuivantOptions();
+      return;
+    }
+    document.getElementById("rech-cours").hidden = true;
+    document.getElementById("rech-lien").hidden = true;
+    document.getElementById("formation-recherche").hidden = false;
+    document.getElementById("liste-formations").hidden = false;
+    majSuivantOptions();
+    if (formations.ecole === choix.ecole && formations.liste) {
+      effacer(status); listerFormations(); return;
+    }
+    document.getElementById("liste-formations").innerHTML = "";
+    attente(status, "Chargement des formations…");
+    var demande = choix.ecole;
+    api("/api/formations?ecole=" + encodeURIComponent(demande), 30000).then(function (rep) {
+      formations = { ecole: demande, liste: rep.formations };
+      if (vue !== "formation" || choix.ecole !== demande || !guidePerso()) return;
+      effacer(status); listerFormations();
+      if (window.matchMedia("(hover: hover)").matches) champ.focus();
+    }, function (e) {
+      if (vue === "formation") erreur(status, "Échec : " + e.message + " Reviens en arrière pour réessayer.");
+    });
+  }
+  /* Une option à cocher du guide : même bouton aux 3 endroits
+     (sélection épinglée, résultats de recherche, liste des formations). */
+  function htmlOption(f, pris) {
+    return '<li><button type="button" class="halo opt" data-formation="' + txt(f) +
+      '" aria-pressed="' + pris + '"><span class="coche" aria-hidden="true"></span><span class="nom">' +
+      txt(joliFormation(f)) + "</span></button></li>";
+  }
+  /* Sélection épinglée en tête de liste : ce qu'on a coché reste
+     visible même quand la recherche change (pour trouver la 2e option). */
+  function htmlSelectionEpinglee() {
+    var perso = choix.perso;
+    if (!perso || !perso.sources.length) return "";
+    return '<li class="liste-titre">Ta sélection · ' + perso.sources.length + "</li>" +
+      perso.sources.map(function (s) {
+        return htmlOption(s.formation, true);
+      }).join("");
+  }
+  function majSuivantOptions() {
+    var btn = document.getElementById("btn-options-suivant");
+    if (!guidePerso()) { btn.hidden = true; return; }
+    var n = choix.perso.sources.length;
+    btn.hidden = false;
+    btn.disabled = !n;
+    btn.textContent = !n ? "Coche au moins une option" : n === 1 ? "Suivant" : "Suivant · " + n + " options";
+    sauverBrouillon();
+  }
+  document.getElementById("btn-options-suivant").addEventListener("click", function () {
+    var perso = choix.perso;
+    if (!perso || !perso.sources.length) return;
+    if (perso.sources.length > FUSION.MAX_SOURCES) {
+      perso.sources = perso.sources.slice(0, FUSION.MAX_SOURCES);
+    }
+    // La 1re garde tout (sans = []), les autres partent vides (avec = []).
+    // On ne le dit plus : fini le mot « principal ».
+    perso.sources.forEach(function (s, i) {
+      if (i === 0) { s.role = "principale"; s.sans = []; delete s.avec; }
+      else if (!FUSION.estParcours(s)) { s.role = "ajout"; s.avec = s.avec || []; delete s.sans; }
+      if (!Array.isArray(s.groupes)) s.groupes = [];
+    });
+    perso.retour = null;
+    demarrerCoursGuide();
+  });
   /* ---------- 2b. Écoles « recherche » : par niveau/programme, par codes
      de cours, ou lien perso ----------
      L'ULB publie plus de 2 000 niveaux d'études, l'UCLouvain des milliers
@@ -2666,6 +2773,7 @@
       if (tag) { tag.textContent = "Recommandé"; tag.hidden = !doit; }
     });
     document.getElementById("rech-import-texte").placeholder = cfg.import_texte || "";
+    if (!guidePerso()) document.getElementById("btn-options-suivant").hidden = true;
     effacer(document.getElementById("formations-status"));
     rech.arme = null;
     rech.requete++; // invalide une recherche en vol
@@ -2694,6 +2802,27 @@
       champLien.focus();
     }
     if (relancer && rech.mode !== "lien") rechChercher();
+  }
+  /* Guide sur mesure (écoles à recherche) : que des niveaux à cocher. */
+  function rechAppliquerModeGuide() {
+    var cfg = rechConfig();
+    var champ = document.getElementById("recherche");
+    var mode = cfg.niveau || cfg.cours;
+    effacer(document.getElementById("formations-status"));
+    rech.arme = null;
+    rech.requete++;
+    document.getElementById("liste-formations").innerHTML = "";
+    document.getElementById("formation-recherche").hidden = false;
+    document.getElementById("rech-cours").hidden = true;
+    document.getElementById("rech-lien").hidden = true;
+    document.getElementById("liste-formations").hidden = false;
+    document.getElementById("formation-titre").textContent = "Choisis tes options";
+    document.getElementById("formation-aide").textContent = "Coche tout ce que tu suis.";
+    if (mode && mode.placeholder) {
+      champ.placeholder = mode.placeholder;
+      champ.setAttribute("aria-label", "Rechercher une option");
+    }
+    if (window.matchMedia("(hover: hover)").matches) champ.focus();
   }
   function rechChercher() {
     var champ = document.getElementById("recherche");
@@ -2736,6 +2865,12 @@
       return;
     }
     var parCours = rech.mode === "cours";
+    if (guidePerso() && !parCours) {
+      liste.innerHTML = visibles.map(function (r) {
+        return htmlOption(r.cle, optionChoisie(r.cle, null));
+      }).join("") || '<li class="empty">Aucun résultat. Essaie un autre mot.</li>';
+      return;
+    }
     liste.innerHTML = visibles.map(function (r) {
       if (!parCours && dejaAjoutee(r.cle, null)) {
         return '<li><button type="button" class="halo deja" data-formation="' + txt(r.cle) + '" data-deja aria-disabled="true">' +
@@ -3136,12 +3271,21 @@
       trouvees = trouvees.map(function (f) { return { f: f, r: -1 }; });
     }
     var derniere = null;
-    document.getElementById("liste-formations").innerHTML = trouvees.length
+    var enGuide = guidePerso();
+    if (enGuide) {
+      // La sélection remonte en tête et ne se filtre pas ; le reste de la
+      // liste ne montre que ce qui n'est pas déjà coché.
+      trouvees = trouvees.filter(function (x) { return !optionChoisie(x.f, null); });
+    }
+    var corps = trouvees.length
       ? trouvees.map(function (x) {
           var titre = "";
           if (avecRubriques && x.r !== derniere) {
             derniere = x.r;
             titre = '<li class="liste-titre">' + txt(x.r < RUBRIQUES.length ? RUBRIQUES[x.r][1] : "Autres") + "</li>";
+          }
+          if (enGuide) {
+            return titre + htmlOption(x.f, false);
           }
           if (dejaAjoutee(x.f, null)) {
             return titre + '<li><button type="button" class="halo deja" data-formation="' + txt(x.f) +
@@ -3152,6 +3296,8 @@
                  txt(joliFormation(x.f)) + '</span><span class="chev" aria-hidden="true"></span></button></li>';
         }).join("")
       : '<li class="empty">Aucune formation ne correspond.</li>';
+    document.getElementById("liste-formations").innerHTML =
+      (enGuide ? htmlSelectionEpinglee() : "") + corps;
   }
   document.getElementById("recherche").addEventListener("input", function () {
     var ec = ecoleDe(choix.ecole);
@@ -3168,6 +3314,25 @@
   document.getElementById("liste-formations").addEventListener("click", function (e) {
     var b = e.target.closest("button[data-formation]");
     if (!b || b.hasAttribute("data-deja")) return;
+    if (guidePerso()) {
+      // Guide : on coche / décoche, la sélection remonte en tête de liste.
+      var f = b.getAttribute("data-formation");
+      var at = -1;
+      choix.perso.sources.forEach(function (s, i) {
+        if (s.formation === f && !(s.ical || "")) at = i;
+      });
+      if (at >= 0) choix.perso.sources.splice(at, 1);
+      else {
+        if (choix.perso.sources.length >= FUSION.MAX_SOURCES) return;
+        choix.perso.sources.push({ ecole: choix.ecole, formation: f, ical: "",
+          role: "ajout", groupes: [], avec: [], sans: [], surnom: "" });
+      }
+      var ecg = ecoleDe(choix.ecole);
+      if (ecg && ecg.recherche) rechRendreResultats(rech.resultats);
+      else listerFormations();
+      majSuivantOptions();
+      return;
+    }
     var ec = ecoleDe(choix.ecole);
     if (ec && ec.recherche && rech.mode === "cours") { // on ajoute le cours
       rechAjouterCours(b.getAttribute("data-formation"));
@@ -3189,7 +3354,10 @@
      qu'à partir du 2e horaire. Un seul horaire = affichage classique,
      sans nom ni sélecteur. */
   function ouvrirGroupes(preselection) {
+    if (guidePerso() && choix.perso.etape === "groupes") { ouvrirGroupesGuide(); return; }
     montrer("groupes");
+    document.getElementById("groupes-titre").textContent = "Ton groupe";
+    document.getElementById("groupes-compte").hidden = true;
     choix.groupes = (preselection || []).slice();
     var status = document.getElementById("groupes-status");
     var aide = document.getElementById("groupes-aide");
@@ -3242,18 +3410,199 @@
       }
     });
   }
+  /* Les groupes ne montrent que les cours gardés (l'étape des cours
+     vient avant) : pas de groupe proposé pour un cours non suivi. */
+  function demarrerGroupesGuide() {
+    var perso = choix.perso;
+    if (!perso || !perso.sources.length) { ouvrirPerso(); return; }
+    guideOuvrirGroupes(0);
+  }
+  /* Guide, étapes groupes : une page par option. Le nom de l'option
+     en grand, ses groupes, « Suivant ». Peu de texte, on guide. */
+  function ouvrirGroupesGuide() {
+    var perso = choix.perso, src = perso && perso.sources[perso.idx];
+    if (!src) { ouvrirPerso(); return; }
+    montrer("groupes");
+    // Retour à chaque étape (voir guideRetour) ; en retouche, vers le récap.
+    if (perso.retour === "recap") pile = ["perso"];
+    else pile = ["groupes"];
+    document.getElementById("btn-retour").hidden = !pile.length;
+    document.getElementById("groupes-titre").textContent = joliFormation(src.formation);
+    var compte = document.getElementById("groupes-compte");
+    compte.hidden = false;
+    compte.innerHTML = "Option <strong>" + (perso.idx + 1) + " sur " + perso.sources.length + "</strong>";
+    document.getElementById("groupes-aide").textContent = "Choisis ton groupe.";
+    var chips = document.getElementById("chips");
+    var btn = document.getElementById("btn-valider");
+    chips.innerHTML = ""; btn.hidden = true;
+    document.getElementById("filtre-groupes").hidden = true;
+    document.getElementById("filtre-groupes-champ").value = "";
+    document.getElementById("chips-avis").textContent = "";
+    document.getElementById("chips-avis").hidden = true;
+    document.getElementById("groupes-modifiable").hidden = true;
+    document.getElementById("bloc-surnom").style.display = "none";
+    document.getElementById("bloc-theme").hidden = true;
+    var status = document.getElementById("groupes-status");
+    if (choix.data) {
+      if (!src.ical) choix.data = FUSION.donneesCochees(choix.data, src);
+      effacer(status); listerGroupesGuide(); return;
+    }
+    attente(status, "Chargement des groupes…");
+    var demande = choix.formation, icalDemande = choix.ical;
+    chargerHoraire(choix.ecole, demande, icalDemande).then(function (data) {
+      if (choix.formation !== demande || choix.ical !== icalDemande) return;
+      choix.data = data;
+      if (vue !== "groupes" || !guidePerso()) return;
+      effacer(status); listerGroupesGuide();
+    }, function (e) {
+      if (vue === "groupes" && choix.formation === demande) {
+        erreur(status, "Échec : " + e.message + " Reviens en arrière pour réessayer.");
+      }
+    });
+  }
+  function listerGroupesGuide() {
+    var idxAvant = choix.perso ? choix.perso.idx : -1;
+    // Même pastilles que le parcours normal, sans le discours.
+    listerGroupes();
+    // Écran sauté (aucun groupe à choisir) : la suite est déjà affichée.
+    if (!choix.perso || choix.perso.idx !== idxAvant || vue !== "groupes") return;
+    var perso = choix.perso, src = perso && perso.sources[perso.idx];
+    if (!src) return;
+    document.getElementById("groupes-titre").textContent = joliFormation(src.formation);
+    var compte = document.getElementById("groupes-compte");
+    compte.hidden = false;
+    compte.innerHTML = "Option <strong>" + (perso.idx + 1) + " sur " + perso.sources.length + "</strong>";
+    document.getElementById("bloc-surnom").style.display = "none";
+    document.getElementById("bloc-theme").hidden = true;
+    document.getElementById("groupes-modifiable").hidden = true;
+    var groupes = (choix.data && choix.data.groupes) || [];
+    document.getElementById("groupes-aide").textContent =
+      groupes.length ? "Choisis ton groupe." : "Pas de groupes ici : tout le monde a le même horaire.";
+    majValiderGuide();
+  }
+  function majValiderGuide() {
+    var perso = choix.perso;
+    var btn = document.getElementById("btn-valider");
+    btn.hidden = false;
+    btn.disabled = false;
+    var n = choix.groupes.length;
+    var dernier = perso.idx >= perso.sources.length - 1;
+    if (groupeObligatoire() && !n) {
+      btn.disabled = true;
+      btn.textContent = "Sélectionne au moins un groupe";
+    } else if (perso.retour === "recap") {
+      btn.textContent = "Enregistrer";
+    } else {
+      btn.textContent = dernier ? "Voir le récap" : "Suivant" + (n > 1 ? " · " + n + " groupes" : "");
+    }
+    majAvisGroupes();
+    sauverBrouillon();
+  }
+  function sauverGroupesGuide() {
+    var perso = choix.perso, src = perso && perso.sources[perso.idx];
+    if (!src) { ouvrirPerso(); return; }
+    var groupes = choix.data.groupes || [];
+    var sel = groupes.filter(function (g) { return choix.groupes.indexOf(g) >= 0; })
+                     .map(propre).filter(Boolean);
+    if (groupeObligatoire() && !sel.length) return;
+    src.groupes = sel;
+    if (perso.retour === "recap") {
+      // Retouche terminée : retour au récap.
+      perso.retour = null;
+      ouvrirPerso();
+      return;
+    }
+    if (perso.idx + 1 < perso.sources.length) {
+      // Option suivante : ses cours, ou ses groupes si elle n'en a pas.
+      var sv = perso.sources[perso.idx + 1];
+      if (!FUSION.estParcours(sv) && !sv.ical) guideOuvrirCours(perso.idx + 1);
+      else guideOuvrirGroupes(perso.idx + 1);
+      return;
+    }
+    ouvrirPerso();
+  }
+  /* Retour en arrière à chaque étape du guide (options → cours →
+     groupes → récap) : la sélection en cours est gardée (les coches de
+     cours sont déjà dans la source, les groupes sont enregistrés ici). */
+  function guideRetour() {
+    var perso = choix.perso;
+    if (!perso || !perso.etape || perso.retour === "recap") return false;
+    if (perso.etape === "groupes") {
+      if (perso.idx < 0 || perso.idx >= perso.sources.length) return false;
+      var src = perso.sources[perso.idx];
+      if (choix.data && src) {
+        var groupes = choix.data.groupes || [];
+        src.groupes = groupes.filter(function (g) { return choix.groupes.indexOf(g) >= 0; })
+                             .map(propre).filter(Boolean);
+      }
+      // Recule d'un cran : les cours de la même option, ou les groupes de
+      // la précédente si elle n'a pas de cours.
+      var s0 = perso.sources[perso.idx];
+      if (!FUSION.estParcours(s0) && !s0.ical) return guideOuvrirCours(perso.idx);
+      if (perso.idx > 0) return guideOuvrirGroupes(perso.idx - 1);
+      return guideOuvrirOptions();
+    }
+    if (perso.etape === "cours") {
+      // Recule d'un cran : les groupes de l'option précédente, ou les
+      // options si on est au premier écran de cours.
+      if (perso.idx > 0) return guideOuvrirGroupes(perso.idx - 1);
+      return guideOuvrirOptions();
+    }
+    return false;
+  }
+  /* Retour aux options (fin de la remontée). */
+  function guideOuvrirOptions() {
+    var perso = choix.perso;
+    if (!perso) return false;
+    perso.etape = "options";
+    choix.ecole = perso.ecole;
+    choix.formation = null; choix.data = null; choix.groupes = []; choix.ical = null;
+    pile = [];
+    ouvrirOptions();
+    return true;
+  }
+  /* (Ré)ouvre les groupes de l'option i (données en cache ou rechargées). */
+  function guideOuvrirGroupes(i) {
+    var perso = choix.perso, s = perso.sources[i];
+    if (!s) return false;
+    perso.etape = "groupes";
+    perso.idx = i;
+    choix.ecole = s.ecole;
+    choix.formation = s.formation; choix.ical = s.ical || null;
+    choix.groupes = (s.groupes || []).slice();
+    choix.data = memoHoraire(s.ecole, s.formation, s.ical);
+    ouvrirGroupesGuide();
+    if (!choix.data) {
+      chargerHoraire(s.ecole, s.formation, s.ical || null).then(function (data) {
+        if (!guidePerso() || choix.perso.etape !== "groupes" || choix.perso.idx !== i) return;
+        choix.data = s.ical ? data : FUSION.donneesCochees(data, s);
+        if (vue === "groupes") { effacer(document.getElementById("groupes-status")); listerGroupesGuide(); }
+      }, function () { /* erreur affichée sur l'écran */ });
+    }
+    return true;
+  }
+  /* (Ré)ouvre les cours de l'option i (données en cache ou rechargées). */
+  function guideOuvrirCours(i) {
+    var perso = choix.perso, s = perso.sources[i];
+    if (!s || FUSION.estParcours(s) || s.ical) return false;
+    perso.etape = "cours";
+    perso.idx = i;
+    choix.ecole = s.ecole;
+    choix.formation = s.formation; choix.ical = s.ical || null;
+    choix.groupes = (s.groupes || []).slice();
+    choix.data = memoHoraire(s.ecole, s.formation, s.ical);
+    ouvrirCoursGuide();
+    if (!choix.data) chargerCoursGuide();
+    return true;
+  }
   function listerGroupes() {
     var groupes = choix.data.groupes || [];
     var aide = document.getElementById("groupes-aide");
     var btn = document.getElementById("btn-valider");
     var filtre = document.getElementById("filtre-groupes");
     if (!groupes.length) {
-      aide.textContent = joliFormation(choix.formation) + " n'a pas de groupes : tout le monde a le même horaire.";
-      document.getElementById("chips").innerHTML = "";
-      document.getElementById("groupes-modifiable").hidden = true;
-      filtre.hidden = true;
-      majAvisGroupes([]);
-      btn.hidden = false; btn.disabled = false; btn.textContent = choix.source ? texteValiderSource() : "Voir mon horaire";
+      // Aucun groupe à choisir : on saute l'écran (sélection vide).
+      validerGroupes();
       return;
     }
     // En modification, le rappel « tu pourras les changer plus tard » n'a
@@ -3282,11 +3631,14 @@
     var titres = sections.length > 1;
     multi.forEach(function (x) {
       var pastilles = x.groupes.map(function (g) { return pastilleGroupe(g, ""); }).join("");
-      html += titres
-        ? '<div class="section-groupe"><p class="section-titre"' +
+      // Toujours la même disposition (pastilles côte à côte), qu'il y ait
+      // une ou plusieurs sections : sans ce cadre, une section seule
+      // s'étirait en liste verticale plein écran.
+      html += '<div class="section-groupe">' +
+        (titres ? '<p class="section-titre"' +
           (x.matieres.length > 1 ? ' title="' + txt(x.matieres.join(", ")) + '"' : "") + ">" +
-          txt(libelleSection(x)) + '</p><div class="chips">' + pastilles + "</div></div>"
-        : pastilles;
+          txt(libelleSection(x)) + "</p>" : "") +
+        '<div class="chips">' + pastilles + "</div></div>";
     });
     if (options.length) {
       // Les options d'un même cours restent côte à côte, sous le nom du
@@ -3467,6 +3819,7 @@
     return !!(choix.data && choix.data.groupes && choix.data.groupes.length > 8);
   }
   function majValider() {
+    if (guidePerso() && choix.perso.etape === "groupes") { majValiderGuide(); return; }
     var btn = document.getElementById("btn-valider");
     btn.hidden = false;
     btn.disabled = false;
@@ -3495,7 +3848,8 @@
     var g = b.getAttribute("data-groupe"), i = choix.groupes.indexOf(g);
     if (i >= 0) choix.groupes.splice(i, 1); else choix.groupes.push(g);
     b.setAttribute("aria-pressed", i < 0 ? "true" : "false");
-    majValider();
+    if (guidePerso() && choix.perso.etape === "groupes") majValiderGuide();
+    else majValider();
   });
   var elGrThemes = document.getElementById("groupes-themes");
   if (elGrThemes) {
@@ -3510,12 +3864,13 @@
     });
   }
   document.getElementById("surnom").addEventListener("input", sauverBrouillon);
-  document.getElementById("btn-valider").addEventListener("click", function () {
+  document.getElementById("btn-valider").addEventListener("click", validerGroupes);
+  function validerGroupes() {
+    if (guidePerso() && choix.perso.etape === "groupes") { sauverGroupesGuide(); return; }
     var groupes = choix.data.groupes;
     var sel = groupes.filter(function (g) { return choix.groupes.indexOf(g) >= 0; }) // ordre de l'école
                      .map(propre).filter(Boolean);
     if (groupeObligatoire() && !sel.length) return; // garde-fou (le bouton est déjà grisé)
-    if (choix.perso && choix.source) { validerSource(sel); return; } // retour au composeur
     var surnom = document.getElementById("surnom").value.replace(/\s+/g, " ").trim() ||
                  surnomDefaut(choix.formation, sel);
     surnom = surnom.slice(0, 24);
@@ -3571,16 +3926,12 @@
     resetDepliage(); deplierAujourdhui();
     afficherHoraire();
     actualiser().catch(function () { /* garde le cache local */ });
-  });
+  }
 
-  /* ---------- Horaire sur mesure : composeur et cours d'une source ----------
+  /* ---------- Horaire sur mesure : guide options -> groupes -> cours -> récap -> nom ---
      choix.perso  : l'horaire en cours de composition
-                    { editionId, ecole, sources: [...], surnom, theme, pile }
-     choix.source : la source qu'on ajoute ou qu'on modifie
-                    { index (null = nouvelle), ecole, formation, ical, role,
-                      sans, avec, groupes, surnom, brut (horaire complet) }
-     Les écrans formation et groupes sont ceux du parcours normal : ils
-     savent qu'ils travaillent pour une source quand choix.source existe. */
+                    { editionId, ecole, sources: [...], surnom, theme, pile,
+                      etape ("options"|"groupes"|"cours"|"recap"|"nom"), idx, retour } */
   var ICONE_CALQUES = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" ' +
     'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 8 4.5-8 4.5-8-4.5z"/>' +
     '<path d="m4 12 8 4.5 8-4.5"/><path d="m4 16.5 8 4.5 8-4.5"/></svg>';
@@ -3601,24 +3952,13 @@
       theme: normaliserTheme(d.perso.theme),
       pile: Array.isArray(d.perso.pile) ? d.perso.pile.filter(function (n) {
         return VUES_BROUILLON.indexOf(n) >= 0 || n === "horaire";
-      }) : []
+      }) : [],
+      // Un brouillon interrompu en plein guide reprend au récap (ou aux
+      // options s'il n'y a rien) : pas de restauration à mi-parcours.
+      etape: "recap", idx: 0, retour: null
     };
-    var s = d.source;
-    if (s && typeof s === "object" && (s.index == null || choix.perso.sources[s.index])) {
-      var liste = function (v) { return Array.isArray(v) ? v.filter(function (x) { return typeof x === "string"; }) : []; };
-      choix.source = {
-        index: s.index == null ? null : +s.index, ecole: d.ecole,
-        formation: typeof s.formation === "string" ? s.formation : null,
-        ical: typeof s.ical === "string" ? s.ical : "",
-        role: s.role === "principale" ? "principale" : "ajout",
-        sans: liste(s.sans), avec: Array.isArray(s.avec) ? liste(s.avec) : undefined,
-        groupes: liste(s.groupes), surnom: typeof s.surnom === "string" ? s.surnom : "",
-        brut: null
-      };
-      if (choix.source.formation) {
-        choix.source.brut = memoHoraire(d.ecole, choix.source.formation, choix.source.ical);
-      }
-    }
+    if (!choix.perso.sources.length) choix.perso.etape = "options";
+    choix.source = null;
   }
   // Une formation déjà présente dans l'horaire sur mesure (hors celle qu'on modifie).
   function dejaAjoutee(formation, ical) {
@@ -3628,183 +3968,191 @@
     });
   }
   function majEnteteSource() {
-    var enSource = !!(choix.perso && choix.source);
-    document.getElementById("liste-perso").hidden = enSource || !!choix.editionId;
-    var r = document.getElementById("formation-rappel");
-    r.hidden = !enSource;
-    if (enSource) {
-      var n = choix.perso.sources.length;
-      r.innerHTML = ICONE_CALQUES.replace(/26/g, "20") + "<span>" +
-        (choix.source.index == null
-          ? "Ajout à ton horaire sur mesure" + (n ? " · <strong>" + n + " source" + (n > 1 ? "s" : "") + " déjà là</strong>" : "")
-          : "Tu remplaces <strong>" + txt(nomSource(choix.perso.sources[choix.source.index])) + "</strong>") +
-        "</span>";
-    }
+    // Le guide sur mesure choisit tout sur l'écran des formations : la
+    // carte « Composer » n'a plus rien à y faire pendant le guide.
+    var enGuide = guidePerso();
+    document.getElementById("liste-perso").hidden = enGuide || !!choix.editionId;
+    document.getElementById("formation-rappel").hidden = true;
   }
+  function guidePerso() { return !!(choix.perso && choix.perso.etape); }
   document.getElementById("btn-perso").addEventListener("click", function () {
     choix.perso = {
       editionId: null, ecole: choix.ecole, sources: [], surnom: "",
       theme: choix.theme != null ? normaliserTheme(choix.theme)
         : (profils.length ? suggereThemeSuivant() : themeChoisiIdentite),
-      pile: null
+      pile: null, etape: "options"
     };
     choix.source = null; choix.formation = null; choix.data = null; choix.groupes = []; choix.ical = null;
     document.getElementById("recherche").blur();
-    aller("perso");
+    // Direct, sans empiler : on est déjà sur l'écran des formations, et
+    // Retour doit revenir au choix de l'école, pas à cette page.
+    ouvrirOptions();
   });
-  /* Formation choisie (liste, niveau, codes de cours ou lien) : parcours
-     normal -> groupes ; source d'un horaire sur mesure -> ses cours. */
+  /* Formation choisie : parcours normal -> groupes ; guide sur mesure ->
+     bascule vers les étapes guidées (groupes puis cours, option par option). */
   function allerApresFormation() {
-    if (!choix.perso || !choix.source) { aller("groupes"); return; }
-    if (dejaAjoutee(choix.formation, choix.ical)) {
-      erreur(document.getElementById(choix.ical ? "rech-lien-status" : "formations-status"),
-             "Cette année est déjà dans ton horaire sur mesure.");
-      return;
-    }
-    var src = choix.source;
-    var lien = choix.ical ? choix.data : null; // un lien vient d'être lu : on garde sa réponse
-    if (src.formation !== choix.formation || (src.ical || "") !== (choix.ical || "")) {
-      src.groupes = []; src.sans = []; src.avec = [];
-    }
-    src.formation = choix.formation;
-    src.ical = choix.ical || "";
-    src.brut = lien || memoHoraire(src.ecole, src.formation, src.ical);
-    src.brutFrais = !!lien;
-    choix.data = null;
-    choix.groupes = src.groupes.slice();
-    if (FUSION.estParcours(src)) {
-      // « PAR:… » : les codes choisis sont déjà la sélection de cours.
-      src.role = "ajout"; src.avec = undefined; src.sans = [];
-      choix.data = src.brut;
-      aller("groupes");
-      return;
-    }
-    aller("cours");
+    if (guidePerso()) { return; } // le guide choisit plusieurs options : voir btn-options-suivant
+    aller("groupes");
   }
   function texteValiderSource() {
-    return choix.source && choix.source.index != null ? "Enregistrer cette année" : "Ajouter à mon horaire";
+    return "Suivant";
   }
 
-  /* --- Composeur --- */
+  /* --- Guide sur mesure : options, puis cours et groupes option par
+     option (C1 -> G1 -> C2 -> G2...), récap, nom et thème ---
+     En interne, la 1re option garde tous ses cours (role "principale",
+     sans = []) et les suivantes ne gardent que les cours cochés (role
+     "ajout", avec = []) : on ne le dit plus, il n'y a plus de mot
+     "principal" dans l'interface. */
   function ouvrirPerso() {
     montrer("perso");
     var perso = choix.perso;
-    if (!perso) { ouvrirEcoles(); return; }
-    choix.source = null;
+    if (!perso || !perso.sources.length) { ouvrirEcoles(); return; }
     if (!perso.pile) perso.pile = pile.slice();
+    if (!perso.etape || perso.etape === "options") perso.etape = "recap";
     document.body.setAttribute("data-theme", String(normaliserTheme(perso.theme)));
-    var ec = ecoleDe(perso.ecole), n = perso.sources.length;
-    document.getElementById("perso-aide").textContent = n
-      ? n + " source" + (n > 1 ? "s" : "") + " de " + ec.nom + " · chacune reste à jour chez l'école."
-      : "Réunis dans une seule semaine des cours de plusieurs années ou options de " + ec.nom + ".";
-    var zone = document.getElementById("perso-sources");
-    zone.innerHTML = n ? perso.sources.map(htmlCarteSource).join("")
-      : '<div class="vide-src">' + ICONE_CALQUES + "<strong>Aucune source pour l'instant</strong>" +
-        "<span>Commence par ton année principale.</span></div>";
-    var plein = n >= FUSION.MAX_SOURCES;
-    document.getElementById("perso-ajouter").disabled = plein;
+    if (perso.etape === "nom") ouvrirPersoNom();
+    else ouvrirPersoRecap();
+  }
+  function carteRecapHTML(src, i) {
+    var grp = !src.groupes.length ? "Sans filtre de groupe"
+      : src.groupes.length === 1 ? nomGroupe(src.groupes[0]) : src.groupes.length + " groupes";
+    var detail;
+    if (i === 0 && src.role === "principale" && (src.sans || []).length) {
+      var memo = memoHoraire(src.ecole, src.formation, src.ical);
+      var total = memo ? FUSION.coursDeSource(memo).length : 0;
+      var gardes = total ? FUSION.coursDeSource(memo).map(function (x) { return x.cle; })
+        .filter(function (k) { return src.sans.indexOf(k) < 0; }).length : 0;
+      detail = grp + " · " + (total ? gardes + " cours" : "année modifiée");
+    } else if (i === 0) {
+      detail = grp + " · toute l'année";
+    } else {
+      var nCours = (src.avec || []).length;
+      detail = grp + " · " + (nCours ? nCours + " cours" : "aucun cours");
+    }
+    return '<li class="ech-item" data-src-index="' + i + '" data-ouvert="0">' +
+      '<div class="ech-fond-modifier"><button type="button" class="ech-action-btn" data-src-edit="' + i +
+      '" aria-label="Modifier ' + txt(nomSource(src)) + '">' + ICONE_CRAYON_ECH +
+      '<span class="btn-libelle-normal">Modifier</span><span class="btn-libelle-auto">Relâcher</span></button></div>' +
+      '<div class="ech-fond-suppr"><button type="button" class="ech-action-btn" data-src-suppr="' + i +
+      '" aria-label="Supprimer ' + txt(nomSource(src)) + '">' + ICONE_CORBEILLE_ECH +
+      '<span class="btn-libelle-normal">Suppr</span><span class="btn-libelle-auto">Relâcher</span></button></div>' +
+      '<div class="ech" data-src-carte="' + i + '" title="Touche pour modifier ou supprimer">' +
+      '<span class="src-num" aria-hidden="true">' + (i + 1) + "</span>" +
+      '<span class="ech-corps"><span class="ech-titre"><span class="ech-titre-txt">' + txt(nomSource(src)) + "</span></span>" +
+      '<span class="ech-quand">' + txt(detail) + "</span></span></div></li>";
+  }
+  function ouvrirPersoRecap() {
+    var perso = choix.perso;
+    perso.etape = "recap";
+    pile = [];
+    document.getElementById("btn-retour").hidden = true;
+    document.getElementById("perso-titre").textContent = "Récap";
+    document.getElementById("perso-sources").innerHTML =
+      '<ul class="ech-liste src-liste">' + perso.sources.map(carteRecapHTML).join("") + "</ul>";
+    var plein = perso.sources.length >= FUSION.MAX_SOURCES;
+    document.getElementById("perso-ajouter").hidden = plein;
     document.getElementById("perso-max").hidden = !plein;
-    document.getElementById("perso-marche").hidden = n >= 2;
-    document.getElementById("perso-reglages").hidden = !n;
-    document.getElementById("perso-bloc-surnom").hidden = !perso.editionId && profils.length === 0;
+    document.getElementById("perso-reglages").hidden = true;
+    document.getElementById("perso-bloc-surnom").hidden = true;
+    var btn = document.getElementById("perso-valider");
+    btn.disabled = !perso.sources.length;
+    btn.textContent = "Valider";
+    // Pas d'alerte de conflits ici : trop d'infos, l'utilisateur les verra
+    // via les gants dans son horaire.
+    document.getElementById("perso-choc").hidden = true;
+    sauverBrouillon();
+  }
+  function ouvrirPersoNom() {
+    var perso = choix.perso;
+    perso.etape = "nom";
+    pile = [];
+    document.getElementById("btn-retour").hidden = true;
+    document.getElementById("perso-titre").textContent = "Nom et thème";
+    document.getElementById("perso-sources").innerHTML = perso.sources.map(function (src, i) {
+      var grp = !src.groupes.length ? "Sans filtre de groupe"
+        : src.groupes.length === 1 ? nomGroupe(src.groupes[0]) : src.groupes.length + " groupes";
+      return '<div class="srccard"><div class="srccard-ligne">' +
+        '<span class="src-num">' + (i + 1) + "</span>" +
+        '<span class="src-textes"><span class="src-nom"><span class="src-nom-txt">' + txt(nomSource(src)) + "</span></span>" +
+        '<span class="src-detail">' + txt(grp) + "</span></span></div></div>";
+    }).join("");
+    document.getElementById("perso-ajouter").hidden = true;
+    document.getElementById("perso-max").hidden = true;
+    document.getElementById("perso-reglages").hidden = false;
+    document.getElementById("perso-bloc-surnom").hidden = false;
     document.getElementById("perso-surnom").value = perso.surnom || "";
     document.getElementById("perso-themes").innerHTML =
       choixThemesBlocHTML(perso.theme, "perso-themes-choix", "Thème de cet horaire");
     var btn = document.getElementById("perso-valider");
-    btn.disabled = !n;
-    btn.textContent = !n ? "Ajoute au moins une année" : perso.editionId ? "Enregistrer" : "Voir mon horaire";
-    rendreChocsComposeur();
+    majValiderNom();
+    document.getElementById("perso-choc").hidden = true;
+    sauverBrouillon();
   }
-  function htmlCarteSource(src, i) {
-    var couleur = COULEURS_SOURCES[i % COULEURS_SOURCES.length];
-    var grp = !src.groupes.length ? "Tous les groupes"
-      : src.groupes.length === 1 ? nomGroupe(src.groupes[0]) : src.groupes.length + " groupes";
-    var mats = "";
-    var liste = src.role === "principale" ? (src.sans || []) : (src.avec || []);
-    if (liste.length) {
-      var cls = src.role === "principale" ? "retire" : "ajoute";
-      mats = '<div class="src-matieres">' + liste.slice(0, 8).map(function (k) {
-        return '<span class="' + cls + '">' + txt(nettoyerMatiere(k)) + "</span>";
-      }).join("") + (liste.length > 8 ? "<span>+ " + (liste.length - 8) + "</span>" : "") + "</div>";
-    }
-    return '<div class="srccard"><div class="srccard-ligne">' +
-      '<span class="src-num" style="--src:' + couleur + '">' + (i + 1) + "</span>" +
-      '<span class="src-textes"><span class="src-nom"><span class="src-nom-txt">' + txt(nomSource(src)) + "</span>" +
-      (src.role === "principale" ? '<span class="tag-role">Principale</span>' : "") + "</span>" +
-      '<span class="src-detail">' + txt(grp + " · " + detailSource(src)) + "</span></span>" +
-      '<button type="button" class="icobtn" data-src-edit="' + i + '" title="Modifier les cours et les groupes" aria-label="Modifier ' +
-      txt(nomSource(src)) + '">' + ICONE_CRAYON + "</button>" +
-      '<button type="button" class="icobtn retire" data-src-retire="' + i + '" title="Retirer cette source" aria-label="Retirer ' +
-      txt(nomSource(src)) + '">' + ICONE_CORBEILLE + "</button></div>" + mats + "</div>";
-  }
-  /* Chevauchements sur toute l'année, calculés sur les horaires déjà
-     téléchargés (l'écran des cours les a mis en cache). */
-  function rendreChocsComposeur() {
-    var zone = document.getElementById("perso-choc");
+  /* Nom obligatoire : pas de titre, pas d'horaire. */
+  function majValiderNom() {
     var perso = choix.perso;
-    if (!perso || perso.sources.length < 2) { zone.hidden = true; return; }
-    var datas = perso.sources.map(function (s) { return memoHoraire(s.ecole, s.formation, s.ical); });
-    if (datas.filter(Boolean).length < 2) { zone.hidden = true; return; }
-    var fus = FUSION.fusionner(perso.sources.map(function (s, i) { return { source: s, data: datas[i] }; }));
-    var chocs = FUSION.chevauchements(fus.cours, perso.sources);
-    zone.hidden = false;
-    zone.classList.toggle("ok", !chocs.length);
-    if (!chocs.length) {
-      zone.innerHTML = ICONE_OK + "<div><strong>Aucun cours en double</strong><p>Tes sources s'emboîtent sans conflit.</p></div>";
-      return;
-    }
-    var x = chocs[0], a = x.a, b = x.b;
-    var debut = a.debut > b.debut ? a.debut : b.debut;
-    var semaines = {};
-    chocs.forEach(function (c) { c.semaines.forEach(function (w) { semaines[w] = true; }); });
-    var nSem = Object.keys(semaines).length;
-    zone.innerHTML = ICONE_ATTENTION + "<div><strong>" +
-      txt(chocs.length === 1 ? JOURS[a.jour] + " " + fmtH(debut) + " : deux cours en conflit"
-                             : chocs.length + " conflits, sur " + nSem + " semaine" + (nSem > 1 ? "s" : "")) +
-      "</strong><p><b>" + txt(nettoyerMatiere(a.matiere)) + "</b> (" + txt(nomSource(perso.sources[a.src])) + ") et <b>" +
-      txt(nettoyerMatiere(b.matiere)) + "</b> (" + txt(nomSource(perso.sources[b.src])) + ") tombent en même temps le " +
-      JOURS[a.jour].toLowerCase() + " à " + fmtH(debut) + (chocs.length > 1 ? ", entre autres" : "") +
-      ". Tu peux garder les deux, ils s'afficheront côte à côte, ou changer de groupe.</p></div>";
+    if (!perso || perso.etape !== "nom") return;
+    var btn = document.getElementById("perso-valider");
+    var ok = propre(perso.surnom || "").length > 0;
+    btn.disabled = !ok;
+    btn.textContent = !ok ? "Donne un nom à ton horaire"
+      : perso.editionId ? "Enregistrer" : "Voir mon horaire";
   }
   document.getElementById("perso-ajouter").addEventListener("click", function () {
     var perso = choix.perso;
     if (!perso || perso.sources.length >= FUSION.MAX_SOURCES) return;
-    var aPrincipale = perso.sources.some(function (s) { return s.role === "principale"; });
-    choix.source = {
-      index: null, ecole: perso.ecole, formation: null, ical: "",
-      role: aPrincipale ? "ajout" : "principale", sans: [], avec: [], groupes: [], surnom: "", brut: null
-    };
+    perso.etape = "options";
     choix.ecole = perso.ecole;
     choix.formation = null; choix.data = null; choix.groupes = []; choix.ical = null;
     aller("formation");
   });
-  function editerSource(i) {
-    var s = choix.perso.sources[i];
+  /* Récap : même geste que les devoirs (clic = Modifier / Supprimer,
+     glisser à gauche ou à droite pareil). */
+  function srcRetirer(i) {
+    var perso = choix.perso;
+    if (!perso || !perso.sources[i]) return;
+    perso.sources.splice(i, 1);
+    if (!perso.sources.length) {
+      perso.etape = "options";
+      choix.ecole = perso.ecole;
+      choix.formation = null; choix.data = null; choix.groupes = []; choix.ical = null;
+      aller("formation");
+      return;
+    }
+    // Toujours une 1re option qui garde tout : on ne le dit plus.
+    var p0 = perso.sources[0];
+    if (p0.role !== "principale") { p0.role = "principale"; p0.sans = []; delete p0.avec; }
+    ouvrirPersoRecap();
+  }
+  function srcModifier(i) {
+    var perso = choix.perso;
+    var s = perso && perso.sources[i];
     if (!s) return;
-    choix.source = {
-      index: i, ecole: s.ecole, formation: s.formation, ical: s.ical || "", role: s.role,
-      sans: (s.sans || []).slice(), avec: s.avec ? s.avec.slice() : (FUSION.estParcours(s) ? undefined : []),
-      groupes: s.groupes.slice(), surnom: s.surnom || "",
-      brut: memoHoraire(s.ecole, s.formation, s.ical), brutFrais: false
-    };
-    choix.ecole = s.ecole;
-    choix.formation = s.formation; choix.ical = s.ical || null;
-    choix.groupes = s.groupes.slice();
-    choix.data = null;
-    if (FUSION.estParcours(s)) { choix.data = choix.source.brut; aller("groupes"); }
-    else aller("cours");
+    // Retouche : cours puis groupes, comme à la création.
+    perso.retour = "recap";
+    if (!FUSION.estParcours(s) && !s.ical) guideOuvrirCours(i);
+    else guideOuvrirGroupes(i);
   }
   document.getElementById("perso-sources").addEventListener("click", function (e) {
     var ed = e.target.closest("[data-src-edit]");
-    if (ed) { editerSource(+ed.getAttribute("data-src-edit")); return; }
-    var re = e.target.closest("[data-src-retire]");
-    if (re) {
-      choix.perso.sources.splice(+re.getAttribute("data-src-retire"), 1);
-      ouvrirPerso();
+    if (ed) { e.stopPropagation(); srcModifier(+ed.getAttribute("data-src-edit")); return; }
+    var re = e.target.closest("[data-src-suppr]");
+    if (re) { e.stopPropagation(); srcRetirer(+re.getAttribute("data-src-suppr")); return; }
+    var carte = e.target.closest("[data-src-carte]");
+    if (carte) {
+      if (typeof glissementEchEffectue !== "undefined" && glissementEchEffectue) return;
+      var item = carte.closest(".ech-item");
+      if (!item) return;
+      e.stopPropagation();
+      var etat = item.getAttribute("data-ouvert");
+      if (etat && etat !== "0" && !item._enFermeture) fermerItemEch(item, true);
+      else { fermerTousItemsEch(item); ouvrirSplitEch(item); }
     }
   });
   document.getElementById("perso-surnom").addEventListener("input", function () {
     if (choix.perso) choix.perso.surnom = this.value;
+    majValiderNom();
     sauverBrouillon();
   });
   document.getElementById("perso-themes").addEventListener("click", function (e) {
@@ -3816,48 +4164,11 @@
     document.body.setAttribute("data-theme", String(t));
     sauverBrouillon();
   });
-  /* Source validée (écran des cours, ou écran des groupes s'il y en a) :
-     elle rejoint le composeur. Au plus une année principale : l'ancienne
-     devient une année d'ajout, ses cours gardés deviennent sa liste. */
-  function validerSource(groupes) {
-    var perso = choix.perso, src = choix.source;
-    var brute = {
-      ecole: src.ecole, formation: src.formation, ical: src.ical || "", role: src.role,
-      groupes: groupes, surnom: src.surnom || "", sans: src.sans, avec: src.avec
-    };
-    var nette = FUSION.normaliserSource(brute, ecoleExiste);
-    if (!nette) return;
-    if (nette.role === "principale") {
-      perso.sources.forEach(function (autre, i) {
-        if (i === src.index || autre.role !== "principale" || nette.role !== "principale") return;
-        var memo = memoHoraire(autre.ecole, autre.formation, autre.ical);
-        var gardes = memo ? FUSION.coursDeSource(memo).map(function (x) { return x.cle; })
-          .filter(function (k) { return (autre.sans || []).indexOf(k) < 0; }) : [];
-        if (gardes.length) {
-          autre.role = "ajout"; autre.avec = gardes; delete autre.sans;
-        } else if (src.brut) {
-          // Horaire de l'ancienne introuvable : c'est la nouvelle qui passe en ajout.
-          nette.role = "ajout";
-          nette.avec = FUSION.coursDeSource(src.brut).map(function (x) { return x.cle; })
-            .filter(function (k) { return (nette.sans || []).indexOf(k) < 0; });
-          delete nette.sans;
-        }
-      });
-    }
-    if (src.index == null) perso.sources.push(nette);
-    else perso.sources[src.index] = nette;
-    // La principale d'abord : elle sert d'ancre au calendrier (fusion.js).
-    perso.sources.sort(function (a, b) {
-      return (a.role === "principale" ? 0 : 1) - (b.role === "principale" ? 0 : 1);
-    });
-    choix.source = null;
-    choix.formation = null; choix.data = null; choix.groupes = []; choix.ical = null;
-    pile = (perso.pile || []).slice();
-    ouvrirPerso();
-  }
   document.getElementById("perso-valider").addEventListener("click", function () {
     var perso = choix.perso;
     if (!perso || !perso.sources.length) return;
+    if (perso.etape === "recap") { ouvrirPersoNom(); return; }
+    if (!propre(perso.surnom || "").length) return; // garde-fou (bouton déjà grisé)
     var sources = JSON.parse(JSON.stringify(perso.sources));
     var theme = normaliserTheme(perso.theme);
     var saisi = propre(perso.surnom || "").slice(0, 24);
@@ -3904,8 +4215,8 @@
       }
     });
   });
-  // ⋮ → Modifier d'un horaire sur mesure : le composeur, en édition.
-  // `srcIndex` : ouvre directement cette source (avis « Rechoisir »).
+  // ⋮ → Modifier d'un horaire sur mesure : le récap, en édition.
+  // `srcIndex` : ouvre directement cette option.
   function modifierPerso(id, srcIndex) {
     var p = profilParId(id);
     if (!p || !estPerso(p)) return;
@@ -3915,18 +4226,21 @@
       ecole: p.ecole, formation: null, data: null, groupes: [], ical: null,
       editionId: p.id, theme: normaliserTheme(p.theme), source: null,
       perso: { editionId: p.id, ecole: p.ecole, sources: JSON.parse(JSON.stringify(p.sources)),
-               surnom: p.surnom, theme: normaliserTheme(p.theme), pile: ["horaire"] }
+               surnom: p.surnom, theme: normaliserTheme(p.theme), pile: ["horaire"], etape: "recap" }
     };
     pile = ["horaire"];
     ouvrirPerso();
-    if (srcIndex != null && choix.perso.sources[srcIndex]) editerSource(srcIndex);
+    if (srcIndex != null && choix.perso.sources[srcIndex]) srcModifier(srcIndex);
   }
 
-  /* --- Cours d'une source : année principale (on décoche) ou cours à
-     ajouter (on coche). Liste construite sur les clés de cours de
-     fusion.js : l'intitulé exact, ou le code UE à l'ULB. --- */
+  /* --- Cours d'une option ajoutée : on coche ce qu'on suit, tout
+     part décoché. La 1re option n'a pas cette page : tout est gardé
+     sans le dire. --- */
   function ouvrirCours() {
+    if (guidePerso() && choix.perso.etape === "cours") { ouvrirCoursGuide(); return; }
     montrer("cours");
+    document.getElementById("cours-titre").textContent = "Tes cours dans cette année";
+    document.getElementById("cours-compte").hidden = true;
     var src = choix.source;
     if (!src || !src.formation) { ouvrirPerso(); return; }
     document.getElementById("cours-rappel").innerHTML = ICONE_CALQUES.replace(/26/g, "20") +
@@ -3950,6 +4264,156 @@
   }
   function cochee(src, cle) {
     return src.role === "principale" ? (src.sans || []).indexOf(cle) < 0 : (src.avec || []).indexOf(cle) >= 0;
+  }
+  function coursSuivantAjout(depuis) {
+    var perso = choix.perso;
+    for (var i = depuis; i < perso.sources.length; i++) {
+      var s = perso.sources[i];
+      if (!FUSION.estParcours(s) && !s.ical) return i;
+    }
+    return -1;
+  }
+  function demarrerCoursGuide() {
+    var perso = choix.perso;
+    var j = coursSuivantAjout(0);
+    if (j < 0) { demarrerGroupesGuide(); return; }
+    perso.etape = "cours";
+    perso.idx = j;
+    perso.retour = perso.retour === "recap" ? "recap" : null;
+    var s = perso.sources[j];
+    choix.ecole = s.ecole;
+    choix.formation = s.formation; choix.ical = s.ical || null;
+    choix.groupes = (s.groupes || []).slice();
+    choix.data = memoHoraire(s.ecole, s.formation, s.ical);
+    ouvrirCoursGuide();
+    if (!choix.data) chargerCoursGuide();
+  }
+  function ouvrirCoursGuide() {
+    var perso = choix.perso, src = perso && perso.sources[perso.idx];
+    if (!src) { ouvrirPerso(); return; }
+    montrer("cours");
+    // Retour à chaque étape (voir guideRetour) ; en retouche, vers le récap.
+    if (perso.retour === "recap") pile = ["perso"];
+    else pile = ["groupes"];
+    document.getElementById("btn-retour").hidden = !pile.length;
+    document.getElementById("cours-titre").textContent = joliFormation(src.formation);
+    var compte = document.getElementById("cours-compte");
+    var nbCours = perso.sources.filter(function (s) {
+      return !FUSION.estParcours(s) && !s.ical;
+    }).length;
+    compte.hidden = nbCours < 2;
+    if (!compte.hidden) {
+      var rang = 0;
+      for (var i = 0; i <= perso.idx; i++) {
+        var s2 = perso.sources[i];
+        if (!FUSION.estParcours(s2) && !s2.ical) rang++;
+      }
+      compte.innerHTML = "Cours <strong>" + rang + " sur " + nbCours + "</strong>";
+    }
+    document.getElementById("cours-rappel").hidden = true;
+    document.getElementById("cours-role").hidden = true;
+    var status = document.getElementById("cours-status");
+    document.getElementById("cours-liste").innerHTML = "";
+    document.getElementById("cours-liens").hidden = true;
+    document.getElementById("cours-valider").hidden = true;
+    document.getElementById("filtre-cours").hidden = true;
+    document.getElementById("filtre-cours-champ").value = "";
+    document.getElementById("filtre-cours-vide").hidden = true;
+    if (choix.data) { effacer(status); listerCoursGuide(); return; }
+    attente(status, "Chargement des cours…");
+  }
+  function chargerCoursGuide() {
+    var perso = choix.perso, j = perso.idx;
+    var s = perso.sources[j];
+    chargerHoraire(s.ecole, s.formation, s.ical || null).then(function (data) {
+      if (!guidePerso() || choix.perso.etape !== "cours" || choix.perso.idx !== j) return;
+      choix.data = data;
+      if (vue === "cours") { effacer(document.getElementById("cours-status")); listerCoursGuide(); }
+    }, function (e) {
+      if (guidePerso() && choix.perso.idx === j && vue === "cours") {
+        erreur(document.getElementById("cours-status"), "Échec : " + e.message + " Reviens en arrière pour réessayer.");
+      }
+    });
+  }
+  function listerCoursGuide() {
+    var src = choix.perso.sources[choix.perso.idx];
+    var liste = FUSION.coursDeSource(choix.data);
+    var status = document.getElementById("cours-status");
+    if (!liste.length) {
+      erreur(status, "Cette option n'a encore aucun cours publié.");
+      document.getElementById("cours-liste").innerHTML = "";
+      document.getElementById("cours-liens").hidden = true;
+      document.getElementById("cours-valider").hidden = true;
+      return;
+    }
+    if (!Array.isArray(src.avec)) src.avec = [];
+    if (!Array.isArray(src.sans)) src.sans = [];
+    // 1re option : tout est coché, on décoche. Les autres : tout est
+    // décoché, on coche.
+    var prem = choix.perso.idx === 0 && src.role === "principale";
+    document.getElementById("cours-aide").textContent = prem
+      ? "Tout est coché : décoche ce que tu ne suis pas."
+      : "Coche les cours que tu suis.";
+    document.getElementById("cours-liens").hidden = liste.length < 4;
+    document.getElementById("cours-liste").innerHTML = liste.map(function (x) {
+      var code = codeMatiere(x.cle);
+      var detail = [code, x.seances + " séance" + (x.seances > 1 ? "s" : "")].filter(Boolean).join(" · ");
+      var on = src.role === "principale" ? src.sans.indexOf(x.cle) < 0 : src.avec.indexOf(x.cle) >= 0;
+      var cherche = sansAccents(nettoyerMatiere(x.cle) + " " + code);
+      return '<button type="button" class="cours-ligne" data-cle="' + txt(x.cle) + '" data-cherche="' + txt(cherche) +
+        '" aria-pressed="' + on + '">' +
+        '<span class="coche" aria-hidden="true"></span><span class="ct"><strong>' + txt(nettoyerMatiere(x.cle)) +
+        "</strong><small>" + txt(detail) + "</small></span></button>";
+    }).join("");
+    document.getElementById("filtre-cours").hidden = liste.length < 8;
+    filtrerCours();
+    majValiderCoursGuide();
+  }
+  function filtrerCours() {
+    var champ = document.getElementById("filtre-cours-champ");
+    var mots = sansAccents(champ.value).split(/\s+/).filter(Boolean);
+    var zone = document.getElementById("cours-liste");
+    Array.prototype.forEach.call(zone.querySelectorAll(".cours-ligne"), function (b) {
+      var t = b.getAttribute("data-cherche") || "";
+      b.hidden = !mots.every(function (m) { return t.indexOf(m) >= 0; });
+    });
+    var vide = document.getElementById("filtre-cours-vide");
+    vide.hidden = !mots.length || !!zone.querySelector(".cours-ligne:not([hidden])");
+  }
+  document.getElementById("filtre-cours-champ").addEventListener("input", filtrerCours);
+  function majValiderCoursGuide() {
+    var perso = choix.perso, src = perso.sources[perso.idx];
+    var cles = choix.data ? FUSION.coursDeSource(choix.data).map(function (x) { return x.cle; }) : [];
+    var n = src.role === "principale"
+      ? cles.filter(function (k) { return (src.sans || []).indexOf(k) < 0; }).length
+      : (src.avec || []).length;
+    var btn = document.getElementById("cours-valider");
+    btn.hidden = false;
+    btn.disabled = !n;
+    if (!n) btn.textContent = "Coche au moins un cours";
+    else if (perso.retour === "recap") btn.textContent = "Enregistrer";
+    else btn.textContent = "Suivant" + (n > 1 ? " · " + n + " cours" : "");
+    sauverBrouillon();
+  }
+  function sauverCoursGuide() {
+    var perso = choix.perso, src = perso && perso.sources[perso.idx];
+    if (!src || !choix.data) return;
+    var cles = FUSION.coursDeSource(choix.data).map(function (x) { return x.cle; });
+    var gardes;
+    if (src.role === "principale") {
+      src.sans = (src.sans || []).filter(function (k) { return cles.indexOf(k) >= 0; });
+      delete src.avec;
+      gardes = cles.filter(function (k) { return src.sans.indexOf(k) < 0; });
+    } else {
+      src.avec = (src.avec || []).filter(function (k) { return cles.indexOf(k) >= 0; });
+      delete src.sans;
+      gardes = src.avec;
+    }
+    if (!gardes.length) return;
+    if (perso.retour === "recap") { guideOuvrirGroupes(perso.idx); return; }
+    // Cours puis groupes, option par option : après les cours, les groupes
+    // de la même option.
+    guideOuvrirGroupes(perso.idx);
   }
   function listerCours() {
     var src = choix.source;
@@ -4006,16 +4470,44 @@
   });
   document.getElementById("cours-liste").addEventListener("click", function (e) {
     var b = e.target.closest(".cours-ligne");
+    if (!b) return;
+    if (guidePerso() && choix.perso.etape === "cours") {
+      var gs = choix.perso.sources[choix.perso.idx];
+      if (!gs) return;
+      var cle = b.getAttribute("data-cle");
+      if (gs.role === "principale") {
+        if (!Array.isArray(gs.sans)) gs.sans = [];
+        var j = gs.sans.indexOf(cle);
+        if (j >= 0) gs.sans.splice(j, 1); else gs.sans.push(cle);
+        b.setAttribute("aria-pressed", String(j >= 0));
+      } else {
+        if (!Array.isArray(gs.avec)) gs.avec = [];
+        var i = gs.avec.indexOf(cle);
+        if (i >= 0) gs.avec.splice(i, 1); else gs.avec.push(cle);
+        b.setAttribute("aria-pressed", String(i < 0));
+      }
+      majValiderCoursGuide();
+      return;
+    }
     var src = choix.source;
     if (!b || !src) return;
-    var cle = b.getAttribute("data-cle");
+    var cle2 = b.getAttribute("data-cle");
     var liste = src.role === "principale" ? src.sans : src.avec;
-    var i = liste.indexOf(cle);
-    if (i >= 0) liste.splice(i, 1); else liste.push(cle);
-    b.setAttribute("aria-pressed", String(cochee(src, cle)));
+    var j = liste.indexOf(cle2);
+    if (j >= 0) liste.splice(j, 1); else liste.push(cle2);
+    b.setAttribute("aria-pressed", String(cochee(src, cle2)));
     majValiderCours();
   });
   function toutCocher(oui) {
+    if (guidePerso() && choix.perso.etape === "cours") {
+      var gs = choix.perso.sources[choix.perso.idx];
+      if (!gs || !choix.data) return;
+      var cles = FUSION.coursDeSource(choix.data).map(function (x) { return x.cle; });
+      if (gs.role === "principale") gs.sans = oui ? [] : cles.slice();
+      else gs.avec = oui ? cles.slice() : [];
+      listerCoursGuide();
+      return;
+    }
     var src = choix.source;
     if (!src || !src.brut) return;
     if (src.role === "principale") src.sans = oui ? [] : clesListe();
@@ -4025,6 +4517,7 @@
   document.getElementById("cours-tout").addEventListener("click", function () { toutCocher(true); });
   document.getElementById("cours-rien").addEventListener("click", function () { toutCocher(false); });
   document.getElementById("cours-valider").addEventListener("click", function () {
+    if (guidePerso() && choix.perso.etape === "cours") { sauverCoursGuide(); return; }
     var src = choix.source;
     if (!src || !src.brut) return;
     // Les cours qui n'existent plus chez l'école quittent la sélection :
@@ -4039,7 +4532,7 @@
     }
     var cochees = FUSION.donneesCochees(src.brut, src);
     if (!cochees.cours.length) return;
-    if (!cochees.groupes.length) { validerSource([]); return; }
+    if (!cochees.groupes.length) { choix.data = cochees; choix.groupes = []; aller("groupes"); return; }
     choix.formation = src.formation;
     choix.ical = src.ical || null;
     choix.data = cochees;
@@ -4241,8 +4734,23 @@
     if (semaineAuto || SEMAINES.indexOf(sem) < 0) sem = semaineCourante();
   }
   /* PDF du groupe s'il n'y en a qu'un. Plusieurs groupes : celui choisi
-     dans la liste de la visionneuse (par défaut, toute la formation). */
+     dans la liste de la visionneuse. Tant que rien n'est choisi, la
+     liste attend sur « Choisis… » (`CHOIX_PDF_VIDE`) au lieu de charger
+     le premier PDF tout seul. */
   var pdfGroupe = { id: null, g: "" };
+  var CHOIX_PDF_VIDE = "__choix";
+  /* Choix déjà fait pour le profil affiché ? Sans lui, un profil à
+     plusieurs groupes n'a encore rien demandé : on propose, on ne devine pas. */
+  function pdfChoixFait() {
+    if (!profil) return false;
+    if (pdfGroupe.id !== profil.id) return false;
+    if (estPerso(profil)) {
+      var opts = optionsPdfPerso();
+      for (var k = 0; k < opts.length; k++) if (opts[k].v === pdfGroupe.g) return true;
+      return false;
+    }
+    return profil.groupes.indexOf(pdfGroupe.g) >= 0 || pdfGroupe.g === "";
+  }
   /* Horaire sur mesure : un PDF officiel par source (l'école n'en publie
      qu'un par formation). Une entrée par source et par groupe choisi ;
      pas de PDF pour un lien iCal ni pour une école qui n'en publie pas. */
@@ -4295,38 +4803,45 @@
       var opts = optionsPdfPerso(), actuel = choixPdfPerso();
       bloc.hidden = opts.length < 2;
       var selP = document.getElementById("pdf-groupe");
-      selP.innerHTML = opts.map(function (o) {
-        return '<option value="' + txt(o.v) + '">' + txt(o.nom) + "</option>";
-      }).join("");
-      if (actuel) selP.value = actuel.v;
+      var faitP = pdfChoixFait();
+      selP.innerHTML = ((!faitP && opts.length > 1)
+        ? '<option value="' + CHOIX_PDF_VIDE + '" selected>Choisis…</option>' : "") +
+        opts.map(function (o) {
+          return '<option value="' + txt(o.v) + '">' + txt(o.nom) + "</option>";
+        }).join("");
+      selP.value = faitP && actuel ? actuel.v : CHOIX_PDF_VIDE;
       if (avisChoix) {
         var srcPdf = actuel && profil.sources[actuel.i];
-        var ajout = !!srcPdf && srcPdf.role !== "principale" && !FUSION.estParcours(srcPdf);
+        var ajout = !!faitP && !!srcPdf && srcPdf.role !== "principale" && !FUSION.estParcours(srcPdf);
         avisChoix.hidden = !ajout;
         if (ajout) avisChoix.textContent = "L'école publie le PDF de l'année entière : tes cours y sont mêlés aux autres.";
       }
-      return;
+      return faitP;
     }
     var multi = !!(profil && profil.groupes.length > 1);
     bloc.hidden = !multi;
-    if (!multi) { if (avisChoix) avisChoix.hidden = true; return; }
-    var choisi = groupePdf();
+    if (!multi) { if (avisChoix) avisChoix.hidden = true; return true; }
+    var fait = pdfChoixFait();
+    var choisi = fait ? groupePdf() : CHOIX_PDF_VIDE;
     var sel = document.getElementById("pdf-groupe");
-    sel.innerHTML = '<option value="">Toute la formation</option>' + profil.groupes.map(function (g) {
-      return '<option value="' + txt(g) + '">' + txt(nomGroupe(g)) + "</option>";
-    }).join("");
+    sel.innerHTML = (fait ? "" : '<option value="' + CHOIX_PDF_VIDE + '" selected>Choisis…</option>') +
+      '<option value="">Toute la formation</option>' + profil.groupes.map(function (g) {
+        return '<option value="' + txt(g) + '">' + txt(nomGroupe(g)) + "</option>";
+      }).join("");
     sel.value = choisi;
     // « Toute la formation » superpose tous les groupes dans le PDF
     // officiel : on prévient, pour inviter à choisir son groupe.
     if (avisChoix) {
-      avisChoix.hidden = !!choisi;
-      if (!choisi) {
+      avisChoix.hidden = !fait || !!choisi;
+      if (fait && !choisi) {
         avisChoix.textContent = "Toute la formation superpose les " + profil.groupes.length +
           " groupes : choisis ton groupe ci-dessus pour un PDF lisible.";
       }
     }
+    return fait;
   }
   document.getElementById("pdf-groupe").addEventListener("change", function () {
+    if (this.value === CHOIX_PDF_VIDE) return; // encore rien choisi : on attend
     pdfGroupe = { id: profil.id, g: this.value };
     fermerPdf();
     document.getElementById("btn-pdf").click();
@@ -6047,9 +6562,6 @@
     try { void rc.offsetWidth; } catch (e) { /* jetable */ } // rejoue l'entrée
     rc.classList.add("visible");
     document.body.classList.add("rech-ouverte");
-    // <html> aussi : sur iOS, overflow:hidden sur <body> seul ne verrouille
-    // pas le défilement du document derrière le panneau.
-    document.documentElement.classList.add("rech-ouverte");
     histOuvrir("rc");
     // Course ouverte : le champ est hors écran, pas de clavier qui monte.
     if (!matiere) { try { rcChamp.focus(); } catch (e) { /* jetable */ } }
@@ -6059,7 +6571,6 @@
     rc.classList.remove("visible");
     rc.hidden = true;
     document.body.classList.remove("rech-ouverte");
-    document.documentElement.classList.remove("rech-ouverte");
     rcGroupe = null;
     rcDirect = false;
     try { rcChamp.blur(); } catch (e) { /* jetable */ }
@@ -7400,6 +7911,16 @@
     setTimeout(function () { glissementEchEffectue = false; }, 120);
 
     var base = parseFloat(item.getAttribute("data-depart") || "0");
+    // Récap sur mesure : loin à gauche = supprimer, loin à droite = modifier.
+    var idxSrc = item.getAttribute("data-src-index");
+    if (idxSrc != null && idxSrc !== "") {
+      if (etaitArme) {
+        fermerItemEch(item, true);
+        if (echCurrentX < 0) srcRetirer(+idxSrc);
+        else srcModifier(+idxSrc);
+        return;
+      }
+    }
     var id = item.getAttribute("data-ech-id");
     var cle = item.getAttribute("data-ech-cle");
     var cible = cibleDeCle(cle);
@@ -8499,10 +9020,12 @@
   }
 
   /* Clic sur le bouton PDF : ouvre la visionneuse sous le bouton, à la
-     largeur de l'écran. Pendant le téléchargement, le texte d'attente
-     balaie un reflet en boucle ; il disparaît dès que le PDF s'affiche.
-     Un clic sur le PDF n'ouvre rien : le pincement zoome uniquement le
-     PDF, jamais le reste du site. Un second clic sur le bouton masque. */
+     largeur de l'écran. Plusieurs PDF possibles et rien choisi : on
+     propose la liste d'abord, sans rien télécharger. Pendant le
+     téléchargement, le texte d'attente balaie un reflet en boucle ; il
+     disparaît dès que le PDF s'affiche. Un clic sur le PDF n'ouvre
+     rien : le pincement zoome uniquement le PDF, jamais le reste du
+     site. Un second clic sur le bouton masque. */
   document.getElementById("btn-pdf").addEventListener("click", function () {
     var btn = document.getElementById("btn-pdf");
     var zone = document.getElementById("pdf-zone");
@@ -8515,7 +9038,20 @@
     btn.disabled = true;
     majBoutonPdf();
     zone.hidden = false;
-    majChoixPdf();
+    var choixFait = majChoixPdf();
+    if (choixFait === false) {
+      // Plusieurs PDF, aucun choisi : la liste attend, rien à charger.
+      pdfCharge = false;
+      btn.disabled = false;
+      majBoutonPdf();
+      zone.classList.remove("attente");
+      zone.style.minHeight = "";
+      status.classList.remove("erreur");
+      status.style.display = "";
+      status.textContent = "Choisis le groupe ci-dessus : chaque groupe a son PDF officiel.";
+      calerPdf();
+      return;
+    }
     zone.classList.add("attente"); // réserve la place du futur PDF
     var reservePdf = hauteurPdfMemorisee(); // vraie hauteur du PDF précédent, si connue
     if (reservePdf) zone.style.minHeight = reservePdf + "px";

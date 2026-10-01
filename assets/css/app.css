@@ -3822,8 +3822,8 @@
   .cours-ligne .ct { flex: 1; min-width: 0; display: grid; gap: 1px; }
   .cours-ligne .ct strong { font-weight: 600; font-size: .96rem; letter-spacing: -.01em; color: var(--ink); }
   .cours-ligne .ct small { font-size: .8rem; color: var(--muted); }
-  .liens-cours { display: flex; gap: 8px; align-items: center; margin: -4px 0 12px; font-size: .85rem; color: var(--muted); }
-  .liens-cours button, .choc button {
+  #cours-liens { margin: -2px 0 14px; }
+  .choc button {
     border: none; background: none; padding: 0; font: inherit; font-size: inherit;
     color: var(--accent); font-weight: 650; cursor: pointer; text-decoration: underline;
     text-underline-offset: 3px;
@@ -3850,6 +3850,40 @@
   .choc.neuf svg { color: var(--accent); }
   .avis p { margin: 0; }
   .avis p + p { margin-top: 8px; }
+  /* Guide sur mesure : une page par action, peu de texte. */
+  .perso-compte { margin: -14px 0 18px; color: var(--muted); font-size: .9rem; }
+  .perso-compte strong { color: var(--ink); }
+  #btn-options-suivant { margin-top: 18px; }
+  /* Options à cocher : même coche que les pastilles, chevron remplacé. */
+  #liste-formations button.opt { gap: 12px; }
+  #liste-formations button.opt .coche {
+    position: relative; flex: none; width: 20px; height: 20px; border-radius: 50%;
+    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--muted) 55%, transparent);
+  }
+  #liste-formations button.opt[aria-pressed="true"] {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 48%, transparent),
+      inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  #liste-formations button.opt[aria-pressed="true"] .coche { background: var(--accent); box-shadow: none; }
+  #liste-formations button.opt[aria-pressed="true"] .coche::after {
+    content: ""; position: absolute; left: 7px; top: 4px; width: 4px; height: 8px;
+    border: solid var(--surface); border-width: 0 2px 2px 0; transform: rotate(45deg);
+  }
+  #liste-formations button.opt .chev { display: none; }
+  /* Récap : les options reprennent les fiches des devoirs (même geste :
+     clic = Modifier / Supprimer, glisser à gauche ou à droite pareil). */
+  .src-liste { margin: 0 0 14px; }
+  .src-liste .ech { padding: 12px 14px; gap: 12px; font-size: .95rem; }
+  .src-liste .ech-corps { flex: 1; min-width: 0; display: grid; gap: 1px; }
+  .src-liste .ech-titre-txt { font-weight: 650; letter-spacing: -.01em; color: var(--ink); }
+  .src-liste .ech-quand { color: var(--muted); font-size: .84rem; }
+  .src-num {
+    flex: none; width: 26px; height: 26px; border-radius: 9px;
+    display: grid; place-items: center; font-size: .78rem; font-weight: 750;
+    color: var(--accent); font-variant-numeric: tabular-nums;
+    background: color-mix(in srgb, var(--accent) 13%, var(--surface));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent);
+  }
   /* Ligne de cours : devoir ou examen en attente (la teinte suit le type). */
   .ech-tag {
     flex: none; margin-left: 6px; font-size: .64rem; font-weight: 750; text-transform: uppercase;
@@ -3867,8 +3901,17 @@
      quelques règles qui ne font que recentrer ou cadrer ce gabarit. */
   #rc {
     position: fixed; inset: 0; z-index: 90;
+    /* Hauteur explicite sur la fenêtre visible : si le navigateur intégré
+       calcule mal inset en bas (barre flottante), le panneau couvre quand
+       même tout l'écran. */
+    height: 100vh; height: 100dvh;
     background: var(--bg); color: var(--ink);
     overflow-y: auto; overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    /* Safari (iOS surtout) : calque dédié, sinon le panneau fixe se
+       repeint mal quand le fond bouge et la semaine transparaît en bas. */
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
     /* Gouttière réservée d'office : quand un jour déroulé fait dépasser
        la liste, la barre de scroll apparaît sans rétrécir le contenu —
        plus rien ne bouge latéralement. */
@@ -3880,7 +3923,6 @@
     visibility: visible;
   }
   body.rech-ouverte { overflow: hidden; }
-  html.rech-ouverte { overflow: hidden; }
   /* Même sur grand écran, la recherche garde sa colonne : c'est une
      liste qui se lit de haut en bas, pas la grille à deux colonnes des
      formations, et le titre reste centré (la barre du haut de l'app
