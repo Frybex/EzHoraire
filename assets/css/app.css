@@ -3941,3 +3941,9 @@
     list-style: none; margin: 10px 0 0; padding: 0;
     display: flex; flex-direction: column; gap: 8px;
   }
+  /* Séance terminée (jour passé, ou heure de fin dépassée) : voile gris
+     pour ne pas la confondre avec le cours en cours ou le prochain. */
+  .rc-dates .rc-jour.passe {
+    opacity: .5;
+    filter: saturate(.4);
+  }

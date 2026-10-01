@@ -5889,16 +5889,38 @@
     var c = seance.cours;
     return semaine + "|" + c.jour + "|" + c.debut + "|" + (c.matiere || "");
   }
+  /* Séance déjà terminée : jour passé, ou aujourd'hui quand l'heure de
+     fin est dépassée. Sert à griser les séances et à caler la vue sur le
+     cours en cours ou le prochain. */
+  function heureSeanceMins(h) {
+    var m = /(\d+)\s*h\s*(\d{0,2})/i.exec(String(h == null ? "" : h));
+    if (m) return (+m[1]) * 60 + (+(m[2] || "0"));
+    var p = String(h == null ? "" : h).split(":");
+    if (p.length >= 2) return (+p[0]) * 60 + (+p[1]);
+    return NaN;
+  }
+  function rcSeancePassee(semaine, c, auj) {
+    auj = auj || new Date();
+    var date = dateSemJour(semaine, c.jour);
+    var j0 = new Date(auj.getFullYear(), auj.getMonth(), auj.getDate());
+    var j1 = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    if (j1.getTime() < j0.getTime()) return true;
+    if (j1.getTime() > j0.getTime()) return false;
+    var fin = heureSeanceMins(c.fin);
+    if (isNaN(fin)) return false;
+    return fin <= auj.getHours() * 60 + auj.getMinutes();
+  }
   function rcLigneSeance(semaine, seance) {
     var c = seance.cours;
     var cle = rcCleSeance(semaine, seance);
     var ouvert = !!rcOuvertes[cle];
     var date = dateSemJour(semaine, c.jour);
+    var passee = rcSeancePassee(semaine, c, new Date());
     /* Pastilles Examen (gauche) / Devoir (droite) de cette occurrence :
        même espace réservé et mêmes échéances que la liste des jours. */
     var ech = slotsEcheancesJour(c.jour, [c], date);
     return '<li class="day rc-jour' + (ouvert ? " open" : "") +
-      (memeJour(date, new Date()) ? " today" : "") + '">' +
+      (memeJour(date, new Date()) ? " today" : "") + (passee ? " passe" : "") + '">' +
       '<button type="button" data-rc-seance="' + txt(cle) + '" aria-expanded="' + ouvert + '">' +
       ech.gauche +
       '<span class="dname"><strong>' + txt(fmtDate(date)) + '</strong>' +
@@ -5925,7 +5947,9 @@
       "<span>Échéance</span></button></div>" +
       "</div></div></li>";
   }
-  /* Liste plate : une carte par séance, sans découpage par semaine. */
+  /* Liste plate : une carte par séance, sans découpage par semaine. Les
+     séances terminées sont grisées, et la vue se cale sur le cours en
+     cours ou le prochain (la dernière séance quand tout est passé). */
   function rcRendreDates() {
     var g = rcGroupe;
     rcTitre.textContent = g.nom;
@@ -5933,7 +5957,26 @@
     var html = '<ul class="rc-dates">';
     g.seances.forEach(function (seance) { html += rcLigneSeance(seance.semaine, seance); });
     rcDates.innerHTML = html + "</ul>";
+    var items = rcDates.querySelectorAll("li.rc-jour");
+    var cible = null, repli = null;
+    for (var i = 0; i < items.length; i++) {
+      repli = items[i];
+      if (!cible && !items[i].classList.contains("passe")) cible = items[i];
+    }
+    if (!cible) cible = repli;
     rc.scrollTop = 0;
+    if (cible && cible.scrollIntoView) {
+      /* Après la peinture, pour traverser la transition d'ouverture. */
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          try { cible.scrollIntoView({ block: "center" }); }
+          catch (e) {
+            try { rc.scrollTop = cible.offsetTop - rc.clientHeight / 2; }
+            catch (e2) { /* jetable */ }
+          }
+        });
+      });
+    }
   }
   function rcOuvrirCours(matiere) {
     var g = null;
