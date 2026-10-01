@@ -111,6 +111,22 @@ def repondre_texte(h, statut, message, cache="no-store"):
     h.wfile.write(payload)
 
 
+def erreur_publique(e, point="api"):
+    """Message d'erreur sûr pour une réponse publique.
+
+    Les erreurs attendues (ValueError, Surcharge) portent un texte écrit
+    pour l'utilisateur : chaque point d'entrée leur garde une branche
+    dédiée. Ici, c'est l'imprévu (réseau, bug interne) : le détail complet
+    part dans le journal (stderr, visible dans les logs Vercel) et le
+    navigateur reçoit une phrase générique — jamais de trace Python, ni
+    d'URL ou d'identifiant interne."""
+    try:
+        print("%s : erreur inattendue %r" % (point, e), file=sys.stderr)
+    except Exception:  # noqa: BLE001 - le journal ne doit jamais casser la réponse
+        pass
+    return "L'école ne répond pas correctement. Réessaie dans un instant."
+
+
 # Garde anti-balayage : un horaire complet coûte ~50 appels à l'école, un
 # PDF une session entière. Le cache partagé absorbe les étudiants d'une
 # même formation, mais pas quelqu'un qui balaie les 382 formations UMONS

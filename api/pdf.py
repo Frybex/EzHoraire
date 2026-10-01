@@ -18,7 +18,7 @@ ICI = os.path.dirname(os.path.abspath(__file__))
 if ICI not in sys.path:
     sys.path.insert(0, ICI)
 
-from _ecoles import ECOLES, debit, repondre_texte, requete  # noqa: E402
+from _ecoles import ECOLES, debit, erreur_publique, repondre_texte, requete  # noqa: E402
 from _moteurs.hyperplanning import Surcharge  # noqa: E402
 
 BUDGET = 40  # s, sous la limite de durée de la fonction chez l'hébergeur
@@ -53,8 +53,8 @@ class handler(BaseHTTPRequestHandler):
             return repondre_texte(self, 404, str(e))
         except Surcharge as e:  # fuse anti-abus de l'instance : dire d'attendre
             return repondre_texte(self, 429, str(e))
-        except Exception as e:  # noqa: BLE001 - école injoignable, pare-feu...
-            return repondre_texte(self, 502, f"Impossible d'obtenir le PDF de l'école ({str(e)[-200:]}).")
+        except Exception as e:  # noqa: BLE001 - imprévu : journal, message générique
+            return repondre_texte(self, 502, erreur_publique(e, "pdf"))
         nom = f"Horaire {groupe or formation} - semaine {semaine}.pdf"
         self.send_response(200)
         self.send_header("Content-Type", "application/pdf")

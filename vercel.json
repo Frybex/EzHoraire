@@ -29,6 +29,10 @@
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
     },
     {
+      "source": "/assets/vendor/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+    },
+    {
       "source": "/logos/ecoles/(.*)",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=2592000, stale-while-revalidate=31536000" }]
     },
@@ -126,9 +130,11 @@
         { "key": "X-Content-Type-Options", "value": "nosniff" },
         { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
         { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" },
+        { "key": "X-Permitted-Cross-Domain-Policies", "value": "none" },
         { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" },
         { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(), payment=()" },
-        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.supabase.co https://lh3.googleusercontent.com https://avatars.githubusercontent.com; font-src 'self'; connect-src 'self' https://*.supabase.co https://cdn.jsdelivr.net; frame-src blob:; worker-src blob: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'" }
+        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' 'sha256-2zMgjnrBc0scdjiqprtr/+amfpkHFvD3dOdvZeFaFmo=' 'sha256-HoK1HtBuOiJpGiGV9OX86k9+COVS5ELODIcYuH1A/vM=' 'sha256-UyU3nDo9cQQ5FWuH1wDSjiThXV0kMZiieIKzDINA01M=' 'sha256-hIpGQKPkWlsFL1mRFtpwGxiAL18oC8+fXHre7DdZac4=' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.supabase.co https://lh3.googleusercontent.com https://avatars.githubusercontent.com; font-src 'self'; connect-src 'self' https://*.supabase.co https://cdn.jsdelivr.net; frame-src blob:; worker-src 'self' blob: https://cdn.jsdelivr.net; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'" }
       ]
     }
   ],

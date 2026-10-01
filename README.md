@@ -406,13 +406,23 @@ au-delà de ce que l'école publie, paramètre d'URL en trop ou en double
 (qui contournerait le cache partagé) — tout ça se refuse sur ce qui est
 déjà en mémoire.
 
-Les libs chargées depuis les CDN (`supabase-js` 2.116.0, `pdf.js`
-3.11.174) sont épinglées et protégées par `integrity` ; `pdf.js` n'est
-téléchargé qu'à la première ouverture d'un PDF (`chargerPdfJs()`), pas au
-démarrage ; la CSP de
+Les libs tierces (`supabase-js` 2.116.0, `pdf.js` 3.11.174) ne viennent
+plus d'un CDN : elles sont servies par le site dans `assets/vendor/`
+(version dans le nom du fichier, cache `immutable` un an) — moins
+d'attente au premier clic de connexion ou à l'ouverture d'un PDF, et plus
+aucun script tiers dans la CSP (hors tesseract.js, limité à l'import
+d'une capture, dont le script est déjà figé par `integrity`). `pdf.js`
+n'est téléchargé qu'à la première ouverture d'un PDF (`chargerPdfJs()`),
+pas au démarrage ; la CSP de
 `vercel.json` (dupliquée dans `serve.py`, à garder synchronisée) limite
 les sources. `logos/ecoles/` est déployé, `logos/da/` et `logos/ez/`
 (scripts) ne le sont pas (`.vercelignore`).
+
+Le répertoire GitHub est public : `.vercelignore` retire aussi `tests/`
+(les tests ne sont pas servis en ligne), `.cache/`, `seo/`, `lab/`, `qr/`
+et les manifestes du constructeur Python. Rien de tout ça n'est
+accessible depuis le site : seuls le code de l'app, ses assets et l'API
+le sont.
 
 ## Fichiers
 
@@ -426,6 +436,15 @@ les sources. `logos/ecoles/` est déployé, `logos/da/` et `logos/ez/`
   les références des pages. Les fichiers produits sont committés (Vercel
   sert l'arbre tel quel) ; le hook de pré-commit et `serve.py` refusent un
   bundle périmé.
+- `assets/vendor/` — bibliothèques tierces servies par le site
+  (`supabase-2.116.0.min.js`, `pdfjs/`), version dans le nom, mises en
+  cache un an : plus de CDN externe pour la connexion et les PDF.
+- `tools/valider_csp.py` — calcule les empreintes sha256 des scripts
+  embarqués dans les pages et les recopie dans le `script-src` de
+  `vercel.json` et de `serve.py` (`--write`) ; `--check` (par défaut) est
+  appelé par le hook de pré-commit, pour qu'une page modifiée ne puisse
+  pas figer le thème en ligne. C'est ce qui permet de ne plus avoir
+  `'unsafe-inline'` dans `script-src`.
 - `assets/js/semaine.js` — semaine affichée d'office : celle du jour,
   passée à la suivante le week-end une fois le dernier cours de la semaine
   en cours (fonctions pures) ; tests : `node --test test_semaine.mjs`.
@@ -446,8 +465,8 @@ les sources. `logos/ecoles/` est déployé, `logos/da/` et `logos/ez/`
   compte → horaire) et des frictions ; voir le dashboard admin.
 - `assets/js/dashboard.js`, `assets/js/motdepasse.js` — les scripts des
   deux pages à compte (`dashboard.html`, `mot-de-passe.html`), sortis du
-  HTML en `defer` : le document finit de se construire sans qu'un tiers
-  externe (le SDK Supabase) retarde le premier rendu, et le code se
+  HTML en `defer` : le document finit de se construire pendant que le SDK
+  Supabase (même origine, `assets/vendor/`) se charge, et le code se
   minifie comme les autres bundles.
 - `confidentialite.html`, `cgu.html` — politique de confidentialité et
   conditions d'utilisation (mentions légales incluses), stylées par
@@ -462,8 +481,9 @@ les sources. `logos/ecoles/` est déployé, `logos/da/` et `logos/ez/`
   l'historique git : `python3 maj_sitemap.py` (à lancer après une
   retouche de page, `--check` pour vérifier sans écrire) ; tests :
   `python3 test_sitemap.py`. Le hook `.githooks/pre-commit` refuse aussi un
-  commit dont `assets/dist/` ne reflète plus les sources (activer une
-  fois : `git config core.hooksPath .githooks`).
+  commit dont `assets/dist/` ne reflète plus les sources, ou dont la liste
+  d'empreintes CSP (`tools/valider_csp.py`) ne correspond plus aux pages
+  (activer une fois : `git config core.hooksPath .githooks`).
 - `mot-de-passe.html` — page d'atterrissage du lien « mot de passe oublié »
   (vérification du jeton, adresse du compte, choix et enregistrement du
   nouveau mot de passe, renvoi d'un lien si celui-ci a expiré).

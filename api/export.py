@@ -18,7 +18,7 @@ ICI = os.path.dirname(os.path.abspath(__file__))
 if ICI not in sys.path:
     sys.path.insert(0, ICI)
 
-from _ecoles import ECOLES, debit, requete  # noqa: E402
+from _ecoles import ECOLES, debit, erreur_publique, requete  # noqa: E402
 from _moteurs import export_ics  # noqa: E402
 from _moteurs.hyperplanning import Surcharge  # noqa: E402
 from _moteurs.ical import horaire_ical  # noqa: E402
@@ -67,8 +67,8 @@ class handler(BaseHTTPRequestHandler):
             erreur(self, 404, TITRE, str(e))
         except Surcharge as e:  # fuse anti-abus : dire d'attendre
             erreur(self, 429, TITRE, str(e))
-        except Exception as e:  # noqa: BLE001 - message montré à l'utilisateur
-            erreur(self, 502, TITRE, str(e)[-300:])
+        except Exception as e:  # noqa: BLE001 - imprévu : journal, message générique
+            erreur(self, 502, TITRE, erreur_publique(e, "export"))
 
     def log_message(self, *args):
         pass  # silencieux

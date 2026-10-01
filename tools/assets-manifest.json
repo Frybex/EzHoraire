@@ -2,16 +2,16 @@
   "version": 1,
   "bundles": {
     "app.js": {
-      "fichier": "app.69f67b3be2.js",
-      "octets": 237928,
+      "fichier": "app.3039e8666b.js",
+      "octets": 237867,
       "sources": {
-        "assets/js/favicon.js": "eb4fb1b6d5b31a954731d93d5721ba56278e731444f1313eaef84349c3fdf405",
+        "assets/js/favicon.js": "f57272dc9fe1aef5317659ed6142eddc37959c4c5bc731dc0409e0b035370b15",
         "assets/js/suivi.js": "81f2e75ded3d93fffd77e3fdbf40f122745c224f18bf416de4dc302fa8bb9829",
         "assets/js/fusion.js": "6c6fbbfa5db8e4bf5f4ceb622275c143b6ef14eb0d0e3f7fdbba880e53a78346",
         "assets/js/export_ics.js": "1339504ea725d3db2bf979c703b9137f8205c26f96932e0fa801253bba3207ca",
         "assets/js/semaine.js": "c631e8eee5275028820036e07d99c8a4c462931bc79bc15cd98032b37e356a71",
         "assets/js/recherche.js": "f31b87190cc35ac33f9f966b403f6cc4b2c2d9ac7171e3cb638ed317ec766595",
-        "assets/js/app.js": "b4161cdd96e4963f9b6b30235614b9dfe55bc9608206059b9387762f1b234fcd"
+        "assets/js/app.js": "e97e00fc1c1e35e9f00e1d72dbe32aee57de3f656d5fbd8855359ca4278eacf6"
       }
     },
     "app.css": {
@@ -22,10 +22,10 @@
       }
     },
     "favicon.js": {
-      "fichier": "favicon.d76b1f573d.js",
-      "octets": 3455,
+      "fichier": "favicon.800a32ad6b.js",
+      "octets": 3617,
       "sources": {
-        "assets/js/favicon.js": "eb4fb1b6d5b31a954731d93d5721ba56278e731444f1313eaef84349c3fdf405"
+        "assets/js/favicon.js": "f57272dc9fe1aef5317659ed6142eddc37959c4c5bc731dc0409e0b035370b15"
       }
     },
     "legal.js": {

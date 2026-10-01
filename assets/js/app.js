@@ -715,10 +715,11 @@
   /* SDK Supabase : jamais chargé pour un simple visiteur. index.html ne
      pose plus la balise ; elle est ajoutée ici au premier besoin réel
      (clic de connexion, session déjà enregistrée, retour OAuth). Les
-     pages qui en ont besoin d'emblée (dashboard) gardent la leur. */
+     pages qui en ont besoin d'emblée (dashboard) gardent la leur. Le SDK
+     est servi par le site (assets/vendor/, version dans le nom, cache un
+     an) : aucune dépendance à un CDN tiers, plus rapide au premier clic. */
   var SDK_SUPABASE = {
-    src: "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0",
-    integrite: "sha384-JBR+x8blGwjDRO63aHCGiZMD4VNiTR4ZUGA+N6ZKLf3zNt1fK8IBpcgPaMrxqWBp"
+    src: "/assets/vendor/supabase-2.116.0.min.js"
   };
   var sdkSupabase = null;
   function chargerSdkSupabase() {
@@ -729,8 +730,6 @@
       if (!s) {
         s = document.createElement("script");
         s.src = SDK_SUPABASE.src;
-        s.integrity = SDK_SUPABASE.integrite;
-        s.crossOrigin = "anonymous";
         s.setAttribute("data-supabase", "");
         document.head.appendChild(s);
       }
@@ -1506,18 +1505,20 @@
      nouvel onglet. Pendant le téléchargement, un reflet balaie le texte
      d'attente en boucle ; il disparaît dès que le PDF est là. */
   var pdfURL = null, pdfCharge = false, pdfOuvert = false, pdfDemande = 0, pdfDoc = null;
-  var PDFJS_CDN = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
-  var PDFJS_INTEGRITE = "sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e";
+  /* pdf.js est servi par le site (assets/vendor/pdfjs/, version dans le
+     dossier, cache un an) : même origine, pas de CDN tiers, et le PDF
+     s'ouvre même si le CDN est injoignable. */
+  var PDFJS_BASE = "/assets/vendor/pdfjs/";
   /* pdf.js (~320 Ko) n'est chargé qu'à la première ouverture d'un PDF :
      la plupart des visites n'en ouvrent aucun, inutile de le payer au
-     démarrage. Même vérification d'intégrité qu'une balise <script>. */
+     démarrage. */
   var pdfJsPromesse = null;
   function chargerPdfJs() {
     if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
     if (!pdfJsPromesse) {
       pdfJsPromesse = new Promise(function (ok, ko) {
         var s = document.createElement("script");
-        s.src = PDFJS_CDN + "pdf.min.js"; s.integrity = PDFJS_INTEGRITE; s.crossOrigin = "anonymous";
+        s.src = PDFJS_BASE + "pdf.min.js";
         s.onload = function () { if (window.pdfjsLib) ok(window.pdfjsLib); else { pdfJsPromesse = null; ko(); } };
         s.onerror = function () { pdfJsPromesse = null; ko(); };
         document.head.appendChild(s);
@@ -4123,17 +4124,20 @@
   function ajusterSeg() {
     var seg = document.getElementById("seg");
     if (seg.hidden || !profils) return;
-    if (seg.classList.contains("defile")) {
-      // Déjà en mode défilant : n'y rester que si le contenu déborde
-      // vraiment. Le ::after (4 px) crée un mini-dépassement artificiel,
-      // d'où la tolérance de 5 px.
-      if (seg.scrollWidth <= seg.clientWidth + 5) seg.classList.remove("defile");
-      else { montrerOngletActif(seg); return; }
-    }
+    // Toutes les mesures d'abord, les écritures ensuite : une seule
+    // remise en page au lieu d'une par lecture après changement de classe
+    // (le profil du démarrage relisait offsetLeft/offsetWidth juste après
+    // avoir basculé « defile »).
+    var defile = seg.classList.contains("defile");
+    var deborde = seg.scrollWidth > seg.clientWidth + 5;
     var coupe = Array.prototype.some.call(seg.querySelectorAll("button"), function (b) {
       return b.scrollWidth > b.clientWidth + 1;
     });
-    seg.classList.toggle("defile", coupe);
+    // Déjà en mode défilant : n'y rester que si le contenu déborde
+    // vraiment. Le ::after (4 px) crée un mini-dépassement artificiel,
+    // d'où la tolérance de 5 px.
+    var doitDefiler = defile ? deborde : coupe;
+    seg.classList.toggle("defile", doitDefiler);
     montrerOngletActif(seg);
   }
   // Mode défilant : l'onglet actif est ramené dans la zone visible (centré
@@ -4143,7 +4147,10 @@
     var b = seg.querySelector('button[aria-pressed="true"]');
     if (b) {
       var cible = b.offsetLeft - (seg.clientWidth - b.offsetWidth) / 2;
-      seg.scrollLeft = Math.max(0, Math.min(cible, seg.scrollWidth - seg.clientWidth));
+      var voulu = Math.max(0, Math.min(cible, seg.scrollWidth - seg.clientWidth));
+      // Écrire seulement si ça change : sinon le navigateur relance une
+      // mise en page pour rien (défilement déjà au bon endroit).
+      if (Math.abs(seg.scrollLeft - voulu) > 0.5) seg.scrollLeft = voulu;
     }
     majFonduSeg(seg);
   }
@@ -4153,7 +4160,14 @@
     seg.classList.toggle("suite-g", defile && seg.scrollLeft > 2);
     seg.classList.toggle("suite-d", defile && max > 5 && seg.scrollLeft < max - 2);
   }
-  window.addEventListener("resize", ajusterSeg);
+  // Le redimensionnement (rotation du téléphone) peut déclencher une
+  // rafale d'événements : une seule mesure par image suffit.
+  var resizeSegEnAttente = false;
+  window.addEventListener("resize", function () {
+    if (resizeSegEnAttente) return;
+    resizeSegEnAttente = true;
+    requestAnimationFrame(function () { resizeSegEnAttente = false; ajusterSeg(); });
+  });
   document.getElementById("seg").addEventListener("scroll", function () {
     majFonduSeg(this);
   }, { passive: true });
@@ -8580,7 +8594,7 @@
         }
         chargerPdfJs().then(function (pdfjsLib) {
           try {
-            pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_CDN + "pdf.worker.min.js";
+            pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_BASE + "pdf.worker.min.js";
           } catch (e) { /* ouvrier déjà réglé */ }
           return blob.arrayBuffer().then(function (buf) {
             if (maDemande !== pdfDemande) return;

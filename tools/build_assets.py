@@ -209,6 +209,25 @@ def verifier(parler: bool = True) -> int:
                 problemes.append(f"{source} supprimé")
             elif empreinte(chemin.read_bytes()) != attendue:
                 problemes.append(f"{source} modifié depuis le dernier build")
+    # Bibliothèques servies par le site (assets/vendor/) : référencées par
+    # les pages ou les sources JS, elles doivent exister. Comme leur nom
+    # porte la version et qu'elles sont mises en cache un an, une mise à
+    # jour se fait sous un NOUVEAU nom (voir assets/vendor/README.md).
+    references = set()
+    for page in fichiers_pages():
+        references |= set(re.findall(r"/assets/vendor/[A-Za-z0-9._/-]+",
+                                     page.read_text(encoding="utf-8")))
+    for src in (RACINE / "assets" / "js").glob("*.js"):
+        references |= set(re.findall(r"/assets/vendor/[A-Za-z0-9._/-]+",
+                                     src.read_text(encoding="utf-8")))
+    for reference in sorted(references):
+        chemin = RACINE / reference.lstrip("/")
+        # Un dossier (PDFJS_BASE) est valide ; un fichier doit exister.
+        if reference.endswith("/"):
+            if not chemin.is_dir():
+                problemes.append(f"{reference} référencé mais absent")
+        elif not chemin.is_file():
+            problemes.append(f"{reference} référencé mais absent")
     if problemes:
         dire("\n".join(problemes))
         return 1

@@ -83,6 +83,9 @@ supabase/.temp/
 # Plans et notes locales (non versionnés)
 dashboard.md
 
+# Captures d'écran de travail (jamais versionnées)
+.cache/
+
 # Artefacts écrits par `vercel build` (le constructeur Python les
 # régénère à chaque fois, en local comme chez l'hébergeur).
 /pyproject.toml

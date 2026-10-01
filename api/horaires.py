@@ -21,7 +21,7 @@ ICI = os.path.dirname(os.path.abspath(__file__))
 if ICI not in sys.path:
     sys.path.insert(0, ICI)
 
-from _ecoles import ECOLES, debit, repondre_json, requete  # noqa: E402
+from _ecoles import ECOLES, debit, erreur_publique, repondre_json, requete  # noqa: E402
 from _moteurs.hyperplanning import Surcharge  # noqa: E402
 
 BUDGET = 75  # s, sous la limite de durée de la fonction chez l'hébergeur
@@ -54,8 +54,8 @@ class handler(BaseHTTPRequestHandler):
             repondre_json(self, 404, {"ok": False, "erreur": str(e)})
         except Surcharge as e:  # fuse anti-abus de l'instance : dire d'attendre
             repondre_json(self, 429, {"ok": False, "erreur": str(e)})
-        except Exception as e:  # noqa: BLE001 - message affiché dans l'app
-            repondre_json(self, 502, {"ok": False, "erreur": str(e)[-300:]})
+        except Exception as e:  # noqa: BLE001 - imprévu : journal, message générique
+            repondre_json(self, 502, {"ok": False, "erreur": erreur_publique(e, "horaires")})
 
     def log_message(self, *args):
         pass  # silencieux

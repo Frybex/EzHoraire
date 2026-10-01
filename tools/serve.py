@@ -88,24 +88,50 @@ ROUTES = {"/api/formations": formations.handler,
           "/api/bugs": bugs.handler}
 
 # En-têtes identiques à vercel.json (garder les deux synchronisés) : le site
-# local doit se comporter comme la production, surtout pour la CSP.
-# 'unsafe-inline' reste nécessaire pour le script et les styles embarqués
-# dans index.html / dashboard.html ; le reste verrouille les sources.
+# local doit se comporter comme la production, surtout pour la CSP. Les
+# scripts embarqués des pages sont autorisés par leur empreinte sha256
+# (tools/valider_csp.py) ; 'unsafe-inline' reste nécessaire pour les styles
+# (attributs style="…" et blocs <style> des pages à compte).
+# cdn.jsdelivr.net n'apparaît que pour l'OCR (tesseract.js, import d'une
+# capture, script déjà figé par SRI) ; Supabase et pdf.js sont servis par le
+# site (assets/vendor/).
 CSP = ("default-src 'self'; "
-       "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
+       "script-src 'self' 'sha256-2zMgjnrBc0scdjiqprtr/+amfpkHFvD3dOdvZeFaFmo=' 'sha256-HoK1HtBuOiJpGiGV9OX86k9+COVS5ELODIcYuH1A/vM=' 'sha256-UyU3nDo9cQQ5FWuH1wDSjiThXV0kMZiieIKzDINA01M=' 'sha256-hIpGQKPkWlsFL1mRFtpwGxiAL18oC8+fXHre7DdZac4=' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; "
        "style-src 'self' 'unsafe-inline'; "
        "img-src 'self' data: blob: https://*.supabase.co https://lh3.googleusercontent.com https://avatars.githubusercontent.com; "
        "font-src 'self'; "
        "connect-src 'self' https://*.supabase.co https://cdn.jsdelivr.net; "
        "frame-src blob:; "
-       "worker-src blob: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; "
+       "worker-src 'self' blob: https://cdn.jsdelivr.net; "
        "object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'")
 ENTETES_SECURITE = {
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "strict-origin-when-cross-origin",
     "X-Frame-Options": "DENY",
+    "Cross-Origin-Opener-Policy": "same-origin",
+    "X-Permitted-Cross-Domain-Policies": "none",
     "Content-Security-Policy": CSP,
 }
+# Version large pour le labo local : les empreintes sont retirées (leur
+# seule présence ferait ignorer 'unsafe-inline', règle CSP).
+CSP_LAB = re.sub(r"script-src [^;]*;",
+                 "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net;",
+                 CSP)
+
+
+def entetes_securite(chemin):
+    """En-têtes de la réponse ; CSP assouplie pour les pages du labo.
+
+    Les pages de `lab/` (menu de simulation, propositions) ne sont jamais
+    déployées et portent leurs propres scripts embarqués : leurs empreintes
+    n'ont pas à figurer dans la CSP de production, et `'unsafe-inline'` y
+    serait de toute façon ignoré tant qu'une empreinte est présente (c'est
+    la règle CSP). En local, leur directive script-src est donc remplacée
+    par la version large d'avant ; les pages du site, elles, restent
+    verrouillées par empreinte."""
+    if chemin.startswith("/lab/"):
+        return dict(ENTETES_SECURITE, **{"Content-Security-Policy": CSP_LAB})
+    return ENTETES_SECURITE
 
 # Mêmes valeurs que vercel.json (garder les deux synchronisés) : « servir
 # la copie en mémoire, vérifier en arrière-plan ». Le HTML ne bloque plus
@@ -134,6 +160,8 @@ def cache_fichier(chemin):
     chemin = chemin.split("?")[0]
     extension = chemin.rsplit(".", 1)[-1].lower() if "." in chemin.split("/")[-1] else ""
     if chemin.startswith("/assets/dist/"):
+        return CACHE_IMMUABLE
+    if chemin.startswith("/assets/vendor/"):
         return CACHE_IMMUABLE
     if chemin.startswith("/logos/ecoles/"):
         return CACHE_LONG
@@ -333,7 +361,7 @@ class Handler(SimpleHTTPRequestHandler):
         # repondre_json).
         if getattr(self, "statique", False):
             self.send_header("Cache-Control", cache_fichier(self.path))
-        for cle, valeur in ENTETES_SECURITE.items():
+        for cle, valeur in entetes_securite(self.path.split("?")[0]).items():
             self.send_header(cle, valeur)
         super().end_headers()
 

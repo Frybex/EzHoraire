@@ -519,10 +519,12 @@ class handler(BaseHTTPRequestHandler):
                      "image_urls": chemins}, timeout=20)
             except HTTPError as e2:
                 return _erreur(self, 502, "Base injoignable (erreur %s)." % e2.code)
-            except Exception as e2:  # noqa: BLE001
-                return _erreur(self, 502, "Base injoignable : " + str(e2)[-160:])
-        except Exception as e:  # noqa: BLE001
-            return _erreur(self, 502, "Base injoignable : " + str(e)[-160:])
+            except Exception as e2:  # noqa: BLE001 - imprévu : journal, message générique
+                print("bugs : écriture refusée (dépôt de secours) %r" % (e2,), file=sys.stderr)
+                return _erreur(self, 502, "Base injoignable. Réessaie dans un instant.")
+        except Exception as e:  # noqa: BLE001 - imprévu : journal, message générique
+            print("bugs : écriture refusée %r" % (e,), file=sys.stderr)
+            return _erreur(self, 502, "Base injoignable. Réessaie dans un instant.")
         bug_id = (insere[0].get("id") if isinstance(insere, list) and insere else 0) or 0
         try:
             _notifier_resend(typ, bug_id, titre, message, etape, email,
@@ -586,10 +588,12 @@ class handler(BaseHTTPRequestHandler):
                 if e2.code == 404:
                     return _erreur(self, 502, "Table introuvable : recolle supabase/schema.sql dans le SQL Editor.")
                 return _erreur(self, 502, "Supabase injoignable (erreur %s)." % e2.code)
-            except Exception as e2:  # noqa: BLE001
-                return _erreur(self, 502, "Supabase injoignable : " + str(e2)[-160:])
-        except Exception as e:  # noqa: BLE001
-            return _erreur(self, 502, "Supabase injoignable : " + str(e)[-160:])
+            except Exception as e2:  # noqa: BLE001 - imprévu : journal, message générique
+                print("bugs : lecture refusée (repli sans type) %r" % (e2,), file=sys.stderr)
+                return _erreur(self, 502, "Supabase injoignable. Réessaie dans un instant.")
+        except Exception as e:  # noqa: BLE001 - imprévu : journal, message générique
+            print("bugs : lecture refusée %r" % (e,), file=sys.stderr)
+            return _erreur(self, 502, "Supabase injoignable. Réessaie dans un instant.")
 
         base = url.rstrip("/")
         bugs = []
@@ -640,8 +644,9 @@ class handler(BaseHTTPRequestHandler):
                           {"statut": statut}, timeout=15)
         except HTTPError as e:
             return _erreur(self, 502, "Supabase injoignable (erreur %s)." % e.code)
-        except Exception as e:  # noqa: BLE001
-            return _erreur(self, 502, "Supabase injoignable : " + str(e)[-160:])
+        except Exception as e:  # noqa: BLE001 - imprévu : journal, message générique
+            print("bugs : changement de statut refusé %r" % (e,), file=sys.stderr)
+            return _erreur(self, 502, "Supabase injoignable. Réessaie dans un instant.")
         return repondre_json(self, 200, {"ok": True})
 
     def log_message(self, *args):

@@ -16,15 +16,16 @@
 <link rel="icon" href="/assets/icons/favicon-16x16.png" type="image/png" sizes="16x16">
 <link rel="mask-icon" href="/assets/icons/safari-pinned-tab.svg?v=2" color="#2456e0">
 <!-- « defer » : la favicone ne retarde pas l'affichage. -->
-<script defer src="/assets/dist/favicon.d76b1f573d.js"></script>
-<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<script defer src="/assets/dist/favicon.800a32ad6b.js"></script>
 <!-- SDK Supabase puis script du dashboard, tous deux en `defer` depuis le
      <head> : le document finit de se construire sans qu'un tiers externe
      retarde le premier rendu, et l'ordre d'exécution (SDK d'abord, page
-     ensuite) reste celui des balises. Le script de page vit dans
+     ensuite) reste celui des balises. Le SDK est servi par le site
+     (assets/vendor/, empreinte de version dans le nom, cache un an) :
+     plus aucun script tiers. Le script de page vit dans
      assets/js/dashboard.js : il se minifie et se met en cache comme les
      autres bundles. -->
-<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0" integrity="sha384-JBR+x8blGwjDRO63aHCGiZMD4VNiTR4ZUGA+N6ZKLf3zNt1fK8IBpcgPaMrxqWBp" crossorigin="anonymous"></script>
+<script defer src="/assets/vendor/supabase-2.116.0.min.js"></script>
 <script defer src="/assets/dist/dashboard.9b42499994.js"></script>
 <script>
 /* Apparence choisie dans l'app (Clair / Sombre / Système) : pas d'éclair. */

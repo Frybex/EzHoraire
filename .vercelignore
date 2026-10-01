@@ -1,5 +1,6 @@
 # Fichiers utilitaires : ne pas déployer sur Vercel
 tools/
+tests/
 README.md
 AGENTS.md
 CLAUDE.md
@@ -19,6 +20,12 @@ serve.log
 dashboard.md
 # Caches du build local : le CLI les exclut déjà, ceinture-bretelles.
 .vercel/
+# Captures d'écran de travail (dossier local, jamais publié).
+.cache/
+# Manifestes du constructeur Python régénérés par `vercel build`.
+pyproject.toml
+uv.lock
+.python-version
 # Ateliers de logos : seul logos/ecoles/ est affiché par l'app. Les essais
 # et les scripts de génération n'ont rien à faire en ligne. Chaque dossier
 # est listé un par un : « logos/* » + « !logos/ecoles/ » emporterait tout
@@ -52,3 +59,6 @@ seo/
 # (dont une non minifiée) pour rien.
 assets/js/
 assets/css/
+# Notice des bibliothèques tierces (assets/vendor/*.min.js, elles, sont
+# servies) : documentation du dépôt, pas une ressource du site.
+assets/vendor/README.md

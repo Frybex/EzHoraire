@@ -1,5 +1,5 @@
 #!/bin/sh
-# Deux vérifications avant chaque commit. Activer une fois :
+# Trois vérifications avant chaque commit. Activer une fois :
 #   git config core.hooksPath .githooks
 #
 # 1. sitemap.xml : un <lastmod> doit refléter la dernière modification
@@ -16,5 +16,13 @@ sortie=$(python3 tools/build_assets.py --check 2>&1)
 if [ $? -ne 0 ]; then
     printf '%s\n' "$sortie" >&2
     echo "Commit refusé : lancez « python3 tools/build_assets.py », ajoutez assets/dist/ et les pages réécrites, puis relancez le commit." >&2
+    exit 1
+fi
+# 3. Empreintes CSP : la liste des scripts embarqués doit correspondre aux
+#    pages (sinon le thème est bloqué en ligne, sans avertissement).
+sortie=$(python3 tools/valider_csp.py 2>&1)
+if [ $? -ne 0 ]; then
+    printf '%s\n' "$sortie" >&2
+    echo "Commit refusé : lancez « python3 tools/valider_csp.py --write », ajoutez vercel.json et tools/serve.py, puis relancez le commit." >&2
     exit 1
 fi

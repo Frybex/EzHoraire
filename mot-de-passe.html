@@ -29,11 +29,11 @@
 <link rel="icon" href="/assets/icons/favicon-16x16.png" type="image/png" sizes="16x16">
 <link rel="mask-icon" href="/assets/icons/safari-pinned-tab.svg?v=2" color="#2456e0">
 <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
-<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <!-- SDK Supabase puis le script de la page, en `defer` depuis le <head> :
      la page s'affiche sans attendre un tiers externe, et l'ordre
-     d'exécution (SDK d'abord) reste celui des balises. -->
-<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0" integrity="sha384-JBR+x8blGwjDRO63aHCGiZMD4VNiTR4ZUGA+N6ZKLf3zNt1fK8IBpcgPaMrxqWBp" crossorigin="anonymous"></script>
+     d'exécution (SDK d'abord) reste celui des balises. Le SDK est servi
+     par le site (assets/vendor/, cache un an) : plus aucun script tiers. -->
+<script defer src="/assets/vendor/supabase-2.116.0.min.js"></script>
 <script defer src="/assets/dist/motdepasse.bab74185e6.js"></script>
 <style>
   :root {

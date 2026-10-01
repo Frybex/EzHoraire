@@ -98,11 +98,22 @@
 
   maj();
   document.addEventListener("DOMContentLoaded", maj);
+  /* Le thème coloré ne se pose que sur <html> (data-couleur) et <body>
+     (data-theme) : observer ces deux éléments suffit. Sans `subtree`, le
+     navigateur n'a rien à faire sur les milliers d'attributs que l'app
+     change ailleurs (cartes, onglets, fenêtres) : moins de travail à
+     chaque mutation. */
   if (window.MutationObserver) {
-    new MutationObserver(maj).observe(document, {
+    var observateur = new MutationObserver(maj);
+    observateur.observe(document.documentElement, {
       attributes: true,
-      subtree: true,
       attributeFilter: ["data-theme", "data-couleur"]
+    });
+    document.addEventListener("DOMContentLoaded", function () {
+      observateur.observe(document.body, {
+        attributes: true,
+        attributeFilter: ["data-theme", "data-couleur"]
+      });
     });
   }
 })();

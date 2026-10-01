@@ -18,7 +18,7 @@ ICI = os.path.dirname(os.path.abspath(__file__))
 if ICI not in sys.path:
     sys.path.insert(0, ICI)
 
-from _ecoles import ECOLES, debit, repondre_json, requete  # noqa: E402
+from _ecoles import ECOLES, debit, erreur_publique, repondre_json, requete  # noqa: E402
 from _moteurs.hyperplanning import Surcharge  # noqa: E402
 
 CACHE_PARTAGE = "public, max-age=0, s-maxage=3600, stale-if-error=604800"
@@ -55,8 +55,8 @@ class handler(BaseHTTPRequestHandler):
                           CACHE_PARTAGE)
         except Surcharge as e:  # fuse anti-abus de l'instance : dire d'attendre
             repondre_json(self, 429, {"ok": False, "erreur": str(e)})
-        except Exception as e:  # noqa: BLE001 - message affiché dans l'app
-            repondre_json(self, 502, {"ok": False, "erreur": str(e)[-300:]})
+        except Exception as e:  # noqa: BLE001 - imprévu : journal, message générique
+            repondre_json(self, 502, {"ok": False, "erreur": erreur_publique(e, "recherche")})
 
     def log_message(self, *args):
         pass  # silencieux

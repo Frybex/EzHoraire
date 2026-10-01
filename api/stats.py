@@ -362,9 +362,10 @@ class handler(BaseHTTPRequestHandler):
                     "Table introuvable : recolle supabase/schema.sql dans le SQL Editor."})
             return repondre_json(self, 502, {"ok": False,
                 "erreur": "Supabase injoignable (erreur %s)." % e.code})
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # noqa: BLE001 - imprévu : journal, message générique
+            print("stats : agrégation refusée %r" % (e,), file=sys.stderr)
             return repondre_json(self, 502, {"ok": False,
-                "erreur": "Supabase injoignable : " + str(e)[-200:]})
+                "erreur": "Supabase injoignable. Réessaie dans un instant."})
 
         jours_cles = [(auj - timedelta(days=i)).isoformat() for i in range(jours - 1, -1, -1)]
         par_jour = {j: {"jour": j, "visites": 0, "visiteurs": set()} for j in jours_cles}

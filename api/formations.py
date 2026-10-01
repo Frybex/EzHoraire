@@ -36,8 +36,8 @@ class handler(BaseHTTPRequestHandler):
                           CACHE_PARTAGE)
         except Surcharge as e:  # fuse anti-abus de l'instance : dire d'attendre
             repondre_json(self, 429, {"ok": False, "erreur": str(e)})
-        except Exception as e:  # noqa: BLE001 - message affiché dans l'app
-            repondre_json(self, 502, {"ok": False, "erreur": str(e)[-300:]})
+        except Exception as e:  # noqa: BLE001 - imprévu : journal, message générique
+            repondre_json(self, 502, {"ok": False, "erreur": erreur_publique(e, "formations")})
 
     def log_message(self, *args):
         pass  # silencieux

@@ -29,7 +29,7 @@ ICI = os.path.dirname(os.path.abspath(__file__))
 if ICI not in sys.path:
     sys.path.insert(0, ICI)
 
-from _ecoles import ECOLES, debit, repondre_json  # noqa: E402
+from _ecoles import ECOLES, debit, erreur_publique, repondre_json  # noqa: E402
 from _moteurs.hyperplanning import Surcharge  # noqa: E402
 from _moteurs.import_liste import importer  # noqa: E402
 
@@ -103,8 +103,8 @@ class handler(BaseHTTPRequestHandler):
             repondre_json(self, 200, {"ok": True, "data": data}, "no-store")
         except Surcharge as e:
             _erreur(self, 429, str(e))
-        except Exception as e:  # noqa: BLE001 - message affiché dans l'app
-            _erreur(self, 502, str(e)[-300:])
+        except Exception as e:  # noqa: BLE001 - imprévu : journal, message générique
+            _erreur(self, 502, erreur_publique(e, "importer"))
 
     def do_GET(self):
         # Une page ouverte avant ce changement enverrait la liste dans
