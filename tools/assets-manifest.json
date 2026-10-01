@@ -2,8 +2,8 @@
   "version": 1,
   "bundles": {
     "app.js": {
-      "fichier": "app.9d7767f125.js",
-      "octets": 249967,
+      "fichier": "app.5b57fd04d4.js",
+      "octets": 249803,
       "sources": {
         "assets/js/favicon.js": "f57272dc9fe1aef5317659ed6142eddc37959c4c5bc731dc0409e0b035370b15",
         "assets/js/suivi.js": "81f2e75ded3d93fffd77e3fdbf40f122745c224f18bf416de4dc302fa8bb9829",
@@ -11,7 +11,7 @@
         "assets/js/export_ics.js": "1339504ea725d3db2bf979c703b9137f8205c26f96932e0fa801253bba3207ca",
         "assets/js/semaine.js": "c631e8eee5275028820036e07d99c8a4c462931bc79bc15cd98032b37e356a71",
         "assets/js/recherche.js": "f31b87190cc35ac33f9f966b403f6cc4b2c2d9ac7171e3cb638ed317ec766595",
-        "assets/js/app.js": "7c6bbcea8d003fdea4d5f2811c389c408cdc9256f5edb8c24c9f40ab8dfa0867"
+        "assets/js/app.js": "ce54f9af7dee1b60f8e3531b6c49e6624a55481f79a6c496664fdde621a9ed09"
       }
     },
     "app.css": {

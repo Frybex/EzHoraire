@@ -4974,8 +4974,8 @@
   /* ---------- Devoirs et examens, rattachés à un cours ou à un jour ----------
      Chaque horaire a ses propres échéances, rangées sous une clé : un cours
      (jour, heure de début, matière) ou un jour sans cours (férié, libre) —
-     dans ce cas la clé est « jour|| ». Elles suivent la semaine d'une
-     semaine à l'autre et ne passent jamais d'un horaire à l'autre.
+     dans ce cas la clé est « jour|| ». Elles ne s'affichent que le jour
+     où elles sont dues et ne passent jamais d'un horaire à l'autre.
      Connecté, elles voyagent dans la table `echeances` (voir
      supabase/schema.sql) : ajoutées sur le téléphone, elles apparaissent
      sur les autres appareils. Hors ligne ou sans cloud, le localStorage
@@ -5375,11 +5375,12 @@
     var auj = new Date();
     return jourEch(e.date).getTime() < new Date(auj.getFullYear(), auj.getMonth(), auj.getDate()).getTime();
   }
-  /* Le jour affiché (la séance ou le jour même) tombe après la date
-     butoir : l'échéance ne s'y accroche plus, elle ne suit le cours que
-     jusqu'au jour où elle est due. */
-  function echApresDate(e, dateJour) {
-    return !!dateJour && e.date < isoEch(dateJour);
+  /* Une échéance n'existe que le jour où elle est due : un devoir pour
+     le 13/12 ne s'affiche que le 13/12, jamais sur les séances
+     précédentes du même cours. Sans jour affiché, on ne filtre pas. */
+  function echDuJour(e, dateJour) {
+    if (!dateJour) return true;
+    return !!e && memeJour(jourEch(e.date), dateJour);
   }
   function trierEcheances(liste) {
     return liste.slice().sort(function (a, b) {
@@ -5427,7 +5428,7 @@
       "</div></li>";
   }
   function listeEcheancesHTML(liste, cleCours, dateJour) {
-    var items = trierEcheances(liste).filter(function (e) { return !echApresDate(e, dateJour); });
+    var items = trierEcheances(liste).filter(function (e) { return echDuJour(e, dateJour); });
     if (!items.length) return "";
     var html = '<ul class="ech-liste">';
     for (var i = 0; i < items.length; i++) {
@@ -5441,7 +5442,7 @@
   function resumeEcheances(c) {
     var dateJour = dateSemJour(sem, c.jour);
     var liste = trierEcheances(echeancesDe(c).filter(function (e) {
-      return !echPassee(e) && !echApresDate(e, dateJour);
+      return !echPassee(e) && echDuJour(e, dateJour);
     }));
     if (!liste.length) return null;
     var examen = liste[0].type === "examen";
@@ -5522,7 +5523,7 @@
   function resumeEcheancesDedans(c, date) {
     var dateJ = date || dateSemJour(sem, c.jour);
     var liste = trierEcheances(echeancesAfficheesCours(c, dateJ).map(function (x) { return x.e; }).filter(function (e) {
-      return !echPassee(e) && !echApresDate(e, dateJ);
+      return !echPassee(e) && echDuJour(e, dateJ);
     }));
     return etiquetteEcheances(liste);
   }
@@ -5530,7 +5531,7 @@
      propre clé (indispensable quand la bulle d'un cours montre aussi des
      échéances posées sur la journée ou sur un autre cours). */
   function listeEcheancesCles(lignes, dateJour) {
-    var items = lignes.filter(function (x) { return x && x.e && !echApresDate(x.e, dateJour); });
+    var items = lignes.filter(function (x) { return x && x.e && echDuJour(x.e, dateJour); });
     items.sort(function (a, b) {
       var ka = a.e.date + (a.e.heure || ""), kb = b.e.date + (b.e.heure || "");
       return ka < kb ? -1 : ka > kb ? 1 : 0;
@@ -5591,7 +5592,7 @@
       for (var i = 0; i < l.length; i++) toutes.push(l[i]);
     });
     var liste = trierEcheances(toutes.filter(function (e) {
-      return !echPassee(e) && !echApresDate(e, dateJour);
+      return !echPassee(e) && echDuJour(e, dateJour);
     }));
     var devoir = false, examen = false;
     liste.forEach(function (e) {
@@ -5616,7 +5617,7 @@
      un cours ne s'ouvre que s'il a quelque chose à montrer. */
   function marquesHTML(liste, dateJour) {
     var actives = (liste || []).filter(function (e) {
-      return !echPassee(e) && !echApresDate(e, dateJour);
+      return !echPassee(e) && echDuJour(e, dateJour);
     });
     var devoir = false, examen = false;
     actives.forEach(function (e) { if (e.type === "examen") examen = true; else devoir = true; });
@@ -5642,7 +5643,7 @@
       txt(c.salles.replace(/, ([^,]*)$/, " et $1")) + "</span></span>";
   }
 
-  /* Infos détaillées du cours (prof, groupe, code, source) : s'ouvrent en
+  /* Infos détaillées du cours (prof, groupe, source) : s'ouvrent en
      accordéon sous le titre et la salle. */
   function infosCoursHTML(c) {
     var sub = "";
@@ -5650,7 +5651,6 @@
     if (c.groupes.length && groupesChoisisDe(c).length !== 1) {
       sub += '<span class="cinfo-row"><span class="k">Groupe : </span>' + txt(c.groupes.map(nomGroupe).join(", ")) + "</span>";
     }
-    if (codeMatiere(c.matiere)) sub += '<span class="cinfo-row"><span class="k">Code : </span>' + txt(codeMatiere(c.matiere)) + "</span>";
     if (DATA.perso) {
       var noms = (c.srcs || [c.src]).map(function (i) { return nomSource(profil.sources[i]); }).filter(Boolean);
       if (noms.length) sub += '<span class="cinfo-row src"><span class="k">Source : </span>' + txt(noms.join(" et ")) + "</span>";
@@ -6218,7 +6218,6 @@
       var nomsSrc = (c.srcs || [c.src]).map(function (i) { return nomSource(profil.sources[i]); }).filter(Boolean);
       if (nomsSrc.length) d += "<dt>Source</dt><dd>" + txt(nomsSrc.join(" et ")) + "</dd>";
     }
-    if (codeMatiere(c.matiere)) d += "<dt>Code</dt><dd>" + txt(codeMatiere(c.matiere)) + "</dd>";
     // Échéances du cours : les siennes plus celles qu'il héberge (une
     // heure qui tombe pendant ce cours), comme dans la case — même liste
     // que sur téléphone, en lecture seule. Sans échéance, pas de section
@@ -6425,7 +6424,7 @@
   /* Une séance au format d'un jour de la semaine (téléphone) : le jour et
      sa date à gauche, les heures à droite. Au clic, le cours se déroule
      comme s'il était le seul de la journée — heures empilées, pastille,
-     puis Salle / Prof / Groupe / Code, le gabarit de la semaine. */
+     puis Salle / Prof / Groupe, le gabarit de la semaine. */
   function rcCleSeance(semaine, seance) {
     var c = seance.cours;
     return semaine + "|" + c.jour + "|" + c.debut + "|" + (c.matiere || "");
