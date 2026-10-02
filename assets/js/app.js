@@ -2200,6 +2200,12 @@
     pile = Array.isArray(d.pile)
       ? d.pile.filter(function (n) { return VUES_BROUILLON.indexOf(n) >= 0 || n === "horaire"; })
       : [];
+    // ULB : la formule n'existe plus, un vieux brouillon ne doit ni
+    // l'afficher ni y revenir avec Retour.
+    if (d.ecole === "ulb") {
+      if (vueVoulue === "formule") vueVoulue = "formation";
+      pile = pile.filter(function (n) { return n !== "formule"; });
+    }
     var champRech = document.getElementById("recherche");
     var champLien = document.getElementById("rech-lien-champ");
     var champSurnom = document.getElementById("surnom");
@@ -2576,7 +2582,9 @@
     // Nouvel horaire : on choisit d'abord la formule (année complète ou
     // sur mesure). Rechoix d'école en pleine modification : on garde
     // l'ancien parcours direct, sans détour.
-    aller(keepEdition ? "formation" : "formule");
+    // ULB : pas de choix de formule, les horaires se composent via des
+    // codes de cours et sont donc forcément sur mesure.
+    aller(keepEdition || choix.ecole === "ulb" ? "formation" : "formule");
   });
   /* ---------- 1c. Formule : année complète ou horaire sur mesure ----------
      Deux vrais choix, avec leur explication lisible sous le titre : c'est
@@ -2584,6 +2592,8 @@
      l'étudiant entre deux années trouve le sur mesure. */
   function ouvrirFormule() {
     if (!choix.ecole) { ouvrirEcoles(); return; }
+    // ULB : pas de choix de formule, on va direct aux cours (via codes).
+    if (choix.ecole === "ulb") { ouvrirFormations(); return; }
     montrer("formule");
     var ec = ecoleDe(choix.ecole);
     document.getElementById("formule-aide").textContent =
