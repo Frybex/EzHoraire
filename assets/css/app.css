@@ -942,9 +942,10 @@
   .reg-compte { margin: 6px 0 4px; perspective: 1000px; }
   #reg-compte.retournee .pcard-flip { transform: rotateX(180deg); }
   .reg-compte .pcard-ligne { padding: 2px 10px 2px 16px; gap: 8px; }
-  /* Les 4 actions du dos tiennent en entier : le libellé passe sur deux
-     lignes, quitte à couper un mot long (« Notifications »). */
-  .reg-compte .dos-act span { white-space: normal; line-height: 1.15; overflow-wrap: anywhere; }
+  /* Icônes seules au dos de la carte du compte : plus grandes et bien
+     centrées, la zone de tap reste confortable. */
+  .reg-compte .dos-act { padding: 12px 2px; }
+  .reg-compte .dos-act:not(.danger-txt) svg { color: var(--ink); }
   .reg-compte .avatar.grand {
     width: 52px; height: 52px; flex: none; border-radius: 50%;
     display: grid; place-items: center;
