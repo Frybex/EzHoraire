@@ -160,6 +160,9 @@
   .liste button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .liste .nom { flex: 1; min-width: 0; font-weight: 600; letter-spacing: -.01em; }
   .liste .nom small { display: block; margin-top: 2px; color: var(--muted); font-weight: 400; font-size: .85rem; letter-spacing: 0; }
+  /* Choix de la formule (année complète / sur mesure) : l'info sous le
+     titre se lit vraiment, pas en tout petit grisé. */
+  .liste .nom .formule-info { display: block; margin-top: 5px; color: var(--ink); font-weight: 400; font-size: 1rem; line-height: 1.45; letter-spacing: 0; }
   .liste .chev { transform: rotate(-45deg); margin: 0 4px 0 0; opacity: .55; }
   .liste mark { background: none; color: var(--accent); font-weight: 700; }
   .liste li.empty { padding: 28px 10px; }
@@ -1385,7 +1388,7 @@
      (rien en dessous d'elle, contrairement à un cours). */
   .detail .box-jour { padding: 10px 14px 10px 23px; }
   .box-jour .csub-in { padding: 0; align-items: center; }
-  /* Section déroulante « Supplément » : devoirs et examens posés en dehors
+  /* Section déroulante « Soir » : devoirs et examens posés en dehors
      des heures de cours. */
   .detail .box-supp {
     margin: 8px 10px 10px; padding: 12px 14px 12px 23px; border: none; border-radius: 13px;
@@ -1400,12 +1403,6 @@
     padding: 4px 0; cursor: pointer; border-radius: 8px;
   }
   .supp-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  .supp-ico {
-    flex: none; display: flex; align-items: center; justify-content: center;
-    width: 15px; height: 15px; color: var(--muted);
-    transform: translateY(-0.75px);
-  }
-  .supp-ico svg { display: block; }
   .supp-titre {
     flex: 1; min-width: 0; font-weight: 600; font-size: .95rem; letter-spacing: -.01em;
     line-height: 1.15;
@@ -3718,9 +3715,6 @@
   .liste .surmesure .nom small, .liste button.deja .nom small {
     display: block; margin-top: 2px; font-weight: 500; color: var(--muted); font-size: .84rem;
   }
-  /* Carte « Composer » : de l'air avec la liste des formations en dessous,
-     pour ne pas coller au titre de rubrique. */
-  #liste-perso { margin: 0 0 20px; }
   #perso-valider { margin-top: 18px; }
   .liste button.deja { opacity: .62; cursor: default; }
   .tag-neuf {

@@ -240,9 +240,10 @@ publication).
 Une source = une formation, un parcours `PAR:` ou un lien iCal, avec ses
 groupes et un rôle : **année principale** (tout est gardé, on retire des
 cours : `sans`) ou **année d'ajout** (seuls les cours cochés : `avec`).
-Entrée : la carte « Composer un horaire sur mesure » en tête de l'écran
-des formations ; les écrans formation et groupes sont réutilisés, plus le
-composeur (`v-perso`) et le choix des cours (`v-cours`).
+Entrée : l'écran « Ton horaire » après l'école (« Horaire classique »
+ou « Horaire sur mesure ») ; les écrans formation et groupes sont
+réutilisés, plus le composeur (`v-perso`) et le choix des cours
+(`v-cours`).
 
 La fusion est faite dans le navigateur par `fusion.js` (fonctions pures,
 testées par `node --test test_fusion.mjs`) : cours puis groupes filtrés

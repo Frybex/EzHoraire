@@ -44,13 +44,13 @@
 <link rel="manifest" href="/assets/icons/site.webmanifest">
 <!-- Feuille de style au-dessus des scripts : elle démarre avant tout
      texte exécuté, le premier rendu n'attend que elle. -->
-<link rel="stylesheet" href="/assets/dist/app.47943058aa.css">
+<link rel="stylesheet" href="/assets/dist/app.565478daf7.css">
 <!-- Un seul bundle, découvert tôt et exécuté après le parse : le premier
      rendu ne dépend que de la feuille de style. Le SDK Supabase, lui,
      n'est plus téléchargé d'office : l'app le demande au premier besoin
      (clic de connexion, retour OAuth ou session déjà enregistrée). -->
-<link rel="preload" href="/assets/dist/app.5b57fd04d4.js" as="script">
-<script defer src="/assets/dist/app.5b57fd04d4.js"></script>
+<link rel="preload" href="/assets/dist/app.3c29f3a030.js" as="script">
+<script defer src="/assets/dist/app.3c29f3a030.js"></script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
 {"@type":"Organization","@id":"https://www.ezhoraire.be/#org","name":"EzHoraire","alternateName":["Ez Horaire","ezhoraire","Easy Horaire","EzHoraire Belgique"],"url":"https://www.ezhoraire.be/","logo":{"@type":"ImageObject","url":"https://www.ezhoraire.be/icon-512.png","width":512,"height":512},"email":"contact@ezhoraire.be","areaServed":{"@type":"Country","name":"Belgique"},"description":"Application et plateforme gratuite de consultation des horaires d'étudiants en Belgique (HEH, UMONS, Condorcet, HELB, ULB, UCLouvain)."},
@@ -417,7 +417,7 @@ try {
 
   <!-- 1. École -->
   <section id="v-ecole" hidden>
-    <p class="etapes" role="img" aria-label="Étape 1 sur 3"><span class="on"></span><span></span><span></span></p>
+    <p class="etapes" role="img" aria-label="Étape 1 sur 4"><span class="on"></span><span></span><span></span><span></span></p>
     <h2 class="q">Ton école</h2>
     <ul class="liste" id="liste-ecoles"></ul>
     <div id="ecole-manquante">
@@ -451,9 +451,23 @@ try {
     <p class="bug-aide"><button type="button" class="lien-bug" data-bug>Un souci, une idée ? Signaler</button></p>
   </section>
 
+  <!-- 1b. Formule : année complète ou sur mesure -->
+  <section id="v-formule" hidden>
+    <p class="etapes" role="img" aria-label="Étape 2 sur 4"><span class="on"></span><span class="on"></span><span></span><span></span></p>
+    <h2 class="q">Ton horaire</h2>
+    <p class="aide" id="formule-aide"></p>
+    <ul class="liste" id="liste-formule">
+      <li><button type="button" class="halo" id="btn-formule-classique">
+        <span class="nom">Horaire classique<span class="formule-info">Je suis tous les cours de mon année.</span></span><span class="chev" aria-hidden="true"></span></button></li>
+      <li><button type="button" class="halo" id="btn-formule-perso">
+        <span class="nom">Horaire sur mesure<span class="formule-info">Entre deux années, ou quelques cours déjà validés.</span></span><span class="chev" aria-hidden="true"></span></button></li>
+    </ul>
+    <p class="bug-aide"><button type="button" class="lien-bug" data-bug>Un souci, une idée ? Signaler</button></p>
+  </section>
+
   <!-- 2. Formation -->
   <section id="v-formation" hidden>
-    <p class="etapes" role="img" aria-label="Étape 2 sur 3"><span class="on"></span><span class="on"></span><span></span></p>
+    <p class="etapes" role="img" aria-label="Étape 3 sur 4"><span class="on"></span><span class="on"></span><span class="on"></span><span></span></p>
     <h2 class="q" id="formation-titre">Ta formation</h2>
     <div class="modes" id="rech-modes" role="group" aria-label="Comment trouver tes cours" hidden>
       <button type="button" data-mode="cours" aria-pressed="true"><span class="mode-nom">Par codes de cours</span></button>
@@ -504,11 +518,6 @@ try {
       <p class="pdf-status" id="rech-lien-status" role="status"></p>
     </div>
     <div class="src-rappel" id="formation-rappel" hidden></div>
-    <ul class="liste" id="liste-perso" hidden>
-      <li><button type="button" class="halo surmesure" id="btn-perso">
-        <span class="nom">Composer un horaire sur mesure<small>Des cours de plusieurs années ou options, réunis</small></span>
-        <span class="tag-neuf">Nouveau</span></button></li>
-    </ul>
     <p class="pdf-status" id="formations-status" role="status"></p>
     <ul class="liste" id="liste-formations"></ul>
     <button class="primaire halo" id="btn-options-suivant" type="button" hidden>Suivant</button>
@@ -517,7 +526,7 @@ try {
 
   <!-- 3. Groupe(s) -->
   <section id="v-groupes" hidden>
-    <p class="etapes" role="img" aria-label="Étape 3 sur 3"><span class="on"></span><span class="on"></span><span class="on"></span></p>
+    <p class="etapes" role="img" aria-label="Étape 4 sur 4"><span class="on"></span><span class="on"></span><span class="on"></span><span class="on"></span></p>
     <h2 class="q" id="groupes-titre">Ton groupe</h2>
     <p class="perso-compte" id="groupes-compte" hidden></p>
     <p class="aide" id="groupes-aide"></p>

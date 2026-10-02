@@ -3,7 +3,7 @@
   "use strict";
   /* Version du parcours, jointe aux étapes anonymes : à incrémenter à
      chaque correctif, pour comparer « avant / après » dans le dashboard. */
-  window.EZH_VERSION = "7";
+  window.EZH_VERSION = "8";
   var JOURS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
   var MOIS = ["janv.", "févr.", "mars", "avr.", "mai", "juin",
               "juil.", "août", "sept.", "oct.", "nov.", "déc."];
@@ -1498,7 +1498,7 @@
 
   var joursOuverts = {}; // jours dépliés {index: true}, interrupteurs indépendants
   var coursOuverts = {}; // cours dépliés {"jour:index": true}, interrupteurs indépendants
-  var suppOuverts = {};  // sections supplément dépliées {jour: true}
+  var suppOuverts = {};  // sections soir dépliées {jour: true}
   function resetDepliage() { joursOuverts = {}; coursOuverts = {}; suppOuverts = {}; }
 
   /* Visionneuse PDF intégrée : le PDF s'affiche sous le bouton, sans
@@ -1961,7 +1961,7 @@
   }
 
   /* ---------- Navigation entre les écrans ---------- */
-  var VUES = ["compte", "identite", "ecole", "formation", "groupes", "perso", "cours", "horaire"];
+  var VUES = ["compte", "identite", "ecole", "formule", "formation", "groupes", "perso", "cours", "horaire"];
   var vue = null, pile = []; // pile : écrans précédents (bouton Retour)
   function montrer(v) {
     vue = v;
@@ -1993,6 +1993,7 @@
     compte: ouvrirCompte,
     identite: ouvrirIdentite,
     ecole: ouvrirEcoles,
+    formule: ouvrirFormule,
     formation: ouvrirFormations,
     groupes: function () { ouvrirGroupes(choix.groupes); },
     perso: ouvrirPerso,
@@ -2006,7 +2007,7 @@
      les cours cochés et les groupes étaient perdus. On garde le parcours en
      cours dans localStorage et on le rouvre au démarrage. Un brouillon ne
      vit pas plus d'un jour et n'est jamais écrit depuis l'horaire. */
-  var VUES_BROUILLON = ["ecole", "formation", "groupes", "perso", "cours"];
+  var VUES_BROUILLON = ["ecole", "formule", "formation", "groupes", "perso", "cours"];
   var BROUILLON_MAX_MS = 24 * 3600 * 1000;
   function sauverBrouillon() {
     if (VUES_BROUILLON.indexOf(vue) < 0) return;
@@ -2108,6 +2109,8 @@
     if (choix.theme != null) document.body.setAttribute("data-theme", String(choix.theme));
     if (vueVoulue === "ecole") {
       ouvrirEcoles();
+    } else if (vueVoulue === "formule") {
+      ouvrirFormule();
     } else if (vueVoulue === "formation") {
       ouvrirFormations();
       var ec = ecoleDe(choix.ecole);
@@ -2432,8 +2435,8 @@
     ouvrirEcoles();
   }
   /* Compose un nouvel horaire sur mesure depuis l'horaire affiché (bandeau
-     « nouvelles semaines ») : on part de son école et l'écran des
-     formations ouvre la carte « Composer un horaire sur mesure ». */
+     « nouvelles semaines ») : l'intention est explicite, le guide démarre
+     directement, sans passer par l'écran des formules. */
   function demarrerPerso() {
     fermerFeuille();
     choix = {
@@ -2441,7 +2444,7 @@
       groupes: [], ical: null, editionId: null, theme: suggereThemeSuivant()
     };
     pile = ["horaire"];
-    aller("formation");
+    demarrerGuidePerso();
   }
   function ouvrirEcoles() {
     montrer("ecole");
@@ -2468,8 +2471,44 @@
     var keepEdition = choix.editionId;
     var keepTheme = choix.theme;
     choix = { ecole: b.getAttribute("data-ecole"), formation: null, data: null, groupes: [], ical: null, editionId: keepEdition, theme: keepTheme };
+    // Nouvel horaire : on choisit d'abord la formule (année complète ou
+    // sur mesure). Rechoix d'école en pleine modification : on garde
+    // l'ancien parcours direct, sans détour.
+    aller(keepEdition ? "formation" : "formule");
+  });
+  /* ---------- 1c. Formule : année complète ou horaire sur mesure ----------
+     Deux vrais choix, avec leur explication lisible sous le titre : c'est
+     ici — et plus sur une carte perdue dans les formations — que
+     l'étudiant entre deux années trouve le sur mesure. */
+  function ouvrirFormule() {
+    if (!choix.ecole) { ouvrirEcoles(); return; }
+    montrer("formule");
+    var ec = ecoleDe(choix.ecole);
+    document.getElementById("formule-aide").textContent =
+      ec ? ec.nom + " · " + String(ec.detail).split(" · ").slice(1).join(" · ") : "";
+  }
+  document.getElementById("btn-formule-classique").addEventListener("click", function () {
+    if (!choix.ecole) { ouvrirEcoles(); return; }
     aller("formation");
   });
+  document.getElementById("btn-formule-perso").addEventListener("click", function () {
+    if (!choix.ecole) { ouvrirEcoles(); return; }
+    demarrerGuidePerso();
+  });
+  function demarrerGuidePerso() {
+    choix.perso = {
+      editionId: null, ecole: choix.ecole, sources: [], surnom: "",
+      theme: choix.theme != null ? normaliserTheme(choix.theme)
+        : (profils.length ? suggereThemeSuivant() : themeChoisiIdentite),
+      pile: null, etape: "options"
+    };
+    choix.source = null; choix.formation = null; choix.data = null; choix.groupes = []; choix.ical = null;
+    var champ = document.getElementById("recherche");
+    if (champ && champ.blur) champ.blur();
+    // Direct, sans empiler : on est déjà sur l'écran des formules, et
+    // Retour doit revenir au choix de l'école, pas à cette page.
+    ouvrirOptions();
+  }
 
   /* ---------- 1b. École manquante : « Mon école n'est pas là » ----------
      Nom de l'école, lien du site avec les horaires, case « je n'ai pas
@@ -3968,26 +4007,9 @@
     });
   }
   function majEnteteSource() {
-    // Le guide sur mesure choisit tout sur l'écran des formations : la
-    // carte « Composer » n'a plus rien à y faire pendant le guide.
-    var enGuide = guidePerso();
-    document.getElementById("liste-perso").hidden = enGuide || !!choix.editionId;
     document.getElementById("formation-rappel").hidden = true;
   }
   function guidePerso() { return !!(choix.perso && choix.perso.etape); }
-  document.getElementById("btn-perso").addEventListener("click", function () {
-    choix.perso = {
-      editionId: null, ecole: choix.ecole, sources: [], surnom: "",
-      theme: choix.theme != null ? normaliserTheme(choix.theme)
-        : (profils.length ? suggereThemeSuivant() : themeChoisiIdentite),
-      pile: null, etape: "options"
-    };
-    choix.source = null; choix.formation = null; choix.data = null; choix.groupes = []; choix.ical = null;
-    document.getElementById("recherche").blur();
-    // Direct, sans empiler : on est déjà sur l'écran des formations, et
-    // Retour doit revenir au choix de l'école, pas à cette page.
-    ouvrirOptions();
-  });
   /* Formation choisie : parcours normal -> groupes ; guide sur mesure ->
      bascule vers les étapes guidées (groupes puis cours, option par option). */
   function allerApresFormation() {
@@ -5707,7 +5729,7 @@
     }
     html += "</ol></div>"; // fin de la boîte des cours
 
-    // Devoirs et examens en dehors des heures de cours : section « Supplément »
+    // Devoirs et examens en dehors des heures de cours : section « Soir »
     // déroulante à part.
     var echJour = listeEcheancesHTML(echeancesJour(jour), cleJourEch(jour), dateJour);
     if (echJour) {
@@ -5716,10 +5738,7 @@
       html += '<div class="box box-supp' + (suppEstOuvert ? " open" : "") + '" data-supp-jour="' + jour + '">' +
         '<button type="button" class="supp-btn" data-supp-jour="' + jour + '" aria-expanded="' + suppEstOuvert + '" ' +
         'aria-label="Afficher les devoirs et examens hors cours">' +
-        '<span class="supp-ico" aria-hidden="true">' +
-        '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
-        '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>' +
-        '<span class="supp-titre">Supplément</span>' +
+        '<span class="supp-titre">Soir</span>' +
         marquesSupp +
         '<span class="chev" aria-hidden="true"></span>' +
         '</button>' +
