@@ -666,38 +666,7 @@
   }
   #liste-profils.geste .pcard:not(.drag) { transition: transform .18s cubic-bezier(.16,1,.3,1); }
   body.drag-carte { user-select: none; -webkit-user-select: none; }
-  /* Popover : naît du ⋮ (origine en haut à droite), vers le haut s'il
-     n'a pas la place en dessous. */
-  .ppop {
-    position: absolute; top: calc(100% + 6px); right: 6px; z-index: 30;
-    min-width: 214px; padding: 6px; border-radius: 16px;
-    background: var(--relief-haut); color: var(--ink);
-    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet),
-      0 20px 44px -14px rgba(0, 0, 0, .5), 0 2px 6px rgba(0, 0, 0, .12);
-    transform-origin: top right;
-  }
-  .ppop:not([hidden]) { animation: pop-apparait .2s cubic-bezier(.16,1,.3,1); }
-  @keyframes pop-apparait {
-    from { opacity: 0; transform: scale(.92) translateY(-4px); }
-    to { opacity: 1; transform: none; }
-  }
-  .ppop.haut { top: auto; bottom: calc(100% + 6px); transform-origin: bottom right; }
-  .ppop.haut:not([hidden]) { animation-name: pop-apparait-haut; }
-  @keyframes pop-apparait-haut {
-    from { opacity: 0; transform: scale(.92) translateY(4px); }
-    to { opacity: 1; transform: none; }
-  }
-  .pop-act {
-    display: flex; align-items: center; gap: 12px; width: 100%; padding: 11px 12px;
-    border: none; border-radius: 10px; background: none; color: inherit; text-align: left;
-    font: inherit; font-size: .93rem; font-weight: 550; cursor: pointer; transition: background .12s;
-  }
-  .pop-act svg { flex: none; color: var(--muted); }
-  .pop-act:hover, .pop-act:focus-visible { background: color-mix(in srgb, var(--ink) 7%, transparent); outline: none; }
-  .pop-act.danger-txt, .pop-act.danger-txt svg { color: var(--danger); }
-  .pop-act.danger-txt:hover, .pop-act.danger-txt:focus-visible { background: color-mix(in srgb, var(--danger) 12%, transparent); }
-  #reg-compte { position: relative; }
-  #menu-compte { right: 0; }
+
 
   /* Mode essai (?essai=1, origines locales) : un repère discret en haut. */
   #essai-badge {
@@ -968,8 +937,14 @@
   /* Petit écran (iPhone SE…) : le formulaire passe avant l'aperçu. */
   @media (max-width: 1023px) and (max-height: 640px) { .apercu { display: none; } }
 
-  /* Réglages : qui je suis + mes horaires. */
-  .reg-compte { display: flex; align-items: center; gap: 14px; margin: 6px 0 4px; }
+  /* Réglages : qui je suis + mes horaires. La carte du compte se
+     retourne comme les cartes d'horaires (mêmes faces). */
+  .reg-compte { margin: 6px 0 4px; perspective: 1000px; }
+  #reg-compte.retournee .pcard-flip { transform: rotateX(180deg); }
+  .reg-compte .pcard-ligne { padding: 2px 10px 2px 16px; gap: 8px; }
+  /* Les 4 actions du dos tiennent en entier : le libellé passe sur deux
+     lignes, quitte à couper un mot long (« Notifications »). */
+  .reg-compte .dos-act span { white-space: normal; line-height: 1.15; overflow-wrap: anywhere; }
   .reg-compte .avatar.grand {
     width: 52px; height: 52px; flex: none; border-radius: 50%;
     display: grid; place-items: center;
@@ -1002,6 +977,45 @@
   .reg-compte .dots:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .reg-compte .dots svg { display: block; }
   .reg-section { margin-top: 22px !important; }
+  /* Notifications in-app : pastille sur l'avatar, messages en cartes.
+     Une non lue garde son titre en gras et un point d'accent. */
+  /* L'avatar remplit le bouton rond (40 px) : la pastille s'ancre à son
+     coin et chevauche le bord — moitié dedans, moitié dehors. */
+  #avatar { position: relative; width: 100%; height: 100%; }
+  .notif-dot {
+    position: absolute; top: 1px; right: 1px; width: 12px; height: 12px;
+    border-radius: 50%; background: var(--accent);
+    box-shadow: 0 0 0 2px var(--bg);
+  }
+  .notif {
+    width: 100%; display: block; text-align: left; margin: 0 0 8px;
+    border: none; border-radius: 16px; padding: 13px 15px;
+    font: inherit; color: var(--ink); cursor: pointer;
+    background: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
+    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
+  }
+  .notif:active { transform: scale(.985); }
+  .notif:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .notif .notif-titre { display: block; font-weight: 600; letter-spacing: -.01em; }
+  /* Non lue : un point + un titre plus gras, pas de rail de couleur. */
+  .notif.nonlue .notif-titre { font-weight: 750; }
+  .notif.nonlue .notif-titre::before {
+    content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+    background: var(--accent); margin-right: 7px; vertical-align: 2px;
+  }
+  .notif .notif-texte { display: block; margin-top: 4px; font-size: .95rem; line-height: 1.5; }
+  .notif .notif-date { display: block; margin-top: 7px; font-size: .8rem; color: var(--muted); }
+  #liste-notifs { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 10px; max-height: 56vh; overflow-y: auto; }
+  .notifs-vide { margin: 2px 2px 0; font-size: .92rem; color: var(--muted); }
+  /* Pastille des non lues au dos de la carte du compte. */
+  .dos-act { position: relative; }
+  .dos-badge {
+    position: absolute; top: 2px; left: calc(50% + 6px);
+    min-width: 17px; height: 17px; padding: 0 5px; border-radius: 9px;
+    display: grid; place-items: center;
+    background: var(--accent); color: #fff;
+    font-size: .64rem; font-weight: 750; letter-spacing: 0;
+  }
   #avatar-init { font-weight: 700; font-size: .95rem; }
   .avis {
     background: var(--creux); border-radius: 14px; padding: 12px 14px;

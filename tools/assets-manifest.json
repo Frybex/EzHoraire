@@ -2,8 +2,8 @@
   "version": 1,
   "bundles": {
     "app.js": {
-      "fichier": "app.3c29f3a030.js",
-      "octets": 249918,
+      "fichier": "app.ee30a444c1.js",
+      "octets": 252869,
       "sources": {
         "assets/js/favicon.js": "f57272dc9fe1aef5317659ed6142eddc37959c4c5bc731dc0409e0b035370b15",
         "assets/js/suivi.js": "81f2e75ded3d93fffd77e3fdbf40f122745c224f18bf416de4dc302fa8bb9829",
@@ -11,14 +11,14 @@
         "assets/js/export_ics.js": "1339504ea725d3db2bf979c703b9137f8205c26f96932e0fa801253bba3207ca",
         "assets/js/semaine.js": "c631e8eee5275028820036e07d99c8a4c462931bc79bc15cd98032b37e356a71",
         "assets/js/recherche.js": "f31b87190cc35ac33f9f966b403f6cc4b2c2d9ac7171e3cb638ed317ec766595",
-        "assets/js/app.js": "19a7aa968484a8d569d018a9a041a30feb25a8a356b0be71a65f34a82434f555"
+        "assets/js/app.js": "83af31ef2a1cd1b04d8522b5dadcce291b4a9435a5cae1dbacb738ac9a372f98"
       }
     },
     "app.css": {
-      "fichier": "app.565478daf7.css",
-      "octets": 129853,
+      "fichier": "app.c77bc7fc1d.css",
+      "octets": 130184,
       "sources": {
-        "assets/css/app.css": "ea7b96fbbe09aa2017713d2ef95a4b0d7913d33c84a2fb39058501de042596be"
+        "assets/css/app.css": "2e53e5e850b81cb33e64690e54041beb63a8673a608d7c19cbb38b7b6d822418"
       }
     },
     "favicon.js": {
@@ -43,10 +43,10 @@
       }
     },
     "dashboard.js": {
-      "fichier": "dashboard.9b42499994.js",
-      "octets": 29993,
+      "fichier": "dashboard.be080acc6d.js",
+      "octets": 34561,
       "sources": {
-        "assets/js/dashboard.js": "0452ad245621289c9f646fe1a586617f567dfdd7427b5462d62997cf026c1a7c"
+        "assets/js/dashboard.js": "864a37904b33336dfcd929d6781e87f6e75e758c11d979b3ed7c7a69e4862831"
       }
     },
     "motdepasse.js": {

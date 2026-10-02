@@ -18,6 +18,8 @@ api/
 ├── stats.py        GET /api/stats                         dashboard admin (réservé : comptes, visites, parcours anonyme)
 ├── bugs.py         POST /api/bugs (public)                reports bug / demande (anonymes OK)
 │                   GET /api/bugs + PATCH /api/bugs?id=..  lecture + statuts (admin)
+├── notifications.py POST /api/notifications (admin)       messagerie admin → étudiant
+│                   GET /api/notifications                 historique des envois (admin)
 ├── _partage.py     aides communes à export.py et abonnement.py (groupes, filtre, .ics)
 │
 ├── _ecoles/        UNE ÉCOLE = UN FICHIER

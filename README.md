@@ -134,12 +134,14 @@ connexion est refusée avec un message si le cloud est injoignable).
 
 ## Dashboard admin (comptes → cours → consultations → parcours)
 
-`/dashboard.html`, en quatre onglets : **Aperçu** (consultations par jour,
+`/dashboard.html`, en cinq onglets : **Aperçu** (consultations par jour,
 comparées à la période d'avant, puis par école → formations), **Parcours**
 (de la visite à l'horaire enregistré, problèmes rencontrés), **Comptes**
 (rangés par école ; un compte qui a des horaires dans plusieurs écoles
-apparaît dans chacune, signalé) et **Retours** (bugs et demandes, titre puis
-détail au clic). Une consultation = une personne connectée qui ouvre un de
+apparaît dans chacune, signalé), **Retours** (bugs et demandes, titre puis
+détail au clic) et **Notifications** (messagerie admin → étudiant : un ou
+tous les comptes, titre + message + lien interne, historique avec lu/non
+lu). Une consultation = une personne connectée qui ouvre un de
 ses horaires (`visites`) ; rouvrir le même horaire dans les 30 min ne
 recompte pas (filtre côté app ET dans `api/stats.py`, qui dédoublonne aussi
 l'historique). Jours à l'heure de Bruxelles. Réservé aux
@@ -155,7 +157,7 @@ que tant que le compte qui le porte existe déjà.
 Mise en route (une fois) :
 
 1. Supabase → SQL Editor : recoller `supabase/schema.sql` (tables
-   `visites`, `bug_reports` et `evenements` + plafonds, purge et fonction
+   `visites`, `bug_reports`, `evenements` et `notifications` + plafonds, purge et fonction
    d'agrégation, ajoutés depuis ; rejouable sans rien casser).
 2. Supabase → Project Settings → API : copier la clé `service_role`.
 3. Supabase → Authentication → Users : copier l'UUID du compte admin.

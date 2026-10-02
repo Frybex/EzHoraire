@@ -73,6 +73,7 @@ import recherche  # noqa: E402
 import config  # noqa: E402
 import stats  # noqa: E402
 import bugs  # noqa: E402
+import notifications  # noqa: E402
 
 PORT_DEFAUT = 8902
 ROUTES = {"/api/formations": formations.handler,
@@ -85,7 +86,8 @@ ROUTES = {"/api/formations": formations.handler,
           "/api/pdf": pdf.handler,
           "/api/config": config.handler,
           "/api/stats": stats.handler,
-          "/api/bugs": bugs.handler}
+          "/api/bugs": bugs.handler,
+          "/api/notifications": notifications.handler}
 
 # En-têtes identiques à vercel.json (garder les deux synchronisés) : le site
 # local doit se comporter comme la production, surtout pour la CSP. Les

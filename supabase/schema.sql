@@ -811,3 +811,105 @@ drop trigger if exists trg_echeances_limite on public.echeances;
 create trigger trg_echeances_limite
   before insert or update on public.echeances
   for each row execute function public.limiter_echeances();
+
+-- ---------------------------------------------------------------
+-- EzHoraire — notifications in-app (messagerie admin → étudiant).
+-- Une ligne = un message pour UN compte : même une diffusion (« tous »)
+-- s'écrit en N lignes (une par compte), pour que le « lu / non lu »
+-- reste une simple colonne et que la lecture reste « chacun ne voit
+-- que SES lignes ». L'app les lit et les marque lues avec la clé anon
+-- (RLS) ; l'écriture passe par POST /api/notifications (clé
+-- service_role côté serveur, réservé aux admins). Les réponses
+-- repartent par email, pas dans l'app (v1).
+-- RLS : chacun ne voit que SES lignes, et ne touche que son `lu_at`
+-- (un client trafiqué ne peut réécrire que ses propres messages —
+-- le trigger ci-dessous verrouille le reste). Rejouable.
+-- ---------------------------------------------------------------
+create table if not exists public.notifications (
+  id         bigint      generated always as identity primary key,
+  created_at timestamptz not null default now(),
+  user_id    uuid        not null references auth.users (id) on delete cascade,
+  titre      text        not null default '',
+  message    text        not null default '',
+  lien       text        not null default '', -- chemin interne ("/…"), jamais une URL externe
+  lu_at      timestamptz
+);
+
+alter table public.notifications enable row level security;
+
+drop policy if exists "notifications_select_propres" on public.notifications;
+create policy "notifications_select_propres" on public.notifications
+  for select using (auth.uid() = user_id);
+
+drop policy if exists "notifications_lu_propres" on public.notifications;
+create policy "notifications_lu_propres" on public.notifications
+  for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- Pas de politique INSERT / DELETE : personne n'écrit ni ne supprime
+-- depuis l'app avec la clé anon. Le backend (service_role) contourne
+-- la RLS pour l'envoi admin.
+
+create index if not exists idx_notifications_user on public.notifications (user_id, created_at desc);
+
+-- Bornes et verrou « lu seul » (rejouable) : titre 80, message 1000,
+-- lien interne 300, date posée par la base. En UPDATE, seuls `lu_at`
+-- peut changer : le reste est comparé à l'ancienne ligne.
+create or replace function public.limiter_notifications()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if tg_op = 'INSERT' then
+    new.created_at := now();
+    new.titre   := left(new.titre, 80);
+    new.message := left(new.message, 1000);
+    new.lien    := left(new.lien, 300);
+    new.lu_at   := null;
+    if char_length(new.message) < 1 then
+      raise exception 'Notification invalide.';
+    end if;
+    if new.lien <> '' and new.lien !~ '^/[^ ]*$' then
+      raise exception 'Notification invalide.';
+    end if;
+    return new;
+  end if;
+  -- UPDATE : seul le marquage « lu » passe, le reste est intouchable.
+  if new.user_id is distinct from old.user_id
+     or new.titre is distinct from old.titre
+     or new.message is distinct from old.message
+     or new.lien is distinct from old.lien
+     or new.created_at is distinct from old.created_at then
+    raise exception 'Notification invalide.';
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists trg_notifications_limite on public.notifications;
+create trigger trg_notifications_limite
+  before insert or update on public.notifications
+  for each row execute function public.limiter_notifications();
+
+-- Purge : 180 jours comme les visites. À planifier comme les autres.
+create or replace function public.purger_notifications(jours integer default 180)
+returns bigint
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  supprimees bigint;
+begin
+  delete from public.notifications
+  where created_at < now() - make_interval(days => greatest(jours, 30));
+  get diagnostics supprimees = row_count;
+  return supprimees;
+end $$;
+
+revoke all on function public.purger_notifications(integer) from public, anon, authenticated;
+grant execute on function public.purger_notifications(integer) to service_role;
+
+-- Si l'extension pg_cron est activée, planifier la purge avec les autres :
+-- select cron.schedule('ezh-purge-notifications', '31 4 * * *',
+--                      'select public.purger_notifications(180)');

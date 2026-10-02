@@ -3,7 +3,7 @@
   "use strict";
   /* Version du parcours, jointe aux étapes anonymes : à incrémenter à
      chaque correctif, pour comparer « avant / après » dans le dashboard. */
-  window.EZH_VERSION = "8";
+  window.EZH_VERSION = "9";
   var JOURS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
   var MOIS = ["janv.", "févr.", "mars", "avr.", "mai", "juin",
               "juil.", "août", "sept.", "oct.", "nov.", "déc."];
@@ -548,6 +548,8 @@
     try { localStorage.removeItem(CLE_ECH_SYNC); } catch (e) { /* jetable */ }
     effacerBrouillon();
     try { localStorage.removeItem(CLE_PROFIL_LEGACY); } catch (e) { /* jetable */ }
+    notifs = [];
+    majCaseNotifs();
     adminVerifie = false;
     var boutonAdmin = document.getElementById("btn-admin");
     if (boutonAdmin) boutonAdmin.hidden = true;
@@ -893,6 +895,7 @@
     statutAuthEffacer();
     suiviCompte(user);
     var p = pullProfils().then(function () { return pullEcheances(); }, function () { return pullEcheances(); })
+      .then(function () { return tirerNotifs(); }, function () { return tirerNotifs(); })
       .then(function () { return null; }, function () { return null; });
     if (!demarrageFini) return p;
     return p.then(function () {
@@ -1100,6 +1103,105 @@
       }).then(function () { /* jetable */ }, function () { /* jetable */ });
     } catch (e) { /* jetable */ }
   }
+  /* ---------- Notifications in-app (messagerie admin → étudiant) ----------
+     Tirage à la connexion et à l'ouverture des Réglages, pastille sur
+     l'avatar tant qu'il reste des non lues, tap = lue (et suit le lien
+     interne si la notif en porte un). Lecture seule via la clé anon
+     (RLS « chacun ne voit que SES lignes », marquage « lu » verrouillé
+     par trigger) ; l'envoi passe par POST /api/notifications (admin).
+     Table absente (schema.sql pas rejoué) : on n'essaie plus, la section
+     reste vide — comme les horaires sans colonne `sources`. */
+  var notifs = [], baseSansNotifs = false, notifsEnVol = null;
+  function tirerNotifs() {
+    if (!SUPABASE_OK || !sb || !sessionSupabase || !sessionSupabase.user || baseSansNotifs) return Promise.resolve(false);
+    if (notifsEnVol) return notifsEnVol;
+    var uid = sessionSupabase.user.id;
+    notifsEnVol = sb.from("notifications").select("id,created_at,titre,message,lien,lu_at")
+      .eq("user_id", uid).order("created_at", { ascending: false }).limit(100)
+      .then(function (res) {
+        notifsEnVol = null;
+        if (res.error) {
+          if (/notif/i.test(String(res.error.message || ""))) baseSansNotifs = true;
+          return false;
+        }
+        notifs = (res.data || []).filter(function (n) { return n && n.id != null; }).map(function (n) {
+          return { id: n.id, created_at: n.created_at || "", titre: String(n.titre || "").slice(0, 80),
+                   message: String(n.message || "").slice(0, 1000),
+                   lien: String(n.lien || "").slice(0, 300), lu_at: n.lu_at || "" };
+        });
+        majCaseNotifs();
+        if (notifsOuvertes()) rendreNotifs();
+        return true;
+      }, function () { notifsEnVol = null; return false; });
+    return notifsEnVol;
+  }
+  function dateNotif(iso) {
+    try {
+      var d = new Date(iso);
+      if (isNaN(+d)) return "";
+      return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+    } catch (e) { return ""; }
+  }
+  /* Pastille de l'avatar + case « Notifications » du dos de la carte
+     (compteur). La case n'existe que pour un vrai compte connecté. */
+  function majCaseNotifs() {
+    var n = notifs.filter(function (x) { return !x.lu_at; }).length;
+    var past = document.getElementById("notif-dot");
+    if (past) past.hidden = !n;
+    var moi = document.getElementById("btn-moi");
+    if (moi) moi.setAttribute("aria-label", n ? "Réglages (" + n + " notification" + (n > 1 ? "s" : "") + " non lue" + (n > 1 ? "s" : "") + ")" : "Réglages");
+    var reel = !!(SUPABASE_OK && sb && sessionSupabase && sessionSupabase.user);
+    var b = document.getElementById("btn-notifs");
+    if (b) b.hidden = !reel;
+    var badge = document.getElementById("notifs-badge");
+    if (badge) { badge.hidden = !n; badge.textContent = n > 9 ? "9+" : String(n); }
+  }
+  function notifsOuvertes() { return !document.getElementById("voile-notifs").hidden; }
+  function ouvrirNotifs() {
+    rendreNotifs();
+    document.getElementById("voile-notifs").hidden = false;
+    tirerNotifs();
+  }
+  function fermerNotifs() { document.getElementById("voile-notifs").hidden = true; }
+  function rendreNotifs() {
+    var zone = document.getElementById("liste-notifs");
+    if (!zone) return;
+    if (!notifs.length) {
+      zone.innerHTML = '<p class="notifs-vide">Aucune notification pour le moment.</p>';
+      return;
+    }
+    zone.innerHTML = notifs.map(function (n) {
+      return '<button type="button" class="notif' + (n.lu_at ? "" : " nonlue") + '" data-notif="' + n.id + '">' +
+        (n.titre ? '<span class="notif-titre">' + txt(n.titre) + "</span>" : "") +
+        '<span class="notif-texte">' + txt(n.message) + "</span>" +
+        (n.created_at ? '<span class="notif-date">' + txt(dateNotif(n.created_at)) + "</span>" : "") + "</button>";
+    }).join("");
+  }
+  document.getElementById("liste-notifs").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-notif]");
+    if (!b || !SUPABASE_OK || !sb || !sessionSupabase || !sessionSupabase.user) return;
+    var id = +b.getAttribute("data-notif");
+    var n = null;
+    for (var i = 0; i < notifs.length; i++) if (notifs[i].id === id) n = notifs[i];
+    if (!n || n.lu_at) { if (n && n.lien) suivreLienNotif(n.lien); return; }
+    n.lu_at = new Date().toISOString();
+    majCaseNotifs();
+    rendreNotifs();
+    sb.from("notifications").update({ lu_at: n.lu_at }).eq("id", id)
+      .eq("user_id", sessionSupabase.user.id).then(function () { /* jetable */ }, function () { /* jetable */ });
+    if (n.lien) suivreLienNotif(n.lien);
+  });
+  function suivreLienNotif(lien) {
+    // Chemin interne uniquement (la base refuse le reste) : on reste dans l'app.
+    if (/^\/[^ ]*$/.test(lien)) { fermerNotifs(); fermerFeuille(); location.assign(lien); }
+  }
+  document.getElementById("notifs-fermer").addEventListener("click", fermerNotifs);
+  // Le panneau vit hors de la feuille : sans ce stop, le clic-extérieur
+  // (document) refermerait aussi les Réglages derrière.
+  document.getElementById("voile-notifs").addEventListener("click", function (e) {
+    e.stopPropagation();
+    if (e.target === this) fermerNotifs();
+  });
   /* ---------- Bouton « Tableau admin » (menu ⋮ du compte) ----------
      Visible uniquement si /api/stats confirme que ce compte est admin
      (liste ADMIN_EMAILS côté serveur). Vérifié une fois par session,
@@ -6370,7 +6472,8 @@
     if (e.target.closest && e.target.closest("#soir")) clicEcheance(e);
   });
   document.addEventListener("click", function (e) {
-    if (confirmationOuverte() || editionOuverte() || bugOuvert() || exportOuvert() || echeanceOuverte()) return;
+    if (confirmationOuverte() || editionOuverte() || bugOuvert() || exportOuvert() ||
+        echeanceOuverte() || notifsOuvertes()) return;
     if (rechCoursOuverte()) return; // la recherche est au-dessus : rien derrière ne se ferme
     if (popSource && !pop.contains(e.target) && !e.target.closest(".ev")) fermerPop();
     if (feuille.classList.contains("visible") && !feuille.contains(e.target) && !e.target.closest("#btn-moi")) fermerFeuille();
@@ -6834,21 +6937,41 @@
     if (devant) devant.removeAttribute("inert");
     if (dos) dos.setAttribute("inert", "");
   }
-  /* Ferme le menu ouvert (compte) et remet en place la
-     carte retournée, s'il y en a une.
-     Pas d'entrée history propre : sous-couche de la feuille (voir histPile). */
+  /* Carte du compte retournée (dos visible). Mêmes mécanique et
+     animation que les cartes d'horaires, mais un seul état à la fois. */
+  var compteRetourne = false;
+  function retournerCompte() {
+    var el = document.getElementById("reg-compte");
+    if (!el) return;
+    fermerMenus(); // les cartes d'horaires se remettent avant
+    compteRetourne = true;
+    el.classList.add("retournee");
+    var b = document.getElementById("btn-reg-flip");
+    if (b) b.setAttribute("aria-expanded", "true");
+    var devant = el.querySelector(".pcard-devant"), dos = el.querySelector(".pcard-dos");
+    if (devant) devant.setAttribute("inert", "");
+    if (dos) dos.removeAttribute("inert");
+  }
+  function remettreCompte() {
+    var el = document.getElementById("reg-compte");
+    if (!el || !compteRetourne) return;
+    compteRetourne = false;
+    el.classList.remove("retournee");
+    var b = document.getElementById("btn-reg-flip");
+    if (b) b.setAttribute("aria-expanded", "false");
+    var devant = el.querySelector(".pcard-devant"), dos = el.querySelector(".pcard-dos");
+    if (devant) devant.removeAttribute("inert");
+    if (dos) dos.setAttribute("inert", "");
+  }
+  /* Ferme les menus ouverts (carte du compte, carte d'horaire, mode
+     échéance) — sous-couche de la feuille (pas d'entrée history propre). */
   function fermerMenus() {
-    var m = document.getElementById("menu-compte");
-    if (m && !m.hidden) {
-      m.hidden = true;
-      document.getElementById("btn-compte-menu").setAttribute("aria-expanded", "false");
-    }
+    remettreCompte();
     fermerModeEch();
     if (carteOuverte !== null) remettreCarte(carteOuverte);
   }
   function menusOuverts() {
-    return carteOuverte !== null || !document.getElementById("menu-compte").hidden ||
-      modeEchActif;
+    return compteRetourne || carteOuverte !== null || modeEchActif;
   }
 
   /* ---------- Fenêtre de modification ----------
@@ -9255,11 +9378,7 @@
     appliquerApparence();
   }
   document.getElementById("btn-apparence").addEventListener("click", function () {
-    var mc = document.getElementById("menu-compte");
-    if (mc && !mc.hidden) {
-      mc.hidden = true;
-      document.getElementById("btn-compte-menu").setAttribute("aria-expanded", "false");
-    }
+    remettreCompte();
     if (carteOuverte !== null) { carteOuverte = null; rendreListeProfils(); }
     choisirApparence(APP_SUIVANTE[lireApparence()] || "systeme");
   });
@@ -9337,9 +9456,10 @@
       rendreLigneFournisseur();
     }
     carteOuverte = null;
-    document.getElementById("menu-compte").hidden = true;
-    document.getElementById("btn-compte-menu").setAttribute("aria-expanded", "false");
+    remettreCompte();
     appliquerApparence();
+    majCaseNotifs();
+    tirerNotifs();
     rendreListeProfils();
     feuille.style.transform = "";
     feuille.classList.add("visible");
@@ -9376,6 +9496,7 @@
     }
     if (exportOuvert()) { fermerExport(); return; }
     if (bugOuvert()) { fermerBug(); return; }
+    if (notifsOuvertes()) { fermerNotifs(); return; }
     if (confirmationOuverte() || editionOuverte()) return;
     if (dragCarte) { dragTermine(false); return; } // Échap repose la carte
     if (menusOuverts()) { fermerMenus(); return; } // Échap ferme d'abord le menu, puis les réglages
@@ -9478,26 +9599,11 @@
     sauverProfils();
     location.href = "lab/simulation.html";
   });
-  /* ⋮ du compte : menu Modifier mon nom (fenêtre) / Se déconnecter.
-     Un clic ailleurs dans les réglages referme les menus ouverts. */
-  document.getElementById("btn-compte-menu").addEventListener("click", function () {
-    var m = document.getElementById("menu-compte");
-    var ouvre = m.hidden;
-    fermerMenus();
-    m.hidden = !ouvre;
-    this.setAttribute("aria-expanded", ouvre ? "true" : "false");
-  });
-  document.getElementById("btn-modifier-identite").addEventListener("click", modifierIdentite);
-  document.getElementById("btn-admin").addEventListener("click", function () {
-    fermerMenus();
-    fermerFeuille();
-    location.href = "dashboard.html";
-  });
-  feuille.addEventListener("click", function (e) {
-    if (!e.target.closest(".ppop, .dots")) fermerMenus();
-  });
-  document.getElementById("btn-logout").addEventListener("click", function () {
-    fermerMenus();
+  /* Carte du compte : elle se retourne au clic (comme les cartes
+     d'horaires) et son dos porte Modifier / Notifications /
+     Se déconnecter (+ Tableau admin pour un compte admin). Un clic
+     ailleurs dans les réglages la remet en place. */
+  function deconnecterCompte() {
     demanderConfirmation({
       titre: "Se déconnecter ?",
       message: "Tes horaires restent enregistrés sur ton compte.<br>Tu pourras les retrouver en te reconnectant.",
@@ -9514,6 +9620,27 @@
         ouvrirCompte();
       });
     });
+  }
+  document.getElementById("reg-compte").addEventListener("click", function (e) {
+    // Stoppe ici : le clic-extérieur de la feuille remettrait la carte
+    // aussitôt (même raison que la liste des horaires).
+    e.stopPropagation();
+    var a = e.target.closest("[data-act]");
+    if (a) {
+      var act = a.getAttribute("data-act");
+      remettreCompte();
+      if (act === "compte-modifier") modifierIdentite();
+      else if (act === "compte-notifs") ouvrirNotifs();
+      else if (act === "compte-deconnecter") deconnecterCompte();
+      else if (act === "compte-admin") { fermerFeuille(); location.href = "dashboard.html"; }
+      return;
+    }
+    if (e.target.closest("#btn-bug-compte")) return; // la coccinelle a sa propre action
+    if (!e.target.closest("#btn-reg-flip")) return;
+    if (compteRetourne) remettreCompte(); else retournerCompte();
+  });
+  feuille.addEventListener("click", function (e) {
+    if (!e.target.closest(".dots")) fermerMenus();
   });
   /* ---------- Signaler un bug / faire une demande ----------
      Boutons : coccinelle de la feuille (#btn-bug-compte), pied de page

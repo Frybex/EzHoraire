@@ -44,13 +44,13 @@
 <link rel="manifest" href="/assets/icons/site.webmanifest">
 <!-- Feuille de style au-dessus des scripts : elle démarre avant tout
      texte exécuté, le premier rendu n'attend que elle. -->
-<link rel="stylesheet" href="/assets/dist/app.565478daf7.css">
+<link rel="stylesheet" href="/assets/dist/app.c77bc7fc1d.css">
 <!-- Un seul bundle, découvert tôt et exécuté après le parse : le premier
      rendu ne dépend que de la feuille de style. Le SDK Supabase, lui,
      n'est plus téléchargé d'office : l'app le demande au premier besoin
      (clic de connexion, retour OAuth ou session déjà enregistrée). -->
-<link rel="preload" href="/assets/dist/app.3c29f3a030.js" as="script">
-<script defer src="/assets/dist/app.3c29f3a030.js"></script>
+<link rel="preload" href="/assets/dist/app.ee30a444c1.js" as="script">
+<script defer src="/assets/dist/app.ee30a444c1.js"></script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
 {"@type":"Organization","@id":"https://www.ezhoraire.be/#org","name":"EzHoraire","alternateName":["Ez Horaire","ezhoraire","Easy Horaire","EzHoraire Belgique"],"url":"https://www.ezhoraire.be/","logo":{"@type":"ImageObject","url":"https://www.ezhoraire.be/icon-512.png","width":512,"height":512},"email":"contact@ezhoraire.be","areaServed":{"@type":"Country","name":"Belgique"},"description":"Application et plateforme gratuite de consultation des horaires d'étudiants en Belgique (HEH, UMONS, Condorcet, HELB, ULB, UCLouvain)."},
@@ -91,7 +91,7 @@ try {
     <button class="droite" id="btn-moi" type="button" aria-label="Réglages" hidden>
       <span class="moi-txt" id="moi-txt"></span>
       <span class="avatar" id="avatar"><span id="avatar-init" hidden></span><svg id="avatar-icone" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-           stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></span>
+           stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></span><span class="notif-dot" id="notif-dot" hidden></span>
     </button>
   </div>
 
@@ -734,27 +734,44 @@ try {
 
 <div id="feuille" role="dialog" aria-label="Mon compte et mes horaires">
   <div class="grabber-zone" aria-hidden="true"><span class="grabber"></span></div>
+  <!-- Carte du compte : elle se retourne au clic, comme les cartes
+       d'horaires. Devant : qui je suis (+ la coccinelle pour signaler) ;
+       derrière : Modifier, Notifications, Se déconnecter et, pour un
+       compte admin, Tableau admin. -->
   <div class="reg-compte" id="reg-compte">
-    <span class="avatar grand" id="reg-avatar">?</span>
-    <div class="reg-qui"><strong id="reg-nom"></strong><span id="reg-fournisseur"></span></div>
-    <!-- Signaler : coccinelle discrète à côté du ⋮ du compte (bug ou demande). -->
-    <button class="dots" id="btn-bug-compte" type="button" aria-label="Signaler un bug ou faire une demande" title="Signaler un bug ou faire une demande">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="14" r="6"/><path d="M12 8V5M9 5.5 12 8l3-2.5M5.5 10 3 8.5M18.5 10 21 8.5M4.5 16 2 17M19.5 16l2.5 1"/></svg>
-    </button>
-    <button class="dots" id="btn-compte-menu" type="button" aria-label="Options du compte" aria-haspopup="menu" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5.5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="18.5" r="1.7"/></svg></button>
-    <div class="ppop" id="menu-compte" role="menu" hidden>
-      <button class="pop-act" id="btn-modifier-identite" type="button" role="menuitem">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg>
-        Modifier mon nom
-      </button>
-      <button class="pop-act" id="btn-admin" type="button" role="menuitem" hidden>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
-        Tableau admin
-      </button>
-      <button class="pop-act danger-txt" id="btn-logout" type="button" role="menuitem">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 16l-4-4 4-4M6 12h10"/></svg>
-        Se déconnecter
-      </button>
+    <div class="pcard-flip">
+      <div class="pcard-face pcard-devant">
+        <div class="pcard-ligne">
+          <button type="button" class="pcard-main" id="btn-reg-flip" aria-expanded="false" aria-label="Mon compte : afficher les options">
+            <span class="avatar grand" id="reg-avatar">?</span>
+            <span class="reg-qui"><strong id="reg-nom"></strong><span id="reg-fournisseur"></span></span>
+          </button>
+          <button class="dots" id="btn-bug-compte" type="button" aria-label="Signaler un bug ou faire une demande" title="Signaler un bug ou faire une demande">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="14" r="6"/><path d="M12 8V5M9 5.5 12 8l3-2.5M5.5 10 3 8.5M18.5 10 21 8.5M4.5 16 2 17M19.5 16l2.5 1"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="pcard-face pcard-dos" inert>
+        <div class="pcard-actions" role="group" aria-label="Mon compte">
+          <button type="button" class="dos-act" data-act="compte-modifier">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg>
+            <span>Modifier</span>
+          </button>
+          <button type="button" class="dos-act" data-act="compte-notifs" id="btn-notifs" hidden>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10.3 20a2 2 0 0 0 3.4 0"/></svg>
+            <span>Notifications</span>
+            <span class="dos-badge" id="notifs-badge" hidden></span>
+          </button>
+          <button type="button" class="dos-act danger-txt" data-act="compte-deconnecter">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 16l-4-4 4-4M6 12h10"/></svg>
+            <span>Se déconnecter</span>
+          </button>
+          <button type="button" class="dos-act" data-act="compte-admin" id="btn-admin" hidden>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+            <span>Tableau admin</span>
+          </button>
+        </div>
+      </div>
     </div>
   </div>
   <div class="reg-apparence" id="reg-apparence">
@@ -906,6 +923,19 @@ try {
       <button type="button" class="btn-sec" id="export-annuler">Fermer</button>
     </div>
     <p class="export-repli" id="export-repli" hidden><button type="button" class="lien-pied" id="export-fichier">Télécharger le fichier (.ics)</button></p>
+  </div>
+</div>
+
+<!-- Notifications : messagerie de l'équipe (panneau dédié, sans rail de
+     couleur). Un point + un titre plus gras signalent les non lues ;
+     toucher un message le marque lu. -->
+<div class="voile" id="voile-notifs" hidden>
+  <div class="boite" id="boite-notifs" role="dialog" aria-modal="true" aria-labelledby="notifs-titre">
+    <h3 id="notifs-titre">Notifications</h3>
+    <div id="liste-notifs"></div>
+    <div class="boite-actions seule">
+      <button type="button" class="btn-sec" id="notifs-fermer">Fermer</button>
+    </div>
   </div>
 </div>
 

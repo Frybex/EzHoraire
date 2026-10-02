@@ -26,7 +26,7 @@
      assets/js/dashboard.js : il se minifie et se met en cache comme les
      autres bundles. -->
 <script defer src="/assets/vendor/supabase-2.116.0.min.js"></script>
-<script defer src="/assets/dist/dashboard.9b42499994.js"></script>
+<script defer src="/assets/dist/dashboard.be080acc6d.js"></script>
 <script>
 /* Apparence choisie dans l'app (Clair / Sombre / Système) : pas d'éclair. */
 try { var _a = localStorage.getItem("ezh_apparence"); document.documentElement.setAttribute("data-apparence", (_a === "clair" || _a === "sombre") ? _a : "systeme"); }
@@ -367,6 +367,34 @@ catch (e) { /* navigation privée */ }
   .retour-d .seg { justify-self: start; }
   @media (max-width: 560px) { .retour-d { padding-left: 0; } .retour-d .seg { justify-self: stretch; } .retour-d .seg button { flex: 1; } }
 
+  /* ---------- Notifications (messagerie admin → étudiant) ---------- */
+  #vue-notifications .card:first-child { display: grid; gap: 12px; }
+  #vue-notifications .champ { display: grid; gap: 6px; }
+  #vue-notifications .champ input, #vue-notifications .champ textarea {
+    width: 100%; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line);
+    background: var(--bg); font-size: 16px; }
+  #vue-notifications .champ textarea { resize: vertical; min-height: 88px; line-height: 1.5; }
+  #vue-notifications .champ input:focus, #vue-notifications .champ textarea:focus { outline: none; border-color: var(--accent); }
+  #vue-notifications .coche { display: flex; align-items: center; gap: 8px; font-size: .9rem; }
+  #vue-notifications .coche input { width: 17px; height: 17px; accent-color: var(--accent); }
+  #notif-choix { display: flex; flex-wrap: wrap; gap: 6px; }
+  #notif-choix:empty { display: none; }
+  #notif-choix button { border: 1px solid var(--line); background: var(--bg); border-radius: 999px;
+    padding: 6px 12px; font-size: .82rem; cursor: pointer; }
+  #notif-choix button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 650; }
+  #vue-notifications .outils { align-items: center; margin: 2px 0 0; }
+  .notif-l { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 2px 12px;
+    width: 100%; padding: 13px 0; border: 0; background: none; text-align: left; }
+  .notif-l .t { min-width: 0; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .notif-l .t .point { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--accent);
+    margin-right: 7px; vertical-align: 2px; }
+  .notif-l .m { min-width: 0; font-size: .8rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .notif-l .lu { font-size: .72rem; font-weight: 700; white-space: nowrap; color: var(--muted); }
+  .notif-l .lu.ok { color: var(--free); }
+  .notif-d { padding: 2px 0 18px; display: grid; gap: 10px; }
+  .notif-d .msg { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .92rem; line-height: 1.55; }
+  .notif-d .meta-d { margin: 0; font-size: .76rem; color: var(--faint); overflow-wrap: anywhere; }
+
   /* ---------- Apparence : bouton + menu déroulant (Claire / Sombre / Système) ---------- */
   .theme-wrap { position: relative; flex: none; }
   #btn-apparence svg { display: block; }
@@ -462,6 +490,7 @@ catch (e) { /* navigation privée */ }
     <a href="#apercu" data-vue="apercu">Aperçu</a>
     <a href="#comptes" data-vue="comptes">Comptes</a>
     <a href="#retours" data-vue="retours">Retours <span class="pastille" id="retours-pastille" hidden></span></a>
+    <a href="#notifications" data-vue="notifications">Notifications</a>
   </nav>
 </header>
 
@@ -565,6 +594,43 @@ catch (e) { /* navigation privée */ }
         </div>
         <ul class="liste" id="retours-liste"></ul>
       </div>
+    </div>
+
+    <!-- Notifications : messagerie admin → étudiant (v1 : envoi seul,
+         les réponses repartent par email). -->
+    <div class="vue" id="vue-notifications" hidden>
+      <section class="card">
+        <div class="card-h"><h2>Envoyer un message</h2><span class="mut">visible dans les Réglages de l'app</span></div>
+        <label class="champ">
+          <span class="mut">Destinataire</span>
+          <input id="notif-dest" type="search" placeholder="Chercher un compte (nom, email)…" aria-label="Chercher un compte destinataire" autocomplete="off">
+        </label>
+        <div id="notif-choix"></div>
+        <label class="coche">
+          <input id="notif-tous" type="checkbox">
+          <span>Tous les comptes (<span id="notif-nb-comptes">0</span>)</span>
+        </label>
+        <label class="champ">
+          <span class="mut">Titre (optionnel, 80 max)</span>
+          <input id="notif-titre" type="text" maxlength="80" placeholder="ex. Horaire sur mesure réparé" autocomplete="off">
+        </label>
+        <label class="champ">
+          <span class="mut">Message (1000 max)</span>
+          <textarea id="notif-message" rows="4" maxlength="1000" placeholder="ex. J'ai remis ton compte à zéro…"></textarea>
+        </label>
+        <label class="champ">
+          <span class="mut">Lien interne (optionnel, « /… »)</span>
+          <input id="notif-lien" type="text" maxlength="300" placeholder="/" autocomplete="off">
+        </label>
+        <div class="outils">
+          <button class="btn" id="notif-envoyer" type="button">Envoyer</button>
+          <span class="mut" id="notif-status" role="status"></span>
+        </div>
+      </section>
+      <section class="card">
+        <div class="card-h"><h2>Envoyés</h2><span class="mut" id="notifs-resume"></span></div>
+        <ul class="liste" id="notifs-liste"></ul>
+      </section>
     </div>
   </div>
 </main>

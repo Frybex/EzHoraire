@@ -255,7 +255,7 @@ try { var _a = localStorage.getItem("ezh_apparence"); if (_a === "clair" || _a =
             <table class="tableau">
               <thead><tr><th scope="col">Prestataire</th><th scope="col">Rôle</th><th scope="col">Données concernées</th></tr></thead>
               <tbody>
-                <tr><td>Supabase, Inc.</td><td data-label="Rôle">Authentification et base de données</td><td data-label="Données concernées">Compte, horaires suivis, devoirs et examens, signalements (dont captures), consultations, PDF ouverts, étapes de visite anonymes, journaux de connexion (dont l'adresse IP)</td></tr>
+                <tr><td>Supabase, Inc.</td><td data-label="Rôle">Authentification et base de données</td><td data-label="Données concernées">Compte, horaires suivis, devoirs et examens, signalements (dont captures), consultations, PDF ouverts, notifications reçues dans l'app, étapes de visite anonymes, journaux de connexion (dont l'adresse IP)</td></tr>
                 <tr><td>Vercel, Inc.</td><td data-label="Rôle">Hébergement du site et des API</td><td data-label="Données concernées">Données techniques, contenu des requêtes le temps de les traiter</td></tr>
                 <tr><td>Resend (Plus Five Five, Inc.)</td><td data-label="Rôle">Envoi des emails du service, réception des messages à contact@ezhoraire.be</td><td data-label="Données concernées">Email, contenu des messages</td></tr>
                 <tr><td>TypeSafe</td><td data-label="Rôle">Aide à la reconnaissance des cours importés (Jev)</td><td data-label="Données concernées">Lignes de la liste importée, sans identité</td></tr>
@@ -282,6 +282,7 @@ try { var _a = localStorage.getItem("ezh_apparence"); if (_a === "clair" || _a =
                 <tr><td>Signalements (bugs et demandes)</td><td data-label="Durée">24 mois maximum, puis suppression. Sur suppression de ton compte, le signalement est dissocié du compte (identifiant effacé) mais le message reste jusqu'au bout de ces 24 mois.</td></tr>
                 <tr><td>Consultations</td><td data-label="Durée">180 jours, puis effacement automatique</td></tr>
                 <tr><td>PDF officiels ouverts</td><td data-label="Durée">180 jours, puis effacement automatique</td></tr>
+                <tr><td>Notifications reçues dans l'app</td><td data-label="Durée">180 jours, puis effacement automatique</td></tr>
                 <tr><td>Étapes de visite anonymes</td><td data-label="Durée">90 jours, puis effacement automatique</td></tr>
                 <tr><td>Liste de cours importée</td><td data-label="Durée">Pas conservée : traitée le temps de la réponse</td></tr>
                 <tr><td>Journaux techniques (hébergeur, connexions)</td><td data-label="Durée">Durée courte fixée par nos prestataires, en général de quelques jours à quelques semaines</td></tr>
@@ -289,7 +290,7 @@ try { var _a = localStorage.getItem("ezh_apparence"); if (_a === "clair" || _a =
               </tbody>
             </table>
           </div>
-          <p>Supprimer ton compte efface aussi, en cascade, tes horaires, tes devoirs et examens, ton historique de consultations et tes PDF ouverts. Tes signalements sont dissociés de ton compte (l'identifiant est effacé) mais conservés 24 mois maximum pour suivre les corrections. Les sauvegardes techniques éventuelles du prestataire s'écrasent ensuite selon leur propre cycle.</p>
+          <p>Supprimer ton compte efface aussi, en cascade, tes horaires, tes devoirs et examens, ton historique de consultations, tes PDF ouverts et tes notifications. Tes signalements sont dissociés de ton compte (l'identifiant est effacé) mais conservés 24 mois maximum pour suivre les corrections. Les sauvegardes techniques éventuelles du prestataire s'écrasent ensuite selon leur propre cycle.</p>
         </section>
 
         <section id="securite">

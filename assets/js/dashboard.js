@@ -96,8 +96,8 @@
     $("contenu").hidden = !!msg;
   }
 
-  /* ---------- Onglets (#apercu, #comptes, #retours) ---------- */
-  var ONGLETS = ["apercu", "comptes", "retours"];
+  /* ---------- Onglets (#apercu, #comptes, #retours, #notifications) ---------- */
+  var ONGLETS = ["apercu", "comptes", "retours", "notifications"];
   function ongletDepuisAdresse() {
     var h = (location.hash || "").replace("#", "");
     // #retours-12 (lien depuis la notif mail) ouvre l'onglet Retours et
@@ -566,6 +566,129 @@
     }).catch(function () { b.statut = avant; rendreBugs(); });
   }
 
+  /* ---------- Notifications : messagerie admin → étudiant (v1 : envoi
+     seul, les réponses repartent par email) ---------- */
+  var notifs = null, reqNotifs = 0, choixDest = [];
+  var vueNotifs = { ouvert: null };
+  function compteParId(id) {
+    if (!donnees) return null;
+    for (var i = 0; i < donnees.utilisateurs.length; i++) {
+      if (donnees.utilisateurs[i].user_id === id) return donnees.utilisateurs[i];
+    }
+    return null;
+  }
+  function nomDestinataire(id) {
+    var u = compteParId(id);
+    if (!u) return "compte supprimé";
+    return nomDe(u) || u.email || id.slice(0, 8);
+  }
+  function contactDe(u) { return (nomDe(u) ? nomDe(u) + " · " : "") + (u.email || ""); }
+  function majChoixDest() {
+    var q = $("notif-dest").value.toLowerCase().trim();
+    var tous = $("notif-tous").checked;
+    var html = choixDest.map(function (id) {
+      return '<button data-x="' + txt(id) + '" aria-pressed="true">' + txt(nomDestinataire(id)) + " ✕</button>";
+    }).join("");
+    if (!tous && q.length >= 2 && donnees) {
+      var vus = {}, sug = [];
+      choixDest.forEach(function (id) { vus[id] = 1; });
+      for (var i = 0; i < donnees.utilisateurs.length && sug.length < 6; i++) {
+        var u = donnees.utilisateurs[i];
+        if (vus[u.user_id]) continue;
+        if ((u.email + " " + nomDe(u)).toLowerCase().indexOf(q) < 0) continue;
+        sug.push(u);
+      }
+      html += sug.map(function (u) {
+        return '<button data-add="' + txt(u.user_id) + '" aria-pressed="false">' + txt(contactDe(u)) + "</button>";
+      }).join("");
+    }
+    $("notif-choix").innerHTML = html;
+    $("notif-nb-comptes").textContent = nb(donnees ? donnees.utilisateurs.length : 0);
+  }
+  function ligneNotif(n) {
+    var ouvert = vueNotifs.ouvert === n.id;
+    var titre = n.titre || String(n.message || "").replace(/\s+/g, " ").trim().slice(0, 70);
+    var html = '<li><button class="notif-l" data-n="' + n.id + '" aria-expanded="' + ouvert + '">' +
+      '<span class="t">' + (!n.lu_at ? '<span class="point" aria-label="Non lue"></span>' : "") +
+      txt(titre || "Message") + "</span>" +
+      '<span class="m">' + txt(nomDestinataire(n.user_id) + " · " + ilya(n.created_at)) + "</span>" +
+      '<span class="lu' + (n.lu_at ? " ok" : "") + '">' + (n.lu_at ? "lu" : "non lu") + "</span></button>";
+    if (ouvert) {
+      html += '<div class="notif-d"><p class="msg">' + txt(n.message) + "</p>" +
+        '<p class="meta-d">' + txt("À " + nomDestinataire(n.user_id) + " · envoyé " + date(n.created_at, true) +
+        (n.lu_at ? " · lu " + date(n.lu_at, true) : " · pas encore lu") +
+        (n.lien ? " · lien " + n.lien : "")) + "</p></div>";
+    }
+    return html + "</li>";
+  }
+  function rendreNotifs() {
+    if (!notifs) { $("notifs-liste").innerHTML = '<li class="vide">Chargement…</li>'; return; }
+    var nonlues = notifs.filter(function (n) { return !n.lu_at; }).length;
+    $("notifs-resume").textContent = pl(notifs.length, "message envoyé") +
+      (nonlues ? " · " + pl(nonlues, "non lu") : " · tout lu");
+    $("notifs-liste").innerHTML = notifs.map(ligneNotif).join("") ||
+      '<li class="vide">Aucun message envoyé pour l\'instant.</li>';
+  }
+  function chargerNotifs() {
+    var id = ++reqNotifs;
+    if (!sb) return;
+    sb.auth.getSession().then(function (res) {
+      var session = res && res.data && res.data.session;
+      if (!session || id !== reqNotifs) return;
+      return fetch("/api/notifications?limite=100", {
+        headers: { "Authorization": "Bearer " + session.access_token }, cache: "no-store"
+      }).then(function (r) { return r.json(); }).then(function (rep) {
+        if (id !== reqNotifs || !rep.ok) throw new Error((rep && rep.erreur) || "Erreur.");
+        notifs = rep.data.notifications || [];
+        rendreNotifs();
+      });
+    }).catch(function () {
+      if (id !== reqNotifs) return;
+      notifs = notifs || [];
+      rendreNotifs();
+      $("notifs-liste").innerHTML = '<li class="vide">Lecture des messages impossible.</li>';
+    });
+  }
+  function envoyerNotif() {
+    var status = $("notif-status"), btn = $("notif-envoyer");
+    var message = $("notif-message").value.replace(/\s+/g, " ").trim();
+    var titre = $("notif-titre").value.replace(/\s+/g, " ").trim().slice(0, 80);
+    var lien = $("notif-lien").value.trim().slice(0, 300);
+    var tous = $("notif-tous").checked;
+    status.textContent = "";
+    if (!message) { status.textContent = "Écris le message d'abord."; return; }
+    if (lien && !/^\/[^ ]*$/.test(lien)) { status.textContent = "Le lien doit être un chemin interne (« /… »)."; return; }
+    if (!tous && !choixDest.length) { status.textContent = "Choisis au moins un destinataire (ou « Tous »)."; return; }
+    if (!sb) return;
+    btn.disabled = true;
+    status.textContent = "Envoi…";
+    sb.auth.getSession().then(function (res) {
+      var session = res && res.data && res.data.session;
+      if (!session) throw new Error("Session expirée.");
+      var corps = tous ? { tous: true } : { user_ids: choixDest.slice() };
+      corps.titre = titre;
+      corps.message = message;
+      corps.lien = lien;
+      return fetch("/api/notifications", {
+        method: "POST", cache: "no-store",
+        headers: { "Authorization": "Bearer " + session.access_token, "Content-Type": "application/json" },
+        body: JSON.stringify(corps)
+      }).then(function (r) { return r.json(); }).then(function (rep) {
+        if (!rep.ok) throw new Error(rep.erreur || "Erreur.");
+        status.textContent = "Envoyé à " + pl(rep.data.envoyees, "compte") + ".";
+        $("notif-message").value = "";
+        $("notif-titre").value = "";
+        $("notif-lien").value = "";
+        $("notif-tous").checked = false;
+        choixDest = [];
+        majChoixDest();
+        chargerNotifs();
+      });
+    }).catch(function (e) {
+      status.textContent = "Échec : " + ((e && e.message) || "réessaie.");
+    }).then(function () { btn.disabled = false; });
+  }
+
   /* ---------- Alertes : plafonds atteints, purge à planifier ---------- */
   function alertes() {
     var msgs = [], lim = donnees.limites || {}, quels = [];
@@ -600,7 +723,7 @@
   function rendre() {
     var maj = new Date().toLocaleTimeString("fr-BE", { hour: "2-digit", minute: "2-digit" });
     $("sous-titre").textContent = jours + " derniers jours · à jour à " + maj;
-    alertes(); consultations(); ecoles(); communaute(); pdfs(); comptes(); rendreBugs();
+    alertes(); consultations(); ecoles(); communaute(); pdfs(); comptes(); rendreBugs(); majChoixDest(); rendreNotifs();
   }
 
   /* ---------- Données ---------- */
@@ -624,6 +747,7 @@
         etat("");
         rendre();
         chargerBugs();
+        chargerNotifs();
       });
     }).catch(function (e) {
       if (id !== requete) return;
@@ -716,6 +840,35 @@
     var id = +b.getAttribute("data-b");
     vueBugs.ouvert = vueBugs.ouvert === id ? null : id;
     rendreBugs();
+  });
+
+  $("notif-dest").addEventListener("input", function () { majChoixDest(); });
+  $("notif-choix").addEventListener("click", function (e) {
+    var add = e.target.closest("button[data-add]");
+    if (add) {
+      var id = add.getAttribute("data-add");
+      if (choixDest.indexOf(id) < 0 && choixDest.length < 200) choixDest.push(id);
+      $("notif-dest").value = "";
+      majChoixDest();
+      return;
+    }
+    var rm = e.target.closest("button[data-x]");
+    if (rm) {
+      choixDest = choixDest.filter(function (x) { return x !== rm.getAttribute("data-x"); });
+      majChoixDest();
+    }
+  });
+  $("notif-tous").addEventListener("change", function (e) {
+    if (e.target.checked) { choixDest = []; $("notif-dest").value = ""; }
+    majChoixDest();
+  });
+  $("notif-envoyer").addEventListener("click", function () { envoyerNotif(); });
+  $("notifs-liste").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-n]");
+    if (!b || !notifs) return;
+    var id = +b.getAttribute("data-n");
+    vueNotifs.ouvert = vueNotifs.ouvert === id ? null : id;
+    rendreNotifs();
   });
 
   var largeur = window.innerWidth;

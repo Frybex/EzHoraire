@@ -151,6 +151,9 @@ _DEBIT_MAX = {
     # Un report de bug ne coûte rien à l'école, mais l'écriture est ouverte
     # aux anonymes : 10 / heure / IP suffit aux humains et calme les robots.
     "bugs": (10, 3600.0),
+    # Envoi admin (réservé, mais borné quand même : un appel peut écrire
+    # des centaines de lignes d'un coup).
+    "notifications": (10, 3600.0),
 }
 _DEBIT = {}  # (point d'entrée, ip) -> deque des horodatages (monotonic)
 _DEBIT_VERROU = threading.Lock()
