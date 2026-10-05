@@ -1,6 +1,6 @@
 """GET /api/stats?jours=30 — chiffres du dashboard admin.
 
-Réservé aux emails listés dans ADMIN_EMAILS (env Vercel). Le navigateur
+Réservé aux admins (env Vercel : ADMIN_USER_IDS ou app_metadata.admin). Le navigateur
 envoie son access_token Supabase (Authorization: Bearer ...), le serveur
 vérifie qui c'est via /auth/v1/user, refuse les non-admins (403), puis
 agrège avec la clé service_role (jamais exposée au navigateur) :
@@ -25,11 +25,9 @@ Réponse : {"ok": true, "data": {
   "plus_ancien_pdf": "..." }}
 
 Env requises : SUPABASE_URL, SUPABASE_ANON_KEY,
-  SUPABASE_SERVICE_ROLE_KEY (alias SERVICE_ROLE acceptés), puis au moins
-  une des deux listes d'admins :
-  - ADMIN_USER_IDS : UUID des comptes admins (recommandé : impossible à
-    réclamer par quelqu'un d'autre, contrairement à une adresse email) ;
-  - ADMIN_EMAILS : emails, séparés par des virgules (repli historique).
+  SUPABASE_SERVICE_ROLE_KEY (alias SERVICE_ROLE acceptés), puis
+  ADMIN_USER_IDS : UUID des comptes admins (impossible à réclamer par
+  quelqu'un d'autre, contrairement à une adresse email).
   Un compte est aussi admin si son app_metadata contient "admin": true
   (app_metadata n'est modifiable qu'avec la clé service_role).
 """
@@ -210,14 +208,13 @@ class handler(BaseHTTPRequestHandler):
         anon = _env("SUPABASE_ANON_KEY", "NEXT_PUBLIC_SUPABASE_ANON_KEY")
         service = _env("SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_SERVICE_KEY",
                        "SERVICE_ROLE_KEY", "SUPABASE_SECRET_KEY")
-        admins = {e.strip().lower() for e in _env("ADMIN_EMAILS").split(",") if e.strip()}
         admins_ids = {i.strip().lower() for i in _env("ADMIN_USER_IDS").split(",") if i.strip()}
         if not url or not anon or not service:
             return repondre_json(self, 500, {"ok": False,
                 "erreur": "Dashboard non configuré (clés Supabase manquantes)."})
-        if not admins and not admins_ids:
+        if not admins_ids:
             return repondre_json(self, 500, {"ok": False,
-                "erreur": "Dashboard non configuré (ADMIN_USER_IDS ou ADMIN_EMAILS vide)."})
+                "erreur": "Dashboard non configuré (ADMIN_USER_IDS vide)."})
 
         auth = self.headers.get("Authorization") or ""
         if not auth.lower().startswith("bearer "):
@@ -232,15 +229,13 @@ class handler(BaseHTTPRequestHandler):
                             {"apikey": anon, "Authorization": "Bearer " + token}, timeout=15)
         except Exception:
             return repondre_json(self, 401, {"ok": False, "erreur": "Session invalide."})
-        email = str((moi or {}).get("email") or "").lower()
         uid = str((moi or {}).get("id") or "").lower()
         meta = (moi or {}).get("app_metadata") or {}
         # user_id et app_metadata (écriture service_role uniquement) ne
-        # peuvent pas être réclamés par un tiers, contrairement à un email.
+        # peuvent pas être réclamés par un tiers.
         est_admin = (
             (bool(uid) and uid in admins_ids)
             or (meta.get("admin") in (True, "true"))
-            or (bool(email) and email in admins)
         )
         if not est_admin:
             return repondre_json(self, 403, {"ok": False, "erreur": "Accès réservé."})

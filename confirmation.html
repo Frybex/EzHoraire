@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<!-- EzHoraire — page « nouveau mot de passe ».
-     Atterrissage du lien reçu par email (emails/reset-password.html).
+<!-- EzHoraire — page « activation du compte ».
+     Atterrissage du lien reçu par email (emails/confirm-signup.html).
 
-     Elle vérifie le jeton, affiche l'adresse du compte concerné, fait
-     choisir le nouveau mot de passe et l'enregistre dans Supabase, puis
-     renvoie sur l'app déjà connectée. Trois formes de retour possibles
-     selon la configuration de Supabase, toutes gérées ici :
-       ?token_hash=…&type=recovery   (modèle d'email : verifyOtp)
-       ?code=…                       (PKCE : exchangeCodeForSession)
+     Elle vérifie le jeton, active le compte dans Supabase (la session
+     s'ouvre au passage), puis renvoie sur l'app déjà connectée. Trois
+     formes de retour possibles selon la configuration de Supabase,
+     toutes gérées ici :
+       ?token_hash=…&type=signup   (modèle d'email : verifyOtp)
+       ?code=…                     (PKCE : exchangeCodeForSession)
        #access_token=…&refresh_token=…  (implicite : setSession)
      Page autonome : mêmes jetons visuels que index.html (relief, creux,
      halo) mais aucun code partagé, pour rester légère à charger. -->
@@ -19,7 +19,7 @@
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#f4f5f7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#101216" media="(prefers-color-scheme: dark)">
-<title>Nouveau mot de passe — EzHoraire</title>
+<title>Activation du compte — EzHoraire</title>
 <link rel="icon" href="/assets/icons/favicon.ico" sizes="48x48 32x32 16x16">
 <link rel="icon" href="/assets/icons/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/assets/icons/favicon-48x48.png" type="image/png" sizes="48x48">
@@ -34,7 +34,7 @@
      d'exécution (SDK d'abord) reste celui des balises. Le SDK est servi
      par le site (assets/vendor/, cache un an) : plus aucun script tiers. -->
 <script defer src="/assets/vendor/supabase-2.116.0.min.js"></script>
-<script defer src="/assets/dist/motdepasse.8bc61088d1.js"></script>
+<script defer src="/assets/dist/confirmation.de1b07b43a.js"></script>
 <style>
   :root {
     --bg: #f4f5f7;
@@ -44,7 +44,6 @@
     --line: #e4e7ec;
     --accent: #2456e0;
     --free: #18794e;
-    --warn: #b06a10;
     --danger: #d42a3c;
     --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   }
@@ -57,7 +56,6 @@
       --line: #262b34;
       --accent: #8ba6ff;
       --free: #5fce96;
-      --warn: #e2a24a;
       --danger: #ff6b7a;
     }
   }
@@ -65,11 +63,10 @@
   html, body { height: 100%; }
   body {
     /* Mêmes reliefs que l'app : dégradé vertical + reflet d'1 px en haut ;
-       « creux » pour les surfaces gravées (champs). */
+       « creux » pour les surfaces gravées. */
     --relief-haut: color-mix(in srgb, var(--bg), #fff 78%);
     --relief-bas: color-mix(in srgb, var(--bg), #fff 44%);
     --reflet: rgba(255, 255, 255, .9);
-    --ombre-btn: 0 1px 2px rgba(23, 32, 68, .06), 0 2px 8px -4px rgba(23, 32, 68, .08);
     --creux: color-mix(in srgb, var(--bg), #fff 60%);
     --creux-ombre: rgba(23, 32, 68, .07);
     --ombre-carte: 0 40px 90px -50px rgba(23, 32, 68, .55), 0 2px 8px -4px rgba(23, 32, 68, .12);
@@ -82,7 +79,6 @@
       --relief-haut: color-mix(in srgb, var(--bg), #fff 7%);
       --relief-bas: color-mix(in srgb, var(--bg), #fff 2.5%);
       --reflet: rgba(255, 255, 255, .06);
-      --ombre-btn: 0 1px 2px rgba(0, 0, 0, .4), 0 4px 12px -6px rgba(0, 0, 0, .6);
       --creux: color-mix(in srgb, var(--bg), #000 26%);
       --creux-ombre: rgba(0, 0, 0, .4);
       --ombre-carte: 0 40px 100px -50px rgba(0, 0, 0, .9), 0 2px 10px -4px rgba(0, 0, 0, .5);
@@ -184,7 +180,7 @@
   }
   .sous { margin: 0 0 20px; color: var(--muted); font-size: .95rem; line-height: 1.5; }
 
-  /* Compte concerné : l'adresse qu'on est en train de réinitialiser. */
+  /* Compte concerné : l'adresse qu'on est en train d'activer. */
   .chip {
     display: flex; align-items: center; gap: 11px; margin: 0 0 18px;
     padding: 11px 14px; border-radius: 14px; background: var(--creux);
@@ -195,83 +191,13 @@
   .chip-lib { display: block; color: var(--muted); font-size: .68rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
   .chip-mail { display: block; font-size: .95rem; font-weight: 650; letter-spacing: -.01em; overflow-wrap: anywhere; }
 
-  /* Champs gravés : même bloc unique que la connexion. */
-  .champs {
-    border-radius: 16px; background: var(--creux);
-    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre), 0 1px 0 var(--reflet);
-    transition: box-shadow .25s;
-  }
-  .champs:focus-within {
-    /* Le champ actif ne double pas son contour : le filet de base prend
-       simplement la couleur du thème. */
-    box-shadow: inset 0 0 0 1.5px var(--accent), inset 0 1px 3px var(--creux-ombre);
-  }
-  .champ-ligne { position: relative; display: flex; align-items: center; height: 54px; padding-left: 16px; }
-  .champ-ligne + .champ-ligne::before {
-    content: ""; position: absolute; top: 0; left: 16px; right: 16px; height: 1px; background: var(--line);
-  }
-  .champ-ico { flex: none; color: var(--muted); opacity: .75; transition: color .2s, opacity .2s; }
-  .champ-ligne:focus-within .champ-ico { color: var(--ink); opacity: 1; }
-  .champ {
-    flex: 1; min-width: 0; height: 100%; padding: 0 8px 0 12px; border: none; border-radius: 0;
-    background: none; color: var(--ink); outline: none;
-    font: inherit; font-size: 16px; letter-spacing: -.005em; -webkit-appearance: none; appearance: none;
-  }
-  .champ::placeholder { color: var(--muted); opacity: .85; }
-  .champ:-webkit-autofill { -webkit-text-fill-color: var(--ink); transition: background-color 600000s 0s; }
-  .oeil {
-    flex: none; width: 44px; height: 44px; margin-right: 5px;
-    display: grid; place-items: center; border: none; border-radius: 11px;
-    background: none; color: var(--muted); cursor: pointer; transition: color .15s;
-  }
-  .oeil:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-  .oeil[aria-pressed="true"] { color: var(--ink); }
-  .oeil[aria-pressed="true"] .barre-oeil { display: none; }
-  /* Coche de concordance des deux mots de passe. */
-  .ok-match {
-    flex: none; width: 44px; height: 44px; margin-right: 5px; display: grid; place-items: center;
-    color: var(--free); opacity: 0; transform: scale(.6); transition: opacity .2s, transform .25s cubic-bezier(.16, 1, .3, 1);
-  }
-  .ok-match.vu { opacity: 1; transform: none; }
+  .statut { margin: 14px 0 0; text-align: center; font-size: .9rem; font-weight: 600; color: var(--muted); }
+  .statut.err { color: var(--danger); }
 
-  /* Robustesse : quatre segments qui se remplissent + une phrase. */
-  .force { display: flex; align-items: center; gap: 10px; margin: 12px 2px 0; min-height: 20px; }
-  .jauge { display: flex; gap: 4px; flex: none; }
-  .jauge i {
-    display: block; width: 26px; height: 4px; border-radius: 999px;
-    background: var(--line); transition: background .3s, transform .3s;
-  }
-  .jauge i.on { background: var(--n-teinte, var(--muted)); }
-  .force-txt { color: var(--muted); font-size: .8rem; font-weight: 600; letter-spacing: -.01em; }
-  .force[data-n="1"] { --n-teinte: var(--danger); }
-  .force[data-n="2"] { --n-teinte: var(--warn); }
-  .force[data-n="3"], .force[data-n="4"] { --n-teinte: var(--free); }
-  .force[data-n="1"] .force-txt { color: var(--danger); }
-  .force[data-n="2"] .force-txt { color: var(--warn); }
-  .force[data-n="3"] .force-txt, .force[data-n="4"] .force-txt { color: var(--free); }
-
-  /* Bouton : relief de l'app ; seul le texte s'allume quand c'est valable. */
-  .btn {
-    overflow: hidden; display: grid; place-items: center;
-    width: 100%; height: 54px; margin-top: 16px; border: none; border-radius: 15px;
-    background-color: var(--relief-haut);
-    background-image: linear-gradient(180deg, var(--relief-haut), var(--relief-bas));
-    color: var(--muted);
-    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn);
-    font: inherit; font-size: 1rem; font-weight: 650; letter-spacing: -.01em; cursor: pointer;
-    transition: color .2s, transform .12s, box-shadow .3s;
-  }
-  .btn > * { grid-area: 1 / 1; }
-  .btn:active { transform: scale(.985); }
-  .btn.pret {
-    color: var(--ink);
-    box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 var(--reflet), var(--ombre-btn),
-      0 0 0 4px color-mix(in srgb, var(--accent) 12%, transparent);
-  }
-  .btn.charge { pointer-events: none; }
-  .btn.charge .lib { visibility: hidden; }
-  .btn.charge .tourne { display: block; }
-  @media (hover: hover) and (pointer: fine) { .btn:hover { color: var(--ink); } }
+  /* Attente de la vérification du lien. */
+  .attente { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 30px 0 26px; }
+  .attente .tourne { display: block; width: 26px; height: 26px; border-width: 2.5px; color: var(--muted); }
+  .attente p { margin: 0; color: var(--muted); font-size: .95rem; font-weight: 600; }
   .tourne {
     display: none; width: 18px; height: 18px; border-radius: 50%;
     border: 2px solid color-mix(in srgb, currentColor 22%, transparent); border-top-color: currentColor;
@@ -279,16 +205,7 @@
   }
   @keyframes tourne { to { transform: rotate(360deg); } }
 
-  .statut { margin: 14px 0 0; text-align: center; font-size: .9rem; font-weight: 600; color: var(--muted); }
-  .statut.err { color: var(--danger); }
-  .statut.info { color: var(--free); }
-
-  /* Attente de la vérification du lien. */
-  .attente { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 30px 0 26px; }
-  .attente .tourne { display: block; width: 26px; height: 26px; border-width: 2.5px; color: var(--muted); }
-  .attente p { margin: 0; color: var(--muted); font-size: .95rem; font-weight: 600; }
-
-  /* Pastille d'état (lien mort, mot de passe enregistré). */
+  /* Pastille d'état (lien mort, compte activé). */
   .pastille {
     width: 58px; height: 58px; margin: 6px 0 18px; border-radius: 19px; display: grid; place-items: center;
     background: var(--creux); box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 3px var(--creux-ombre);
@@ -301,9 +218,9 @@
   @keyframes trace { to { stroke-dashoffset: 0; } }
   .cercle { stroke-dasharray: 76; stroke-dashoffset: 76; animation: trace .6s cubic-bezier(.16, 1, .3, 1) forwards; }
 
-  /* Barre de retour vers l'app après l'enregistrement. */
+  /* Barre de retour vers l'app après l'activation. */
   .repart { height: 3px; margin-top: 22px; border-radius: 999px; background: var(--line); overflow: hidden; }
-  .repart i { display: block; height: 100%; width: 0; border-radius: 999px; background: var(--accent); animation: remplit 1.9s linear forwards; }
+  .repart i { display: block; height: 100%; width: 0; border-radius: 999px; background: var(--accent); animation: remplit 1.7s linear forwards; }
   @keyframes remplit { to { width: 100%; } }
 
   .lien-txt {
@@ -318,8 +235,7 @@
   @media (prefers-reduced-motion: reduce) {
     .aurore::before, .aurore::after, .carte, .etat, .trace, .cercle { animation: none; }
     .trace, .cercle { stroke-dashoffset: 0; }
-    .repart i { animation-duration: 1.9s; }
-    .btn, .champs, .halo::before, .halo::after, .jauge i, .ok-match { transition: none; }
+    .repart i { animation-duration: 1.7s; }
   }
 </style>
 </head>
@@ -343,13 +259,33 @@
       <!-- 1. Vérification du lien reçu par email -->
       <div class="etat attente" id="v-charge">
         <span class="tourne" aria-hidden="true"></span>
-        <p role="status">Vérification du lien…</p>
+        <p role="status">Activation de ton compte…</p>
       </div>
 
-      <!-- 2. Choix du nouveau mot de passe -->
-      <form class="etat" id="v-form" hidden autocomplete="on">
-        <p class="sur-titre">Réinitialisation</p>
-        <h1 class="titre">Choisis un nouveau mot de passe.</h1>
+      <!-- 2. Lien invalide, expiré ou déjà utilisé -->
+      <div class="etat" id="v-lien" hidden>
+        <div class="pastille mal" aria-hidden="true">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 8v5"/><path d="M12 16.5v.01"/><circle cx="12" cy="12" r="9"/>
+          </svg>
+        </div>
+        <h1 class="titre">Ce lien n'est plus valable.</h1>
+        <p class="sous" id="lien-raison">Les liens d'activation expirent après 1 heure et ne servent qu'une fois. Retourne sur EzHoraire et connecte-toi ; si le problème persiste, écris-nous à contact@ezhoraire.be.</p>
+        <a class="lien-txt" href="/" id="lien-app">Retour à EzHoraire</a>
+      </div>
+
+      <!-- 3. Le compte est activé -->
+      <div class="etat" id="v-ok" hidden>
+        <div class="pastille bien" aria-hidden="true">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <circle class="cercle" cx="12" cy="12" r="9"/>
+            <path class="trace" d="M7.5 12.4 10.7 15.6 16.6 9"/>
+          </svg>
+        </div>
+        <h1 class="titre">C'est activé.</h1>
+        <p class="sous">Bienvenue ! Ton compte est confirmé. On t'ouvre ton horaire.</p>
 
         <div class="chip">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -362,100 +298,8 @@
           </span>
         </div>
 
-        <!-- Champ caché : les gestionnaires de mots de passe ont besoin de
-             l'identifiant pour proposer la mise à jour de la bonne entrée. -->
-        <input type="email" id="mail-cache" autocomplete="username" tabindex="-1" aria-hidden="true"
-               style="position:absolute;opacity:0;pointer-events:none;height:0;width:0;border:0;padding:0">
-
-        <div class="champs halo">
-          <div class="champ-ligne">
-            <svg class="champ-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/>
-            </svg>
-            <input class="champ" id="mdp1" type="password" maxlength="120" placeholder="Nouveau mot de passe"
-                   aria-label="Nouveau mot de passe (10 caractères minimum)" autocomplete="new-password"
-                   autocapitalize="off" autocorrect="off" spellcheck="false">
-            <button type="button" class="oeil" id="voir" aria-label="Afficher les mots de passe" aria-pressed="false">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>
-                <path class="barre-oeil" d="M4 4l16 16"/>
-              </svg>
-            </button>
-          </div>
-          <div class="champ-ligne">
-            <svg class="champ-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/><path d="M12 14.4v2.2"/>
-            </svg>
-            <input class="champ" id="mdp2" type="password" maxlength="120" placeholder="Confirme le mot de passe"
-                   aria-label="Confirmation du nouveau mot de passe" autocomplete="new-password"
-                   autocapitalize="off" autocorrect="off" spellcheck="false">
-            <span class="ok-match" id="match" aria-hidden="true">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
-                   stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5 9.5 17.5 19.5 7"/></svg>
-            </span>
-          </div>
-        </div>
-
-        <div class="force" id="force" data-n="0">
-          <span class="jauge" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
-          <span class="force-txt" id="force-txt">10 caractères minimum</span>
-        </div>
-
-        <button type="submit" class="btn halo" id="btn-enr">
-          <span class="lib">Enregistrer le mot de passe</span>
-          <span class="tourne" aria-hidden="true"></span>
-        </button>
-
-        <p class="statut" id="statut" role="status" hidden></p>
-      </form>
-
-      <!-- 3. Lien invalide, expiré ou déjà utilisé -->
-      <div class="etat" id="v-lien" hidden>
-        <div class="pastille mal" aria-hidden="true">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-               stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 8v5"/><path d="M12 16.5v.01"/><circle cx="12" cy="12" r="9"/>
-          </svg>
-        </div>
-        <h1 class="titre">Ce lien n'est plus valable.</h1>
-        <p class="sous" id="lien-raison">Les liens de réinitialisation expirent après 1 heure et ne servent qu'une fois. Indique ton adresse : on t'en renvoie un tout de suite.</p>
-
-        <form id="v-renvoi" autocomplete="on">
-          <div class="champs halo">
-            <div class="champ-ligne">
-              <svg class="champ-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                   stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <rect x="3" y="5" width="18" height="14" rx="3"/><path d="M4.5 7.5 12 13l7.5-5.5"/>
-              </svg>
-              <input class="champ" id="mail-renvoi" type="email" maxlength="120" placeholder="Adresse email"
-                     aria-label="Adresse email" autocomplete="email" autocorrect="off" autocapitalize="off" spellcheck="false">
-            </div>
-          </div>
-          <button type="submit" class="btn halo" id="btn-renvoi">
-            <span class="lib">Recevoir un nouveau lien</span>
-            <span class="tourne" aria-hidden="true"></span>
-          </button>
-          <p class="statut" id="statut-renvoi" role="status" hidden></p>
-        </form>
-        <a class="lien-txt" href="/">Retour à EzHoraire</a>
-      </div>
-
-      <!-- 4. C'est enregistré -->
-      <div class="etat" id="v-ok" hidden>
-        <div class="pastille bien" aria-hidden="true">
-          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
-               stroke-linecap="round" stroke-linejoin="round">
-            <circle class="cercle" cx="12" cy="12" r="9"/>
-            <path class="trace" d="M7.5 12.4 10.7 15.6 16.6 9"/>
-          </svg>
-        </div>
-        <h1 class="titre">C'est enregistré.</h1>
-        <p class="sous">Ton mot de passe est à jour. On te ramène à ton horaire.</p>
         <div class="repart" aria-hidden="true"><i></i></div>
-        <a class="lien-txt" href="/" id="lien-app">Continuer maintenant</a>
+        <a class="lien-txt" href="/" id="lien-continuer">Continuer maintenant</a>
       </div>
 
     </div>

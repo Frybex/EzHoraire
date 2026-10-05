@@ -29,7 +29,8 @@ PATCH /api/bugs?id=12  (admin)
   Réponse : {"ok": true}
 
 Env : SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY (+ alias),
-  ADMIN_USER_IDS / ADMIN_EMAILS (comme stats.py).
+  ADMIN_USER_IDS ou app_metadata.admin (comme stats.py : plus aucune
+  voie par email, une adresse non vérifiée ne prouve rien).
   Notif email (optionnelle, best-effort) : RESEND_API_KEY + BUGS_NOTIFY_TO
   (adresse perso de l'admin), BUGS_NOTIFY_FROM (optionnel, défaut
   "EzHoraire <contact@ezhoraire.be>" — doit appartenir à un domaine
@@ -129,9 +130,8 @@ def _cles():
 
 def _est_admin(url, anon, h):
     """(admin, user_id, email) depuis le Bearer, comme stats.py."""
-    admins = {e.strip().lower() for e in _env("ADMIN_EMAILS").split(",") if e.strip()}
     admins_ids = {i.strip().lower() for i in _env("ADMIN_USER_IDS").split(",") if i.strip()}
-    if not admins and not admins_ids:
+    if not admins_ids:
         return False, "", ""
     auth = h.headers.get("Authorization") or ""
     if not auth.lower().startswith("bearer "):
@@ -150,7 +150,6 @@ def _est_admin(url, anon, h):
     admin = (
         (bool(uid) and uid in admins_ids)
         or (meta.get("admin") in (True, "true"))
-        or (bool(email) and email in admins)
     )
     return admin, uid, email
 

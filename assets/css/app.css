@@ -232,6 +232,15 @@
     font-size: .95rem; font-weight: 700; letter-spacing: -.01em;
   }
   #v-groupes .options-liste { display: flex; flex-wrap: wrap; gap: 8px; }
+  /* Plusieurs options isolées = plusieurs .options-liste empilées (une par
+     cours) dans la section « Options et cours au choix » : sans cette marge
+     elles se touchent bord à bord. Idem pour les blocs multi-cours
+     imbriqués dans cette section. */
+  #v-groupes .section-groupe > .options-liste + .options-liste,
+  #v-groupes .section-groupe > .section-groupe + .options-liste,
+  #v-groupes .section-groupe > .options-liste + .section-groupe,
+  #v-groupes .section-groupe > .section-groupe + .section-groupe { margin-top: 8px; }
+  .section-groupe > .options-liste + .options-liste { margin-top: 8px; }
   #v-groupes .chip.chip-option { display: inline-flex; width: auto; max-width: 100%; }
   .chip.chip-option {
     display: flex; width: 100%; min-height: 52px; padding: 9px 16px 9px 13px;

@@ -113,19 +113,21 @@ Reste côté consoles (une fois le projet Supabase créé) :
 5. **GitHub** : GitHub → Settings → Developer settings → OAuth App
    (callback = `https://<projet>.supabase.co/auth/v1/callback`), puis
    Supabase → Providers → GitHub.
-6. **Email** : natif Supabase (mot de passe déjà câblé). Si « Confirm
-   email » est activé, il faut un SMTP perso (Resend, Brevo…) : l'envoi
-   par défaut de Supabase ne part que vers les membres de l'équipe du
-   projet, les autres ne reçoivent jamais le lien. Sans SMTP, désactiver
-   « Confirm email » : le compte est créé et connecté tout de suite.
-   Mot de passe oublié : natif aussi. Coller `emails/reset-password.html`
-   dans Authentication → Emails → Reset Password (Message body) ; le lien
-   ouvre `/mot-de-passe.html`, qui vérifie le jeton, affiche l'adresse
-   concernée et enregistre le nouveau mot de passe, puis renvoie sur
-   l'app déjà connectée. Le modèle passe par `{{ .TokenHash }}` plutôt que
-   par `{{ .ConfirmationURL }}` : la vérification se fait alors dans le
-   navigateur, donc les antivirus et aperçus de lien des messageries qui
-   pré-chargent les URL ne consomment plus le lien à usage unique.
+6. **Email** : SMTP Resend déjà câblé (smtp.resend.com, expéditeur
+   « EzHoraire »). Les deux modèles passent par `{{ .TokenHash }}` plutôt
+   que par `{{ .ConfirmationURL }}` : la vérification se fait alors dans
+   le navigateur, donc les antivirus et aperçus de lien des messageries
+   qui pré-chargent les URL ne consomment plus le lien à usage unique.
+   - **Confirmation** : coller `emails/confirm-signup.html` dans
+     Authentication → Emails → Confirm signup (Message body) ; le lien
+     ouvre `/confirmation.html`, qui vérifie le jeton, active le compte
+     et renvoie sur l'app déjà connectée.
+   - **Mot de passe oublié** : coller `emails/reset-password.html` dans
+     Authentication → Emails → Reset Password (Message body) ; le lien
+     ouvre `/mot-de-passe.html`, qui vérifie le jeton, affiche l'adresse
+     concernée et enregistre le nouveau mot de passe, puis renvoie sur
+     l'app déjà connectée.
+   Les liens dépendent de Site URL (étape 3) : `https://www.ezhoraire.be`.
 
 En local : `vercel env pull .env.local` une fois (fichier ignoré par git
 et par Vercel), `serve.py` le charge au démarrage. Sans ce fichier, l'app
@@ -150,9 +152,9 @@ jamais dans le navigateur). Le bouton Apparence de l'en-tête règle le
 clair / sombre / système et la couleur de l'accent (bleu, vert, rose),
 gardée dans `ezh_admin_couleur`. Un compte est admin si son `user_id`
 figure dans `ADMIN_USER_IDS`, ou si son `app_metadata` contient
-`"admin": true`, ou (Repli) si son email figure dans `ADMIN_EMAILS`.
-Préfère `ADMIN_USER_IDS` : un email n'est pas un identifiant, il ne vaut
-que tant que le compte qui le porte existe déjà.
+`"admin": true` (les deux ne sont modifiables que côté serveur). Il n'y
+a plus de voie par email : une adresse n'est pas un identifiant, et tant
+qu'elle n'est pas vérifiée elle ne prouve rien.
 
 Mise en route (une fois) :
 
@@ -490,9 +492,15 @@ le sont.
 - `mot-de-passe.html` — page d'atterrissage du lien « mot de passe oublié »
   (vérification du jeton, adresse du compte, choix et enregistrement du
   nouveau mot de passe, renvoi d'un lien si celui-ci a expiré).
+- `confirmation.html` — page d'atterrissage du lien « active ton compte »
+  (vérification du jeton, activation du compte, retour sur l'app déjà
+  connectée).
 - `emails/reset-password.html` — modèle de l'email « mot de passe oublié »
   (à coller dans Supabase → Authentication → Emails → Reset Password ;
   dossier non déployé, c'est un modèle, pas une page du site).
+- `emails/confirm-signup.html` — modèle de l'email « active ton compte »
+  (à coller dans Authentication → Emails → Confirm signup ; même thème que
+  l'email de mot de passe oublié ; dossier non déployé).
 - `api/` — le serveur, rangé en trois étages (détail : `api/README.md`) :
   les **points d'entrée** à la racine (`formations.py`, `horaires.py`,
   `export.py`, `recherche.py`, `ical.py`, `importer.py`, `pdf.py`,

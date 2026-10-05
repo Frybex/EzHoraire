@@ -1204,8 +1204,8 @@
   });
   /* ---------- Bouton « Tableau admin » (menu ⋮ du compte) ----------
      Visible uniquement si /api/stats confirme que ce compte est admin
-     (liste ADMIN_EMAILS côté serveur). Vérifié une fois par session,
-     en arrière-plan à l'ouverture des réglages. */
+     (ADMIN_USER_IDS ou app_metadata côté serveur). Vérifié une fois par
+     session, en arrière-plan à l'ouverture des réglages. */
   var adminVerifie = false;
   function montrerBoutonAdmin() {
     var b = document.getElementById("btn-admin");
@@ -2349,7 +2349,7 @@
   function emailValide(v) { return /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)*\.[a-z]{2,}$/i.test(String(v || "").trim()); }
   function majBoutonEmail() {
     document.getElementById("btn-email").classList.toggle("pret",
-      emailValide(document.getElementById("email").value) && document.getElementById("mdp").value.length >= 6);
+      emailValide(document.getElementById("email").value) && document.getElementById("mdp").value.length >= 10);
   }
   document.getElementById("btn-email").addEventListener("click", function () {
     var btn = this;
@@ -2364,9 +2364,9 @@
       marquerChampsErreur();
       return;
     }
-    if (String(mp).length < 6) {
+    if (String(mp).length < 10) {
       try { document.getElementById("mdp").focus(); } catch (e) { /* jetable */ }
-      statutAuthErreur("Mot de passe : 6 caractères minimum.", "mot_de_passe_court");
+      statutAuthErreur("Mot de passe : 10 caractères minimum.", "mot_de_passe_court");
       marquerChampsErreur();
       return;
     }
@@ -2459,9 +2459,9 @@
       return;
     }
     var mp = document.getElementById("mdp-nouveau").value;
-    if (String(mp).length < 6) {
+    if (String(mp).length < 10) {
       try { document.getElementById("mdp-nouveau").focus(); } catch (e) { /* jetable */ }
-      statutAuthErreur("Mot de passe : 6 caractères minimum.");
+      statutAuthErreur("Mot de passe : 10 caractères minimum.");
       return;
     }
     btn.classList.add("charge");

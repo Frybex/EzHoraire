@@ -58,6 +58,7 @@ JS = {
     "legal.js": ["assets/js/legal.js"],
     "dashboard.js": ["assets/js/dashboard.js"],
     "motdepasse.js": ["assets/js/motdepasse.js"],
+    "confirmation.js": ["assets/js/confirmation.js"],
 }
 CSS = {
     "app.css": ["assets/css/app.css"],
@@ -65,7 +66,7 @@ CSS = {
 }
 # Ordre d'affichage dans le manifeste et les messages.
 NOMS = ["app.js", "app.css", "favicon.js", "legal.js", "legal.css",
-        "dashboard.js", "motdepasse.js"]
+        "dashboard.js", "motdepasse.js", "confirmation.js"]
 
 # Pages réécrites (le labo et les ateliers ne sont pas déployés).
 PAGES_IGNOREES = {

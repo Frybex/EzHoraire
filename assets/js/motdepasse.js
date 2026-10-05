@@ -3,7 +3,7 @@
   var $ = function (id) { return document.getElementById(id); };
   var sb = null;              // client Supabase
   var session = null;         // session ouverte par le lien de récupération
-  var MIN = 6;                // même minimum que l'app et que Supabase
+  var MIN = 10;                // même minimum que l'app et que Supabase
 
   /* ---------- Halo qui suit le pointeur (comme l'écran de connexion) ---------- */
   document.addEventListener("pointermove", function (e) {
@@ -59,7 +59,7 @@
   }
 
   /* ---------- Robustesse du mot de passe ---------- */
-  var LIBELLES = ["6 caractères minimum", "Faible", "Correct", "Solide", "Excellent"];
+  var LIBELLES = ["10 caractères minimum", "Faible", "Correct", "Solide", "Excellent"];
   function force(v) {
     if (v.length < MIN) return 0;
     var variete = (/[a-z]/.test(v) ? 1 : 0) + (/[A-Z]/.test(v) ? 1 : 0)

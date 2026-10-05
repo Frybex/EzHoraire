@@ -1,7 +1,7 @@
 User-agent: *
 Allow: /
 Disallow: /api/
-# Pas de Disallow sur dashboard.html ni mot-de-passe.html : leur
+# Pas de Disallow sur dashboard.html, mot-de-passe.html ni confirmation.html : leur
 # <meta name="robots" content="noindex"> n'est pris en compte que si
 # Google peut crawler la page. Bloquer le crawl empêcherait de voir
 # le noindex (l'URL pourrait alors rester listée, sans contenu).

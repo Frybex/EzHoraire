@@ -2,10 +2,10 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<!-- EzHoraire — modèle d'email « mot de passe oublié ».
-     À coller dans Supabase → Authentication → Emails → Reset Password → Message body.
+<!-- EzHoraire — modèle d'email « confirme ton compte ».
+     À coller dans Supabase → Authentication → Emails → Confirm signup → Message body.
 
-     Le lien pointe directement sur notre page /mot-de-passe.html en passant
+     Le lien pointe directement sur notre page /confirmation.html en passant
      le jeton haché ({{ .TokenHash }}) : la vérification se fait en JavaScript
      sur notre site, donc les antivirus et aperçus de lien des messageries
      (Outlook Safe Links & co) qui pré-chargent les URL ne consomment plus le
@@ -15,17 +15,16 @@
      (La variable ConfirmationURL marche aussi : la page gère les trois
      formes de retour — token_hash, ?code= (PKCE) et #access_token=.)
 
-     Mise en page compatible boîtes mail : tableaux + styles inline, une seule
-     carte. Seule image : le logo (https://www.ezhoraire.be/assets/icons/logo-email.png,
-     généré par logos/monolithe/build.py). Si la messagerie bloque les
-     images, la case garde son fond de tuile sombre et le nom reste lisible.
-     (Le validateur W3C signale les accolades doubles de Supabase : ce
-     fichier est un modèle, pas une page servie par le site — seules ses
-     erreurs réelles de HTML/CSS sont corrigées.) -->
+     Même mise en page que emails/reset-password.html : tableaux + styles
+     inline, une seule carte, seul le logo est une image
+     (https://www.ezhoraire.be/assets/icons/logo-email.png). Si la messagerie
+     bloque les images, la case garde son fond de tuile sombre et le nom reste
+     lisible. (Le validateur W3C signale les accolades doubles de Supabase :
+     ce fichier est un modèle, pas une page servie par le site.) -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light dark">
 <meta name="supported-color-schemes" content="light dark">
-<title>Nouveau mot de passe — EzHoraire</title>
+<title>Active ton compte — EzHoraire</title>
 <style>
   /* Survol clair, AVANT le bloc sombre : les deux règles portent
      !important, la dernière du feuille gagne, donc en mode nuit c'est
@@ -66,10 +65,8 @@
   /* Halo des boutons de connexion, repris tel quel : au survol, un
      voile lumineux s'allume sur le bouton (::before) et son contour
      d'1 px s'illumine (::after). --mx/--my suivent le pointeur en JS
-     (voir le <script> en fin de page, comme sur le site) ; un client
-     mail n'exécute pas ce script, le halo y reste donc centré via les
-     valeurs de repli 50%. Sans effet sur Outlook bureau, qui garde
-     l'état de base — amélioration progressive. */
+     (voir le <script> en fin de page) ; un client mail n'exécute pas ce
+     script, le halo y reste donc centré via les valeurs de repli 50%. */
   .cta-btn { position: relative; isolation: isolate; }
   .cta-btn::before, .cta-btn::after {
     content: ""; position: absolute; top: 0; right: 0; bottom: 0; left: 0;
@@ -83,11 +80,6 @@
   .cta-btn::after {
     z-index: 2; padding: 1px;
     background: radial-gradient(110px circle at var(--mx, 50%) var(--my, 50%), rgba(23,25,29,.5), transparent 75%);
-    /* Contour d'1 px creusé par masquage (deux couches, composite xor) :
-       écrit en propriétés longues, avec une syntaxe de dégradé que les
-       vieux analyseurs CSS acceptent (« #000, #000 » plutôt que la
-       double position moderne « #000 0 0 », que le validateur W3C
-       rejetait). */
     -webkit-mask-image: linear-gradient(#000, #000), linear-gradient(#000, #000);
     -webkit-mask-clip: content-box, border-box;
     -webkit-mask-composite: xor;
@@ -101,7 +93,7 @@
 <body class="fond" style="margin: 0; padding: 0; width: 100%; word-spacing: normal; background-color: #f4f5f7;">
 <!-- Aperçu affiché dans la liste des messages, avant l'ouverture. -->
 <div style="display: none; max-height: 0; overflow: hidden; opacity: 0; color: transparent; visibility: hidden;">
-  Un lien valable 1 heure pour choisir un nouveau mot de passe EzHoraire.
+  Un clic pour activer ton compte EzHoraire — valable 1 heure.
   &#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;
 </div>
 
@@ -134,17 +126,17 @@
 
               <tr>
                 <td class="pad" style="padding: 34px 34px 8px;">
-                  <p class="accent" style="margin: 0 0 14px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #2456e0;">Réinitialisation</p>
+                  <p class="accent" style="margin: 0 0 14px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #2456e0;">Bienvenue</p>
 
-                  <h1 class="h1 titre" style="margin: 0 0 14px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 31px; line-height: 1.08; letter-spacing: -0.035em; font-weight: 800; color: #17191d;">Choisis un nouveau<br>mot de passe.</h1>
+                  <h1 class="h1 titre" style="margin: 0 0 14px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 31px; line-height: 1.08; letter-spacing: -0.035em; font-weight: 800; color: #17191d;">Active ton<br>compte.</h1>
 
-                  <p class="texte" style="margin: 0 0 22px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 15.5px; line-height: 1.6; color: #3c414b;">Le bouton ci-dessous ouvre EzHoraire sur une page sécurisée où tu choisis ton nouveau mot de passe. Rien d'autre à faire.</p>
+                  <p class="texte" style="margin: 0 0 22px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 15.5px; line-height: 1.6; color: #3c414b;">Encore un geste : confirme ton adresse pour ouvrir EzHoraire. Le bouton ci-dessous active ton compte directement et t'emmène sur ton horaire — rien d'autre à faire.</p>
 
                   <!-- Compte concerné -->
                   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 0 0 24px;">
                     <tr>
                       <td class="creux" style="background-color: #f4f5f7; border: 1px solid #e4e7ec; border-radius: 14px; padding: 13px 16px;">
-                        <p class="doux" style="margin: 0 0 3px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #6d7482;">Compte concerné</p>
+                        <p class="doux" style="margin: 0 0 3px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #6d7482;">Adresse à confirmer</p>
                         <p class="titre" style="margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 15.5px; font-weight: 650; letter-spacing: -0.01em; color: #17191d; word-break: break-all;">{{ .Email }}</p>
                       </td>
                     </tr>
@@ -157,7 +149,7 @@
                   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="cta" style="margin: 0 0 14px;">
                     <tr>
                       <td align="center" class="cta-cell" bgcolor="#f9f9fb" style="background-color: #f9f9fb; background-image: linear-gradient(180deg, #fdfdfd, #f9f9fb); border: 1px solid #e4e7ec; border-radius: 15px; box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 1px 2px rgba(23,32,68,.06), 0 2px 8px -4px rgba(23,32,68,.08);">
-                        <a class="cta-btn" href="{{ .SiteURL }}/mot-de-passe.html?token_hash={{ .TokenHash }}&amp;type=recovery" style="display: inline-block; width: 100%; box-sizing: border-box; padding: 16px 24px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 16px; font-weight: 650; letter-spacing: -0.01em; color: #17191d; text-decoration: none; text-align: center; border-radius: 14px;">Choisir mon mot de passe</a>
+                        <a class="cta-btn" href="{{ .SiteURL }}/confirmation.html?token_hash={{ .TokenHash }}&amp;type=signup" style="display: inline-block; width: 100%; box-sizing: border-box; padding: 16px 24px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 16px; font-weight: 650; letter-spacing: -0.01em; color: #17191d; text-decoration: none; text-align: center; border-radius: 14px;">Activer mon compte</a>
                       </td>
                     </tr>
                   </table>
@@ -175,10 +167,10 @@
               <tr>
                 <td class="pad" style="padding: 22px 34px 30px;">
                   <p class="titre" style="margin: 0 0 6px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 14px; font-weight: 700; letter-spacing: -0.01em; color: #17191d;">Tu n'as rien demandé ?</p>
-                  <p class="doux" style="margin: 0 0 18px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 13.5px; line-height: 1.6; color: #6d7482;">Ignore cet email : ton mot de passe actuel reste valable tant que ce lien n'est pas ouvert.</p>
+                  <p class="doux" style="margin: 0 0 18px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 13.5px; line-height: 1.6; color: #6d7482;">Si tu n'es pas à l'origine de cette inscription, ignore cet email : ton compte restera inactif sans ce clic.</p>
 
                   <p class="doux" style="margin: 0 0 7px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 12.5px; line-height: 1.55; color: #6d7482;">Le bouton ne fonctionne pas ? Copie ce lien dans ton navigateur :</p>
-                  <p style="margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 12.5px; line-height: 1.55;"><a class="lien" href="{{ .SiteURL }}/mot-de-passe.html?token_hash={{ .TokenHash }}&amp;type=recovery" style="color: #2456e0; text-decoration: none; word-break: break-all;">{{ .SiteURL }}/mot-de-passe.html?token_hash={{ .TokenHash }}&amp;type=recovery</a></p>
+                  <p style="margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: 12.5px; line-height: 1.55;"><a class="lien" href="{{ .SiteURL }}/confirmation.html?token_hash={{ .TokenHash }}&amp;type=signup" style="color: #2456e0; text-decoration: none; word-break: break-all;">{{ .SiteURL }}/confirmation.html?token_hash={{ .TokenHash }}&amp;type=signup</a></p>
                 </td>
               </tr>
 
