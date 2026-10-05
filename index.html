@@ -44,13 +44,13 @@
 <link rel="manifest" href="/assets/icons/site.webmanifest">
 <!-- Feuille de style au-dessus des scripts : elle démarre avant tout
      texte exécuté, le premier rendu n'attend que elle. -->
-<link rel="stylesheet" href="/assets/dist/app.582efd921d.css">
+<link rel="stylesheet" href="/assets/dist/app.9b27394fb7.css">
 <!-- Un seul bundle, découvert tôt et exécuté après le parse : le premier
      rendu ne dépend que de la feuille de style. Le SDK Supabase, lui,
      n'est plus téléchargé d'office : l'app le demande au premier besoin
      (clic de connexion, retour OAuth ou session déjà enregistrée). -->
-<link rel="preload" href="/assets/dist/app.1cfb93790e.js" as="script">
-<script defer src="/assets/dist/app.1cfb93790e.js"></script>
+<link rel="preload" href="/assets/dist/app.5e0be9e348.js" as="script">
+<script defer src="/assets/dist/app.5e0be9e348.js"></script>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
 {"@type":"Organization","@id":"https://www.ezhoraire.be/#org","name":"EzHoraire","alternateName":["Ez Horaire","ezhoraire","Easy Horaire","EzHoraire Belgique"],"url":"https://www.ezhoraire.be/","logo":{"@type":"ImageObject","url":"https://www.ezhoraire.be/icon-512.png","width":512,"height":512},"email":"contact@ezhoraire.be","areaServed":{"@type":"Country","name":"Belgique"},"description":"Application et plateforme gratuite de consultation des horaires d'étudiants en Belgique (HEH, UMONS, Condorcet, HELB, ULB, UCLouvain)."},
@@ -183,6 +183,33 @@ try {
           <span class="be-lib">Enregistrer</span>
           <span class="tourne" aria-hidden="true"></span>
         </button>
+      </div>
+      <!-- Inscription par email : le compte attend son activation. Ce bloc
+           remplace tout le formulaire pour que l'étape suivante (ouvrir le
+           lien reçu par email) soit impossible à manquer. Il survit à un
+           rechargement (l'adresse est gardée en sessionStorage). -->
+      <div id="bloc-activation" hidden>
+        <div class="act-icone" aria-hidden="true">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="5" width="18" height="14" rx="3"/><path d="M4.5 7.5 12 13l7.5-5.5"/>
+          </svg>
+        </div>
+        <h3 class="act-titre">Vérifie ta boîte mail</h3>
+        <p class="act-texte" id="act-texte-neuf">Nous avons envoyé un lien d'activation à
+          <strong id="act-adresse-neuf"></strong>. Clique sur ce lien pour activer ton compte, puis
+          reviens te connecter.</p>
+        <p class="act-texte" id="act-texte-existe" hidden>Un compte existe peut-être déjà pour
+          <strong id="act-adresse-existe"></strong>. Si tu as reçu un lien d'activation, clique dessus ;
+          sinon, connecte-toi.</p>
+        <p class="act-aide">Rien reçu ? Pense à regarder dans les spams.</p>
+        <button type="button" class="btn-entree halo" id="btn-act-renvoyer">
+          <span class="be-lib">Renvoyer l'email</span>
+          <span class="tourne" aria-hidden="true"></span>
+        </button>
+        <p class="pdf-status" id="act-status" role="status" hidden></p>
+        <button type="button" class="oublie" id="btn-act-connecter" hidden>J'ai déjà un compte : me connecter</button>
+        <button type="button" class="oublie" id="btn-act-autre">Utiliser une autre adresse</button>
       </div>
       <p class="pdf-status" id="auth-status" role="status" hidden></p>
       <p class="bug-aide"><button type="button" class="lien-bug" data-bug>Un problème, une idée ? Signale-le</button></p>

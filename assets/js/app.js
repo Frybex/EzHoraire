@@ -893,6 +893,12 @@
     sauverCompte();
     rendreAvatar();
     statutAuthEffacer();
+    // Le compte est bien là : l'attente d'activation n'a plus lieu d'être
+    // (rechargement d'onglet après avoir cliqué le lien reçu).
+    try {
+      sessionStorage.removeItem(ATTENTE_ACTIVATION);
+      sessionStorage.removeItem(ATTENTE_ACTIVATION_EXISTE);
+    } catch (e) { /* jetable */ }
     suiviCompte(user);
     var p = pullProfils().then(function () { return pullEcheances(); }, function () { return pullEcheances(); })
       .then(function () { return tirerNotifs(); }, function () { return tirerNotifs(); })
@@ -1293,13 +1299,21 @@
           }).then(function (ins) {
             if (ins.error || (ins.data && ins.data.session)) return ins;
             var u = ins.data && ins.data.user;
-            // Adresse déjà inscrite (aucune identité renvoyée).
-            if (u && u.identities && u.identities.length === 0) return { error: { code: "email_existe" } };
+            // Adresse déjà inscrite : Supabase renvoie un utilisateur
+            // « flouté » (aucune identité) pour ne pas révéler qui est
+            // inscrit. Impossible de savoir si ce compte est confirmé : on
+            // renvoie vers l'attente d'activation ET la connexion, au lieu
+            // d'un « connecte-toi » qui mène à un cul-de-sac quand le compte
+            // n'est pas encore confirmé.
+            if (u && u.identities && u.identities.length === 0) {
+              ouvrirActivation(email, true);
+              return null;
+            }
             if (window.EZH_SUIVI) {
               EZH_SUIVI.marquer("compte");
               EZH_SUIVI.envoyer("compte_cree", { fournisseur: "email", details: { activation: "email" } });
             }
-            statutAuthInfo("Compte créé : clique sur le lien reçu par email pour l'activer, puis reviens te connecter.");
+            ouvrirActivation(email, false);
             return null;
           });
         } else {
@@ -2258,6 +2272,15 @@
     document.body.removeAttribute("data-theme");
     montrer("compte");
     preparerApercu();
+    // Une inscription attend peut-être encore son activation (l'adresse est
+    // gardée pour la session) : on remet le panneau, plutôt que de reproposer
+    // le formulaire comme si de rien n'était.
+    var attente = "", attenteExiste = false;
+    try {
+      attente = sessionStorage.getItem(ATTENTE_ACTIVATION) || "";
+      attenteExiste = sessionStorage.getItem(ATTENTE_ACTIVATION_EXISTE) === "1";
+    } catch (e) { /* jetable */ }
+    if (attente) ouvrirActivation(attente, attenteExiste);
     // Pour le développeur seulement (localhost) : l'utilisateur n'a rien
     // à en faire, et prévenir en ligne ferait télécharger le SDK Supabase
     // à chaque visiteur pour un simple message de console.
@@ -2431,6 +2454,123 @@
     if (br) br.hidden = true;
     majOublie();
   }
+  /* Attente d'activation (inscription par email) : le compte est créé mais
+     il faut ouvrir le lien reçu avant de pouvoir se connecter. Le panneau
+     remplace le formulaire ; l'adresse est gardée pour la session, donc il
+     survit à un rechargement au lieu de disparaître. */
+  var ATTENTE_ACTIVATION = "ezh_attente_activation";
+  var ATTENTE_ACTIVATION_EXISTE = "ezh_attente_activation_existe";
+  function ouvrirActivation(email, dejaCompte) {
+    email = String(email || "").trim();
+    if (email) {
+      try {
+        sessionStorage.setItem(ATTENTE_ACTIVATION, email);
+        sessionStorage.setItem(ATTENTE_ACTIVATION_EXISTE, dejaCompte ? "1" : "0");
+      } catch (e) { /* jetable */ }
+    }
+    var f = document.querySelector("#v-compte .fournisseurs");
+    var sep = document.querySelector("#v-compte .email-sep");
+    var cl = document.getElementById("champs-login");
+    var be = document.getElementById("btn-email");
+    var o = document.getElementById("mdp-oublie");
+    var sg = document.getElementById("seg-auth");
+    var cgu = document.getElementById("mention-cgu");
+    var br = document.getElementById("bloc-reset");
+    var ba = document.getElementById("bloc-activation");
+    [f, sep, cl, be, o, sg, cgu, br].forEach(function (el) { if (el) el.hidden = true; });
+    if (ba) ba.hidden = false;
+    var adN = document.getElementById("act-adresse-neuf");
+    var adE = document.getElementById("act-adresse-existe");
+    var neuf = document.getElementById("act-texte-neuf");
+    var exist = document.getElementById("act-texte-existe");
+    var connecter = document.getElementById("btn-act-connecter");
+    if (adN) adN.textContent = email;
+    if (adE) adE.textContent = email;
+    if (neuf) neuf.hidden = !!dejaCompte;
+    if (exist) exist.hidden = !dejaCompte;
+    if (connecter) connecter.hidden = !dejaCompte;
+    statutActivation("");
+    statutAuthEffacer();
+    pile = [];
+    montrer("compte");
+    preparerApercu();
+    try { document.getElementById("btn-act-renvoyer").focus(); } catch (e) { /* jetable */ }
+  }
+  function fermerActivation() {
+    try {
+      sessionStorage.removeItem(ATTENTE_ACTIVATION);
+      sessionStorage.removeItem(ATTENTE_ACTIVATION_EXISTE);
+    } catch (e) { /* jetable */ }
+    var ba = document.getElementById("bloc-activation");
+    if (ba) ba.hidden = true;
+    var f = document.querySelector("#v-compte .fournisseurs");
+    var sep = document.querySelector("#v-compte .email-sep");
+    var cl = document.getElementById("champs-login");
+    var be = document.getElementById("btn-email");
+    var sg = document.getElementById("seg-auth");
+    var cgu = document.getElementById("mention-cgu");
+    [f, sep, cl, be, sg, cgu].forEach(function (el) { if (el) el.hidden = false; });
+    majOublie();
+  }
+  function statutActivation(texte, erreur) {
+    var el = document.getElementById("act-status");
+    if (!el) return;
+    if (!texte) { el.hidden = true; el.textContent = ""; el.classList.remove("erreur"); return; }
+    el.hidden = false;
+    el.classList.toggle("erreur", !!erreur);
+    el.textContent = texte;
+  }
+  function adresseEnAttente() {
+    var email = "";
+    try { email = sessionStorage.getItem(ATTENTE_ACTIVATION) || ""; } catch (e) { /* jetable */ }
+    if (!email) {
+      var champ = document.getElementById("email");
+      email = String((champ && champ.value) || "").trim();
+    }
+    return email;
+  }
+  document.getElementById("btn-act-renvoyer").addEventListener("click", function () {
+    var btn = this;
+    if (btn.classList.contains("charge")) return;
+    var email = adresseEnAttente();
+    if (!emailValide(email)) {
+      statutActivation("Adresse introuvable : reviens au formulaire pour la corriger.", true);
+      return;
+    }
+    pretCloud().then(function () {
+      if (!SUPABASE_OK || !sb) {
+        statutActivation("Service de connexion injoignable : réessaie dans quelques minutes.", true);
+        return;
+      }
+      btn.classList.add("charge");
+      btn.setAttribute("aria-busy", "true");
+      var fin = function () { btn.classList.remove("charge"); btn.removeAttribute("aria-busy"); };
+      sb.auth.resend({ type: "signup", email: email, options: { emailRedirectTo: location.origin + location.pathname } })
+        .then(function (res) {
+          fin();
+          if (res.error) { statutActivation(messageAuth(res.error), true); return; }
+          statutActivation("Email renvoyé à " + email + ". Regarde aussi dans les spams.");
+        }, function (err) {
+          fin();
+          statutActivation(messageAuth(err), true);
+        });
+    });
+  });
+  document.getElementById("btn-act-autre").addEventListener("click", function () {
+    var mail = adresseEnAttente();
+    fermerActivation();
+    var champ = document.getElementById("email");
+    if (champ) { champ.value = mail; try { champ.focus(); } catch (e) { /* jetable */ } }
+  });
+  document.getElementById("btn-act-connecter").addEventListener("click", function () {
+    var mail = adresseEnAttente();
+    fermerActivation();
+    definirModeAuth("login");
+    var champ = document.getElementById("email");
+    if (champ && mail) champ.value = mail;
+    var mdp = document.getElementById("mdp");
+    try { (mdp || champ).focus(); } catch (e) { /* jetable */ }
+  });
   document.getElementById("mdp-oublie").addEventListener("click", function () {
     pretCloud().then(function () {
       if (!SUPABASE_OK || !sb) {

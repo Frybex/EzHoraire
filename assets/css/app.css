@@ -844,6 +844,27 @@
   .piege { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
   #identite-status { padding: 10px 10px 0; }
   #bloc-reset .champ-titre { text-align: center; margin-bottom: 10px; }
+  /* Inscription par email : panneau d'attente d'activation. Il remplace le
+     formulaire pour que l'étape suivante (ouvrir le lien reçu) saute aux
+     yeux, au lieu d'une ligne de statut grise au milieu des autres. */
+  #bloc-activation { text-align: center; }
+  #bloc-activation .act-icone {
+    display: grid; place-items: center; width: 62px; height: 62px; margin: 2px auto 14px;
+    border-radius: 999px; color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 26%, transparent);
+  }
+  #bloc-activation .act-titre {
+    margin: 0 0 8px; font-size: 1.3rem; font-weight: 720; letter-spacing: -.02em; color: var(--ink);
+  }
+  #bloc-activation .act-texte {
+    margin: 0 auto; max-width: 34ch; color: var(--muted);
+    font-size: .97rem; line-height: 1.5; overflow-wrap: anywhere;
+  }
+  #bloc-activation .act-texte strong { color: var(--ink); font-weight: 650; }
+  #bloc-activation .act-aide { margin: 8px 0 0; color: var(--muted); font-size: .85rem; }
+  #bloc-activation .btn-entree { margin-top: 16px; }
+  #bloc-activation .oublie { margin-top: 4px; }
   @media (hover: hover) and (pointer: fine) {
     .btn-entree:hover { color: var(--ink); }
     .oublie:hover { color: var(--ink); }
