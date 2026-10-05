@@ -141,6 +141,10 @@ def entetes_securite(chemin):
 CACHE_HTML = "public, max-age=0, stale-while-revalidate=86400"
 CACHE_SCRIPT = "public, max-age=300, stale-while-revalidate=86400"
 CACHE_IMAGE = "public, max-age=86400, stale-while-revalidate=604800"
+# Fichiers de référencement (sitemap, robots, llms) : petits, lus par les
+# robots, changent rarement. Une heure de cache suffit, même valeur dans
+# vercel.json (garder les deux synchronisés).
+CACHE_SEO = "public, max-age=3600, stale-while-revalidate=86400"
 # Logos d'écoles : illustratifs, quasi figés (un logo change une fois par
 # an au plus) et référencés par toutes les pages. Un mois de cache puis
 # rafraîchissement en arrière-plan : Lighthouse comptait 9 Ko renvoyés à
@@ -167,6 +171,8 @@ def cache_fichier(chemin):
         return CACHE_IMMUABLE
     if chemin.startswith("/logos/ecoles/"):
         return CACHE_LONG
+    if chemin in ("/sitemap.xml", "/robots.txt", "/llms.txt"):
+        return CACHE_SEO
     if extension in ("js", "css"):
         return CACHE_SCRIPT
     if extension in EXTENSIONS_IMAGE:

@@ -5691,10 +5691,12 @@
           '<span class="btn-libelle-auto">Relâcher</span>' +
         '</button>' +
       '</div>' +
-      '<div class="ech' + (echNeuf === e.id ? " neuf" : "") + '" data-ech-cle="' + txt(cleCours) + '" data-ech-id="' + txt(e.id) + '" title="1 clic pour afficher les options">' +
-        '<span class="ech-type ' + (examen ? "examen" : "devoir") + '">' + (examen ? "Examen" : "Devoir") + "</span>" +
-        '<span class="ech-corps"><span class="ech-titre' + (e.fait ? " fait" : "") + '"><span class="ech-titre-txt">' + txt(e.titre) + "</span></span>" +
-        (quand ? '<span class="ech-quand">' + txt(quand) + "</span>" : "") + "</span>" +
+      '<div class="ech' + (echNeuf === e.id ? " neuf" : "") + '" data-ech-cle="' + txt(cleCours) + '" data-ech-id="' + txt(e.id) + '">' +
+        '<button type="button" class="ech-ouvrir" aria-expanded="false" aria-label="Options : ' + quoi + ' — ' + txt(e.titre) + '" title="Afficher les options">' +
+          '<span class="ech-type ' + (examen ? "examen" : "devoir") + '">' + (examen ? "Examen" : "Devoir") + "</span>" +
+          '<span class="ech-corps"><span class="ech-titre' + (e.fait ? " fait" : "") + '"><span class="ech-titre-txt">' + txt(e.titre) + "</span></span>" +
+          (quand ? '<span class="ech-quand">' + txt(quand) + "</span>" : "") + "</span>" +
+        "</button>" +
         '<button type="button" class="ech-valide' + (e.fait ? " fait" : "") + '" data-ech-valide="' + txt(e.id) +
         '" role="checkbox" aria-checked="' + (e.fait ? "true" : "false") + '" aria-label="' +
         (e.fait ? "Ne plus valider " : "Valider ") + quoi + " : " + txt(e.titre) + '" title="' +
@@ -7894,6 +7896,47 @@
   var echStartX = 0, echStartY = 0, echCurrentX = 0;
   var enGlissementEch = false, enDefilementEch = false, glissementEchEffectue = false;
 
+  /* L'état ouvert/fermé des options se dit aussi aux lecteurs d'écran. */
+  function majAriaEch(item) {
+    if (!item) return;
+    var b = item.querySelector(".ech-ouvrir");
+    if (b) b.setAttribute("aria-expanded", (item.getAttribute("data-ouvert") || "0") === "0" ? "false" : "true");
+  }
+  /* Carte d'échéance activée au clavier : Entrée/Espace est traité ici (le
+     clic natif du bouton est neutralisé), pour pouvoir déplacer le focus
+     sur les actions — les boutons précèdent la carte dans le DOM, donc Tab
+     les manquerait à l'ouverture. */
+  var echToucheClavier = 0;
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    var b = e.target.closest ? e.target.closest(".ech-ouvrir") : null;
+    if (!b) return;
+    e.preventDefault();
+    echToucheClavier = Date.now();
+    var item = b.closest(".ech-item");
+    if (!item) return;
+    var etat = item.getAttribute("data-ouvert");
+    var estOuvert = etat && etat !== "0" && !item._enFermeture;
+    fermerTousItemsEch(item);
+    if (estOuvert) { fermerItemEch(item, true); return; }
+    ouvrirSplitEch(item);
+    // Les fonds d'action passent de visibility:hidden à visible avec une
+    // transition : au tick même, le bouton n'est pas encore focalisable.
+    // Le focus part donc à la frame suivante, sur Modifier.
+    var bEdit = item.querySelector("[data-ech-edit]");
+    if (bEdit) {
+      var focusEdit = function () {
+        if ((item.getAttribute("data-ouvert") || "0") !== "0") {
+          try { bEdit.focus(); } catch (err) { /* jetable */ }
+        }
+      };
+      // 30 ms : la transition de visibility (180 ms) est passée de « hidden »
+      // à « visible » dès les premières millisecondes ; à la frame suivante
+      // ce n'est pas encore garanti.
+      setTimeout(focusEdit, 30);
+    }
+  });
+
   function fermerTousItemsEch(garder) {
     var tous = document.querySelectorAll(".ech-item");
     for (var i = 0; i < tous.length; i++) {
@@ -7931,6 +7974,7 @@
       carte.style.margin = "";
       carte.style.boxShadow = "";
       item.setAttribute("data-ouvert", "0");
+      majAriaEch(item);
       if (fondSuppr) {
         fondSuppr.style.opacity = "";
         fondSuppr.style.visibility = "";
@@ -7963,6 +8007,7 @@
       item._timerFermeture = null;
       item._enFermeture = false;
       item.setAttribute("data-ouvert", "0");
+      majAriaEch(item);
       carte.style.transform = "";
       carte.style.transition = "";
       carte.style.margin = "";
@@ -7997,6 +8042,7 @@
     carte.style.margin = "";
     carte.style.boxShadow = "inset 0 0 0 1px var(--line), 3px 0 14px rgba(0, 0, 0, .14)";
     item.setAttribute("data-ouvert", "suppr");
+    majAriaEch(item);
 
     if (fondSuppr) {
       fondSuppr.style.opacity = "1";
@@ -8027,6 +8073,7 @@
     carte.style.margin = "";
     carte.style.boxShadow = "inset 0 0 0 1px var(--line), -3px 0 14px rgba(0, 0, 0, .14)";
     item.setAttribute("data-ouvert", "edit");
+    majAriaEch(item);
 
     if (fondEdit) {
       fondEdit.style.opacity = "1";
@@ -8057,6 +8104,7 @@
     carte.style.margin = "";
     carte.style.boxShadow = "";
     item.setAttribute("data-ouvert", "split");
+    majAriaEch(item);
 
     if (fondEdit) {
       fondEdit.style.opacity = "1";
@@ -8290,14 +8338,28 @@
   });
 
   window.addEventListener("keydown", function (e) {
-    if (e.key === "Escape") {
-      fermerTousItemsEch(null);
+    if (e.key !== "Escape") return;
+    // Au clavier, Échap referme les options : le focus revient sur la carte
+    // qui les a ouvertes, au lieu de se perdre dans la page.
+    var actif = document.activeElement;
+    var itemActif = actif && actif.closest ? actif.closest(".ech-item") : null;
+    fermerTousItemsEch(null);
+    if (itemActif) {
+      var retour = itemActif.querySelector(".ech-ouvrir");
+      if (retour) { try { retour.focus(); } catch (err) { /* jetable */ } }
     }
   });
 
   /* Ajout / validation / suppression / modification d'une échéance.
      Renvoie true si le clic est consommé. */
   function clicEcheance(e) {
+    // Entrée/Espace déjà traité : le clic natif du bouton qui suit (quand
+    // le navigateur l'émet quand même) ne doit pas refermer l'ouverture.
+    if (echToucheClavier && Date.now() - echToucheClavier < 400 &&
+        e.target.closest && e.target.closest(".ech-ouvrir")) {
+      echToucheClavier = 0;
+      return true;
+    }
     var ajout = e.target.closest(".ech-add");
     if (ajout) {
       e.stopPropagation();
