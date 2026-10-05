@@ -44,20 +44,16 @@ TITRE = "Abonnement impossible"
 
 
 def _secret():
-    """Clé de signature du jeton.
+    """Clé de signature du jeton, dédiée aux abonnements.
 
-    Poser EZH_ABONNEMENT_SECRET en production ; sinon on prend la clé
-    service_role (secrète, déjà posée pour le dashboard), sinon un repli
-    local (les jetons ne sont alors pas fiables — développement seulement)."""
+    Poser EZH_ABONNEMENT_SECRET (production ET développement) : elle est
+    indépendante de la clé service_role (dashboard), pour pouvoir renouveler
+    celle-ci — bonne pratique — sans casser les abonnements .ics des
+    étudiants. Sans elle, on refuse de signer et de vérifier : un repli
+    silencieux sur une autre clé recréerait exactement la dépendance qu'on
+    veut supprimer."""
     v = (os.environ.get("EZH_ABONNEMENT_SECRET") or "").strip()
-    if v:
-        return v.encode("utf-8")
-    for nom in ("SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_SERVICE_KEY",
-                "SERVICE_ROLE_KEY", "SUPABASE_SECRET_KEY"):
-        v = (os.environ.get(nom) or "").strip()
-        if v:
-            return ("ezh-abonnement:" + v).encode("utf-8")
-    return b"ezh-abonnement-local"
+    return v.encode("utf-8") if v else None
 
 
 def _b64(octets):
@@ -68,22 +64,52 @@ def _deb64(texte):
     return base64.urlsafe_b64decode(texte + "=" * (-len(texte) % 4))
 
 
+def _secrets_verification():
+    """Secrets acceptés pour VÉRIFIER un jeton : le dédié, puis — seulement
+    si EZH_ABONNEMENT_ANCIEN=1 — celui utilisé avant (dérivé de service_role),
+    le temps que les abonnements déjà installés dans les téléphones soient
+    réexportés. Signer n'utilise jamais que le dédié ; retirer la variable
+    referme le filet sans toucher au code."""
+    secret = _secret()
+    if secret is None:
+        return []
+    liste = [secret]
+    if (os.environ.get("EZH_ABONNEMENT_ANCIEN") or "").strip() == "1":
+        for nom in ("SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_SERVICE_KEY",
+                    "SERVICE_ROLE_KEY", "SUPABASE_SECRET_KEY"):
+            v = (os.environ.get(nom) or "").strip()
+            if v:
+                ancien = ("ezh-abonnement:" + v).encode("utf-8")
+                if ancien != secret:
+                    liste.append(ancien)
+                break
+    return liste
+
+
 def signer(payload):
     """{…} -> jeton « corps.signature » (URL-safe, sans remplissage)."""
+    secret = _secret()
+    if secret is None:
+        raise ValueError("EZH_ABONNEMENT_SECRET manquant")
     corps = _b64(json.dumps(payload, separators=(",", ":"), ensure_ascii=False).encode("utf-8"))
-    sig = hmac.new(_secret(), corps.encode("ascii"), hashlib.sha256).digest()
+    sig = hmac.new(secret, corps.encode("ascii"), hashlib.sha256).digest()
     return corps + "." + _b64(sig)
 
 
 def verifier(jeton):
     """Jeton -> {…}, ou None si le contenu a été modifié."""
+    secrets = _secrets_verification()
+    if not secrets:
+        return None
     try:
         corps, sig = str(jeton).split(".", 1)
-        attendu = hmac.new(_secret(), corps.encode("ascii"), hashlib.sha256).digest()
-        if not hmac.compare_digest(attendu, _deb64(sig)):
-            return None
-        payload = json.loads(_deb64(corps))
-        return payload if isinstance(payload, dict) else None
+        octets = _deb64(sig)
+        for secret in secrets:
+            attendu = hmac.new(secret, corps.encode("ascii"), hashlib.sha256).digest()
+            if hmac.compare_digest(attendu, octets):
+                payload = json.loads(_deb64(corps))
+                return payload if isinstance(payload, dict) else None
+        return None
     except Exception:  # noqa: BLE001 - jeton illisible = refusé
         return None
 
@@ -185,7 +211,11 @@ def _fabriquer(h, q):
     base = _adresse(h)
     if not base:
         return erreur(h, 500, TITRE, "Adresse du serveur introuvable.")
-    url = base + "/api/abonnement?jeton=" + quote(signer(payload), safe="")
+    try:
+        jeton = signer(payload)
+    except ValueError:
+        return erreur(h, 503, TITRE, "Le service d'abonnement n'est pas configuré : secret manquant.")
+    url = base + "/api/abonnement?jeton=" + quote(jeton, safe="")
     corps = json.dumps({"ok": True, "url": url}, ensure_ascii=False).encode("utf-8")
     h.send_response(200)
     h.send_header("Content-Type", "application/json; charset=utf-8")
@@ -197,6 +227,8 @@ def _fabriquer(h, q):
 
 def _servir(h, jeton):
     """Sert le flux .ics décrit par le jeton."""
+    if _secret() is None:
+        return erreur(h, 503, TITRE, "Le service d'abonnement n'est pas configuré : secret manquant.")
     payload = verifier(jeton)
     if not payload:
         return erreur(h, 400, TITRE, "Adresse d'abonnement invalide ou incomplète.")

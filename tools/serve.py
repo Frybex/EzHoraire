@@ -557,6 +557,11 @@ def main(argv):
         signal.signal(num, lambda *_: sys.exit(0))
     os.chdir(RACINE)
     charger_env_local()
+    # Secret d'abonnement : en production il vient de l'hébergeur
+    # (EZH_ABONNEMENT_SECRET, posée dans Vercel) ; en local, une valeur fixe
+    # de développement évite de configurer quoi que ce soit pour tester les
+    # flux .ics. Un .env.local, lui, reste prioritaire (chargé juste avant).
+    os.environ.setdefault("EZH_ABONNEMENT_SECRET", "ezh-abonnement-developpement-local")
     maj_assets()
     try:
         srv = Serveur(("::", port), Handler)
