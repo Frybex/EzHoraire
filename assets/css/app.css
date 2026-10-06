@@ -1337,7 +1337,6 @@
      empilées et centrées sur la hauteur. */
   .marques {
     flex: none; display: flex; flex-direction: column; gap: 4px; align-self: center;
-    transition: opacity .2s;
   }
   .ebadge {
     width: 19px; height: 19px; border-radius: 50%;
@@ -1373,8 +1372,7 @@
     }
   }
   li.c.open .marques {
-    opacity: 0; pointer-events: none; visibility: hidden;
-    transition: opacity .18s, visibility 0s .18s;
+    display: none;
   }
   /* Icône de conflit de l'en-tête du jour (horaire sur mesure) : deux
      gants de boxe, centrés dans l'espace entre le jour et les heures. */
