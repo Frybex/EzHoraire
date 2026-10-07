@@ -35,6 +35,20 @@ def _monhoraire_ouvert():
     la variable, ce point d'entrée ne doit pas non plus aller la chercher
     par la porte du lien d'abonnement."""
     return os.environ.get("EZH_UCL") == "1"
+
+
+def _port_public(u):
+    """Vrai si l'adresse ne demande pas de port, ou le 443.
+
+    Un lien d'école passe toujours par le port standard : accepter un
+    autre port ferait patienter le serveur jusqu'au délai d'attente et
+    ouvrirait un SSRF aveugle vers un service interne de l'hôte autorisé
+    (« https://cloud.timeedit.net:8080/… »). Un port illisible
+    (« :abc ») fait lever urlparse : refusé aussi."""
+    try:
+        return u.port in (None, 443)
+    except ValueError:
+        return False
 RX_UE = re.compile(r"^[A-Z]{2,6}[0-9]{2,4}$")
 RX_GROUPE = re.compile(
     r"^[A-Z][A-Z0-9-]{1,12}\s*[:(-]"                       # B-DROIB:2, M-CRIMS:1 - PAD5
@@ -68,7 +82,7 @@ def url_autorisee(lien):
     hote = (u.hostname or "").lower()
     if hote == HOTE_MONHORAIRE and _monhoraire_ouvert():
         return _url_monhoraire(u)
-    if u.scheme != "https" or not any(hote.endswith(h) for h in HOTES):
+    if u.scheme != "https" or not _port_public(u) or not any(hote.endswith(h) for h in HOTES):
         # Le message ne cite une école que si elle est publiée : sinon il
         # annoncerait l'existence d'une école qu'on ne veut pas montrer.
         ou = (" ou « Exporter → Lien d'abonnement » (Mon horaire UCLouvain)"
@@ -234,7 +248,7 @@ def _hote_autorise(lien):
     hote = (u.hostname or "").lower()
     connu = any(hote.endswith(h) for h in HOTES) or (
         hote == HOTE_MONHORAIRE and _monhoraire_ouvert())
-    if u.scheme != "https" or not connu:
+    if u.scheme != "https" or not _port_public(u) or not connu:
         raise ValueError("Ce lien redirige hors de l'école : recopie-le "
                          "depuis « S'abonner ».")
     return lien
