@@ -1,5 +1,5 @@
 #!/bin/sh
-# Trois vérifications avant chaque commit. Activer une fois :
+# Quatre vérifications avant chaque commit. Activer une fois :
 #   git config core.hooksPath .githooks
 #
 # 1. sitemap.xml : un <lastmod> doit refléter la dernière modification
@@ -24,5 +24,21 @@ sortie=$(python3 tools/valider_csp.py 2>&1)
 if [ $? -ne 0 ]; then
     printf '%s\n' "$sortie" >&2
     echo "Commit refusé : lancez « python3 tools/valider_csp.py --write », ajoutez vercel.json et tools/serve.py, puis relancez le commit." >&2
+    exit 1
+fi
+# 4. Secrets : rien qui ressemble à une clé ne doit entrer dans le dépôt,
+#    même commité par erreur. Seules les lignes AJOUTÉES sont regardées
+#    (un vieux secret déjà présent ne bloque pas un commit sans rapport),
+#    hors bundles tiers. Formats surveillés : JWT (les anciennes clés
+#    Supabase eyJ…), clés secrètes Supabase (sb_secret_…) et clés Resend
+#    (re_…). Rappel de septembre 2026 : .env.local a été servi deux jours
+#    sur Internet — un fichier ignoré n'est pas un fichier à l'abri.
+secrets=$(git diff --cached -U0 -- . ':(exclude)assets/vendor' ':(exclude)assets/dist' \
+    | grep -E '^\+' | grep -Ev '^\+\+\+' \
+    | grep -Eo 'sb_secret_[A-Za-z0-9_-]{16,}|eyJ[A-Za-z0-9_-]{16,}\.[A-Za-z0-9_-]{16,}\.[A-Za-z0-9_-]{4,}|re_[A-Za-z0-9]{20,}' \
+    | sort -u)
+if [ -n "$secrets" ]; then
+    printf '%s\n' "$secrets" | cut -c1-14 | sed 's/$/…/' >&2
+    echo "Commit refusé : un secret semble présent dans le diff (préfixes ci-dessus). Retirez-le, puis relancez le commit." >&2
     exit 1
 fi
