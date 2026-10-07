@@ -65,24 +65,22 @@ def _deb64(texte):
 
 
 def _secrets_verification():
-    """Secrets acceptés pour VÉRIFIER un jeton : le dédié, puis — seulement
-    si EZH_ABONNEMENT_ANCIEN=1 — celui utilisé avant (dérivé de service_role),
-    le temps que les abonnements déjà installés dans les téléphones soient
-    réexportés. Signer n'utilise jamais que le dédié ; retirer la variable
-    referme le filet sans toucher au code."""
+    """Secrets acceptés pour VÉRIFIER un jeton : le dédié, puis — tant que
+    EZH_ABONNEMENT_ANCIEN_SECRET est posé — celui de l'ancien schéma
+    (liens créés avant le 05/10/2026, dérivé de l'ancienne clé
+    service_role : « ezh-abonnement: » suivi de la clé). La valeur se pose
+    telle quelle, déjà dérivée : le fichier d'environnement ne garde pas
+    la clé d'API, juste le secret HMAC. Signer n'utilise jamais que le
+    dédié ; retirer la variable referme le filet sans toucher au code."""
     secret = _secret()
     if secret is None:
         return []
     liste = [secret]
-    if (os.environ.get("EZH_ABONNEMENT_ANCIEN") or "").strip() == "1":
-        for nom in ("SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_SERVICE_KEY",
-                    "SERVICE_ROLE_KEY", "SUPABASE_SECRET_KEY"):
-            v = (os.environ.get(nom) or "").strip()
-            if v:
-                ancien = ("ezh-abonnement:" + v).encode("utf-8")
-                if ancien != secret:
-                    liste.append(ancien)
-                break
+    ancien = (os.environ.get("EZH_ABONNEMENT_ANCIEN_SECRET") or "").strip()
+    if ancien:
+        octets = ancien.encode("utf-8")
+        if octets != secret:
+            liste.append(octets)
     return liste
 
 
