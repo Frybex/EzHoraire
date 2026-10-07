@@ -52,7 +52,7 @@ ICI = os.path.dirname(os.path.abspath(__file__))
 if ICI not in sys.path:
     sys.path.insert(0, ICI)
 
-from _ecoles import debit, repondre_json  # noqa: E402
+from _ecoles import debit, entetes_service, repondre_json  # noqa: E402
 
 CORPS_MAX = 32 * 1024
 MESSAGE_MAX = 5000
@@ -174,7 +174,7 @@ def _signer(base, service, chemin, expire=3600):
     """URL signée (1 h par défaut) pour une image du bucket privé, "" si échec."""
     try:
         rep = _requete_json("POST", base + "/storage/v1/object/sign/bug-images/" + chemin,
-                            {"apikey": service, "Authorization": "Bearer " + service},
+                            entetes_service(service),
                             {"expiresIn": expire}, timeout=15)
         signe = (rep or {}).get("signedURL") or ""
         # Supabase renvoie un chemin relatif à /storage/v1 ("/object/sign/…").
@@ -496,8 +496,7 @@ class handler(BaseHTTPRequestHandler):
         try:
             insere = _requete_json(
                 "POST", url.rstrip("/") + "/rest/v1/bug_reports",
-                {"apikey": service, "Authorization": "Bearer " + service,
-                 "Prefer": "return=representation"},
+                dict(entetes_service(service), Prefer="return=representation"),
                 {"user_id": user_id, "email": email, "message": message,
                  "etape": etape, "type": typ, "contexte": contexte,
                  "image_urls": chemins}, timeout=20)
@@ -511,8 +510,7 @@ class handler(BaseHTTPRequestHandler):
             try:
                 insere = _requete_json(
                     "POST", url.rstrip("/") + "/rest/v1/bug_reports",
-                    {"apikey": service, "Authorization": "Bearer " + service,
-                     "Prefer": "return=representation"},
+                    dict(entetes_service(service), Prefer="return=representation"),
                     {"user_id": user_id, "email": email, "message": message,
                      "etape": etape, "contexte": contexte,
                      "image_urls": chemins}, timeout=20)
@@ -566,8 +564,8 @@ class handler(BaseHTTPRequestHandler):
             chemin += "&type=eq." + typ
         try:
             lignes = _requete_json("GET", url.rstrip("/") + chemin,
-                                   {"apikey": service, "Authorization": "Bearer " + service,
-                                    "Accept": "application/json"}, None, timeout=20) or []
+                                   dict(entetes_service(service),
+                                        Accept="application/json"), None, timeout=20) or []
         except HTTPError as e:
             # Colonne `type` pas encore créée (schema.sql pas rejoué) :
             # on relit sans, les demandes passées restent visibles via le contexte.
@@ -581,8 +579,8 @@ class handler(BaseHTTPRequestHandler):
                 chemin_secours += "&statut=eq." + statut
             try:
                 lignes = _requete_json("GET", url.rstrip("/") + chemin_secours,
-                                       {"apikey": service, "Authorization": "Bearer " + service,
-                                        "Accept": "application/json"}, None, timeout=20) or []
+                                       dict(entetes_service(service),
+                                            Accept="application/json"), None, timeout=20) or []
             except HTTPError as e2:
                 if e2.code == 404:
                     return _erreur(self, 502, "Table introuvable : recolle supabase/schema.sql dans le SQL Editor.")
@@ -639,7 +637,7 @@ class handler(BaseHTTPRequestHandler):
             return _erreur(self, 403, "Accès réservé.")
         try:
             _requete_json("PATCH", url.rstrip("/") + "/rest/v1/bug_reports?id=eq.%d" % bug_id,
-                          {"apikey": service, "Authorization": "Bearer " + service},
+                          entetes_service(service),
                           {"statut": statut}, timeout=15)
         except HTTPError as e:
             return _erreur(self, 502, "Supabase injoignable (erreur %s)." % e.code)

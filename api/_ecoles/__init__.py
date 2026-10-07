@@ -127,6 +127,22 @@ def erreur_publique(e, point="api"):
     return "L'école ne répond pas correctement. Réessaie dans un instant."
 
 
+def entetes_service(cle):
+    """En-têtes d'une requête avec la clé à privilèges (RLS contournée).
+
+    Deux générations de clé cohabitent : l'historique « service_role » est
+    un JWT et part aussi dans `Authorization` ; la nouvelle clé secrète
+    (« sb_secret_… ») n'en est pas un — la poser en Bearer fait tenter une
+    vérification JWT et la requête est refusée. Elle ne part donc que dans
+    `apikey` (guide Supabase « Migrating to publishable and secret API
+    keys »). Bascule depuis SUPABASE_SERVICE_ROLE_KEY : le jour où la
+    variable porte une clé « sb_ », ces en-têtes changent seuls."""
+    entetes = {"apikey": cle}
+    if not str(cle).startswith("sb_"):
+        entetes["Authorization"] = "Bearer " + cle
+    return entetes
+
+
 # Garde anti-balayage : un horaire complet coûte ~50 appels à l'école, un
 # PDF une session entière. Le cache partagé absorbe les étudiants d'une
 # même formation, mais pas quelqu'un qui balaie les 382 formations UMONS

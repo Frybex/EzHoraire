@@ -59,7 +59,7 @@ ICI = os.path.dirname(os.path.abspath(__file__))
 if ICI not in sys.path:
     sys.path.insert(0, ICI)
 
-from _ecoles import repondre_json  # noqa: E402
+from _ecoles import entetes_service, repondre_json  # noqa: E402
 
 
 def _env(*noms):
@@ -245,8 +245,7 @@ class handler(BaseHTTPRequestHandler):
             return repondre_json(self, 200, {"ok": True, "admin": True})
 
         base = url.rstrip("/")
-        h_svc = {"apikey": service, "Authorization": "Bearer " + service,
-                 "Accept": "application/json"}
+        h_svc = dict(entetes_service(service), Accept="application/json")
         try:
             # Comptes (pagination, 200 / page, plafond 4000 : au-delà, le
             # dashboard le signale au lieu de tronquer en silence).

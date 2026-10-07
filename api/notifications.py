@@ -39,7 +39,7 @@ ICI = os.path.dirname(os.path.abspath(__file__))
 if ICI not in sys.path:
     sys.path.insert(0, ICI)
 
-from _ecoles import debit, repondre_json  # noqa: E402
+from _ecoles import debit, entetes_service, repondre_json  # noqa: E402
 
 CORPS_MAX = 64 * 1024
 TITRE_MAX = 80
@@ -185,7 +185,7 @@ class handler(BaseHTTPRequestHandler):
             return _erreur(self, 400, "Le lien doit être un chemin interne (« /… »).")
 
         base = url.rstrip("/")
-        h_svc = {"apikey": service, "Authorization": "Bearer " + service}
+        h_svc = entetes_service(service)
         try:
             if corps.get("tous") is True:
                 ids = _tous_les_comptes(base, dict(h_svc, Accept="application/json"))
@@ -242,8 +242,8 @@ class handler(BaseHTTPRequestHandler):
                 "GET", url.rstrip("/") + "/rest/v1/notifications"
                 "?select=id,created_at,user_id,titre,message,lien,lu_at"
                 "&order=created_at.desc&limit=%d" % limite,
-                {"apikey": service, "Authorization": "Bearer " + service,
-                 "Accept": "application/json"}, None, timeout=20) or []
+                dict(entetes_service(service), Accept="application/json"),
+                None, timeout=20) or []
         except HTTPError as e:
             if e.code == 404:
                 return _erreur(self, 502, "Table introuvable : recolle supabase/schema.sql dans le SQL Editor.")
