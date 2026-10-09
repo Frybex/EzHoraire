@@ -20,8 +20,11 @@ Mois d'iOS n'en montre que ~10 caractères).
 Entrée : l'horaire au format de l'API ({meta, cours}), des cours déjà
 filtrés selon les groupes de l'étudiant. `echeances` (optionnel) ajoute
 les devoirs et examens perso après les cours — sortie identique au JS
-quand il est absent. Sortie : texte iCalendar, lignes pliées à 75 octets
-(RFC 5545).
+quand il est absent. Chaque échéance emporte son type (CATEGORIES et
+« Type : … » dans la DESCRIPTION) : l'agenda d'un côté, les scripts qui
+relisent le flux de l'autre savent alors distinguer un devoir d'un
+examen sans le deviner au titre. Sortie : texte iCalendar, lignes pliées
+à 75 octets (RFC 5545).
 """
 import re
 from datetime import datetime, timedelta, timezone
@@ -272,8 +275,11 @@ def construire(horaire, nom="Horaire", uid="", depuis=0, maintenant=None, couleu
     `echeances` (optionnel) : devoirs et examens perso
     [{id, type, titre, date, heure}, …] ajoutés après les cours. Sans
     heure : journée entière (DTEND = lendemain) ; avec heure : début +
-    30 minutes. Lignes invalides ignorées ; sortie identique aux appels
-    précédents quand il est absent (parité avec export_ics.js)."""
+    30 minutes. Le type (devoir/examen) part en CATEGORIES et en
+    DESCRIPTION « Type : … » : un changement de type dans l'app change
+    donc les octets du flux, pas seulement l'empreinte. Lignes invalides
+    ignorées ; sortie identique aux appels précédents quand il est
+    absent (parité avec export_ics.js)."""
     lundi = _parse_iso((horaire.get("meta") or {}).get("premier_lundi"))
     if not lundi:
         raise ValueError("premier lundi manquant")
@@ -338,6 +344,9 @@ def construire(horaire, nom="Horaire", uid="", depuis=0, maintenant=None, couleu
             continue  # ligne illisible : ignorée, jamais un VEVENT cassé
         titre = " ".join(str(e.get("titre") or "").split()) or "Échéance"
         heure = RX_HEURE_ECH.fullmatch(str(e.get("heure") or "").strip())
+        # Type déclaré : jamais deviné. Le défaut « devoir » ne s'applique
+        # qu'à un type absent ou inconnu, exactement comme _echeances.py.
+        type_e = "Examen" if str(e.get("type") or "").strip().lower() == "examen" else "Devoir"
         lignes.append("BEGIN:VEVENT")
         # UID stable : réimporter met à jour l'échéance au lieu de la
         # dupliquer. Le préfixe « ech- » la distingue d'une séance de cours.
@@ -351,6 +360,8 @@ def construire(horaire, nom="Horaire", uid="", depuis=0, maintenant=None, couleu
             lignes.append("DTSTART;VALUE=DATE:" + _jour_ics(date))
             lignes.append("DTEND;VALUE=DATE:" + _jour_ics(_lendemain(date)))
         lignes.append("SUMMARY:" + echapper(titre))
+        lignes.append("CATEGORIES:" + type_e)
+        lignes.append("DESCRIPTION:Type : " + type_e)
         lignes.append("END:VEVENT")
     lignes.append("END:VCALENDAR")
     return "\r\n".join(plier(l) for l in lignes) + "\r\n"
