@@ -8594,14 +8594,32 @@
      page. Au premier appel, la fonction d'abonnement relit l'école
      (plusieurs secondes — son cache est par fonction, pas partagé avec
      /api/horaires) : c'est au premier essai que l'abonnement échoue. On la
-     préchauffe donc pendant que la fenêtre est ouverte. Le corps est
-     annulé dès les en-têtes : le travail serveur (école relue, flux
-     construit) est fait, rien n'est téléchargé pour rien. */
+     préchauffe donc pendant que la fenêtre est ouverte, et l'adresse n'est
+     posée sur la balise qu'une fois le flux relu (voir lienChaud) :
+     sinon Calendrier, sur iPhone, demande le flux pendant qu'il se
+     fabrique encore et repart sans rien — il faut recommencer.
+     Le corps est annulé dès les en-têtes : le travail serveur (école
+     relue, flux construit) est fait, rien n'est téléchargé pour rien. */
+  function chaudRequis() { return estIOS() || estAndroid(); }
   function prechaufferFlux(url) {
-    if (!url || !window.fetch) return;
-    fetch(url, { cache: "no-store" }).then(function (r) {
+    if (!url || !window.fetch) return Promise.resolve(false);
+    var c = exportCarte && exportCarte.chauds;
+    if (c && c[url] === true) return Promise.resolve(true);
+    if (c && c[url]) return c[url]; // déjà en vol
+    var promesse = fetch(url, { cache: "no-store" }).then(function (r) {
       try { if (r.body && r.body.cancel) r.body.cancel(); } catch (e) { /* jetable */ }
-    }, function () { /* le tap réessaiera : rien à montrer */ });
+      if (c) { if (r.ok) c[url] = true; else delete c[url]; }
+      return r.ok;
+    }, function () {
+      if (c) delete c[url];
+      return false;
+    });
+    if (c) c[url] = promesse;
+    return promesse;
+  }
+  /* Flux déjà relu par le serveur ? (au moins une réponse reçue) */
+  function lienChaud(url) {
+    return !!(url && exportCarte && exportCarte.chauds && exportCarte.chauds[url] === true);
   }
   /* Pastille + titre d'un cours, comme dans l'horaire. */
   function listeCoursExport(p, data) {
@@ -8659,11 +8677,13 @@
   /* Met l'adresse sur la balise « Ajouter » : le tap est alors la
      navigation du doigt, comme un lien webcal d'une page ordinaire. Un
      clic fabriqué après une requête ferait perdre le geste — Calendrier
-     s'ouvrirait sans l'abonnement, et il faudrait recommencer. */
+     s'ouvrirait sans l'abonnement, et il faudrait recommencer. Sur
+     téléphone, l'adresse attend que le flux soit déjà relu (lienChaud) :
+     Calendrier reçoit alors une réponse immédiate. */
   function majLienAjouter() {
     var a = document.getElementById("export-ajouter");
     var url = exportCarte && exportCarte.liens.tout;
-    if (url) {
+    if (url && (!chaudRequis() || lienChaud(url))) {
       a.href = urlOuvrable(url);
       a.classList.remove("attente");
     } else {
@@ -8685,8 +8705,11 @@
       if (!exportCarte || exportCarte.couleur !== couleur) return;
       exportCarte.liens.tout = url;
       exportCarte.liens.toutCouleur = couleur;
-      majLienAjouter();
-      prechaufferFlux(url);
+      majLienAjouter(); // en attente tant que le flux n'a pas répondu
+      prechaufferFlux(url).then(function () {
+        if (!exportCarte || exportCarte.couleur !== couleur) return;
+        majLienAjouter();
+      });
     }, function () { /* le clic réessaiera */ });
   }
   function rendreSwatches() {
@@ -8757,7 +8780,7 @@
       '<span class="ec-act' + (fait ? " fait" : "") + '">' +
       (fait ? ICONE_CHECK + "Ajouté" : "Ajouter") + "</span>";
     var url = !fait && exportCarte && exportCarte.liens[c.matiere];
-    if (url) {
+    if (url && (!chaudRequis() || lienChaud(url))) {
       return '<a class="export-cours-ligne" href="' + txt(urlOuvrable(url)) +
         '" data-matiere="' + txt(c.matiere) + '">' + interieur + "</a>";
     }
@@ -8785,7 +8808,7 @@
     if (!p) return;
     fermerMenus();
     var jeton = ++exportJeton;
-    exportCarte = { p: p, data: null, liens: {}, ajoutes: {}, couleur: PALETTE_AGENDA[Math.max(0, THEMES.map(function (t) {
+    exportCarte = { p: p, data: null, liens: {}, chauds: {}, ajoutes: {}, couleur: PALETTE_AGENDA[Math.max(0, THEMES.map(function (t) {
       return t.id;
     }).indexOf(normaliserTheme(p.theme)))] || PALETTE_AGENDA[0] };
     document.getElementById("export-titre").textContent = "Ajouter à mon agenda";
@@ -8797,6 +8820,11 @@
     document.getElementById("export-annuler").hidden = false;
     document.getElementById("export-repli").hidden = true;
     montrerExport("choix");
+    // Le flux se préchauffe dès l'ouverture, sans attendre les données de
+    // l'horaire : c'est lui qui prend le plus de temps côté serveur (l'école
+    // est relue), et le tap « Ajouter » ne doit pas tomber pendant sa
+    // fabrication. Sur mesure : pas d'abonnement, rien à préparer.
+    if (!estPerso(p)) preparerLienTout(p);
     var tout = document.getElementById("export-tout");
     var parCours = document.getElementById("export-par-cours");
     tout.disabled = true;
@@ -8852,11 +8880,14 @@
   });
   document.getElementById("export-ajouter").addEventListener("click", function (e) {
     if (!exportCarte || !exportCarte.data) { e.preventDefault(); return; }
+    var messagePret = estIOS()
+      ? "C'est prêt : touche « Ajouter » pour ouvrir Calendrier."
+      : "C'est prêt : touche « Ajouter » pour ouvrir ton agenda.";
     if (!exportCarte.liens.tout) {
       // Lien pas encore prêt (rare : il est préparé à l'ouverture) : on le
-      // prépare et on invite à retoucher. L'envoyer après une requête
-      // ferait perdre le geste du doigt — Calendrier s'ouvrirait sans
-      // l'abonnement.
+      // prépare, on attend que le flux ait répondu, puis on invite à
+      // retoucher. L'envoyer après une requête ferait perdre le geste du
+      // doigt — Calendrier s'ouvrirait sans l'abonnement.
       e.preventDefault();
       var p = exportCarte.p, couleur = exportCarte.couleur;
       statutExport("Préparation de l'abonnement…");
@@ -8865,14 +8896,32 @@
         exportCarte.liens.tout = url;
         exportCarte.liens.toutCouleur = couleur;
         majLienAjouter();
-        prechaufferFlux(url);
-        statutExport(estIOS()
-          ? "C'est prêt : touche « Ajouter » pour ouvrir Calendrier."
-          : "C'est prêt : touche « Ajouter » pour ouvrir ton agenda.", "ok");
+        prechaufferFlux(url).then(function (ok) {
+          if (!exportCarte || exportCarte.liens.tout !== url) return;
+          majLienAjouter();
+          statutExport(ok ? messagePret
+            : "Impossible de préparer l'abonnement. Réessaie dans un instant.", ok ? "ok" : "erreur");
+        });
       }, function (err) {
         if (!exportCarte) return;
         statutExport("Impossible de créer l'abonnement" +
           (err && err.message ? " (" + String(err.message).slice(0, 120) + ")" : "") + ".", "erreur");
+      });
+      return;
+    }
+    if (chaudRequis() && !lienChaud(exportCarte.liens.tout)) {
+      // Flux pas encore relu (l'école est en train d'être relue côté
+      // serveur) : le laisser finir, puis inviter à retoucher. C'est ce
+      // premier passage qui manquait sur iPhone : Calendrier demandait le
+      // flux pendant sa fabrication et repartait sans rien.
+      e.preventDefault();
+      var url = exportCarte.liens.tout;
+      statutExport("Préparation de l'agenda…");
+      prechaufferFlux(url).then(function (ok) {
+        if (!exportCarte || exportCarte.liens.tout !== url) return;
+        majLienAjouter();
+        statutExport(ok ? messagePret
+          : "Impossible de préparer l'abonnement. Réessaie dans un instant.", ok ? "ok" : "erreur");
       });
       return;
     }
@@ -8896,9 +8945,26 @@
         if (jeton === exportJeton && exportCarte) exportCarte.liens[c.matiere] = url;
       }, function () { /* la ligne se préparera au tap */ });
     })).then(function () {
-      if (jeton !== exportJeton) return;
+      if (jeton !== exportJeton || !exportCarte) return;
       rendreListeCours();
       statutExport("");
+      if (!chaudRequis()) return;
+      // Préchauffe les flux un par un (le premier relit l'école, les
+      // suivants sont servis par le cache) : chaque ligne devient une
+      // vraie balise dès que son flux a répondu, sinon Calendrier
+      // demanderait un flux encore en fabrication.
+      var cours = listeCoursExport(p, exportCarte.data);
+      var suivant = function (i) {
+        if (jeton !== exportJeton || !exportCarte || i >= cours.length) return;
+        var url = exportCarte.liens[cours[i].matiere];
+        if (!url) { suivant(i + 1); return; }
+        prechaufferFlux(url).then(function () {
+          if (jeton !== exportJeton || !exportCarte) return;
+          rendreListeCours();
+          suivant(i + 1);
+        });
+      };
+      suivant(0);
     });
   });
   document.getElementById("export-cours").addEventListener("click", function (e) {
@@ -8908,17 +8974,28 @@
     var c = null;
     listeCoursExport(p, exportCarte.data).forEach(function (x) { if (x.matiere === m) c = x; });
     if (!c) return;
-    if (!exportCarte.liens[m]) {
-      // Lien pas encore prêt : on le prépare et on invite à retoucher.
+    var connu = exportCarte.liens[m];
+    if (!connu || (chaudRequis() && !lienChaud(connu))) {
+      // Lien ou flux pas encore prêt : on prépare le flux, puis on invite
+      // à retoucher (le geste du doigt doit porter la navigation).
       e.preventDefault();
       var jeton = exportJeton;
       statutExport("Préparation de « " + c.titre + " »…");
-      demanderLien(p, c.matiere, c.couleur, c.titre).then(function (url) {
+      var quandPret = function (url) {
+        if (jeton !== exportJeton || !exportCarte) return;
+        prechaufferFlux(url).then(function (ok) {
+          if (jeton !== exportJeton || !exportCarte) return;
+          rendreListeCours();
+          statutExport(ok
+            ? "C'est prêt : touche à nouveau « " + c.titre + " »."
+            : "Impossible de préparer l'abonnement. Réessaie dans un instant.", ok ? "ok" : "erreur");
+        });
+      };
+      if (connu) quandPret(connu);
+      else demanderLien(p, c.matiere, c.couleur, c.titre).then(function (url) {
         if (jeton !== exportJeton || !exportCarte) return;
         exportCarte.liens[m] = url;
-        prechaufferFlux(url);
-        rendreListeCours();
-        statutExport("C'est prêt : touche à nouveau « " + c.titre + " ».", "ok");
+        quandPret(url);
       }, function (err) {
         if (!exportCarte) return;
         statutExport("Impossible de créer l'abonnement" +
