@@ -8566,7 +8566,14 @@
     return "/api/abonnement?" + q.join("&");
   }
   function demanderLien(p, cours, couleur, nom) {
-    return fetch(lienAbonnement(p, cours, couleur, nom), { cache: "no-store" })
+    // Session ouverte : le serveur vérifie ce jeton Supabase et rattache
+    // les devoirs du compte au lien signé (jeton v2). Sans session, le
+    // lien reste v1 : les cours seuls.
+    var entetes = {};
+    if (sessionSupabase && sessionSupabase.access_token) {
+      entetes.Authorization = "Bearer " + sessionSupabase.access_token;
+    }
+    return fetch(lienAbonnement(p, cours, couleur, nom), { cache: "no-store", headers: entetes })
       .then(function (r) {
         return r.json().then(function (rep) {
           if (!r.ok || !rep || !rep.url) throw new Error((rep && rep.erreur) || ("erreur " + r.status));
@@ -8783,6 +8790,10 @@
     }).indexOf(normaliserTheme(p.theme)))] || PALETTE_AGENDA[0] };
     document.getElementById("export-titre").textContent = "Ajouter à mon agenda";
     document.getElementById("export-nom").textContent = nomExport(p);
+    // Les devoirs et examens voyagent avec l'abonnement quand une session
+    // est ouverte ; un lien déjà installé (v1) n'en a pas : le recopier.
+    document.getElementById("export-echeances").hidden =
+      !(SUPABASE_OK && sb && sessionSupabase && sessionSupabase.user);
     document.getElementById("export-annuler").hidden = false;
     document.getElementById("export-repli").hidden = true;
     montrerExport("choix");

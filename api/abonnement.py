@@ -15,6 +15,15 @@ l'horaire d'un autre profil, et l'adresse ne montre ni la formation ni le
 lien d'abonnement personnel (encodés). Il ne se révoque pas — supprimer le
 calendrier suffit — et n'expire pas : un abonnement doit tenir des années.
 
+Deux versions de jeton :
+  v1  cours de l'école (ou lien d'abonnement personnel) uniquement ;
+  v2  idem, plus les devoirs et examens du compte : /api/abonnement?action=lien
+      reçoit alors « Authorization: Bearer <jeton Supabase> », le vérifie
+      auprès de Supabase, et ajoute le user_id (« a ») au jeton signé. La
+      lecture des échéances (clé service, jamais côté client) passe par
+      _echeances.py ; si elle échoue, on répond 502 — jamais un flux
+      amputé, qui ferait disparaître les devoirs de l'agenda.
+
 Cache privé : la sélection de groupes est personnelle, et le lien
 d'abonnement ne doit jamais se retrouver chez un intermédiaire.
 """
@@ -31,6 +40,7 @@ ICI = os.path.dirname(os.path.abspath(__file__))
 if ICI not in sys.path:
     sys.path.insert(0, ICI)
 
+import _echeances  # noqa: E402
 from _ecoles import ECOLES, debit, erreur_publique, requete  # noqa: E402
 from _moteurs import export_ics  # noqa: E402
 from _moteurs.hyperplanning import Surcharge  # noqa: E402
@@ -112,6 +122,20 @@ def verifier(jeton):
         return None
 
 
+def _porteur(h):
+    """Jeton Supabase du client (« Authorization: Bearer … »), ou "".
+
+    L'app l'envoie quand une session est ouverte ; sans lui, le lien
+    reste un jeton v1 (cours seuls), strictement comme avant."""
+    try:
+        auth = h.headers.get("Authorization") or ""
+    except Exception:  # noqa: BLE001 - en-tête absent ou illisible
+        return ""
+    if not auth.lower().startswith("bearer "):
+        return ""
+    return auth.split(" ", 1)[1].strip()
+
+
 def _adresse(h):
     """Origine absolue de l'adresse d'abonnement (l'agenda a besoin d'une
     adresse complète). Derrière Vercel, x-forwarded-* fait foi."""
@@ -140,16 +164,19 @@ def _adresse(h):
 CACHE = "private, max-age=300"
 
 
-def _etag(horaire, nom, uid, couleur):
+def _etag(horaire, nom, uid, couleur, echeances=None):
     """Empreinte de tout ce qui compose le flux, sans l'horodatage du
     fichier (il change à chaque seconde) : le téléphone peut alors demander
     « rien de neuf ? » et recevoir une réponse vide au lieu du calendrier
     entier. Ne dépend que du contenu : deux appels identiques donnent la
-    même empreinte, même sur deux machines différentes."""
+    même empreinte, même sur deux machines différentes. Les échéances en
+    font partie : sans elles, un devoir ajouté ne changerait pas
+    l'empreinte et le 304 le masquerait."""
     matiere = json.dumps([
         (horaire.get("meta") or {}).get("premier_lundi"),
         horaire.get("cours") or [],
-        nom, uid, couleur
+        nom, uid, couleur,
+        echeances or [],
     ], sort_keys=True, ensure_ascii=False, separators=(",", ":"))
     return '"' + hashlib.sha256(matiere.encode("utf-8")).hexdigest() + '"'
 
@@ -206,6 +233,25 @@ def _fabriquer(h, q):
     payload = {"v": 1, "e": ecole, "f": formation, "g": sel, "i": ical,
                "c": propre(q.get("cours")), "k": propre(q.get("couleur"))[:9],
                "n": nom, "u": propre(q.get("uid"))[:40]}
+    porteur = _porteur(h)
+    if porteur:
+        # Session Supabase : le lien emporte le user_id (jeton v2) pour
+        # que /api/abonnement?jeton=… puisse rattacher les devoirs du
+        # compte. Vérification chez Supabase ; jeton refusé = session
+        # expirée, pas de lien v1 silencieux (l'utilisateur croirait ses
+        # devoirs inclus).
+        url, anon, _ = _echeances.cles()
+        if not url or not anon:
+            return erreur(h, 503, TITRE, "Le service d'abonnement n'est pas configuré : clés Supabase manquantes.")
+        try:
+            compte = _echeances.utilisateur(url, anon, porteur)
+        except Exception as e:  # noqa: BLE001 - imprévu : journal, message générique
+            print("abonnement : vérification du porteur refusée %r" % (e,), file=sys.stderr)
+            return erreur(h, 502, TITRE, "Supabase injoignable. Réessaie dans un instant.")
+        if not compte:
+            return erreur(h, 401, TITRE, "Session expirée : reconnecte-toi, puis refais le lien.")
+        payload["v"] = 2
+        payload["a"] = compte
     base = _adresse(h)
     if not base:
         return erreur(h, 500, TITRE, "Adresse du serveur introuvable.")
@@ -246,12 +292,27 @@ def _servir(h, jeton):
                 raise ValueError("Cet abonnement vise une école inconnue.")
             data = ECOLES[ecole].horaire(formation, budget=BUDGET)
         cours = filtrer_cours(data.get("cours") or [], sel, matiere)
-        if not cours:
-            raise ValueError("Aucun cours à exporter pour cet horaire.")
         uid = propre(payload.get("u"))[:40]
+        echeances = []
+        compte = propre(payload.get("a"))[:40]
+        if compte:
+            # Jeton v2 : les devoirs du compte voyagent avec le flux.
+            # Supabase indisponible = 502, jamais un flux réduit aux
+            # cours (l'agenda croirait les devoirs supprimés).
+            url, _, service = _echeances.cles()
+            if not url or not service:
+                return erreur(h, 502, TITRE, "Tes devoirs n'ont pas pu être lus : Supabase n'est pas configuré.")
+            try:
+                echeances = _echeances.lire(url, service, compte, uid, matiere)
+            except Exception as e:  # noqa: BLE001 - imprévu : journal, message générique
+                print("abonnement : lecture des échéances impossible %r" % (e,), file=sys.stderr)
+                return erreur(h, 502, TITRE, "Tes devoirs et examens n'ont pas pu être lus. Réessaie dans un instant.")
+        if not cours and not echeances:
+            raise ValueError("Aucun cours à exporter pour cet horaire.")
         horaire = {"meta": data.get("meta") or {}, "cours": cours_export(cours, sel)}
-        _repondre_ics(h, export_ics.construire(horaire, nom, uid=uid, couleur=couleur),
-                      export_ics.nom_fichier(nom), _etag(horaire, nom, uid, couleur))
+        _repondre_ics(h, export_ics.construire(horaire, nom, uid=uid, couleur=couleur,
+                                               echeances=echeances),
+                      export_ics.nom_fichier(nom), _etag(horaire, nom, uid, couleur, echeances))
     except ValueError as e:
         erreur(h, 404, TITRE, str(e))
     except Surcharge as e:

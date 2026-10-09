@@ -18,8 +18,10 @@ lisible partout. La salle vit dans LOCATION, pas dans le titre (la vue
 Mois d'iOS n'en montre que ~10 caractères).
 
 Entrée : l'horaire au format de l'API ({meta, cours}), des cours déjà
-filtrés selon les groupes de l'étudiant. Sortie : texte iCalendar,
-lignes pliées à 75 octets (RFC 5545).
+filtrés selon les groupes de l'étudiant. `echeances` (optionnel) ajoute
+les devoirs et examens perso après les cours — sortie identique au JS
+quand il est absent. Sortie : texte iCalendar, lignes pliées à 75 octets
+(RFC 5545).
 """
 import re
 from datetime import datetime, timedelta, timezone
@@ -62,6 +64,9 @@ VTIMEZONE = [
 # Mêmes expressions que nettoyerMatiere()/codeMatiere() de index.html.
 RX_CODE_MATIERE = re.compile(r"^([A-Z]{1,4}(?:-[A-Z0-9]{2,8}){1,3})\s*-\s+")
 RX_HEURE = re.compile(r"^(\d{1,2})h(\d{2})$")
+# Heure d'une échéance : « 14:30 » (l'app stocke déjà ce format).
+RX_HEURE_ECH = re.compile(r"^([01]\d|2[0-3]):([0-5]\d)$")
+DUREE_ECH = 30  # minutes : durée par défaut d'une échéance avec heure
 
 
 def _deux(n):
@@ -100,6 +105,32 @@ def _parse_iso(iso):
     if not m:
         return None
     return int(m.group(1)), int(m.group(2)) - 1, int(m.group(3))
+
+
+def _date_echeance(iso):
+    """Date ISO d'une échéance -> (année, mois 0-based, jour), ou None.
+
+    Contrairement à `_parse_iso` (premier lundi, toujours valide), une
+    date inexistante (« 2026-02-30 ») est refusée : sinon la construction
+    planterait sur l'échéance au lieu de l'ignorer."""
+    date = _parse_iso(iso)
+    if not date:
+        return None
+    try:
+        datetime(date[0], date[1] + 1, date[2])
+    except ValueError:
+        return None
+    return date
+
+
+def _jour_ics(date):
+    """« 20261005 » à partir d'un (année, mois 0-based, jour)."""
+    return f"{date[0]}{_deux(date[1] + 1)}{_deux(date[2])}"
+
+
+def _lendemain(date):
+    d = datetime(date[0], date[1] + 1, date[2]) + timedelta(days=1)
+    return d.year, d.month - 1, d.day
 
 
 def _date_cours(lundi, sem, jour):
@@ -222,14 +253,27 @@ def _description(c, code=""):
     return "\n".join(lignes)
 
 
-def construire(horaire, nom="Horaire", uid="", depuis=0, maintenant=None, couleur=""):
+def _cle_tri_echeance(e):
+    """Tri stable (date, heure, id) des échéances, entrées cassées comprises."""
+    if not isinstance(e, dict):
+        return "", "", ""
+    return (str(e.get("date") or ""), str(e.get("heure") or ""), str(e.get("id") or ""))
+
+
+def construire(horaire, nom="Horaire", uid="", depuis=0, maintenant=None, couleur="",
+               echeances=None):
     """Horaire {meta, cours} -> texte iCalendar complet.
 
     `uid` : préfixe stable (id du profil) ; `depuis` : ne garder que les
     semaines à partir de ce numéro ; `maintenant` : pour les tests ;
     `couleur` : couleur du calendrier (#rrggbb) — un abonnement par cours
     l'utilise pour que l'agenda prenne la couleur du cours (lue
-    automatiquement par ICSx5 sur Android ; Apple la propose)."""
+    automatiquement par ICSx5 sur Android ; Apple la propose).
+    `echeances` (optionnel) : devoirs et examens perso
+    [{id, type, titre, date, heure}, …] ajoutés après les cours. Sans
+    heure : journée entière (DTEND = lendemain) ; avec heure : début +
+    30 minutes. Lignes invalides ignorées ; sortie identique aux appels
+    précédents quand il est absent (parité avec export_ics.js)."""
     lundi = _parse_iso((horaire.get("meta") or {}).get("premier_lundi"))
     if not lundi:
         raise ValueError("premier lundi manquant")
@@ -285,6 +329,29 @@ def construire(horaire, nom="Horaire", uid="", depuis=0, maintenant=None, couleu
             lignes.append("DESCRIPTION:" + echapper(_description(c, code)))
             lignes.append("TRANSP:OPAQUE")
             lignes.append("END:VEVENT")
+    for e in sorted(echeances or [], key=_cle_tri_echeance):
+        if not isinstance(e, dict):
+            continue
+        eid = re.sub(r"\s+", "", str(e.get("id") or ""))
+        date = _date_echeance(e.get("date"))
+        if not eid or not date:
+            continue  # ligne illisible : ignorée, jamais un VEVENT cassé
+        titre = " ".join(str(e.get("titre") or "").split()) or "Échéance"
+        heure = RX_HEURE_ECH.fullmatch(str(e.get("heure") or "").strip())
+        lignes.append("BEGIN:VEVENT")
+        # UID stable : réimporter met à jour l'échéance au lieu de la
+        # dupliquer. Le préfixe « ech- » la distingue d'une séance de cours.
+        lignes.append("UID:ezh-" + (uid + "-" if uid else "") + "ech-" + eid + "@ezhoraire.be")
+        lignes.append("DTSTAMP:" + stamp)
+        if heure:
+            debut = int(heure.group(1)) * 60 + int(heure.group(2))
+            lignes.append("DTSTART;TZID=" + TZID + ":" + _heure_ics(date, debut))
+            lignes.append("DTEND;TZID=" + TZID + ":" + _heure_ics(date, debut + DUREE_ECH))
+        else:
+            lignes.append("DTSTART;VALUE=DATE:" + _jour_ics(date))
+            lignes.append("DTEND;VALUE=DATE:" + _jour_ics(_lendemain(date)))
+        lignes.append("SUMMARY:" + echapper(titre))
+        lignes.append("END:VEVENT")
     lignes.append("END:VCALENDAR")
     return "\r\n".join(plier(l) for l in lignes) + "\r\n"
 
