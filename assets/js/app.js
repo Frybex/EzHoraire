@@ -3706,7 +3706,24 @@
     majThemeSelection("groupes-themes", choix.theme);
     document.body.setAttribute("data-theme", String(choix.theme));
     if (choix.data) { effacer(status); listerGroupes(); return; }
-    attente(status, "Recherche des groupes de " + joliFormation(choix.formation) + "…");
+    // La lecture peut être longue (écoles dont les grilles publiées sont
+    // relues par OCR : une vingtaine de secondes la première fois). Le
+    // bouton reste donc visible, désactivé, pendant la lecture : sous le
+    // choix de couleur, un écran sans bouton ressemble à une impasse.
+    btn.hidden = false;
+    btn.disabled = true;
+    btn.textContent = "Chargement de l'horaire…";
+    var ec = ecoleDe(choix.ecole);
+    if (ec && ec.image) {
+      // École dont les grilles publiées sont relues par OCR : pas de
+      // groupes à attendre, l'écran s'annonce tout de suite comme celui
+      // de la couleur (sinon il reste « Ton groupe » pendant la lecture).
+      document.getElementById("groupes-titre").textContent = "Ta couleur";
+    }
+    attente(status, ec && ec.image
+      ? "Lecture du planning publié de " + joliFormation(choix.formation) +
+        "… (la première lecture peut prendre une trentaine de secondes)"
+      : "Recherche des groupes de " + joliFormation(choix.formation) + "…");
     var demande = choix.formation;
     var icalDemande = choix.ical;
     chargerHoraire(choix.ecole, demande, icalDemande).then(function (data) {
@@ -3720,6 +3737,7 @@
       effacer(status); listerGroupes();
     }, function (e) {
       if (vue === "groupes" && choix.formation === demande) {
+        btn.textContent = "Chargement impossible";
         erreur(status, "Échec : " + e.message + " Reviens en arrière pour réessayer.");
       }
     });
