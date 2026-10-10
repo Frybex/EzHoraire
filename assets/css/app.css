@@ -2088,7 +2088,7 @@
   /* Pages rendues en images : 100 % de largeur au repos, entièrement
      visibles, rien n'est coupé. Le zoom élargit ce bloc (200 %, 300 %…). */
   .pdf-pages { width: 100%; margin: 0 auto; background: var(--creux); }
-  .pdf-pages canvas { display: block; width: 100%; height: auto; background: #fff; animation: pdf-page .35s ease-out both; }
+  .pdf-pages canvas, .pdf-pages img { display: block; width: 100%; height: auto; background: #fff; animation: pdf-page .35s ease-out both; }
   @keyframes pdf-page { from { opacity: 0; } to { opacity: 1; } }
   .pdf-pages canvas + canvas { margin-top: 10px; }
   /* Bouton flottant pour revenir à la taille normale : collé en bas de
@@ -3453,7 +3453,7 @@
     .pdf-pince::-webkit-scrollbar { display: block; width: 10px; height: 10px; }
     .pdf-pince::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--muted) 45%, transparent); border-radius: 10px; border: 2px solid transparent; background-clip: padding-box; }
     .pdf-pages { padding: 18px; }
-    .pdf-pages canvas { border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,.08), 0 8px 24px -12px rgba(0,0,0,.25); }
+    .pdf-pages canvas, .pdf-pages img { border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,.08), 0 8px 24px -12px rgba(0,0,0,.25); }
     .pdf-pages canvas + canvas { border-top: none; margin-top: 14px; }
     .pdf-pages:has(.pdf-frame) { height: 100%; padding: 0; }
     .pdf-frame { height: 100%; min-height: 0; border: none; box-shadow: none; }
@@ -3520,7 +3520,7 @@
         hsl(var(--h, 221) calc(24% + var(--v, 0) * 7%) calc(27% + var(--v, 0) * 2%)),
         hsl(var(--h, 221) calc(22% + var(--v, 0) * 7%) calc(22% + var(--v, 0) * 2%)));
     }
-    .pdf-pages canvas { box-shadow: 0 8px 24px -12px rgba(0,0,0,.8); }
+    .pdf-pages canvas, .pdf-pages img { box-shadow: 0 8px 24px -12px rgba(0,0,0,.8); }
   }
 
   /* ---------- Apparence (feuille) : sous le compte, au-dessus des horaires ---------- */
@@ -3725,10 +3725,12 @@
         hsl(var(--h, 221) calc(24% + var(--v, 0) * 7%) calc(27% + var(--v, 0) * 2%)),
         hsl(var(--h, 221) calc(22% + var(--v, 0) * 7%) calc(22% + var(--v, 0) * 2%)));
     }
-    html[data-apparence="clair"] .pdf-pages canvas {
+    html[data-apparence="clair"] .pdf-pages canvas,
+    html[data-apparence="clair"] .pdf-pages img {
       box-shadow: 0 1px 2px rgba(0,0,0,.08), 0 8px 24px -12px rgba(0,0,0,.25);
     }
-    html[data-apparence="sombre"] .pdf-pages canvas {
+    html[data-apparence="sombre"] .pdf-pages canvas,
+    html[data-apparence="sombre"] .pdf-pages img {
       box-shadow: 0 8px 24px -12px rgba(0,0,0,.8);
     }
   }

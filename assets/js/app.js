@@ -23,6 +23,11 @@
     { id: "ulb", nom: "ULB", detail: "Université libre de Bruxelles · Bruxelles, Charleroi", logo: "/logos/ecoles/ulb.svg", lw: 75, lh: 75, recherche: true, beta: true },
     { id: "ucl", nom: "UCLouvain", detail: "Université catholique de Louvain · Louvain-la-Neuve, Bruxelles, Mons…",
       logo: "/logos/ecoles/ucl.svg", lw: 460, lh: 90, recherche: true, pdf: false, beta: true },
+    /* L'IHECS ne publie pas de PDF : son planning officiel est une image
+       par semaine (grilles Hyperplanning « publication »). `image: true`
+       adapte le bouton du même nom. */
+    { id: "ihecs", nom: "IHECS", detail: "Institut des Hautes Études des Communications Sociales · Bruxelles",
+      logo: "/logos/ecoles/ihecs.svg", lw: 340, lh: 138, beta: true, image: true },
     /* École de test (horaires fictifs, voir api/_ecoles/sim.py) : proposée
        seulement si le serveur la liste (/api/config), donc jamais en ligne —
        serve.py la pose pour la simulation locale (lab/simulation.html). */
@@ -1657,21 +1662,28 @@
     }
     btn.hidden = false;
     var ouvert = pdfOuvert || pdfCharge;
-    // Sur ordinateur, juste le mot PDF (la semaine est déjà en titre).
+    // Certaines écoles ne publient pas de PDF mais une image de la semaine
+    // (IHECS) : le bouton dit « planning » plutôt que « PDF ».
+    var image = !!(ec && ec.image);
+    var doc = image ? "planning" : "PDF";
+    var Doc = image ? "Planning" : "PDF";
+    // Sur ordinateur, juste le mot (la semaine est déjà en titre).
     if (bureau()) {
-      btn.textContent = "PDF";
-      var etiquette = (ouvert ? "Masquer le PDF officiel de la semaine " : "Afficher le PDF officiel de la semaine ") + sem;
+      btn.textContent = Doc;
+      var etiquette = (ouvert ? "Masquer le " + doc + " officiel de la semaine " : "Afficher le " + doc + " officiel de la semaine ") + sem;
       btn.setAttribute("aria-label", etiquette);
       btn.setAttribute("title", etiquette);
     } else {
       btn.removeAttribute("aria-label");
       btn.removeAttribute("title");
       // Sur téléphone, le texte complet s'affiche.
-      btn.innerHTML = ICONE_PDF + "<span>" + (ouvert ? "Masquer le PDF" : "PDF officiel") +
+      btn.innerHTML = ICONE_PDF + "<span>" + (ouvert ? "Masquer le " + doc : Doc + " officiel") +
         '<span class="sm"> de la semaine ' + sem + "</span></span>";
     }
     btn.setAttribute("aria-expanded", ouvert ? "true" : "false");
     document.getElementById("horaire-contenu").classList.toggle("pdf-ouvert", ouvert);
+    var titre = document.querySelector(".pdf-titre strong");
+    if (titre) titre.textContent = image ? "Planning officiel" : "PDF officiel";
     document.getElementById("pdf-sem").textContent = "Semaine " + sem;
     majOutilsPdf();
   }
@@ -1753,7 +1765,10 @@
   }
   // Texte d'attente du PDF (voir attente(), partagée avec les autres écrans).
   function statutPdfAttente(status) {
-    attente(status, "Le PDF est en cours de téléchargement…");
+    var ec = profil && ecoleDe(profil.ecole);
+    attente(status, ec && ec.image
+      ? "Le planning officiel est en cours de chargement…"
+      : "Le PDF est en cours de téléchargement…");
   }
   function fermerPdf() {
     pdfDemande++; // invalide un téléchargement en cours
@@ -3536,9 +3551,17 @@
     if (/ m[1-2]( |$)/.test(n)) return 1;             // masters
     return RUBRIQUES.length;                          // spécialisations, formations continues
   }
+  /* L'IHECS publie ses promotions par bloc (« Bloc 1 - Gr. A ») ou par
+     option de master (« M1 PI - Newsroom », « Master 60 - PI »). */
+  function rubriqueIhecs(n) {
+    if (/^bloc [1-3]\b/.test(n)) return 0;                  // bacheliers
+    if (/^m[12] /.test(n) || /^master 60\b/.test(n)) return 1;  // masters
+    return RUBRIQUES.length;
+  }
   function rubrique(f, ecole) {
     var n = sansAccents(joliFormation(f));
     if (ecole === "helb") return rubriqueHelb(n);
+    if (ecole === "ihecs") return rubriqueIhecs(n);
     for (var i = 0; i < RUBRIQUES.length; i++) if (RUBRIQUES[i][0].test(n)) return i;
     return RUBRIQUES.length;
   }
@@ -3892,8 +3915,18 @@
     var btn = document.getElementById("btn-valider");
     var filtre = document.getElementById("filtre-groupes");
     if (!groupes.length) {
-      // Aucun groupe à choisir : on saute l'écran (sélection vide).
-      validerGroupes();
+      // École sans groupes (IHECS) : rien à cocher, mais l'écran reste —
+      // c'est ici qu'on donne un nom et une couleur à l'horaire, et sauter
+      // l'écran priverait l'étudiant de la couleur. (L'avis « groupes
+      // manquants » de majValider() n'a rien à dire ici : tout tient dans
+      // la ligne d'aide.)
+      document.getElementById("groupes-titre").textContent = "Ta couleur";
+      aide.textContent = joliFormation(choix.formation) +
+        " n'a pas de groupes à choisir : donne une couleur à cet horaire.";
+      document.getElementById("chips").innerHTML = "";
+      filtre.hidden = true;
+      document.getElementById("groupes-modifiable").hidden = true;
+      majValider();
       return;
     }
     // En modification, le rappel « tu pourras les changer plus tard » n'a
@@ -4125,8 +4158,12 @@
       btn.disabled = true;
       btn.textContent = "Sélectionne au moins un groupe";
     } else {
-      btn.textContent = !n ? (aOptions ? "Tout afficher (options superposées)"
-                                       : "Tout afficher, sans filtre")
+      // École sans groupes (IHECS) : il n'y a rien à filtrer, le bouton
+      // n'annonce pas un « tout afficher » qui n'existe pas.
+      var sansGroupes = !guidePerso() && choix.data && choix.data.groupes && !choix.data.groupes.length;
+      btn.textContent = sansGroupes ? "Voir mon horaire"
+        : !n ? (aOptions ? "Tout afficher (options superposées)"
+                         : "Tout afficher, sans filtre")
         : n === 1 ? "Voir mon horaire" : "Voir mon horaire · " + n + " groupes";
       if (choix.source && n) btn.textContent = texteValiderSource() + (n > 1 ? " · " + n + " groupes" : "");
     }
@@ -5088,7 +5125,7 @@
         var srcPdf = actuel && profil.sources[actuel.i];
         var ajout = !!faitP && !!srcPdf && srcPdf.role !== "principale" && !FUSION.estParcours(srcPdf);
         avisChoix.hidden = !ajout;
-        if (ajout) avisChoix.textContent = "L'école publie le PDF de l'année entière : tes cours y sont mêlés aux autres.";
+        if (ajout) avisChoix.textContent = "L'école publie le document officiel de l'année entière : tes cours y sont mêlés aux autres.";
       }
       return faitP;
     }
@@ -9550,6 +9587,37 @@
         pdfCharge = false;
         btn.disabled = false;
         majBoutonPdf();
+        // École sans PDF (IHECS) : le document officiel est une image
+        // publiée par l'école. Même cadre que les pages PDF — le zoom
+        // élargit le bloc, l'image suit.
+        var sourceImage = cible && ecoleDe(cible.ecole) && ecoleDe(cible.ecole).image;
+        if (/^image\//.test(blob.type || "") || sourceImage) {
+          oublierPdfDoc(); // une bascule PDF → image ne doit pas garder l'ancien document
+          var im = document.createElement("img");
+          im.className = "pdf-image";
+          im.alt = "Planning officiel de la semaine " + sem;
+          im.onload = function () {
+            var zi = document.getElementById("pdf-zone");
+            if (zi) { zi.classList.remove("attente"); zi.style.minHeight = ""; }
+            memoriserHauteurPdf();
+            recadrerPdfFinal();
+          };
+          im.onerror = function () {
+            if (maDemande !== pdfDemande) return;
+            pdfCharge = false; pdfOuvert = true;
+            status.classList.add("erreur");
+            status.style.display = "";
+            status.textContent = "L'image officielle n'a pas pu s'afficher. Touchez le bouton pour réessayer.";
+            btn.disabled = false;
+            majBoutonPdf();
+            zone.classList.remove("attente");
+            zone.style.minHeight = "";
+            recadrerPdfFinal();
+          };
+          im.src = pdfURL;
+          pages.appendChild(im);
+          return;
+        }
         // Le contenu est arrivé mais les pages se dessinent une par une :
         // la réserve de hauteur RESTE jusqu'au rendu complet (voir plus
         // bas) pour éviter que la zone s'écrase puis regonfle en flash.
@@ -10457,6 +10525,10 @@
   // Partagée avec suivi.js (window.EZH_CONFIG_PROMESSE) : un seul
   // /api/config par visite, et la forme {url, cle} attendue par le suivi.
   window.EZH_CONFIG_PROMESSE = chargerConfigSupabase().then(function (ok) {
+    // La liste des écoles a pu s'afficher avant la réponse du serveur
+    // (une école en test n'apparaît que si /api/config la liste) : on la
+    // redessine si l'étudiant est encore sur cet écran.
+    if (vue === "ecole") ouvrirEcoles();
     return ok ? { url: SUPABASE_CONFIG.URL, cle: SUPABASE_CONFIG.CLE_ANON } : null;
   });
   if (!retourCloud) {
