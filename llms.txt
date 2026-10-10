@@ -1,7 +1,7 @@
 # EzHoraire
 
 > Application web gratuite qui rend lisibles les horaires de cours des étudiants
-> en Belgique (HEH, UMONS, Condorcet, HELB, ULB, UCLouvain en ouverture).
+> en Belgique (HEH, UMONS, Condorcet, HELB, ULB, IHECS en bêta, UCLouvain en ouverture).
 > Gratuit, sans pub, sans vente. Comptes Google, GitHub ou email pour
 > synchroniser horaires, devoirs et examens entre appareils.
 
@@ -20,6 +20,7 @@ Conditions : voir /cgu.html. Mentions : voir /mentions-legales.html.
 - Horaire HELB : https://www.ezhoraire.be/horaires/helb/
 - Horaire ULB : https://www.ezhoraire.be/horaires/ulb/
 - Horaire UCLouvain : https://www.ezhoraire.be/horaires/uclouvain/
+- Horaire IHECS : https://www.ezhoraire.be/horaires/ihecs/
 - Politique de confidentialité : https://www.ezhoraire.be/confidentialite.html
 - Conditions d'utilisation : https://www.ezhoraire.be/cgu.html
 - Mentions légales : https://www.ezhoraire.be/mentions-legales.html

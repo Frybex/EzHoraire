@@ -55,21 +55,31 @@ saturé, rail de couleur à gauche, texte neutre.
 Écoles prises en charge : **HEH** (HEH Planning), **UMONS** (UMONS Planning,
 espace invités public), **Condorcet** (Condorcet Planning, espace invités
 public), **HELB** (HELB Planning, espace invités public), **ULB** (TimeEdit,
-vue publique « je n'ai pas encore d'ULBID ») et **UCLouvain** (Mon horaire,
-en test — voir plus bas). Objectif : la plupart des universités et hautes
-écoles belges, puis les applications iOS et Android, et les comptes
-(Google, GitHub, email).
+vue publique « je n'ai pas encore d'ULBID »), **IHECS** (grilles publiées en
+images, relues par OCR — en test, voir plus bas) et **UCLouvain** (Mon
+horaire, en test). Objectif : la plupart des universités et hautes écoles
+belges, puis les applications iOS et Android, et les comptes (Google,
+GitHub, email).
 
-L'UMONS, Condorcet, la HELB et l'ULB, branchées récemment, portent une
-étiquette **Bêta** sur l'écran des écoles (`beta: true` dans `ECOLES`,
+L'UMONS, Condorcet, la HELB, l'ULB et l'IHECS, branchées récemment, portent
+une étiquette **Bêta** sur l'écran des écoles (`beta: true` dans `ECOLES`,
 `index.html`) : elles n'ont pas encore vu une année entière. À retirer
 quand elles auront tenu une rentrée.
 
+L'IHECS n'expose pas d'espace invités Hyperplanning : son planning officiel
+est publié en images (une grille PNG par promotion et par semaine). Le
+moteur `api/_moteurs/publication.py` relit ces grilles par OCR (tesseract,
+modèle français embarqué dans `_moteurs/tessdata/`) et le bouton
+« Planning officiel » de l'app affiche l'image publiée — l'école n'a pas
+de PDF. Une relecture automatique peut comporter une faute : le planning
+officiel fait toujours foi.
+
 Une école peut être codée sans être publiée : elle est enregistrée dans
-`api/_ecoles/__init__.py` derrière `EZH_UCL=1` et l'app ne la propose que si
-`/api/config` la liste (`ECOLES_ACTIVES`). Sans la variable, un
-déploiement Vercel n'expose ni l'école, ni sa recherche, ni ses
-horaires. `serve.py` pose la variable pour le développement.
+`api/_ecoles/__init__.py` derrière `EZH_UCL=1` (UCLouvain) ou
+`EZH_IHECS=1` (IHECS) et l'app ne la propose que si `/api/config` la liste
+(`ECOLES_ACTIVES`). Sans la variable, un déploiement Vercel n'expose ni
+l'école, ni sa recherche, ni ses horaires. `serve.py` pose les deux
+variables pour le développement.
 
 ## Comptes (Supabase Auth, branché)
 
