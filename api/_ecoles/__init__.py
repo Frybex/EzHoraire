@@ -48,6 +48,15 @@ if os.environ.get("EZH_UCL") == "1":
 
     ECOLES["ucl"] = ucl
 
+# L'IHECS passe par l'OCR de ses grilles publiées (pas d'espace invités) :
+# même règle que l'UCLouvain tant que la lecture n'a pas tenu une année —
+# exposé seulement si l'hébergeur pose EZH_IHECS=1, posé par serve.py pour
+# le développement.
+if os.environ.get("EZH_IHECS") == "1":
+    from . import ihecs  # noqa: E402
+
+    ECOLES["ihecs"] = ihecs
+
 # L'école de simulation (horaires fictifs, lab/simulation.html) suit la
 # même règle : serve.py la pose pour le développement, Vercel ne la voit
 # jamais. `EZH_SIM=0` permet de vérifier que la production ne l'expose pas.

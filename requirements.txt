@@ -2,3 +2,8 @@
 requests
 pycryptodome
 tzdata
+# OCR des grilles publiées en images (IHECS, _moteurs/publication.py) :
+# Pillow découpe les cases, tesserocr lit leur texte (wheels manylinux,
+# le moteur et son modèle sont embarqués — voir _moteurs/tessdata/).
+Pillow
+tesserocr

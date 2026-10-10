@@ -156,15 +156,15 @@
   ],
   "functions": {
     "api/formations.py": { "maxDuration": 60 },
-    "api/horaires.py": { "maxDuration": 90 },
-    "api/pdf.py": { "maxDuration": 60 },
+    "api/horaires.py": { "maxDuration": 90, "includeFiles": "api/_moteurs/tessdata/**" },
+    "api/pdf.py": { "maxDuration": 60, "includeFiles": "api/_moteurs/tessdata/**" },
     "api/recherche.py": { "maxDuration": 30 },
     "api/ical.py": { "maxDuration": 30 },
     "api/importer.py": { "maxDuration": 60 },
     "api/stats.py": { "maxDuration": 30 },
     "api/bugs.py": { "maxDuration": 30 },
     "api/notifications.py": { "maxDuration": 30 },
-    "api/abonnement.py": { "maxDuration": 90 },
-    "api/export.py": { "maxDuration": 90 }
+    "api/abonnement.py": { "maxDuration": 90, "includeFiles": "api/_moteurs/tessdata/**" },
+    "api/export.py": { "maxDuration": 90, "includeFiles": "api/_moteurs/tessdata/**" }
   }
 }

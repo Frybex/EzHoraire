@@ -29,10 +29,13 @@ api/
 │   ├── condorcet.py Condorcet — Haute École de la Province de Hainaut → moteur hyperplanning
 │   ├── helb.py      HELB — Haute École libre de Bruxelles Ilya Prigogine → moteur hyperplanning
 │   ├── ulb.py       ULB — Université libre de Bruxelles→ moteur timeedit
-│   └── ucl.py       UCLouvain (en test, EZH_UCL=1)     → moteur propre
+│   ├── ucl.py       UCLouvain (en test, EZH_UCL=1)     → moteur propre
+│   └── ihecs.py     IHECS (en test, EZH_IHECS=1)       → moteur publication (OCR)
 │
 └── _moteurs/       LE TRAVAIL COMMUN À PLUSIEURS ÉCOLES
     ├── hyperplanning.py  Pronote Campus / Hyperplanning : session, décodage, PDF
+    ├── publication.py    Hyperplanning « publication » : grilles en images, relues par OCR
+    ├── tessdata/         modèle français de l'OCR (voir son README, provenance et licence)
     ├── timeedit.py       TimeEdit (vue publique) : objets, réservations, PDF
     ├── ical.py           flux iCalendar d'un lien d'abonnement → format des écoles
     ├── export_ics.py     horaire → fichier .ics (miroir de export_ics.js)

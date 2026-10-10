@@ -55,9 +55,13 @@ class handler(BaseHTTPRequestHandler):
             return repondre_texte(self, 429, str(e))
         except Exception as e:  # noqa: BLE001 - imprévu : journal, message générique
             return repondre_texte(self, 502, erreur_publique(e, "pdf"))
-        nom = f"Horaire {groupe or formation} - semaine {semaine}.pdf"
+        # Toutes les écoles ne publient pas un PDF : l'IHECS publie des
+        # grilles en images (DOCUMENT_MIME sur son module).
+        mime = getattr(mod, "DOCUMENT_MIME", "application/pdf")
+        extension = {"image/png": ".png"}.get(mime, ".pdf")
+        nom = f"Horaire {groupe or formation} - semaine {semaine}{extension}"
         self.send_response(200)
-        self.send_header("Content-Type", "application/pdf")
+        self.send_header("Content-Type", mime)
         self.send_header("Content-Length", str(len(contenu)))
         self.send_header("Content-Disposition", f"inline; filename*=UTF-8''{quote(nom)}")
         self.send_header("Cache-Control", CACHE_PARTAGE)

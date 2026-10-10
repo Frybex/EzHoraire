@@ -54,9 +54,10 @@ RACINE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(RACINE, "api"))
 
 # Le serveur local montre toutes les écoles, y compris celles en test
-# (UCLouvain) : sur Vercel, sans EZH_UCL, elles restent invisibles.
-# `EZH_UCL=0 python3 serve.py` simule la production.
+# (UCLouvain, IHECS) : sur Vercel, sans EZH_UCL / EZH_IHECS, elles restent
+# invisibles. `EZH_UCL=0 EZH_IHECS=0 python3 serve.py` simule la production.
 os.environ.setdefault("EZH_UCL", "1")
+os.environ.setdefault("EZH_IHECS", "1")
 
 # Idem pour l'école de simulation (horaires fictifs, lab/simulation.html) :
 # `EZH_SIM=0` permet de vérifier que la production ne la propose pas.
